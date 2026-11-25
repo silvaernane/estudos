@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 10: Cibersegurança e gestão</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 10 de 10 · Cibersegurança e gestão</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html" aria-current="page"><span class="n">10</span>Cibersegurança e gestão</a></li>
+    <li class="sub"><ol>
+      <li><a href="#fundamentos"><span class="n">1</span>Tríade CIA e gestão de riscos</a></li>
+      <li><a href="#ameacas"><span class="n">2</span>Panorama de ameaças</a></li>
+      <li><a href="#stride"><span class="n">3</span>Modelagem de ameaças com STRIDE</a></li>
+      <li><a href="#devsecops"><span class="n">4</span>SDLC seguro e DevSecOps</a></li>
+      <li><a href="#vulns"><span class="n">5</span>Gestão de vulnerabilidades e testes de segurança</a></li>
+      <li><a href="#identidade"><span class="n">6</span>Zero trust, segmentação e gestão de identidades</a></li>
+      <li><a href="#backups"><span class="n">7</span>Backups e a regra 3-2-1</a></li>
+      <li><a href="#incidentes"><span class="n">8</span>Resposta a incidentes</a></li>
+      <li><a href="#lgpd"><span class="n">9</span>LGPD e incidentes com dados de saúde</a></li>
+      <li><a href="#frameworks"><span class="n">10</span>Frameworks, normas e métricas</a></li>
+      <li><a href="#cultura"><span class="n">11</span>Cultura, orçamento e plano de 90 dias</a></li>
+      <li><a href="#glossario"><span class="n">12</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">13</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">14</span>Perguntas de entrevista</a></li>
+    </ol></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 10 · <span class="lvl l3">Avançado</span></div>
+  <h1>Cibersegurança e gestão</h1>
+  <p class="lede">Como pensar segurança no nível da organização e liderar um time de desenvolvimento que entrega software seguro sem parar de entregar. Risco, processos, pessoas, incidentes e LGPD, do ponto de vista de quem toma as decisões.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Falar de segurança em termos de risco, com a diretoria e com o time.</li>
+    <li>Modelar ameaças de um sistema real com STRIDE.</li>
+    <li>Montar um pipeline DevSecOps que ajuda em vez de gerar ruído.</li>
+    <li>Priorizar vulnerabilidades, conduzir um incidente e cumprir as obrigações da LGPD.</li>
+    <li>Escolher métricas, defender orçamento e montar um plano de 90 dias.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="fundamentos">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Tríade CIA e gestão de riscos</h2>
+  <p>Segurança da informação protege três propriedades, conhecidas pela sigla em inglês CIA:</p>
+  <div class="tbl"><table><thead><tr><th>Propriedade</th><th>Pergunta</th><th>Exemplo de falha num sistema de saúde</th></tr></thead><tbody>
+    <tr><td><strong>Confidencialidade</strong></td><td>Só quem deve consegue ver?</td><td>Lista de pacientes de psiquiatria exposta por uma API sem autorização.</td></tr>
+    <tr><td><strong>Integridade</strong></td><td>O dado está correto e só muda por quem deve?</td><td>Resultado de exame alterado entre o laboratório e o portal.</td></tr>
+    <tr><td><strong>Disponibilidade</strong></td><td>Está acessível quando precisa?</td><td>Prontuário fora do ar no pronto-socorro por causa de ransomware.</td></tr>
+  </tbody></table></div>
+  <p>Em saúde, as três pesam muito. Disponibilidade e integridade afetam diretamente o atendimento ao paciente, e confidencialidade envolve dados pessoais sensíveis pela LGPD.</p>
+
+  <h3>Risco</h3>
+  <p>Um modelo mental útil é <strong>risco = ameaça × vulnerabilidade × impacto</strong>. Sem alguém com motivo e capacidade (ameaça), sem uma fraqueza explorável (vulnerabilidade) ou sem dano relevante (impacto), o risco cai. Na prática, a maioria das empresas usa uma matriz de <strong>probabilidade × impacto</strong>, com escalas de 1 a 5, para comparar riscos entre si.</p>
+  <p>A gestão de riscos é um ciclo: identificar, analisar, decidir o tratamento, monitorar. Há quatro tratamentos possíveis:</p>
+  <div class="tbl"><table><thead><tr><th>Tratamento</th><th>O que é</th><th>Exemplo</th></tr></thead><tbody>
+    <tr><td>Mitigar</td><td>Reduzir probabilidade ou impacto com controles.</td><td>MFA para reduzir tomada de conta.</td></tr>
+    <tr><td>Transferir</td><td>Passar parte do impacto financeiro a terceiros.</td><td>Seguro cibernético, contrato com fornecedor.</td></tr>
+    <tr><td>Aceitar</td><td>Conviver com o risco, de forma consciente e registrada.</td><td>Sistema legado sem suporte, isolado na rede, até a migração no próximo ano.</td></tr>
+    <tr><td>Evitar</td><td>Deixar de fazer a atividade que gera o risco.</td><td>Não guardar número de cartão; usar o token do gateway de pagamento.</td></tr>
+  </tbody></table></div>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Todo risco aceito precisa de um dono com autoridade para aceitá-lo, uma justificativa e uma data de revisão. Aceite informal ("depois a gente vê") vira risco esquecido.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Explique a tríade com exemplos do domínio da empresa e mostre que você sabe que segurança é gestão de risco: nem tudo será corrigido, e o trabalho é decidir o que tratar primeiro, com critério.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Mantenha um registro de riscos (risk register) simples: descrição, probabilidade, impacto, dono, tratamento, prazo. Ele transforma conversas vagas sobre segurança em decisões rastreáveis e é o melhor instrumento para pedir orçamento.</p></div>
+</section>
+
+<section class="chap" id="ameacas">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Panorama de ameaças</h2>
+  <p>A maioria dos incidentes não começa com um ataque sofisticado. Começa com um e-mail, uma senha reutilizada, um sistema desatualizado exposto na internet ou um fornecedor comprometido.</p>
+  <div class="tbl"><table><thead><tr><th>Ameaça</th><th>Como funciona</th><th>Principais defesas</th></tr></thead><tbody>
+    <tr><td><strong>Phishing e engenharia social</strong></td><td>Mensagem falsa leva a pessoa a entregar credenciais, aprovar um pagamento ou executar um arquivo. Inclui ligações e mensagens se passando pelo suporte ou pela diretoria.</td><td>MFA resistente a phishing, filtros de e-mail, treinamento contínuo, processo de confirmação por outro canal para pedidos sensíveis, botão fácil para reportar.</td></tr>
+    <tr><td><strong>Ransomware</strong></td><td>Criminosos entram, se movem pela rede, copiam dados, criptografam sistemas e cobram resgate. A cópia dos dados permite dupla extorsão: pagar para descriptografar e para não publicar.</td><td>Backups imutáveis e testados, MFA, correção de sistemas expostos, segmentação, EDR, plano de resposta ensaiado.</td></tr>
+    <tr><td><strong>Credential stuffing</strong></td><td>Listas de e-mail e senha vazadas de outros sites são testadas em massa no seu login, contando com a reutilização de senhas.</td><td>MFA, rate limiting, detecção de bots, checagem de senhas vazadas. Detalhes no <a href="07-autenticacao.html">módulo 7</a>.</td></tr>
+    <tr><td><strong>Ameaças internas</strong></td><td>Funcionário ou terceiro que abusa do acesso (por vingança, dinheiro ou curiosidade) ou que erra sem má intenção, como mandar planilha de pacientes para o e-mail pessoal.</td><td>Menor privilégio, trilha de auditoria de acesso a dados, revisão de acessos, offboarding rápido, DLP, cultura que incentiva reportar erros.</td></tr>
+    <tr><td><strong>Cadeia de suprimentos</strong></td><td>Ataque a um fornecedor, biblioteca ou ferramenta usada por muitos clientes, para chegar a eles. Veja o caso xz no <a href="09-seguranca-web.html#supply">módulo 9</a>.</td><td>Avaliação de fornecedores, contratos com cláusulas de segurança e notificação, SBOM, menor privilégio para integrações.</td></tr>
+    <tr><td><strong>DDoS</strong></td><td>Volume de tráfego que esgota rede ou servidores (volumétrico) ou requisições caras que esgotam a aplicação (camada 7).</td><td>CDN e serviço de mitigação de DDoS, rate limiting, cache, autoescala com limites de custo.</td></tr>
+  </tbody></table></div>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Investir em proteções sofisticadas enquanto falta o básico: MFA, correção de sistemas expostos, backups testados e inventário. A maior parte dos incidentes explora justamente o básico.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Se perguntarem "qual a maior ameaça para uma empresa de saúde?", ransomware é uma boa resposta: para a operação e afeta pacientes. Complete com phishing e credenciais roubadas como porta de entrada mais comum.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Seu time de desenvolvimento costuma ter acessos poderosos: produção, nuvem, repositórios, segredos. Isso o torna alvo preferencial de phishing. MFA forte e menor privilégio para o próprio time vêm antes de qualquer outra iniciativa.</p></div>
+</section>
+
+<section class="chap" id="stride">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Modelagem de ameaças com STRIDE</h2>
+  <p>Modelagem de ameaças é olhar para o desenho de um sistema e perguntar, de forma estruturada, o que pode dar errado. É a atividade de segurança mais barata que existe, porque acontece antes do código. Uma forma simples de conduzir é responder quatro perguntas:</p>
+  <ol>
+    <li>No que estamos trabalhando? (um diagrama de fluxo de dados)</li>
+    <li>O que pode dar errado? (STRIDE ajuda aqui)</li>
+    <li>O que vamos fazer a respeito? (mitigações, viram histórias no backlog)</li>
+    <li>Fizemos um bom trabalho? (revisão e validação)</li>
+  </ol>
+
+  <h3>Exemplo: sistema de agendamento médico</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 660 300" role="img" aria-label="Diagrama de fluxo de dados do sistema de agendamento com fronteiras de confiança entre internet, rede interna e terceiros">
+      <defs><marker id="ah-dfd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-w" x="15" y="60" width="120" height="46" rx="5"/><text class="ttl" x="75" y="80" text-anchor="middle">Paciente</text><text x="75" y="97" text-anchor="middle">app / web</text>
+      <rect class="box-w" x="15" y="190" width="120" height="46" rx="5"/><text class="ttl" x="75" y="210" text-anchor="middle">Recepção</text><text x="75" y="227" text-anchor="middle">painel interno</text>
+      <line class="ln-b" x1="160" y1="20" x2="160" y2="280" stroke-dasharray="6 4"/>
+      <text class="lbl" x="166" y="34">fronteira de confiança</text>
+      <rect class="box-a" x="210" y="120" width="150" height="56" rx="5"/><text class="ttl" x="285" y="143" text-anchor="middle">API de agendamento</text><text x="285" y="162" text-anchor="middle">processo</text>
+      <rect class="box" x="420" y="60" width="130" height="46" rx="5"/><text class="ttl" x="485" y="80" text-anchor="middle">Banco</text><text x="485" y="97" text-anchor="middle">agendas, pacientes</text>
+      <rect class="box" x="420" y="190" width="130" height="46" rx="5"/><text class="ttl" x="485" y="210" text-anchor="middle">Prontuário (PEP)</text><text x="485" y="227" text-anchor="middle">sistema interno</text>
+      <line class="ln-b" x1="570" y1="20" x2="570" y2="280" stroke-dasharray="6 4"/>
+      <rect class="box-m" x="585" y="120" width="65" height="56" rx="5"/><text x="617" y="143" text-anchor="middle">SMS /</text><text x="617" y="160" text-anchor="middle">e-mail</text>
+      <line class="ln" x1="135" y1="88" x2="208" y2="132" marker-end="url(#ah-dfd)"/>
+      <line class="ln" x1="135" y1="210" x2="208" y2="166" marker-end="url(#ah-dfd)"/>
+      <line class="ln" x1="360" y1="135" x2="418" y2="90" marker-end="url(#ah-dfd)"/>
+      <line class="ln" x1="360" y1="162" x2="418" y2="205" marker-end="url(#ah-dfd)"/>
+      <line class="ln" x1="360" y1="148" x2="583" y2="148" marker-end="url(#ah-dfd)"/>
+      <text class="lbl" x="440" y="142">lembretes</text>
+      <text class="lbl" x="15" y="290">Cada seta que cruza uma linha tracejada (fronteira de confiança) merece passar por todas as letras do STRIDE.</text>
+    </svg>
+    <figcaption>Diagrama de fluxo de dados simplificado. Entidades externas em laranja, processo em verde, armazenamentos em cinza, terceiro em roxo.</figcaption>
+  </figure>
+
+  <div class="tbl"><table><thead><tr><th>Letra</th><th>Ameaça (propriedade violada)</th><th>No agendamento</th><th>Mitigação</th></tr></thead><tbody>
+    <tr><td><strong>S</strong></td><td>Spoofing, falsificação de identidade (autenticidade)</td><td>Alguém usa CPF e data de nascimento de outra pessoa, dados fáceis de achar, para ver ou cancelar consultas dela.</td><td>Login real com senha e código enviado ao contato cadastrado; MFA obrigatório para a recepção.</td></tr>
+    <tr><td><strong>T</strong></td><td>Tampering, adulteração (integridade)</td><td>Paciente altera o <code>medicoId</code> ou o preço na requisição; integração com o PEP recebe dados alterados.</td><td>Validação e autorização no servidor; preço calculado no back-end; autenticação mútua entre serviços.</td></tr>
+    <tr><td><strong>R</strong></td><td>Repudiation, repúdio (não repúdio)</td><td>Atendente cancela consultas em massa e nega. Login compartilhado na recepção impede saber quem foi.</td><td>Contas individuais; trilha de auditoria com usuário, ação e horário, protegida contra alteração.</td></tr>
+    <tr><td><strong>I</strong></td><td>Information disclosure, vazamento (confidencialidade)</td><td>Lembrete por SMS diz "sua consulta de oncologia" e aparece na tela bloqueada; API de horários devolve nome de outros pacientes.</td><td>Mínimo necessário nas notificações; respostas da API sem dados de terceiros; autorização por objeto.</td></tr>
+    <tr><td><strong>D</strong></td><td>Denial of service, negação de serviço (disponibilidade)</td><td>Robô reserva todos os horários de uma especialidade; excesso de chamadas no endpoint de disponibilidade.</td><td>Rate limiting; limite de agendamentos futuros por paciente; confirmação obrigatória; cache.</td></tr>
+    <tr><td><strong>E</strong></td><td>Elevation of privilege, elevação de privilégio (autorização)</td><td>Usuário da recepção chama a rota de administração que cria agendas médicas, porque só o botão estava escondido.</td><td>Controle de acesso por papel no servidor; testes automatizados de autorização.</td></tr>
+  </tbody></table></div>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Não tente modelar tudo. Faça para funcionalidades novas que tocam dados sensíveis, autenticação, pagamentos ou integrações externas. Uma hora com o time e um quadro branco já encontra os problemas mais caros.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diga o que cada letra significa, relacione com a propriedade violada e dê um exemplo do domínio. Mencione que o resultado vira histórias de mitigação no backlog.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Coloque a modelagem de ameaças no fluxo: épicos que tocam dados de pacientes só saem do refinamento com uma sessão curta de STRIDE registrada. O custo é uma reunião; o retorno é evitar retrabalho de arquitetura depois do pentest.</p></div>
+</section>
+
+<section class="chap" id="devsecops">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>SDLC seguro e DevSecOps</h2>
+  <p>SDLC seguro é incluir atividades de segurança em todas as fases do ciclo de desenvolvimento, em vez de um teste no final. DevSecOps é a mesma ideia aplicada a times que entregam com frequência: as verificações são automáticas, rodam no pipeline e dão retorno ao dev em minutos. O termo "shift left" descreve mover a verificação para mais perto do início, onde corrigir custa menos.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Pipeline DevSecOps com as verificações de segurança em cada etapa: requisitos, código, pull request, build, homologação e produção">
+      <defs><marker id="ah-pipe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="10" y="20" width="98" height="40" rx="5"/><text class="ttl" x="59" y="45" text-anchor="middle">Requisitos</text>
+      <rect class="box-a" x="122" y="20" width="98" height="40" rx="5"/><text class="ttl" x="171" y="45" text-anchor="middle">Código</text>
+      <rect class="box-a" x="234" y="20" width="98" height="40" rx="5"/><text class="ttl" x="283" y="45" text-anchor="middle">PR / CI</text>
+      <rect class="box-a" x="346" y="20" width="98" height="40" rx="5"/><text class="ttl" x="395" y="45" text-anchor="middle">Build</text>
+      <rect class="box-a" x="458" y="20" width="98" height="40" rx="5"/><text class="ttl" x="507" y="45" text-anchor="middle">Homologação</text>
+      <rect class="box-a" x="570" y="20" width="98" height="40" rx="5"/><text class="ttl" x="619" y="45" text-anchor="middle">Produção</text>
+      <line class="ln" x1="108" y1="40" x2="120" y2="40" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="220" y1="40" x2="232" y2="40" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="332" y1="40" x2="344" y2="40" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="444" y1="40" x2="456" y2="40" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="556" y1="40" x2="568" y2="40" marker-end="url(#ah-pipe)"/>
+      <rect class="box" x="10" y="75" width="98" height="120" rx="5"/>
+      <text class="lbl" x="16" y="95">modelagem de</text><text class="lbl" x="16" y="110">ameaças</text><text class="lbl" x="16" y="130">requisitos</text><text class="lbl" x="16" y="145">(ASVS)</text><text class="lbl" x="16" y="165">critérios de</text><text class="lbl" x="16" y="180">aceite</text>
+      <rect class="box" x="122" y="75" width="98" height="120" rx="5"/>
+      <text class="lbl" x="128" y="95">plugin SAST</text><text class="lbl" x="128" y="110">na IDE</text><text class="lbl" x="128" y="130">secret scan</text><text class="lbl" x="128" y="145">pre-commit</text><text class="lbl" x="128" y="165">padrões e libs</text><text class="lbl" x="128" y="180">seguras</text>
+      <rect class="box-m" x="234" y="75" width="98" height="120" rx="5"/>
+      <text class="lbl" x="240" y="95">SAST</text><text class="lbl" x="240" y="112">SCA</text><text class="lbl" x="240" y="129">secret scanning</text><text class="lbl" x="240" y="146">IaC scanning</text><text class="lbl" x="240" y="163">revisão de</text><text class="lbl" x="240" y="178">código</text>
+      <rect class="box" x="346" y="75" width="98" height="120" rx="5"/>
+      <text class="lbl" x="352" y="95">scan de</text><text class="lbl" x="352" y="110">container</text><text class="lbl" x="352" y="130">SBOM</text><text class="lbl" x="352" y="150">assinatura do</text><text class="lbl" x="352" y="165">artefato</text>
+      <rect class="box" x="458" y="75" width="98" height="120" rx="5"/>
+      <text class="lbl" x="464" y="95">DAST</text><text class="lbl" x="464" y="115">testes de</text><text class="lbl" x="464" y="130">autorização</text><text class="lbl" x="464" y="150">pentest antes</text><text class="lbl" x="464" y="165">de lançamentos</text>
+      <rect class="box" x="570" y="75" width="98" height="120" rx="5"/>
+      <text class="lbl" x="576" y="95">WAF</text><text class="lbl" x="576" y="115">logs e alertas</text><text class="lbl" x="576" y="135">varredura</text><text class="lbl" x="576" y="150">contínua</text><text class="lbl" x="576" y="170">bug bounty</text>
+      <path class="ln-a" d="M619,200 L619,235 L59,235 L59,200" marker-end="url(#ah-pipe)"/>
+      <text class="lbl" x="200" y="255">achados de produção e incidentes realimentam requisitos e padrões</text>
+    </svg>
+    <figcaption>Onde cada verificação entra. Em roxo, a etapa que concentra a maior parte das ferramentas automáticas.</figcaption>
+  </figure>
+
+  <div class="tbl"><table><thead><tr><th>Ferramenta</th><th>O que encontra</th><th>Quando roda</th><th>Limitações</th></tr></thead><tbody>
+    <tr><td><strong>SAST</strong> (análise estática)</td><td>Padrões inseguros no código-fonte: SQL concatenada, <code>innerHTML</code>, criptografia fraca.</td><td>IDE e a cada PR.</td><td>Falsos positivos; não entende regra de negócio, como IDOR.</td></tr>
+    <tr><td><strong>SCA</strong></td><td>Dependências com vulnerabilidades conhecidas e licenças problemáticas.</td><td>A cada PR e diariamente, porque CVEs novas surgem sem mudança no código.</td><td>Muitos achados em código que não é usado de fato.</td></tr>
+    <tr><td><strong>Secret scanning</strong></td><td>Chaves, senhas e tokens no código e no histórico.</td><td>Pre-commit, no push e no PR.</td><td>Segredos em formatos não reconhecidos passam.</td></tr>
+    <tr><td><strong>IaC scanning</strong></td><td>Erros em Terraform, CloudFormation, Kubernetes: bucket público, porta aberta, disco sem criptografia.</td><td>A cada PR de infraestrutura.</td><td>Só vê o que está em código; mudanças manuais no console escapam.</td></tr>
+    <tr><td><strong>Scan de containers</strong></td><td>Pacotes vulneráveis na imagem base e no sistema, execução como root.</td><td>No build e periodicamente no registro de imagens.</td><td>Imagem base grande gera muito ruído; prefira imagens mínimas.</td></tr>
+    <tr><td><strong>DAST</strong> (análise dinâmica)</td><td>Falhas observáveis com a aplicação rodando: cabeçalhos ausentes, XSS refletido, configurações.</td><td>Em homologação, agendado ou a cada deploy.</td><td>Lento; cobertura depende de conseguir navegar e autenticar.</td></tr>
+    <tr><td><strong>Revisão de código</strong></td><td>Falhas de lógica e autorização que ferramentas não veem.</td><td>Todo PR, com checklist curto.</td><td>Depende de conhecimento e atenção do revisor.</td></tr>
+  </tbody></table></div>
+  <p>Exemplos de ferramentas conhecidas, para referência: Semgrep e CodeQL (SAST), Dependabot e OWASP Dependency-Check (SCA), Gitleaks (segredos), Checkov (IaC), Trivy (containers e IaC), OWASP ZAP (DAST).</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="sh"># pipeline de CI: compila e publica, sem nenhuma verificação
+npm ci
+npm test
+docker build -t app:latest .
+docker push registro.interno/app:latest</code></pre>
+    <pre data-label="Corrigido"><code class="sh"># mesmas etapas, com verificações que falham o job (comandos ilustrativos)
+npm ci
+npm test
+gitleaks detect --source .                # segredos no código e no histórico
+semgrep scan --config auto --error        # SAST: falha se houver achado
+npm audit --audit-level=high              # SCA: falha com vulnerabilidade alta ou crítica
+docker build -t app:$GIT_SHA .            # tag imutável, rastreável até o commit
+trivy image --severity CRITICAL,HIGH --exit-code 1 app:$GIT_SHA   # scan da imagem
+docker push registro.interno/app:$GIT_SHA</code></pre>
+  </div>
+
+  <h3>Como evitar fadiga de alertas</h3>
+  <p>Ferramenta que gera centenas de alertas irrelevantes é ignorada, e aí os alertas importantes também são. Para evitar:</p>
+  <ul>
+    <li><strong>Comece pequeno.</strong> Poucas regras com alta precisão. Amplie aos poucos.</li>
+    <li><strong>Bloqueie só o novo e o grave.</strong> Achados críticos e altos introduzidos pelo PR bloqueiam; o legado vai para uma linha de base (baseline) tratada no backlog.</li>
+    <li><strong>Triagem com dono.</strong> Cada achado tem responsável e prazo. Falso positivo é marcado com justificativa e a regra é ajustada.</li>
+    <li><strong>Um lugar só.</strong> Consolide achados de todas as ferramentas, sem duplicidade.</li>
+    <li><strong>Meça a taxa de falsos positivos</strong> e o tempo que o time gasta com triagem.</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Ligar todas as ferramentas no modo bloqueante no primeiro dia. O pipeline fica vermelho, o time cria exceções em massa e a ferramenta perde credibilidade. Comece em modo informativo, ajuste e só depois bloqueie.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diferencie SAST (código parado), DAST (aplicação rodando) e SCA (dependências), e diga em que etapa cada um entra. Falar de fadiga de alertas e de bloquear só o que é novo e grave mostra experiência prática.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Segurança entra como requisito: critérios de aceite de segurança nas histórias e itens na definição de pronto. Defina quais achados bloqueiam o merge, quem pode aprovar exceção e por quanto tempo. Acompanhe cobertura (quantos repositórios têm cada verificação) antes de acompanhar volume de achados.</p></div>
+</section>
+
+<section class="chap" id="vulns">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Gestão de vulnerabilidades e testes de segurança</h2>
+  <p>Gestão de vulnerabilidades é o processo contínuo de descobrir, priorizar, corrigir e verificar falhas em todo o ambiente: código próprio, dependências, sistemas operacionais, equipamentos de rede e serviços de nuvem.</p>
+
+  <h3>CVE, CVSS, EPSS e KEV</h3>
+  <ul>
+    <li><strong>CVE</strong> (Common Vulnerabilities and Exposures): identificador público único de uma vulnerabilidade, no formato <code>CVE-2024-3094</code>. Permite que todos falem da mesma falha.</li>
+    <li><strong>CVSS</strong> (Common Vulnerability Scoring System): nota de 0 a 10 que mede a gravidade técnica. Faixas na versão 3.x: baixa (0,1 a 3,9), média (4,0 a 6,9), alta (7,0 a 8,9) e crítica (9,0 a 10,0). A versão 4.0 foi publicada em 2023 e convive com a 3.1. A nota base não considera o seu ambiente.</li>
+    <li><strong>EPSS</strong> (Exploit Prediction Scoring System): estimativa da probabilidade de uma vulnerabilidade ser explorada nos próximos 30 dias.</li>
+    <li><strong>KEV</strong> (Known Exploited Vulnerabilities): catálogo mantido pela CISA, agência de cibersegurança dos EUA, com vulnerabilidades que comprovadamente estão sendo exploradas. Órgãos federais americanos são obrigados a corrigir no prazo indicado; empresas do mundo todo usam o catálogo como sinal de prioridade.</li>
+  </ul>
+
+  <h3>Priorizar por risco</h3>
+  <p>Ordenar só pela nota CVSS gera filas enormes de "críticas" que talvez nunca sejam exploradas. Combine:</p>
+  <ol>
+    <li>Está sendo explorada de fato (KEV, alerta do fornecedor) ou tem alta probabilidade (EPSS)?</li>
+    <li>O ativo está exposto à internet?</li>
+    <li>O ativo guarda ou processa dados sensíveis, ou é crítico para a operação?</li>
+    <li>O código vulnerável é alcançável na nossa aplicação? Há controle compensatório?</li>
+    <li>Gravidade técnica (CVSS).</li>
+  </ol>
+
+  <h3>SLAs de correção</h3>
+  <p>Uma prática comum é definir prazos máximos de correção por severidade. Os números abaixo são um exemplo de ponto de partida, não uma norma. Ajuste ao seu contexto e escreva na política.</p>
+  <div class="tbl"><table><thead><tr><th>Severidade efetiva</th><th>Prazo de exemplo</th></tr></thead><tbody>
+    <tr><td>Explorada ativamente e exposta à internet</td><td>Emergência: mitigar em horas ou poucos dias</td></tr>
+    <tr><td>Crítica</td><td>7 a 15 dias</td></tr>
+    <tr><td>Alta</td><td>30 dias</td></tr>
+    <tr><td>Média</td><td>90 dias</td></tr>
+    <tr><td>Baixa</td><td>Backlog, tratada em atualizações regulares</td></tr>
+  </tbody></table></div>
+  <p>Quando o prazo não pode ser cumprido, o caminho é uma exceção formal: mitigação temporária (bloquear a rota, regra no WAF, isolar o sistema), dono do risco, nova data.</p>
+
+  <h3>Pentest, varredura, bug bounty e red team</h3>
+  <div class="tbl"><table><thead><tr><th>Atividade</th><th>Quem e como</th><th>Encontra</th><th>Quando usar</th></tr></thead><tbody>
+    <tr><td><strong>Varredura de vulnerabilidades</strong></td><td>Ferramenta automática, ampla e rasa.</td><td>Versões desatualizadas, configurações conhecidas.</td><td>Continuamente, em todo o ambiente.</td></tr>
+    <tr><td><strong>Pentest</strong> (teste de intrusão)</td><td>Especialistas, com escopo e prazo definidos, tentam explorar as falhas.</td><td>Falhas de lógica e autorização, encadeamento de falhas.</td><td>Antes de lançamentos importantes, após mudanças grandes, periodicamente ou por exigência de cliente.</td></tr>
+    <tr><td><strong>Bug bounty</strong></td><td>Pesquisadores externos, pagos por achado válido, de forma contínua.</td><td>Variedade de falhas, com muitos olhos diferentes.</td><td>Quando já existe capacidade de triagem e correção rápida.</td></tr>
+    <tr><td><strong>Red team</strong></td><td>Equipe simula um adversário real contra a organização inteira, com um objetivo (ex.: acessar o prontuário).</td><td>Falhas de detecção e resposta, pessoas e processos, além da tecnologia.</td><td>Organizações maduras que querem testar o time de defesa.</td></tr>
+  </tbody></table></div>
+  <p>Um passo anterior ao bug bounty é a <strong>política de divulgação de vulnerabilidades</strong> (VDP): um canal público e regras para quem encontrar uma falha reportar de boa-fé, sem pagamento obrigatório.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Contratar pentest todo ano e ver o mesmo relatório. Se os achados se repetem, o problema está no processo de correção e nos padrões do time. Outro pentest não resolve.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diga que CVSS mede gravidade técnica e que a priorização combina exploração ativa (KEV, EPSS), exposição e criticidade do ativo. Saber a diferença entre pentest, varredura, bug bounty e red team é pergunta frequente.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Escreva a política de SLA, aprove com a diretoria e meça o percentual dentro do prazo. Reserve capacidade fixa no sprint para correções; sem isso, o SLA vira ficção. Trate exceções como decisões de risco registradas, assinadas por quem tem autoridade.</p></div>
+</section>
+
+<section class="chap" id="identidade">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Zero trust, segmentação e gestão de identidades</h2>
+
+  <h3>Zero trust</h3>
+  <p>O modelo tradicional confiava em quem estava "dentro" da rede corporativa. Zero trust parte do princípio de que nenhuma rede é confiável por si só e de que o ataque pode já estar dentro. Cada acesso é decidido por requisição, com base na identidade do usuário, no estado do dispositivo e no contexto, sempre com o menor privilégio. A publicação de referência é o NIST SP 800-207.</p>
+  <ul>
+    <li>Autenticação forte e contínua, em vez de "entrou na VPN, acessa tudo".</li>
+    <li>Acesso concedido por aplicação, em vez da rede inteira.</li>
+    <li>Dispositivo gerenciado e atualizado como condição de acesso.</li>
+    <li>Registro e análise de todos os acessos.</li>
+  </ul>
+
+  <h3>Segmentação de rede</h3>
+  <p>Numa rede plana, um computador comprometido na recepção alcança o servidor do banco de dados. É assim que o ransomware se espalha. Segmentar é dividir a rede em zonas e permitir só o tráfego necessário entre elas: estações de trabalho, servidores, equipamentos médicos conectados, ambientes de desenvolvimento e produção, rede de visitantes. Equipamentos médicos merecem atenção especial, porque muitas vezes rodam sistemas antigos que não podem ser atualizados.</p>
+
+  <h3>Gestão de identidades e acessos (IAM)</h3>
+  <div class="tbl"><table><thead><tr><th>Prática</th><th>O que fazer</th></tr></thead><tbody>
+    <tr><td><strong>SSO e MFA</strong></td><td>Login centralizado e MFA em tudo, começando por e-mail, VPN, nuvem, repositórios e sistemas com dados de pacientes. Prefira métodos resistentes a phishing (chaves de segurança FIDO2, passkeys) para contas privilegiadas. Mecanismos no <a href="07-autenticacao.html">módulo 7</a>.</td></tr>
+    <tr><td><strong>Contas privilegiadas</strong></td><td>Contas de administrador separadas da conta do dia a dia, acesso sob demanda e por tempo limitado (just-in-time), cofre para credenciais compartilhadas inevitáveis, registro de sessões.</td></tr>
+    <tr><td><strong>Ciclo de vida</strong></td><td>Admissão, mudança de função e desligamento (joiner, mover, leaver). Na mudança de função, remover os acessos antigos. No desligamento, revogar no mesmo dia, de preferência automaticamente a partir do sistema de RH.</td></tr>
+    <tr><td><strong>Revisão periódica</strong></td><td>O gestor de cada área confirma, com frequência definida (trimestral é comum para sistemas críticos), quem ainda precisa de cada acesso.</td></tr>
+    <tr><td><strong>Contas de serviço</strong></td><td>Inventariadas, com dono, sem login interativo, com segredos rotacionados. Contas compartilhadas entre pessoas são proibidas.</td></tr>
+  </tbody></table></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>Resuma zero trust como "nunca confiar por estar na rede, verificar cada acesso" e conecte com MFA, menor privilégio e segmentação. Para gestão de acessos, cite o ciclo admissão, mudança, desligamento e a revisão periódica.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Você é dono dos acessos do seu time. Faça a revisão de acessos de verdade, sem aprovar tudo em lote. Cobre que o desligamento de alguém do time remova acesso a nuvem, repositórios, banco e ferramentas no mesmo dia, inclusive tokens pessoais e chaves SSH. Meça a cobertura de MFA e o tempo de revogação após desligamento.</p></div>
+</section>
+
+<section class="chap" id="backups">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Backups e a regra 3-2-1</h2>
+  <p>Contra ransomware, o backup é a diferença entre restaurar e negociar. Mas o atacante sabe disso: grupos de ransomware procuram e apagam backups antes de criptografar.</p>
+  <ul>
+    <li><strong>Regra 3-2-1</strong>: 3 cópias dos dados, em 2 tipos de mídia ou armazenamento diferentes, com 1 cópia fora do local principal.</li>
+    <li><strong>Variante 3-2-1-1-0</strong>: acrescenta 1 cópia offline ou imutável e 0 erros nos testes de restauração.</li>
+    <li><strong>Imutável</strong>: armazenamento que não permite apagar nem alterar durante o período de retenção, nem com credencial de administrador (por exemplo, object lock em storage de nuvem).</li>
+    <li><strong>Credenciais separadas</strong>: o console de backup não usa a mesma conta de domínio dos servidores. Se o atacante tomar o domínio, não toma os backups.</li>
+  </ul>
+
+  <h3>RPO e RTO</h3>
+  <p><strong>RPO</strong> (Recovery Point Objective) é quanto dado a empresa aceita perder, medido em tempo: com backup diário, até um dia. <strong>RTO</strong> (Recovery Time Objective) é quanto tempo o sistema pode ficar fora até voltar. Esses números são decisões de negócio, e definem o custo da solução.</p>
+
+  <h3>Teste de restauração</h3>
+  <p>Backup que nunca foi restaurado é uma hipótese. Teste periodicamente a restauração completa de sistemas críticos, meça o tempo real e compare com o RTO. Defina a ordem de restauração (identidade e rede primeiro, depois prontuário, depois o resto) e documente.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Replicação e snapshots no mesmo ambiente contam pouco. Se o ransomware criptografa o primário, a replicação copia os arquivos criptografados. Se o atacante tem acesso administrativo à conta de nuvem, apaga os snapshots.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Explique 3-2-1, por que uma cópia imutável ou offline é essencial contra ransomware, e diga que backup sem teste de restauração não conta.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça à infraestrutura o RPO e o RTO de cada sistema do seu time e a data do último teste de restauração. Se ninguém souber, isso é um risco para o registro. Inclua dados que só o time conhece: buckets, filas, configurações e segredos também precisam ser recuperáveis.</p></div>
+</section>
+
+<section class="chap" id="incidentes">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Resposta a incidentes</h2>
+  <p>Incidente de segurança é um evento que compromete ou ameaça a confidencialidade, a integridade ou a disponibilidade. A resposta boa é decidida antes: quem decide, quem fala, onde se conversa, o que se faz primeiro.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 660 230" role="img" aria-label="Ciclo de resposta a incidentes do NIST: preparação, detecção e análise, contenção erradicação e recuperação, atividades pós-incidente, voltando para preparação">
+      <defs><marker id="ah-ir" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="10" y="40" width="140" height="60" rx="6"/><text class="ttl" x="80" y="66" text-anchor="middle">1. Preparação</text><text class="lbl" x="80" y="85" text-anchor="middle">playbooks, contatos</text>
+      <rect class="box-w" x="180" y="40" width="140" height="60" rx="6"/><text class="ttl" x="250" y="66" text-anchor="middle">2. Detecção</text><text class="ttl" x="250" y="82" text-anchor="middle">e análise</text>
+      <rect class="box-b" x="350" y="40" width="150" height="60" rx="6"/><text class="ttl" x="425" y="60" text-anchor="middle">3. Contenção,</text><text class="ttl" x="425" y="76" text-anchor="middle">erradicação e</text><text class="ttl" x="425" y="92" text-anchor="middle">recuperação</text>
+      <rect class="box-m" x="530" y="40" width="120" height="60" rx="6"/><text class="ttl" x="590" y="66" text-anchor="middle">4. Pós-</text><text class="ttl" x="590" y="82" text-anchor="middle">incidente</text>
+      <line class="ln" x1="150" y1="70" x2="178" y2="70" marker-end="url(#ah-ir)"/>
+      <line class="ln" x1="320" y1="62" x2="348" y2="62" marker-end="url(#ah-ir)"/>
+      <line class="ln" x1="348" y1="82" x2="322" y2="82" marker-end="url(#ah-ir)"/>
+      <line class="ln" x1="500" y1="70" x2="528" y2="70" marker-end="url(#ah-ir)"/>
+      <path class="ln-a" d="M590,100 L590,160 L80,160 L80,102" marker-end="url(#ah-ir)"/>
+      <text class="lbl" x="200" y="180">lições aprendidas melhoram a preparação</text>
+      <text class="lbl" x="200" y="125">ida e volta: nova evidência reabre a análise</text>
+    </svg>
+    <figcaption>As quatro fases do guia NIST SP 800-61. Detecção e contenção se alternam enquanto o escopo do incidente fica claro.</figcaption>
+  </figure>
+
+  <div class="tbl"><table><thead><tr><th>Fase</th><th>O que acontece</th></tr></thead><tbody>
+    <tr><td>Preparação</td><td>Plano e playbooks escritos, papéis definidos, lista de contatos (jurídico, DPO, comunicação, fornecedores, seguro), logs centralizados, ferramentas e acessos de emergência prontos, simulações (tabletop).</td></tr>
+    <tr><td>Detecção e análise</td><td>Confirmar se é incidente, classificar severidade, entender escopo: quais sistemas, quais dados, desde quando. Registrar tudo numa linha do tempo.</td></tr>
+    <tr><td>Contenção, erradicação e recuperação</td><td>Isolar sistemas afetados sem destruir evidências, revogar credenciais, remover o acesso do atacante, corrigir a causa, restaurar de fonte confiável e monitorar de perto.</td></tr>
+    <tr><td>Pós-incidente</td><td>Post-mortem, ações corretivas com dono e prazo, atualização de playbooks, cumprimento de obrigações legais.</td></tr>
+  </tbody></table></div>
+  <div class="note"><b>Saiba mais</b><p>A revisão 3 do NIST SP 800-61, publicada em 2025, reorganizou as recomendações em torno das funções do NIST CSF 2.0. As quatro fases acima continuam sendo a forma mais conhecida e cobrada em entrevistas.</p></div>
+
+  <h3>Papéis e comunicação</h3>
+  <ul>
+    <li><strong>Líder do incidente</strong> (incident commander): coordena e decide. Não precisa ser a pessoa mais técnica.</li>
+    <li><strong>Técnicos</strong>: investigam e executam a contenção.</li>
+    <li><strong>Comunicação</strong>: atualiza diretoria, áreas afetadas e, quando for o caso, clientes e imprensa, sempre alinhada com o jurídico.</li>
+    <li><strong>Jurídico e DPO</strong>: avaliam obrigações legais e regulatórias.</li>
+    <li><strong>Escriba</strong>: mantém a linha do tempo com horários, decisões e evidências.</li>
+  </ul>
+  <p>Use um canal de comunicação fora da infraestrutura possivelmente comprometida. Se o e-mail corporativo foi invadido, o atacante lê a sala de crise. Atualize em intervalos fixos, diga o que se sabe e o que ainda não se sabe, e não especule sobre causas.</p>
+
+  <h3>Playbooks</h3>
+  <p>Playbook é um roteiro curto para um tipo de incidente: ransomware, conta comprometida, vazamento de dados, segredo exposto, DDoS. Contém critérios de acionamento, primeiros passos, quem chamar e o que não fazer (por exemplo, não desligar a máquina antes de decidir sobre coleta de evidências; preferir isolar da rede).</p>
+
+  <h3>Post-mortem sem culpa</h3>
+  <p>O objetivo é entender como o sistema e os processos permitiram o incidente. Se as pessoas temem punição, escondem informações, e o próximo incidente demora mais a ser detectado. O documento traz linha do tempo, impacto, fatores que contribuíram, o que funcionou, o que não funcionou e ações com dono e prazo. Má-fé deliberada é exceção e segue outro processo.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>Cite as quatro fases do NIST, diga que a preparação é onde se ganha ou perde o incidente e defenda o post-mortem sem culpa. Mencionar canal fora de banda e preservação de evidências mostra vivência.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tenha uma escala de plantão clara, playbooks para os três cenários mais prováveis e uma simulação de mesa por semestre com diretoria, jurídico e DPO. Depois de cada incidente, acompanhe as ações corretivas até o fim. Ação de post-mortem que nunca sai do backlog é o mesmo incidente esperando para acontecer.</p></div>
+</section>
+
+<section class="chap" id="lgpd">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>LGPD e incidentes com dados de saúde</h2>
+  <p>A Lei Geral de Proteção de Dados (Lei 13.709/2018) classifica dados referentes à saúde como <strong>dados pessoais sensíveis</strong>. O tratamento exige base legal específica e cuidados maiores, e um vazamento tende a ser avaliado como de maior risco para os titulares.</p>
+
+  <h3>Comunicação de incidentes</h3>
+  <ul>
+    <li>A LGPD obriga o controlador a comunicar à ANPD (Autoridade Nacional de Proteção de Dados) e aos titulares a ocorrência de incidente de segurança que possa acarretar risco ou dano relevante aos titulares.</li>
+    <li>O Regulamento de Comunicação de Incidente de Segurança da ANPD, de 2024 (Resolução CD/ANPD nº 15/2024), prevê prazo de <strong>3 dias úteis</strong> para essa comunicação, com conteúdo mínimo definido, como natureza dos dados, titulares afetados, medidas tomadas e riscos.</li>
+    <li>Incidentes que envolvem dados sensíveis estão entre os critérios que tornam o risco relevante. Em empresa de saúde, assuma que a análise será rigorosa.</li>
+    <li>O controlador deve manter registro dos incidentes, inclusive dos que não foram comunicados, com a avaliação que levou a essa decisão.</li>
+    <li>Se a sua empresa é operadora (presta serviço e trata dados em nome de outra empresa), ela precisa avisar o controlador rapidamente, conforme o contrato, para que ele cumpra o prazo.</li>
+  </ul>
+
+  <h3>Encarregado (DPO)</h3>
+  <p>O encarregado pelo tratamento de dados pessoais, chamado de DPO (Data Protection Officer) no mercado, é o canal entre a empresa, os titulares e a ANPD. Num incidente, ele participa da avaliação de risco e da comunicação. A ANPD regulamentou a atuação do encarregado em 2024. Para o time técnico, o DPO é um aliado: envolva-o cedo.</p>
+
+  <h3>O que isso muda no dia a dia do time</h3>
+  <ul>
+    <li><strong>Minimização</strong>: coletar e guardar só o necessário. Dado que não existe não vaza.</li>
+    <li><strong>Ambientes de teste</strong> sem dados reais de pacientes, ou com dados anonimizados.</li>
+    <li><strong>Trilha de auditoria</strong> de acesso a dados sensíveis, para responder "quem viu o quê".</li>
+    <li><strong>Logs</strong> sem dados de saúde (veja o <a href="09-seguranca-web.html#logs-abuso">módulo 9</a>).</li>
+    <li><strong>Fornecedores</strong> com contrato que define responsabilidades e prazos de notificação.</li>
+  </ul>
+  <p>As sanções administrativas da LGPD vão de advertência a multa de até 2% do faturamento, limitada a R$ 50 milhões por infração, além de publicização da infração e bloqueio ou eliminação dos dados. O dano à reputação e à confiança dos pacientes costuma pesar mais que a multa.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Gastar os três dias úteis investigando até ter certeza absoluta antes de envolver o DPO. A avaliação de risco e a decisão de comunicar começam assim que há indício de que dados pessoais foram afetados. A comunicação pode ser complementada à medida que a investigação avança.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diga que dados de saúde são sensíveis pela LGPD, que incidentes com risco ou dano relevante são comunicados à ANPD e aos titulares, e que o regulamento de 2024 prevê 3 dias úteis. Cite o papel do encarregado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Combine com o DPO, antes de qualquer incidente, como e quando ele é acionado, e inclua isso nos playbooks. Mantenha atualizado o mapa de quais sistemas do time tratam quais dados pessoais: é a primeira pergunta num incidente e a que mais demora para ser respondida.</p></div>
+</section>
+
+<section class="chap" id="frameworks">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Frameworks, normas e métricas</h2>
+  <div class="tbl"><table><thead><tr><th>Referência</th><th>O que é</th><th>Para que serve</th></tr></thead><tbody>
+    <tr><td><strong>ISO/IEC 27001</strong></td><td>Norma internacional para sistema de gestão de segurança da informação (SGSI). Certificável. A versão 2022 tem 93 controles no Anexo A, em quatro temas: organizacionais, pessoas, físicos e tecnológicos. A ISO/IEC 27002 detalha esses controles.</td><td>Exigência de clientes e parceiros, estrutura de governança, auditoria externa.</td></tr>
+    <tr><td><strong>NIST CSF 2.0</strong></td><td>Framework de cibersegurança do NIST, versão 2.0 publicada em 2024. Seis funções: Governar, Identificar, Proteger, Detectar, Responder e Recuperar. Não é certificável.</td><td>Diagnóstico de maturidade, linguagem comum com a diretoria, planejamento.</td></tr>
+    <tr><td><strong>CIS Controls</strong></td><td>Conjunto priorizado de controles práticos do Center for Internet Security. A versão 8 tem 18 controles, divididos em grupos de implementação (IG1 a IG3). O IG1 é a higiene básica que toda organização deveria ter.</td><td>Por onde começar quando há pouco recurso.</td></tr>
+  </tbody></table></div>
+  <p>Eles se complementam: o CSF organiza a conversa, os CIS Controls dizem o que fazer primeiro, a ISO 27001 estrutura a gestão e dá a certificação. Para a parte de aplicações, o OWASP ASVS (veja o <a href="09-seguranca-web.html#owasp">módulo 9</a>) é a referência.</p>
+
+  <h3>Métricas para gestor</h3>
+  <div class="tbl"><table><thead><tr><th>Métrica</th><th>O que mostra</th></tr></thead><tbody>
+    <tr><td>Tempo médio de correção por severidade</td><td>Capacidade de resposta do time. Compare com o SLA.</td></tr>
+    <tr><td>Percentual corrigido dentro do SLA</td><td>Se a política é real ou só documento.</td></tr>
+    <tr><td>Vulnerabilidades abertas por idade (0 a 30, 31 a 90, mais de 90 dias)</td><td>Dívida acumulada. A faixa mais antiga não deveria crescer.</td></tr>
+    <tr><td>Cobertura de MFA (geral e de contas privilegiadas)</td><td>Proteção contra a porta de entrada mais comum. A meta para privilegiadas é 100%.</td></tr>
+    <tr><td>Cobertura de verificações no pipeline</td><td>Percentual de repositórios com SAST, SCA e secret scanning ativos.</td></tr>
+    <tr><td>Tempo de revogação de acesso após desligamento</td><td>Eficácia do offboarding.</td></tr>
+    <tr><td>Testes de restauração bem-sucedidos no período</td><td>Se o backup funciona de fato.</td></tr>
+    <tr><td>Tempo para detectar e para conter incidentes</td><td>Maturidade de monitoramento e resposta.</td></tr>
+  </tbody></table></div>
+  <p>As métricas DORA (frequência de deploy, tempo de entrega de mudanças, taxa de falha de mudanças e tempo de recuperação) dão contexto. Um time que entrega com frequência e se recupera rápido também corrige vulnerabilidades rápido. Segurança não deve ser desculpa para piorar esses números: se uma verificação torna o deploy lento, o problema é como ela foi integrada.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Reportar "número de vulnerabilidades encontradas". Se sobe, pode ser ferramenta nova; se desce, pode ser ferramenta desligada. Prefira métricas de tempo, cobertura e idade.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Cite ISO 27001, NIST CSF 2.0 e CIS Controls com uma frase cada, e diga quais métricas acompanharia. Ligar segurança às métricas DORA mostra visão de engenharia e de gestão juntas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Escolha poucas métricas, mostre tendência mensal e explique cada movimento. Para a diretoria, traduza em risco: "70% dos sistemas críticos têm backup testado; o prontuário ainda não, e isso significa X horas de parada em caso de ransomware".</p></div>
+</section>
+
+<section class="chap" id="cultura">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cultura, orçamento e plano de 90 dias</h2>
+
+  <h3>Cultura de segurança no time</h3>
+  <ul>
+    <li><strong>Segurança como requisito</strong>: critérios de aceite nas histórias e itens na definição de pronto. Quando segurança é uma etapa final, ela vira gargalo e é pulada sob pressão.</li>
+    <li><strong>Treinamento relevante</strong>: desenvolvimento seguro na linguagem e no framework do time, com exemplos do próprio código. Treinamento genérico anual muda pouco.</li>
+    <li><strong>Security champions</strong>: um dev por time com interesse em segurança, tempo reservado e apoio para estudar. É o ponto de contato com a área de segurança e multiplica conhecimento nas revisões.</li>
+    <li><strong>Reportar é bom</strong>: quem reporta um phishing que clicou, ou um erro próprio, é agradecido. Punir quem reporta garante que o próximo erro fique escondido.</li>
+    <li><strong>Revisão de código com checklist curto</strong>: autorização, validação de entrada, dados sensíveis em logs, segredos.</li>
+  </ul>
+
+  <h3>Orçamento e priorização</h3>
+  <p>Orçamento é sempre menor que a lista de desejos. Priorize pelo risco reduzido por real gasto. Costumam estar no topo: MFA em tudo, backups imutáveis e testados, correção de sistemas expostos, inventário de ativos e dados, logs centralizados, e ferramentas de pipeline (muitas têm versões gratuitas ou já vêm na plataforma de repositório).</p>
+  <ul>
+    <li>Fale com a diretoria em termos de impacto no negócio: horas de parada do atendimento, comunicação a pacientes, multa, contratos.</li>
+    <li>Use o registro de riscos: "com este investimento, este risco cai de alto para médio; sem ele, a diretoria aceita o risco formalmente".</li>
+    <li>Tempo do time também é orçamento. Uma fatia fixa de capacidade para segurança e dívida técnica costuma render mais que uma ferramenta nova.</li>
+    <li>Seguro cibernético transfere parte do impacto financeiro, mas as seguradoras exigem controles mínimos, como MFA e backups.</li>
+  </ul>
+
+  <h3>Plano de 90 dias para um time sem práticas de segurança</h3>
+  <ol class="seq">
+    <li><div><strong>Dias 1 a 30: enxergar e fechar o óbvio.</strong>
+      <ul>
+        <li>Inventário: sistemas do time, onde rodam, que dados pessoais tratam, o que está exposto à internet.</li>
+        <li>Acessos: quem tem acesso a produção, nuvem e banco. Remover ex-funcionários e acessos desnecessários.</li>
+        <li>MFA obrigatório em repositórios, nuvem, e-mail e sistemas com dados de pacientes.</li>
+        <li>Secret scanning nos repositórios; rotacionar o que for encontrado.</li>
+        <li>Perguntar à infraestrutura: existe backup? Quando foi o último teste de restauração?</li>
+        <li>Definir como um incidente é acionado e quem é o DPO.</li>
+      </ul></div></li>
+    <li><div><strong>Dias 31 a 60: construir a base.</strong>
+      <ul>
+        <li>SCA, SAST e secret scanning no pipeline, em modo informativo. Triar a linha de base.</li>
+        <li>Política de SLA de correção aprovada pela diretoria.</li>
+        <li>Corrigir o que é crítico e exposto à internet.</li>
+        <li>Modelagem de ameaças do sistema mais crítico com STRIDE.</li>
+        <li>Playbooks curtos para conta comprometida, segredo vazado e vazamento de dados.</li>
+        <li>Escolher security champions e reservar capacidade fixa no sprint.</li>
+      </ul></div></li>
+    <li><div><strong>Dias 61 a 90: tornar rotina e medir.</strong>
+      <ul>
+        <li>Bloquear no pipeline achados críticos e altos novos.</li>
+        <li>Primeira revisão periódica de acessos.</li>
+        <li>Simulação de mesa de incidente com diretoria, jurídico e DPO.</li>
+        <li>Teste de restauração de um sistema crítico, com tempo medido.</li>
+        <li>Painel mensal de métricas e um roteiro de 12 meses com orçamento, baseado no registro de riscos.</li>
+      </ul></div></li>
+  </ol>
+
+  <div class="note iv"><b>Na entrevista</b><p>Para "o que você faria nos primeiros 90 dias?", estruture em enxergar, construir e rotinizar. Comece por inventário, acessos e MFA, mostre que você prioriza por risco e termine com métricas e roteiro.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Resultados visíveis cedo (MFA, acessos limpos, segredos rotacionados) criam credibilidade para pedir o que é mais caro depois. Envolva o time nas decisões: práticas impostas sem explicação são contornadas na primeira entrega apertada.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Tríade CIA</dt><dd>Confidencialidade, integridade e disponibilidade.</dd></div>
+    <div><dt>Registro de riscos</dt><dd>Lista de riscos com probabilidade, impacto, dono, tratamento e prazo.</dd></div>
+    <div><dt>STRIDE</dt><dd>Mnemônico de categorias de ameaça: falsificação, adulteração, repúdio, vazamento, negação de serviço, elevação de privilégio.</dd></div>
+    <div><dt>Fronteira de confiança</dt><dd>Ponto onde os dados passam entre componentes com níveis de confiança diferentes.</dd></div>
+    <div><dt>DevSecOps</dt><dd>Segurança integrada e automatizada no ciclo de desenvolvimento e entrega.</dd></div>
+    <div><dt>SAST / DAST</dt><dd>Análise de segurança do código-fonte / da aplicação em execução.</dd></div>
+    <div><dt>IaC scanning</dt><dd>Verificação de erros de segurança em infraestrutura como código.</dd></div>
+    <div><dt>CVE</dt><dd>Identificador público de uma vulnerabilidade específica.</dd></div>
+    <div><dt>CVSS</dt><dd>Nota de 0 a 10 para a gravidade técnica de uma vulnerabilidade.</dd></div>
+    <div><dt>EPSS</dt><dd>Probabilidade estimada de exploração de uma vulnerabilidade nos próximos 30 dias.</dd></div>
+    <div><dt>KEV</dt><dd>Catálogo da CISA de vulnerabilidades com exploração conhecida.</dd></div>
+    <div><dt>VDP</dt><dd>Política de divulgação de vulnerabilidades: canal e regras para relatos externos.</dd></div>
+    <div><dt>Red team</dt><dd>Simulação de adversário real contra a organização inteira.</dd></div>
+    <div><dt>Zero trust</dt><dd>Modelo em que nenhum acesso é confiável por estar na rede; cada acesso é verificado.</dd></div>
+    <div><dt>Just-in-time</dt><dd>Acesso privilegiado concedido sob demanda e por tempo limitado.</dd></div>
+    <div><dt>RPO / RTO</dt><dd>Perda de dados aceitável / tempo aceitável até a recuperação.</dd></div>
+    <div><dt>Backup imutável</dt><dd>Cópia que não pode ser alterada nem apagada durante a retenção.</dd></div>
+    <div><dt>Playbook</dt><dd>Roteiro de resposta para um tipo específico de incidente.</dd></div>
+    <div><dt>Post-mortem sem culpa</dt><dd>Análise de incidente focada em sistemas e processos, sem busca de culpados.</dd></div>
+    <div><dt>ANPD</dt><dd>Autoridade Nacional de Proteção de Dados, que fiscaliza a LGPD.</dd></div>
+    <div><dt>Encarregado (DPO)</dt><dd>Canal entre a empresa, os titulares e a ANPD.</dd></div>
+    <div><dt>Security champion</dt><dd>Dev de um time de produto que atua como referência de segurança.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+
+  <h3>1. Ransomware às 2h de sábado</h3>
+  <p>O plantão recebe alerta: arquivos renomeados em servidores e uma nota de resgate. O agendamento e o prontuário estão fora do ar.</p>
+  <ol class="seq">
+    <li><div><strong>Acionar o plano.</strong> Líder do incidente assume, abre a sala de crise num canal fora da infraestrutura corporativa e inicia a linha do tempo.</div></li>
+    <li><div><strong>Conter.</strong> Isolar da rede os sistemas afetados, sem desligá-los, para preservar evidências. Desativar contas comprometidas, bloquear acessos remotos suspeitos, proteger os backups.</div></li>
+    <li><div><strong>Acionar quem precisa.</strong> Diretoria, jurídico, DPO, seguradora (muitas apólices exigem aviso rápido e indicam empresas de resposta), fornecedor de resposta a incidentes. Operação clínica entra em contingência (procedimentos em papel).</div></li>
+    <li><div><strong>Entender escopo.</strong> Como entraram, desde quando, quais dados foram copiados. Ransomware moderno costuma exfiltrar antes de criptografar.</div></li>
+    <li><div><strong>Recuperar.</strong> Restaurar de backups imutáveis em ambiente limpo, na ordem definida, após remover o acesso do atacante e corrigir a porta de entrada.</div></li>
+    <li><div><strong>Cumprir obrigações.</strong> Com o DPO, avaliar e comunicar ANPD e titulares no prazo. Registrar tudo.</div></li>
+    <li><div><strong>Post-mortem sem culpa</strong> e ações com dono e prazo.</div></li>
+  </ol>
+  <p>A decisão sobre pagar resgate é da diretoria, com jurídico e especialistas. Pagar não garante a devolução dos dados nem que eles não sejam publicados.</p>
+
+  <h3>2. O time diz que não tem tempo para corrigir vulnerabilidades</h3>
+  <p>Na maioria das vezes, é verdade: o planejamento não reserva tempo. Mostre o problema em dados (vulnerabilidades por idade, quantas são críticas e expostas). Priorize por risco para reduzir a lista ao que importa. Negocie com o produto uma fatia fixa de capacidade por sprint e um SLA aprovado pela diretoria. Automatize atualizações de dependências para que virem PRs pequenos e frequentes. Exceções viram decisões registradas de quem tem autoridade para aceitar o risco.</p>
+
+  <h3>3. Um pesquisador reportou uma falha por e-mail</h3>
+  <p>Responda no mesmo dia agradecendo e informando os próximos passos. Encaminhe ao time para reproduzir, classifique e corrija dentro do SLA. Verifique se houve exploração e, se dados pessoais foram expostos, envolva o DPO. Mantenha o pesquisador informado e combine a divulgação. Depois, publique uma VDP e um <code>security.txt</code>. O lado técnico está no <a href="09-seguranca-web.html#cenarios">módulo 9</a>.</p>
+
+  <h3>4. Um funcionário exportou a lista de pacientes para o e-mail pessoal</h3>
+  <p>Trate como incidente, mesmo sem má-fé aparente. Envolva RH, jurídico e DPO. Determine o que foi enviado e para onde, peça a exclusão com confirmação e avalie a comunicação à ANPD. Depois, a pergunta de gestão: por que essa pessoa precisava exportar a lista inteira? Revise permissões, limite exportações, registre e alerte sobre exportações grandes.</p>
+
+  <h3>5. A diretoria pergunta: "estamos seguros?"</h3>
+  <p>Não responda sim ou não. Mostre os principais riscos do registro, o que já foi tratado, o que está em andamento e o que precisa de decisão ou investimento, com métricas de tendência. Ofereça a próxima decisão concreta: "aprovar o backup imutável do prontuário reduz o maior risco que temos hoje".</p>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">14</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é a tríade CIA? Dê exemplos.</span></summary><div class="ans"><p>Confidencialidade, integridade e disponibilidade. Num sistema de saúde: um prontuário exposto viola confidencialidade, um resultado de exame alterado viola integridade, e o sistema fora do ar no pronto-socorro viola disponibilidade.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Como você define e prioriza riscos?</span></summary><div class="ans"><p>Risco combina ameaça, vulnerabilidade e impacto; na prática, uso probabilidade e impacto numa matriz. Registro cada risco com dono e tratamento (mitigar, transferir, aceitar ou evitar) e priorizo os de maior impacto e probabilidade, considerando custo de tratamento.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Explique STRIDE com um exemplo.</span></summary><div class="ans"><p>São seis categorias de ameaça: falsificação de identidade, adulteração, repúdio, vazamento de informação, negação de serviço e elevação de privilégio. Num agendamento médico: alguém se passa por paciente usando CPF (S), altera o médico na requisição (T), atendente nega um cancelamento por falta de log (R), lembrete revela a especialidade (I), robô reserva todos os horários (D), recepção acessa funções de admin (E).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Qual a diferença entre SAST, DAST e SCA?</span></summary><div class="ans"><p>SAST analisa o código-fonte sem executar e roda no PR. DAST testa a aplicação em execução, em homologação. SCA verifica as dependências contra bases de vulnerabilidades conhecidas e deve rodar também periodicamente, porque CVEs novas surgem sem mudança no código.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Como evitar que as ferramentas de segurança virem ruído?</span></summary><div class="ans"><p>Começar com poucas regras de alta precisão, bloquear só achados graves introduzidos pelo PR, colocar o legado numa linha de base tratada no backlog, ter triagem com dono e prazo, ajustar regras com falso positivo e consolidar achados num lugar só.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>CVSS 9.8 numa biblioteca. Corrijo hoje?</span></summary><div class="ans"><p>Depende do risco, não só da nota. Verifico se está sendo explorada (KEV, EPSS), se o sistema está exposto à internet, se o código vulnerável é alcançável e se há dados sensíveis. Explorada e exposta é emergência. Se não for alcançável, entra no SLA normal de crítica, com registro da análise.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Qual a diferença entre pentest, varredura, bug bounty e red team?</span></summary><div class="ans"><p>Varredura é automática, ampla e rasa. Pentest é feito por especialistas com escopo e prazo, encontrando falhas de lógica. Bug bounty paga pesquisadores externos por achado, de forma contínua. Red team simula um adversário real contra a organização inteira e testa também detecção e resposta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>O que é zero trust?</span></summary><div class="ans"><p>Um modelo em que estar na rede corporativa não dá confiança. Cada acesso é verificado com base em identidade, dispositivo e contexto, com menor privilégio e registro. Na prática envolve MFA forte, acesso por aplicação, segmentação e monitoramento.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Como garantir que um funcionário desligado perca os acessos?</span></summary><div class="ans"><p>Com SSO central ligado ao RH, para que o desligamento desative a identidade automaticamente, mais um checklist para o que fica fora do SSO: tokens pessoais, chaves SSH, contas locais, segredos que a pessoa conhecia e precisam ser rotacionados. Meço o tempo até a revogação e reviso acessos periodicamente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>O que é a regra 3-2-1 e por que não basta contra ransomware?</span></summary><div class="ans"><p>Três cópias, em dois tipos de armazenamento, uma fora do local. Contra ransomware é preciso também uma cópia imutável ou offline, credenciais de backup separadas do domínio e testes de restauração. Atacantes procuram e apagam backups acessíveis antes de criptografar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Quais são as fases de resposta a incidentes do NIST?</span></summary><div class="ans"><p>Preparação; detecção e análise; contenção, erradicação e recuperação; e atividades pós-incidente. Detecção e contenção se alternam conforme o escopo fica claro, e as lições aprendidas voltam para a preparação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O que é um post-mortem sem culpa e por que fazer assim?</span></summary><div class="ans"><p>É uma análise do incidente focada em como sistemas e processos permitiram o problema. Sem medo de punição, as pessoas contam o que realmente aconteceu, e as ações corretivas atacam as causas. Com culpa, as informações somem e o próximo incidente é detectado mais tarde.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>O que a LGPD exige num vazamento de dados de pacientes?</span></summary><div class="ans"><p>Dados de saúde são sensíveis. Se o incidente pode causar risco ou dano relevante aos titulares, o controlador comunica à ANPD e aos titulares; o regulamento da ANPD de 2024 prevê 3 dias úteis. O encarregado participa da avaliação e o incidente fica registrado, mesmo quando não comunicado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Compare ISO 27001, NIST CSF e CIS Controls.</span></summary><div class="ans"><p>ISO 27001 é norma de sistema de gestão, certificável. NIST CSF 2.0 é um framework de alto nível com seis funções, bom para diagnóstico e conversa com a diretoria. CIS Controls é uma lista priorizada de controles práticos, boa para decidir por onde começar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Que métricas de segurança você acompanharia como gestor?</span></summary><div class="ans"><p>Tempo de correção por severidade e percentual dentro do SLA, vulnerabilidades abertas por idade, cobertura de MFA, cobertura das verificações no pipeline, tempo de revogação de acessos e testes de restauração. Evito contar achados encontrados, que variam com a ferramenta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como você colocaria segurança no processo sem atrasar entregas?</span></summary><div class="ans"><p>Segurança como requisito desde o refinamento, automação no pipeline com bloqueio só do que é grave, componentes seguros por padrão, security champions e capacidade fixa reservada no sprint. Acompanho as métricas DORA junto com as de segurança para ver se alguma verificação está atrapalhando.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Você assume um time sem nenhuma prática de segurança. O que faz em 90 dias?</span></summary><div class="ans"><p>Primeiro mês: inventário, limpeza de acessos, MFA, secret scanning e verificar backups. Segundo: ferramentas no pipeline em modo informativo, SLA aprovado, correção do que é crítico e exposto, modelagem de ameaças do sistema principal, playbooks. Terceiro: bloqueio de achados graves, revisão de acessos, simulação de incidente, métricas e roteiro anual com orçamento.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como você convence a diretoria a investir em segurança?</span></summary><div class="ans"><p>Falando de risco ao negócio: horas de atendimento parado, comunicação a pacientes, multas, contratos. Uso o registro de riscos para mostrar o que cada investimento reduz e deixo explícito que não investir é uma decisão de aceitar o risco, que precisa de dono.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

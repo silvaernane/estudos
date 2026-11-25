@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 07: Autenticação e autorização</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 07 de 10 · Autenticação e autorização</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html" aria-current="page"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li class="sub"><ol>
+      <li><a href="#conceitos"><span class="n">1</span>Autenticação, autorização e fatores</a></li>
+      <li><a href="#senhas"><span class="n">2</span>Senhas bem feitas</a></li>
+      <li><a href="#mfa"><span class="n">3</span>MFA, passkeys e WebAuthn</a></li>
+      <li><a href="#sessoes"><span class="n">4</span>Sessões com cookie</a></li>
+      <li><a href="#jwt"><span class="n">5</span>Tokens e JWT</a></li>
+      <li><a href="#ciclo-tokens"><span class="n">6</span>Access, refresh e onde guardar</a></li>
+      <li><a href="#oauth"><span class="n">7</span>OAuth 2.0</a></li>
+      <li><a href="#oidc-sso"><span class="n">8</span>OpenID Connect e SSO</a></li>
+      <li><a href="#autorizacao"><span class="n">9</span>Modelos de autorização</a></li>
+      <li><a href="#protecao"><span class="n">10</span>Ataques, recuperação e LGPD</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 07 · <span class="lvl l2">Intermediário</span> <span class="lvl l3">Avançado</span></div>
+  <h1>Autenticação e autorização</h1>
+  <p class="lede">Quem é você e o que você pode fazer. Este módulo cobre senhas, MFA, passkeys, sessões, JWT, OAuth 2.0, OpenID Connect e modelos de permissão, sempre com o olhar de quem precisa decidir, cobrar e explicar isso para uma equipe que lida com dados de saúde.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Diferenciar autenticação de autorização e escolher entre 401 e 403.</li>
+    <li>Armazenar senhas corretamente e aplicar a política da NIST SP 800-63B.</li>
+    <li>Comparar fatores de MFA e explicar por que passkeys resistem a phishing.</li>
+    <li>Projetar sessões com cookie e usar JWT sem cair nas armadilhas clássicas.</li>
+    <li>Desenhar o fluxo authorization code + PKCE e explicar OAuth 2.0 e OpenID Connect.</li>
+    <li>Escolher entre RBAC, ABAC e ReBAC e decidir entre construir ou comprar identidade.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="conceitos">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Autenticação, autorização e fatores</h2>
+  <p><strong>Autenticação</strong> (authentication, ou <abbr title="authentication">authn</abbr>) prova a identidade: o sistema confirma que você é quem diz ser. <strong>Autorização</strong> (authorization, ou <abbr title="authorization">authz</abbr>) decide o que essa identidade pode fazer: ler a agenda, editar um prontuário, aprovar um pagamento.</p>
+  <p>A ordem importa. Primeiro o sistema identifica, depois autentica, depois autoriza. Um usuário bem autenticado ainda pode receber "não" em quase tudo.</p>
+
+  <h3>401 x 403</h3>
+  <p>O HTTP tem um código para cada falha (os códigos em geral estão no <a href="03-http.html">módulo 3</a>):</p>
+  <div class="tbl"><table><thead><tr><th>Código</th><th>Significado real</th><th>Quando usar</th></tr></thead><tbody>
+    <tr><td><code>401 Unauthorized</code></td><td>Falta autenticação válida. O nome engana: o problema é identidade.</td><td>Sem token, token expirado, assinatura inválida, sessão inexistente.</td></tr>
+    <tr><td><code>403 Forbidden</code></td><td>O servidor sabe quem você é e nega a ação.</td><td>Recepcionista tentando abrir o prontuário completo.</td></tr>
+    <tr><td><code>404 Not Found</code></td><td>Recurso inexistente, ou o servidor prefere esconder que ele existe.</td><td>Usuário sem vínculo pedindo um paciente específico: responder 404 evita confirmar que o ID existe.</td></tr>
+  </tbody></table></div>
+  <p>A resposta 401 deve trazer o cabeçalho <code>WWW-Authenticate</code>, que diz ao cliente como se autenticar:</p>
+<pre><code class="http">HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="api-agenda", error="invalid_token", error_description="token expirado"
+Content-Type: application/json
+
+{"erro": "token expirado"}</code></pre>
+
+  <h3>Fatores de autenticação</h3>
+  <div class="tbl"><table><thead><tr><th>Fator</th><th>Ideia</th><th>Exemplos</th></tr></thead><tbody>
+    <tr><td>Conhecimento</td><td>Algo que você sabe</td><td>Senha, PIN</td></tr>
+    <tr><td>Posse</td><td>Algo que você tem</td><td>Celular com app autenticador, chave de segurança FIDO2, crachá com certificado</td></tr>
+    <tr><td>Inerência</td><td>Algo que você é</td><td>Digital, rosto. Em geral desbloqueia um fator de posse local em vez de viajar até o servidor.</td></tr>
+  </tbody></table></div>
+  <p><strong>MFA</strong> (multi-factor authentication, autenticação multifator) exige fatores de categorias diferentes. Duas senhas continuam sendo um único fator.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>401 = "não sei quem você é". 403 = "sei quem você é, e a resposta é não".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Autenticação confirma identidade; autorização decide permissões. 401 indica credencial ausente ou inválida, 403 indica identidade válida sem permissão. Em recursos sensíveis, às vezes devolvo 404 para não confirmar que o recurso existe."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça ao time uma definição única de quando a API devolve 401, 403 e 404. Respostas inconsistentes confundem o front-end, geram chamados de suporte e, no pior caso, vazam a existência de pacientes ou registros.</p></div>
+</section>
+
+<section class="chap" id="senhas">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Senhas bem feitas</h2>
+  <p>O sistema nunca precisa saber a senha. Ele precisa conferir se a senha digitada bate com a cadastrada. Por isso guardamos um <strong>hash</strong> da senha, calculado por uma função de mão única, e comparamos hashes no login.</p>
+
+  <h3>Por que MD5 e SHA-256 puros não servem</h3>
+  <p>MD5, SHA-1 e SHA-256 foram feitos para ser <em>rápidos</em>. Uma GPU calcula bilhões desses hashes por segundo. Se o banco vazar, o atacante testa listas de senhas comuns e dicionários contra todos os hashes em pouco tempo. MD5 e SHA-1 ainda têm fraquezas criptográficas conhecidas, mas o problema central aqui é a velocidade.</p>
+  <p>Para senhas usamos funções <strong>lentas de propósito</strong>, com custo ajustável, e com <strong>salt</strong>:</p>
+  <ul>
+    <li><strong>Salt</strong>: valor aleatório e único por usuário, guardado junto do hash. Impede tabelas pré-calculadas (rainbow tables) e faz duas pessoas com a mesma senha terem hashes diferentes.</li>
+    <li><strong>Pepper</strong> (opcional): segredo único da aplicação, guardado fora do banco (cofre de segredos, KMS). Se só o banco vazar, os hashes ficam inúteis sem o pepper.</li>
+  </ul>
+
+  <div class="tbl"><table><thead><tr><th>Algoritmo</th><th>Característica</th><th>Observação</th></tr></thead><tbody>
+    <tr><td>Argon2id</td><td>Custo de memória e de CPU configuráveis. Venceu a Password Hashing Competition.</td><td>Primeira escolha hoje para sistemas novos.</td></tr>
+    <tr><td>scrypt</td><td>Também exige memória, o que encarece ataques com GPU e hardware dedicado.</td><td>Boa alternativa quando Argon2 não está disponível.</td></tr>
+    <tr><td>bcrypt</td><td>Antigo, muito testado, custo de CPU ajustável.</td><td>Considera só os primeiros 72 bytes da senha. Ainda aceitável em sistemas legados.</td></tr>
+    <tr><td>PBKDF2</td><td>Repete HMAC muitas vezes. Não exige memória.</td><td>Use quando há exigência de conformidade com FIPS. Precisa de muitas iterações.</td></tr>
+  </tbody></table></div>
+  <p>A OWASP publica parâmetros mínimos no Password Storage Cheat Sheet. Na versão consultada para este texto, a recomendação para Argon2id era 19 MiB de memória, 2 iterações e paralelismo 1, e para PBKDF2-HMAC-SHA256, 600.000 iterações. Esses números sobem com o tempo: confira a versão atual antes de configurar.</p>
+
+<pre data-file="senha.js"><code class="js">import argon2 from 'argon2';
+
+// cadastro: o salt é gerado e embutido no resultado
+const hash = await argon2.hash(senha, {
+  type: argon2.argon2id,
+  memoryCost: 19456,  // KiB (19 MiB)
+  timeCost: 2,
+  parallelism: 1,
+});
+// grava algo como: $argon2id$v=19$m=19456,t=2,p=1$c2FsdGFsZWF0b3Jpbw$...
+
+// login: o verify lê algoritmo, parâmetros e salt da própria string
+const ok = await argon2.verify(hashDoBanco, senhaDigitada);</code></pre>
+  <p>Como os parâmetros ficam gravados com o hash, dá para aumentar o custo depois: no próximo login bem-sucedido, o sistema recalcula com os parâmetros novos e regrava.</p>
+
+  <h3>Política de senhas segundo a NIST SP 800-63B</h3>
+  <p>A norma americana de identidade digital mudou a forma de pensar política de senha. Em linhas gerais:</p>
+  <ul>
+    <li><strong>Comprimento vale mais que complexidade.</strong> A revisão 4 (2025) pede no mínimo 15 caracteres quando a senha é o único fator e 8 quando ela faz parte de MFA. O sistema deve aceitar senhas longas, de pelo menos 64 caracteres, inclusive espaços.</li>
+    <li><strong>Sem regras de composição obrigatórias</strong> do tipo "uma maiúscula, um número e um símbolo". Elas geram <code>Senha@2026</code> e pouca segurança.</li>
+    <li><strong>Sem troca periódica obrigatória.</strong> Troca só quando há indício de comprometimento. Troca a cada 90 dias leva a padrões previsíveis.</li>
+    <li><strong>Checagem contra senhas vazadas</strong>, comuns e óbvias (nome do sistema, nome do usuário) no cadastro e na troca.</li>
+    <li><strong>Sem dicas nem perguntas de segurança</strong> ("nome do primeiro animal").</li>
+    <li>Permitir colar senha e usar gerenciador de senhas.</li>
+    <li>Limitar tentativas de login falhas (ver <a href="#protecao">seção 10</a>).</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Criptografar senha com AES "para poder recuperar depois". Se o sistema consegue decifrar, um atacante com a chave também consegue. Senha se armazena com hash lento; recuperação se faz por redefinição.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uso Argon2id, ou bcrypt em legado, com salt por usuário e custo calibrado. Hash rápido como SHA-256 é inadequado porque o atacante testa bilhões por segundo. Na política sigo a NIST: senha longa, sem troca periódica forçada, bloqueio de senhas vazadas."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pergunte ao time: qual algoritmo guarda as senhas hoje, com quais parâmetros, e existe plano para migrar hashes antigos? Muitos sistemas legados da área de saúde ainda têm MD5 ou SHA-1 sem salt. A migração pode ser gradual (re-hash no login) e cabe numa sprint. Também vale revisar políticas internas que ainda exigem troca a cada 90 dias.</p></div>
+</section>
+
+<section class="chap" id="mfa">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>MFA, passkeys e WebAuthn</h2>
+  <p>A senha vaza por phishing, por reutilização em outro site ou por malware. Um segundo fator reduz muito o estrago. Os fatores, porém, diferem bastante em segurança e em atrito para o usuário.</p>
+
+  <div class="tbl"><table><thead><tr><th>Método</th><th>Como funciona</th><th>Riscos</th><th>Resiste a phishing?</th></tr></thead><tbody>
+    <tr><td>SMS / ligação</td><td>Código enviado ao número do usuário</td><td>SIM swap (golpista transfere a linha para outro chip), interceptação, mensagens atrasadas. A NIST classifica como autenticador "restrito".</td><td>Não</td></tr>
+    <tr><td>TOTP (app autenticador)</td><td>App e servidor compartilham um segredo; o código de 6 dígitos é um HMAC do horário em janelas de 30 s (RFC 6238)</td><td>Phishing em tempo real: página falsa repassa o código ao site verdadeiro. O segredo fica no servidor e pode vazar.</td><td>Não</td></tr>
+    <tr><td>Push (aprovar no app)</td><td>Servidor envia notificação; o usuário aprova</td><td>"MFA fatigue": atacante dispara dezenas de pedidos até a pessoa aprovar por cansaço. Mitigação: number matching (digitar no celular o número mostrado na tela).</td><td>Parcial</td></tr>
+    <tr><td>Chave FIDO2 / passkey</td><td>Par de chaves por site; o autenticador assina um desafio</td><td>Perda do dispositivo (precisa de método de recuperação)</td><td>Sim</td></tr>
+  </tbody></table></div>
+
+  <h3>WebAuthn e FIDO2</h3>
+  <p><strong>FIDO2</strong> é o conjunto de padrões formado por <strong>WebAuthn</strong> (API do navegador, especificação do W3C) e <strong>CTAP</strong> (protocolo entre o navegador e o autenticador, como uma chave USB ou o próprio celular). O fluxo usa criptografia de chave pública (base no <a href="04-tls.html">módulo 4</a>):</p>
+  <ol class="seq">
+    <li><div><strong>Registro.</strong> O autenticador gera um par de chaves só para aquele site. A chave privada fica no dispositivo; o servidor guarda a chave pública.</div></li>
+    <li><div><strong>Login.</strong> O servidor envia um desafio aleatório. O navegador repassa o desafio junto com a origem real da página.</div></li>
+    <li><div><strong>Assinatura.</strong> O usuário desbloqueia o autenticador (digital, rosto ou PIN) e ele assina o desafio.</div></li>
+    <li><div><strong>Verificação.</strong> O servidor confere a assinatura com a chave pública e confere se a origem é a esperada.</div></li>
+  </ol>
+<pre><code class="js">// navegador: pedir uma assinatura para login
+const credencial = await navigator.credentials.get({
+  publicKey: {
+    challenge: desafioDoServidor,       // bytes aleatórios gerados no servidor
+    rpId: 'portal.exemplo-saude.com.br', // o site (relying party)
+    userVerification: 'preferred',
+  },
+});
+// enviar credencial.response ao servidor para verificação</code></pre>
+  <p>A resistência a phishing vem da origem: a chave criada para <code>portal.exemplo-saude.com.br</code> não assina nada para <code>portal-exemplo-saude.com</code>. O usuário não tem como "digitar" a passkey no site errado.</p>
+
+  <h3>Passkeys</h3>
+  <p><strong>Passkey</strong> é o nome comercial de uma credencial FIDO2 que dispensa a senha. Ela pode ser <em>sincronizada</em> (copiada entre dispositivos pelo gerenciador do Google, Apple, Microsoft ou de terceiros) ou <em>presa ao dispositivo</em> (como numa chave de segurança física). A sincronizada é mais prática e resolve parte da recuperação; a presa ao dispositivo dá mais controle, o que interessa para contas administrativas.</p>
+  <p>O servidor nunca recebe biometria. A digital apenas desbloqueia a chave privada localmente.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Implantar MFA forte e deixar a recuperação de conta por SMS ou e-mail sem verificação extra. O atacante simplesmente usa a porta dos fundos. O método de recuperação deve ser tão forte quanto o login.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"TOTP e SMS reduzem risco, mas são vulneráveis a phishing em tempo real. FIDO2 e passkeys amarram a credencial à origem do site, então uma página falsa não consegue obter uma assinatura válida."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Priorize MFA resistente a phishing para quem tem mais poder: administradores de nuvem, de banco de dados, do provedor de identidade e quem acessa dados de pacientes em massa. Orçamento de chaves físicas é baixo comparado ao custo de um incidente. Para pacientes, ofereça passkey como opção e mantenha alternativa acessível, pensando em idosos e em quem não tem smartphone.</p></div>
+</section>
+
+<section class="chap" id="sessoes">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Sessões com cookie</h2>
+  <p>HTTP não guarda estado (<a href="03-http.html">módulo 3</a>). Depois do login, cada requisição precisa provar de novo quem é o usuário. Há duas abordagens principais: a sessão no servidor, identificada por um cookie, e o token autocontido, como o JWT (<a href="#jwt">seção 5</a>).</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 300" role="img" aria-label="Comparação entre sessão com cookie, em que o servidor consulta um armazenamento de sessões, e token assinado, em que a API valida a assinatura sem consultar banco">
+      <defs><marker id="ah-ses" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="20">Sessão com cookie (stateful)</text>
+      <rect class="box-a" x="20" y="34" width="110" height="34" rx="5"/><text x="75" y="56" text-anchor="middle">Navegador</text>
+      <rect class="box" x="200" y="34" width="120" height="34" rx="5"/><text x="260" y="56" text-anchor="middle">Servidor</text>
+      <line class="ln" x1="75" y1="68" x2="75" y2="180" stroke-dasharray="4 4"/>
+      <line class="ln" x1="260" y1="68" x2="260" y2="180" stroke-dasharray="4 4"/>
+      <text x="167" y="89" text-anchor="middle">POST /login</text>
+      <line class="ln" x1="75" y1="95" x2="258" y2="95" marker-end="url(#ah-ses)"/>
+      <text x="167" y="124" text-anchor="middle">Set-Cookie: sid=9f..</text>
+      <line class="ln-a" x1="260" y1="130" x2="77" y2="130" marker-end="url(#ah-ses)"/>
+      <text x="167" y="159" text-anchor="middle">Cookie: sid=9f..</text>
+      <line class="ln" x1="75" y1="165" x2="258" y2="165" marker-end="url(#ah-ses)"/>
+      <line class="ln" x1="260" y1="182" x2="260" y2="226" marker-end="url(#ah-ses)"/>
+      <text class="lbl" x="268" y="208">consulta sid</text>
+      <rect class="box-w" x="190" y="228" width="140" height="34" rx="5"/><text x="260" y="250" text-anchor="middle">Sessões (Redis)</text>
+      <line class="ln" x1="345" y1="10" x2="345" y2="290" stroke-dasharray="2 4"/>
+      <text class="ttl" x="365" y="20">Token assinado (stateless)</text>
+      <rect class="box-a" x="365" y="34" width="90" height="34" rx="5"/><text x="410" y="56" text-anchor="middle">Cliente</text>
+      <rect class="box-m" x="475" y="34" width="110" height="34" rx="5"/><text x="530" y="56" text-anchor="middle">Autorização</text>
+      <rect class="box" x="605" y="34" width="85" height="34" rx="5"/><text x="647" y="56" text-anchor="middle">API</text>
+      <line class="ln" x1="410" y1="68" x2="410" y2="180" stroke-dasharray="4 4"/>
+      <line class="ln" x1="530" y1="68" x2="530" y2="180" stroke-dasharray="4 4"/>
+      <line class="ln" x1="647" y1="68" x2="647" y2="195" stroke-dasharray="4 4"/>
+      <text class="lbl" x="470" y="89" text-anchor="middle">1 login</text>
+      <line class="ln" x1="410" y1="95" x2="528" y2="95" marker-end="url(#ah-ses)"/>
+      <text class="lbl" x="470" y="124" text-anchor="middle">2 JWT assinado</text>
+      <line class="ln-a" x1="530" y1="130" x2="412" y2="130" marker-end="url(#ah-ses)"/>
+      <text class="lbl" x="560" y="159" text-anchor="middle">3 Authorization: Bearer</text>
+      <line class="ln" x1="410" y1="165" x2="645" y2="165" marker-end="url(#ah-ses)"/>
+      <rect class="box-a" x="545" y="198" width="150" height="62" rx="5"/>
+      <text class="lbl" x="620" y="216" text-anchor="middle">4 valida assinatura,</text>
+      <text class="lbl" x="620" y="232" text-anchor="middle">exp, aud e iss com a</text>
+      <text class="lbl" x="620" y="248" text-anchor="middle">chave pública (JWKS)</text>
+      <text class="lbl" x="20" y="288">servidor guarda estado; logout = apagar a sessão</text>
+      <text class="lbl" x="365" y="288">API não consulta banco; revogar é mais difícil</text>
+    </svg>
+    <figcaption>Na sessão, o cookie carrega só um identificador e o estado fica no servidor. No token, o estado viaja no próprio token e a API confia na assinatura.</figcaption>
+  </figure>
+
+  <h3>Como funciona a sessão</h3>
+  <p>Depois do login, o servidor gera um identificador de sessão aleatório e longo (a OWASP recomenda pelo menos 64 bits de entropia), grava no armazenamento de sessões quem é o usuário e devolve o identificador num cookie. O navegador reenvia o cookie automaticamente.</p>
+<pre><code class="http">HTTP/1.1 200 OK
+Set-Cookie: __Host-sid=k3J9xQ2vL8pR4tZ7mN1wB6yC; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=1800</code></pre>
+
+  <div class="tbl"><table><thead><tr><th>Atributo</th><th>Efeito</th><th>Por que importa</th></tr></thead><tbody>
+    <tr><td><code>HttpOnly</code></td><td>JavaScript não lê o cookie (<code>document.cookie</code>)</td><td>Um XSS não consegue roubar o identificador. O XSS ainda pode agir em nome do usuário enquanto a página está aberta.</td></tr>
+    <tr><td><code>Secure</code></td><td>Cookie só trafega por HTTPS</td><td>Evita captura em rede aberta</td></tr>
+    <tr><td><code>SameSite=Lax</code></td><td>Não envia o cookie em requisições de outros sites, exceto navegação de nível superior com GET</td><td>Reduz CSRF. O Chrome aplica Lax quando o atributo falta; outros navegadores variam, então declare sempre.</td></tr>
+    <tr><td><code>SameSite=Strict</code></td><td>Nunca envia em contexto de outro site</td><td>Mais seguro, mas o usuário chega "deslogado" ao clicar num link externo</td></tr>
+    <tr><td><code>SameSite=None</code></td><td>Envia sempre; exige <code>Secure</code></td><td>Necessário para cenários entre sites, como iframes de terceiros</td></tr>
+    <tr><td>Prefixo <code>__Host-</code></td><td>Navegador exige <code>Secure</code>, <code>Path=/</code> e ausência de <code>Domain</code></td><td>Impede que um subdomínio sobrescreva o cookie</td></tr>
+  </tbody></table></div>
+  <p>CSRF, XSS e CORS em detalhe ficam no <a href="09-seguranca-web.html">módulo 9</a>.</p>
+
+  <h3>Fixação de sessão</h3>
+  <p>Na fixação de sessão (session fixation), o atacante faz a vítima usar um identificador que ele já conhece, por exemplo via link. Se o sistema mantiver o mesmo identificador depois do login, o atacante herda a sessão autenticada. A defesa é simples: <strong>gerar um novo identificador a cada login</strong> e a cada elevação de privilégio, e invalidar o antigo.</p>
+
+  <h3>Expiração</h3>
+  <ul>
+    <li><strong>Inatividade</strong> (idle timeout): encerra após X minutos sem uso. Em estações compartilhadas de clínica e hospital, valores curtos fazem diferença.</li>
+    <li><strong>Absoluta</strong>: encerra após um tempo máximo, mesmo com uso contínuo.</li>
+    <li><strong>Logout real</strong>: apagar a sessão no servidor, além de limpar o cookie.</li>
+    <li>Ao trocar a senha, encerrar as outras sessões do usuário.</li>
+  </ul>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Cookie de sessão com HttpOnly, Secure, SameSite e prefixo __Host-; identificador novo a cada login contra fixação; expiração por inatividade e absoluta; logout apaga a sessão no servidor."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tempo de sessão é decisão de negócio e de risco, não só técnica. Defina com as áreas usuárias e com segurança da informação valores por perfil: o portal do paciente, o sistema da recepção e o painel administrativo têm riscos diferentes. Registre a decisão para não reabrir a discussão a cada reclamação de "o sistema me desloga".</p></div>
+</section>
+
+<section class="chap" id="jwt">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Tokens e JWT</h2>
+  <p>Um <strong>token</strong> é uma credencial que o cliente apresenta a cada chamada. Ele pode ser <strong>opaco</strong> (uma string aleatória que só o emissor sabe interpretar) ou <strong>autocontido</strong>, carregando os dados dentro dele. O formato autocontido mais comum é o <strong>JWT</strong> (JSON Web Token, RFC 7519).</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 170" role="img" aria-label="Estrutura do JWT: header, payload e signature separados por pontos">
+      <rect class="box-a" x="10" y="20" width="150" height="40" rx="5"/><text x="85" y="45" text-anchor="middle">header</text>
+      <text x="170" y="46" text-anchor="middle">.</text>
+      <rect class="box-m" x="180" y="20" width="300" height="40" rx="5"/><text x="330" y="45" text-anchor="middle">payload (claims)</text>
+      <text x="490" y="46" text-anchor="middle">.</text>
+      <rect class="box-w" x="500" y="20" width="170" height="40" rx="5"/><text x="585" y="45" text-anchor="middle">signature</text>
+      <text class="lbl" x="85" y="84" text-anchor="middle">alg, typ, kid</text>
+      <text class="lbl" x="85" y="101" text-anchor="middle">Base64URL(JSON)</text>
+      <text class="lbl" x="330" y="84" text-anchor="middle">iss, sub, aud, exp, iat, scope...</text>
+      <text class="lbl" x="330" y="101" text-anchor="middle">Base64URL(JSON): qualquer um lê</text>
+      <text class="lbl" x="585" y="84" text-anchor="middle">assina "header.payload"</text>
+      <text class="lbl" x="585" y="101" text-anchor="middle">com a chave do emissor</text>
+      <text class="ttl" x="340" y="150" text-anchor="middle">Assinatura garante integridade e origem. Não garante sigilo.</text>
+    </svg>
+    <figcaption>As três partes são codificadas em Base64URL e unidas por ponto. Codificação é reversível; qualquer pessoa com o token lê o payload.</figcaption>
+  </figure>
+
+  <h3>Um JWT decodificado (fictício)</h3>
+<pre data-file="token (assinatura fictícia)"><code class="text">eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjIwMjYtMTEtYSJ9.eyJpc3MiOiJodHRwczovL2xvZ2luLmV4ZW1wbG8tc2F1ZGUuY29tLmJyIiwic3ViIjoidS00ODIxMyIsImF1ZCI6ImFwaS1hZ2VuZGEiLCJpYXQiOjE3OTU2MDA1MDAsImV4cCI6MTc5NTYwMTEwMCwianRpIjoiYjdlMWMwZDIiLCJzY29wZSI6ImFnZW5kYTpsZXIiLCJyb2xlcyI6WyJyZWNlcGNhbyJdfQ.c2lnbmF0dXJhLWZpY3RpY2lhLW5hby12YWxpZGFy</code></pre>
+  <div class="tabs">
+<pre data-label="header"><code class="json">{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": "2026-11-a"
+}</code></pre>
+<pre data-label="payload"><code class="json">{
+  "iss": "https://login.exemplo-saude.com.br",
+  "sub": "u-48213",
+  "aud": "api-agenda",
+  "iat": 1795600500,
+  "exp": 1795601100,
+  "jti": "b7e1c0d2",
+  "scope": "agenda:ler",
+  "roles": ["recepcao"]
+}</code></pre>
+  </div>
+  <div class="tbl"><table><thead><tr><th>Claim</th><th>Significado</th><th>O que validar</th></tr></thead><tbody>
+    <tr><td><code>iss</code></td><td>Quem emitiu</td><td>Igual ao emissor confiável esperado</td></tr>
+    <tr><td><code>sub</code></td><td>Sobre quem é o token (identificador do usuário)</td><td>Use como chave do usuário; e-mail muda, <code>sub</code> não</td></tr>
+    <tr><td><code>aud</code></td><td>Para quem o token foi emitido</td><td>Contém o identificador desta API. Token da API de agenda não deve abrir a API de prontuário.</td></tr>
+    <tr><td><code>exp</code></td><td>Expiração (segundos desde 1970, UTC)</td><td>Rejeitar se passou, com tolerância pequena para diferença de relógio</td></tr>
+    <tr><td><code>iat</code> / <code>nbf</code></td><td>Emitido em / não válido antes de</td><td>Coerência de tempo</td></tr>
+    <tr><td><code>jti</code></td><td>ID único do token</td><td>Útil para lista de revogação e para detectar reuso</td></tr>
+  </tbody></table></div>
+  <p>No exemplo, <code>exp - iat = 600</code>: o token vale 10 minutos.</p>
+
+  <h3>Assinatura x criptografia</h3>
+  <p>O JWT comum é um <strong>JWS</strong> (assinado, RFC 7515): ninguém altera sem invalidar a assinatura, mas todos leem. Para esconder o conteúdo existe o <strong>JWE</strong> (criptografado, RFC 7516), bem menos usado. Regra prática: nunca coloque no payload CPF, diagnóstico, dados clínicos ou qualquer coisa que não possa aparecer num log.</p>
+
+  <h3>HS256 x RS256 / ES256</h3>
+  <div class="tbl"><table><thead><tr><th>Algoritmo</th><th>Tipo</th><th>Quem valida</th><th>Quando usar</th></tr></thead><tbody>
+    <tr><td><code>HS256</code></td><td>HMAC com segredo compartilhado</td><td>Quem tem o mesmo segredo, que também consegue <em>emitir</em> tokens</td><td>Emissor e validador são o mesmo serviço</td></tr>
+    <tr><td><code>RS256</code></td><td>Assinatura RSA</td><td>Qualquer um com a chave pública</td><td>Vários serviços validam; só o provedor de identidade emite</td></tr>
+    <tr><td><code>ES256</code></td><td>Assinatura ECDSA (curva P-256)</td><td>Qualquer um com a chave pública</td><td>Mesmo cenário do RS256, com chaves e assinaturas menores</td></tr>
+  </tbody></table></div>
+  <p>Com assinatura assimétrica, o provedor publica as chaves públicas num endpoint <strong>JWKS</strong> (JSON Web Key Set). O campo <code>kid</code> do header indica qual chave usar, o que permite rotacionar chaves sem parar o sistema.</p>
+
+<pre data-file="validar-token.js"><code class="js">import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+const JWKS = createRemoteJWKSet(new URL('https://login.exemplo-saude.com.br/.well-known/jwks.json'));
+
+export async function validar(token) {
+  const { payload } = await jwtVerify(token, JWKS, {
+    issuer: 'https://login.exemplo-saude.com.br',
+    audience: 'api-agenda',
+    algorithms: ['RS256'],   // lista fixa: nunca aceitar o alg que o token pedir
+  });
+  return payload;            // exp e nbf já foram conferidos pela biblioteca
+}</code></pre>
+
+  <h3>Ataques clássicos</h3>
+  <ul>
+    <li><strong><code>alg: none</code></strong>: a especificação prevê um JWT sem assinatura. Bibliotecas antigas aceitavam esse token se o header pedisse. O atacante editava o payload, colocava <code>"alg":"none"</code> e removia a assinatura.</li>
+    <li><strong>Confusão de algoritmos</strong>: o servidor espera RS256, mas a biblioteca respeita o <code>alg</code> do token. O atacante envia um token HS256 assinado usando a <em>chave pública</em> RSA como segredo HMAC. Como a chave pública é pública, ele forja tokens válidos.</li>
+    <li><strong>Não validar <code>aud</code></strong>: um token emitido para outro sistema da empresa passa a valer na sua API.</li>
+    <li><strong>Segredo HS256 fraco</strong>: segredos curtos são quebrados offline por força bruta a partir de um único token capturado.</li>
+  </ul>
+  <p>A defesa é a mesma em todos: fixar no servidor a lista de algoritmos aceitos, validar <code>iss</code>, <code>aud</code> e <code>exp</code>, e usar bibliotecas mantidas. A RFC 8725 reúne essas boas práticas.</p>
+
+  <h3>Revogação</h3>
+  <p>Um JWT assinado vale até expirar, mesmo que o usuário tenha sido demitido cinco minutos depois da emissão. As saídas:</p>
+  <ul>
+    <li>Access token de vida curta (minutos) e refresh token revogável (<a href="#ciclo-tokens">seção 6</a>).</li>
+    <li>Lista de bloqueio por <code>jti</code> ou por usuário, consultada pela API. Funciona, mas reintroduz estado.</li>
+    <li>Token opaco com <strong>introspecção</strong> (RFC 7662): a API pergunta ao servidor de autorização se o token está ativo. Revogação imediata, ao custo de uma chamada extra.</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Usar JWT como substituto de sessão em uma aplicação monolítica só "porque é moderno". Se um único servidor emite e consome, a sessão com cookie é mais simples e revoga na hora.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"JWT tem header, payload e assinatura em Base64URL. Assinado não significa secreto. Valido assinatura com algoritmo fixo, iss, aud e exp; uso RS256 ou ES256 quando vários serviços validam, e controlo revogação com expiração curta e refresh token."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cobre do time uma biblioteca padrão de validação de token, compartilhada entre os serviços, em vez de cada equipe escrever a sua. A maior parte dos incidentes com JWT vem de validação feita à mão. Inclua no checklist de revisão de código: algoritmo fixo, <code>aud</code> validado, nada sensível no payload.</p></div>
+</section>
+
+<section class="chap" id="ciclo-tokens">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Access token, refresh token e onde guardar</h2>
+  <div class="tbl"><table><thead><tr><th></th><th>Access token</th><th>Refresh token</th></tr></thead><tbody>
+    <tr><td>Para que serve</td><td>Chamar a API</td><td>Obter um novo access token sem novo login</td></tr>
+    <tr><td>Vai para</td><td>A API (resource server)</td><td>Só o servidor de autorização</td></tr>
+    <tr><td>Vida típica</td><td>Minutos</td><td>Horas a dias, com limite absoluto</td></tr>
+    <tr><td>Formato comum</td><td>JWT ou opaco</td><td>Opaco, guardado e revogável no servidor</td></tr>
+  </tbody></table></div>
+  <p>O par equilibra segurança e experiência: se o access token vazar, ele expira logo; o refresh token, que vale mais, circula pouco e pode ser revogado.</p>
+
+  <h3>Rotação com detecção de reuso</h3>
+  <p>Na <strong>rotação</strong>, cada uso do refresh token devolve um refresh token novo e invalida o anterior. Se um token antigo aparecer de novo, alguém copiou: o servidor revoga toda a família de tokens daquela sessão e força novo login. A RFC 9700 (boas práticas de segurança do OAuth 2.0) pede, para clientes públicos, refresh token com rotação ou vinculado ao remetente.</p>
+<pre><code class="http">POST /oauth/token HTTP/1.1
+Host: login.exemplo-saude.com.br
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&amp;refresh_token=rt_8Kd2...&amp;client_id=portal-paciente</code></pre>
+<pre><code class="json">{
+  "access_token": "eyJhbGciOiJSUzI1NiIs...",
+  "token_type": "Bearer",
+  "expires_in": 600,
+  "refresh_token": "rt_Q7m1..."
+}</code></pre>
+  <p><strong>Tokens vinculados ao remetente</strong> (sender-constrained) vão além: o token só funciona junto com uma prova de posse de uma chave do cliente. As opções padronizadas são DPoP (RFC 9449) e mTLS (RFC 8705, base no <a href="04-tls.html">módulo 4</a>).</p>
+
+  <h3>Onde guardar no navegador</h3>
+  <div class="tbl"><table><thead><tr><th>Local</th><th>Vantagem</th><th>Risco</th></tr></thead><tbody>
+    <tr><td><code>localStorage</code></td><td>Simples, sobrevive a recarregar</td><td>Qualquer script da página lê. Um XSS ou uma dependência comprometida leva o token embora.</td></tr>
+    <tr><td><code>sessionStorage</code></td><td>Some ao fechar a aba</td><td>Mesmo risco de XSS do localStorage</td></tr>
+    <tr><td>Memória (variável JS)</td><td>Não persiste; mais difícil de extrair</td><td>Perde ao recarregar; ainda exposto a XSS enquanto a página roda</td></tr>
+    <tr><td>Cookie <code>HttpOnly</code></td><td>Script não lê</td><td>Enviado automaticamente: exige proteção contra CSRF (SameSite e afins)</td></tr>
+    <tr><td>BFF (backend for frontend)</td><td>Tokens ficam no servidor; o navegador só tem um cookie de sessão HttpOnly</td><td>Mais uma peça para operar</td></tr>
+  </tbody></table></div>
+  <p>O debate "localStorage x cookie" costuma esquecer um ponto: com XSS, o atacante consegue agir em nome do usuário em qualquer cenário. A diferença é que, com localStorage, ele também <em>leva o token</em> e continua usando de outro lugar até o token expirar. Por isso, para aplicações com dados sensíveis, o padrão recomendado hoje é o <strong>BFF</strong>: o back-end da própria aplicação faz o fluxo OAuth, guarda os tokens e expõe ao navegador apenas um cookie de sessão bem configurado.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Dado de saúde + SPA = BFF com cookie HttpOnly. Token em localStorage só em aplicação de baixo risco e com política de CSP forte.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Access token curto para a API, refresh token longo só para o servidor de autorização, com rotação e detecção de reuso. No navegador evito localStorage; prefiro o padrão BFF, em que o token nem chega ao JavaScript."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina em documento os tempos de vida de access e refresh token e quem pode mudá-los. Peça um teste de "logout em todos os dispositivos" e de "usuário desligado perde acesso em quanto tempo?". A resposta a essa segunda pergunta é um número que auditoria e jurídico vão querer saber.</p></div>
+</section>
+
+<section class="chap" id="oauth">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>OAuth 2.0</h2>
+  <p><strong>OAuth 2.0</strong> (RFC 6749) é um framework de <strong>autorização delegada</strong>: permite que um aplicativo acesse uma API em nome de um usuário, sem receber a senha dele. O resultado é um access token com escopo limitado. OAuth sozinho não diz quem é o usuário; para isso existe o OpenID Connect (<a href="#oidc-sso">seção 8</a>).</p>
+
+  <h3>Papéis</h3>
+  <div class="tbl"><table><thead><tr><th>Papel</th><th>Quem é</th><th>Exemplo</th></tr></thead><tbody>
+    <tr><td>Resource owner</td><td>Dono do dado, normalmente o usuário</td><td>O paciente</td></tr>
+    <tr><td>Client</td><td>Aplicação que quer acessar a API</td><td>App do portal do paciente</td></tr>
+    <tr><td>Authorization server</td><td>Autentica o usuário e emite tokens</td><td>Keycloak, Entra ID, Auth0</td></tr>
+    <tr><td>Resource server</td><td>API que aceita o token</td><td>API de exames</td></tr>
+  </tbody></table></div>
+  <p>Clientes podem ser <strong>confidenciais</strong> (rodam num servidor e guardam um segredo) ou <strong>públicos</strong> (SPA, app mobile, CLI: qualquer segredo embutido pode ser extraído).</p>
+
+  <h3>Authorization code + PKCE</h3>
+  <p>É o fluxo recomendado para qualquer aplicação com usuário, inclusive SPAs e apps mobile. O <strong>PKCE</strong> (Proof Key for Code Exchange, RFC 7636) impede que alguém que intercepte o código de autorização consiga trocá-lo por tokens.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 545" role="img" aria-label="Diagrama de sequência do fluxo authorization code com PKCE entre navegador, app cliente, servidor de autorização e API">
+      <defs><marker id="ah-pkce" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="10" y="10" width="120" height="38" rx="5"/><text class="ttl" x="70" y="34" text-anchor="middle">Navegador</text>
+      <rect class="box" x="160" y="10" width="140" height="38" rx="5"/><text class="ttl" x="230" y="34" text-anchor="middle">App cliente</text>
+      <rect class="box-m" x="360" y="10" width="180" height="38" rx="5"/><text class="ttl" x="450" y="34" text-anchor="middle">Servidor de autorização</text>
+      <rect class="box" x="565" y="10" width="110" height="38" rx="5"/><text class="ttl" x="620" y="34" text-anchor="middle">API</text>
+      <line class="ln" x1="70" y1="48" x2="70" y2="505" stroke-dasharray="4 4"/>
+      <line class="ln" x1="230" y1="48" x2="230" y2="505" stroke-dasharray="4 4"/>
+      <line class="ln" x1="450" y1="48" x2="450" y2="505" stroke-dasharray="4 4"/>
+      <line class="ln" x1="620" y1="48" x2="620" y2="505" stroke-dasharray="4 4"/>
+
+      <rect class="box-w" x="160" y="60" width="140" height="40" rx="5"/>
+      <text class="lbl" x="230" y="76" text-anchor="middle">0 gera code_verifier</text>
+      <text class="lbl" x="230" y="92" text-anchor="middle">e code_challenge</text>
+
+      <text x="150" y="122" text-anchor="middle">1 redirect 302</text>
+      <line class="ln" x1="230" y1="128" x2="72" y2="128" marker-end="url(#ah-pkce)"/>
+
+      <text x="260" y="162" text-anchor="middle">2 GET /authorize?code_challenge&amp;state</text>
+      <line class="ln" x1="70" y1="168" x2="448" y2="168" marker-end="url(#ah-pkce)"/>
+
+      <text x="260" y="202" text-anchor="middle">3 tela de login + MFA</text>
+      <line class="ln" x1="450" y1="208" x2="72" y2="208" marker-end="url(#ah-pkce)"/>
+
+      <text x="260" y="242" text-anchor="middle">4 senha / passkey / consentimento</text>
+      <line class="ln" x1="70" y1="248" x2="448" y2="248" marker-end="url(#ah-pkce)"/>
+
+      <text x="260" y="282" text-anchor="middle">5 302 redirect_uri?code=..&amp;state=..</text>
+      <line class="ln-a" x1="450" y1="288" x2="72" y2="288" marker-end="url(#ah-pkce)"/>
+
+      <text x="150" y="322" text-anchor="middle">6 /callback?code</text>
+      <line class="ln" x1="70" y1="328" x2="228" y2="328" marker-end="url(#ah-pkce)"/>
+
+      <text x="340" y="362" text-anchor="middle">7 POST /token code+verifier</text>
+      <line class="ln-a" x1="230" y1="368" x2="448" y2="368" marker-end="url(#ah-pkce)"/>
+
+      <text x="340" y="402" text-anchor="middle">8 access, refresh, id</text>
+      <line class="ln-a" x1="450" y1="408" x2="232" y2="408" marker-end="url(#ah-pkce)"/>
+
+      <text x="425" y="442" text-anchor="middle">9 Authorization: Bearer access_token</text>
+      <line class="ln" x1="230" y1="448" x2="618" y2="448" marker-end="url(#ah-pkce)"/>
+
+      <text x="425" y="482" text-anchor="middle">10 200 OK + dados</text>
+      <line class="ln" x1="620" y1="488" x2="232" y2="488" marker-end="url(#ah-pkce)"/>
+
+      <text class="lbl" x="10" y="532">O verifier nunca passa pelo navegador na URL: quem roubar o code no passo 5 não consegue fazer o passo 7.</text>
+    </svg>
+    <figcaption>Fluxo authorization code com PKCE. No padrão BFF, o "app cliente" é o back-end da aplicação e os tokens nunca chegam ao navegador. Numa SPA pura, o app cliente roda no próprio navegador.</figcaption>
+  </figure>
+
+  <ol class="seq">
+    <li><div><strong>Gerar o par PKCE.</strong> O cliente cria um <code>code_verifier</code> aleatório e calcula <code>code_challenge = BASE64URL(SHA256(code_verifier))</code>.</div></li>
+    <li><div><strong>Redirecionar para autorizar.</strong> O cliente manda o navegador ao servidor de autorização com o challenge e um <code>state</code> aleatório (proteção contra CSRF no retorno).</div></li>
+    <li><div><strong>Login.</strong> O usuário se autentica no servidor de autorização, nunca no cliente, e consente com os escopos.</div></li>
+    <li><div><strong>Retorno.</strong> O servidor redireciona para o <code>redirect_uri</code> cadastrado com um <code>code</code> de uso único e curta duração. O cliente confere o <code>state</code>.</div></li>
+    <li><div><strong>Troca.</strong> O cliente envia o <code>code</code> e o <code>code_verifier</code> ao endpoint de token. O servidor calcula o hash do verifier e compara com o challenge recebido no passo 2.</div></li>
+  </ol>
+<pre><code class="http">GET /authorize?response_type=code&amp;client_id=portal-paciente&amp;redirect_uri=https%3A%2F%2Fportal.exemplo-saude.com.br%2Fcallback&amp;scope=openid%20exames%3Aler&amp;state=af0ifjsldkj&amp;code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&amp;code_challenge_method=S256 HTTP/1.1
+Host: login.exemplo-saude.com.br
+
+POST /token HTTP/1.1
+Host: login.exemplo-saude.com.br
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&amp;code=SplxlOBeZQQYbYS6WxSbIA&amp;redirect_uri=https%3A%2F%2Fportal.exemplo-saude.com.br%2Fcallback&amp;client_id=portal-paciente&amp;code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk</code></pre>
+
+  <h3>Outros fluxos (grants)</h3>
+  <div class="tbl"><table><thead><tr><th>Fluxo</th><th>Uso</th><th>Situação</th></tr></thead><tbody>
+    <tr><td>Authorization code + PKCE</td><td>Apps com usuário: web, SPA, mobile</td><td>Recomendado</td></tr>
+    <tr><td>Client credentials</td><td>Máquina a máquina, sem usuário (job noturno chamando a API de faturamento)</td><td>Recomendado para serviços</td></tr>
+    <tr><td>Device code (RFC 8628)</td><td>Dispositivos sem teclado ou navegador: TV, CLI, totem. O aparelho mostra um código; o usuário confirma em outro dispositivo enquanto o aparelho consulta o servidor até receber o token.</td><td>Recomendado para esse nicho</td></tr>
+    <tr><td>Implicit</td><td>SPAs antigas: token devolvido direto na URL</td><td>Desaconselhado</td></tr>
+    <tr><td>Resource owner password</td><td>App recebe usuário e senha e troca por token</td><td>Desaconselhado</td></tr>
+  </tbody></table></div>
+<pre><code class="http">POST /token HTTP/1.1
+Host: login.exemplo-saude.com.br
+Authorization: Basic ZmF0dXJhbWVudG8tam9iOnNlZ3JlZG8tZmljdGljaW8=
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&amp;scope=faturamento%3Aescrever</code></pre>
+
+  <h3>Por que implicit e password grant saíram de cena</h3>
+  <ul>
+    <li><strong>Implicit</strong>: o access token volta no fragmento da URL, onde pode vazar por histórico, extensões e logs; não há como vincular o token ao cliente; e não há refresh token seguro. Com PKCE, SPAs usam authorization code sem segredo, então o implicit perdeu a razão de existir.</li>
+    <li><strong>Password grant</strong>: o aplicativo vê a senha do usuário, o que contraria a ideia do OAuth; impede MFA moderno, passkeys e federação com outros provedores; e ensina o usuário a digitar a senha em qualquer tela.</li>
+  </ul>
+  <p>A RFC 9700 desaconselha os dois, e o rascunho do OAuth 2.1 os remove.</p>
+
+  <h3>Escopos</h3>
+  <p><strong>Escopos</strong> (scopes) limitam o que o token permite, como <code>exames:ler</code> ou <code>agenda:escrever</code>. Eles definem o teto da delegação. A API ainda precisa checar se aquele usuário pode ver aquele exame específico: escopo não substitui autorização por registro.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Aceitar <code>redirect_uri</code> com coringa ou por prefixo. O atacante registra um caminho parecido e recebe o <code>code</code>. O servidor de autorização deve comparar o <code>redirect_uri</code> de forma exata.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"OAuth 2.0 delega autorização por meio de tokens com escopo. Para apps com usuário uso authorization code com PKCE; para serviço a serviço, client credentials. Implicit e password grant estão desaconselhados porque expõem token na URL ou a senha ao cliente."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija um inventário de clientes OAuth: quem é o dono de cada um, quais escopos usa, se é público ou confidencial, quais <code>redirect_uri</code> estão cadastrados. Clientes órfãos com escopos amplos são uma porta aberta clássica. Revise esse inventário a cada trimestre junto com a revisão de acessos.</p></div>
+</section>
+
+<section class="chap" id="oidc-sso">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>OpenID Connect, SSO e provedores de identidade</h2>
+  <p><strong>OpenID Connect</strong> (OIDC) é uma camada de identidade sobre o OAuth 2.0. O cliente pede o escopo <code>openid</code> e recebe, além do access token, um <strong>ID token</strong>: um JWT que diz quem fez login, quando e como.</p>
+
+  <h3>ID token x access token</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>ID token</th><th>Access token</th></tr></thead><tbody>
+    <tr><td>Destinatário</td><td>O cliente (o <code>aud</code> é o <code>client_id</code>)</td><td>A API</td></tr>
+    <tr><td>Uso</td><td>Saber quem logou e iniciar a sessão no app</td><td>Chamar a API</td></tr>
+    <tr><td>Formato</td><td>Sempre JWT</td><td>JWT ou opaco</td></tr>
+    <tr><td>Erro comum</td><td>Enviar o ID token para a API como se fosse access token</td><td>Ler o access token no cliente para tirar dados do usuário</td></tr>
+  </tbody></table></div>
+<pre><code class="json">{
+  "iss": "https://login.exemplo-saude.com.br",
+  "sub": "u-48213",
+  "aud": "portal-paciente",
+  "exp": 1795601100,
+  "iat": 1795600500,
+  "auth_time": 1795600480,
+  "nonce": "n-0S6_WzA2Mj",
+  "name": "Maria Exemplo",
+  "email": "maria@exemplo.com"
+}</code></pre>
+  <p>O <code>nonce</code> é gerado pelo cliente no pedido e conferido no ID token, o que impede reaproveitar um ID token antigo.</p>
+
+  <h3>Userinfo e discovery</h3>
+  <ul>
+    <li><strong>Userinfo</strong>: endpoint que devolve claims do usuário mediante o access token. Útil para dados que não cabem ou não devem ir no ID token.</li>
+    <li><strong>Discovery</strong>: o provedor publica sua configuração em <code>/.well-known/openid-configuration</code>. Bibliotecas leem esse documento e se configuram sozinhas.</li>
+  </ul>
+<pre><code class="sh">curl -s https://login.exemplo-saude.com.br/.well-known/openid-configuration</code></pre>
+<pre><code class="json">{
+  "issuer": "https://login.exemplo-saude.com.br",
+  "authorization_endpoint": "https://login.exemplo-saude.com.br/authorize",
+  "token_endpoint": "https://login.exemplo-saude.com.br/token",
+  "userinfo_endpoint": "https://login.exemplo-saude.com.br/userinfo",
+  "jwks_uri": "https://login.exemplo-saude.com.br/.well-known/jwks.json",
+  "scopes_supported": ["openid", "profile", "email"],
+  "code_challenge_methods_supported": ["S256"]
+}</code></pre>
+
+  <h3>SSO e federação</h3>
+  <p><strong>SSO</strong> (single sign-on, login único) significa que o usuário autentica uma vez no <strong>IdP</strong> (identity provider, provedor de identidade) e entra nos outros sistemas sem digitar senha de novo, porque o IdP mantém a própria sessão. Os sistemas que confiam no IdP são chamados de relying parties (no OIDC) ou service providers (no SAML).</p>
+  <p><strong>SAML 2.0</strong> é o padrão mais antigo de SSO corporativo: asserções em XML assinadas, trafegando pelo navegador via redirecionamento ou POST de formulário. Muitos sistemas corporativos e de saúde legados só falam SAML. Para sistemas novos, OIDC é mais simples de integrar, usa JSON e funciona bem com apps mobile e APIs.</p>
+  <p>Login federado também precisa de <strong>provisionamento</strong>: criar, alterar e desativar contas nos sistemas quando o RH contrata ou desliga alguém. O padrão para isso é o <strong>SCIM</strong>. Sem ele, o desligamento depende de alguém lembrar de cada sistema.</p>
+
+  <h3>Provedores de identidade</h3>
+  <div class="tbl"><table><thead><tr><th>Provedor</th><th>Modelo</th><th>Quando faz sentido</th></tr></thead><tbody>
+    <tr><td>Keycloak</td><td>Código aberto, você hospeda e opera</td><td>Controle total, dados no seu ambiente, sem custo de licença por usuário. Exige equipe para operar, atualizar e monitorar.</td></tr>
+    <tr><td>Microsoft Entra ID (antigo Azure AD)</td><td>SaaS da Microsoft</td><td>Empresa já usa Microsoft 365; identidade de funcionários, acesso condicional</td></tr>
+    <tr><td>Okta</td><td>SaaS</td><td>Identidade de funcionários com muitas integrações prontas</td></tr>
+    <tr><td>Auth0 (da Okta)</td><td>SaaS voltado a desenvolvedores</td><td>Login de clientes finais (CIAM) com boa experiência de integração</td></tr>
+    <tr><td>Amazon Cognito</td><td>SaaS da AWS</td><td>Aplicações já hospedadas na AWS, custo por usuário ativo</td></tr>
+  </tbody></table></div>
+  <p>Separe dois mundos: identidade de <strong>funcionários</strong> (workforce: médicos, recepção, TI) e de <strong>clientes</strong> (CIAM: pacientes no portal). Os requisitos de escala, experiência e integração são diferentes, e muitas empresas usam provedores distintos para cada um.</p>
+
+  <h3>Construir x comprar identidade</h3>
+  <div class="tbl"><table><thead><tr><th>Critério</th><th>Construir (login próprio)</th><th>Usar IdP (SaaS ou Keycloak)</th></tr></thead><tbody>
+    <tr><td>Tempo até ter MFA, passkeys, SSO</td><td>Meses, e manutenção contínua</td><td>Configuração</td></tr>
+    <tr><td>Risco de erro grave</td><td>Alto: cada detalhe das seções anteriores vira responsabilidade do time</td><td>Menor, concentrado na integração</td></tr>
+    <tr><td>Custo</td><td>Salários e oportunidade perdida</td><td>Licença por usuário (SaaS) ou operação (Keycloak)</td></tr>
+    <tr><td>Controle e residência de dados</td><td>Total</td><td>Depende do contrato e da região do provedor</td></tr>
+    <tr><td>Dependência de fornecedor</td><td>Nenhuma</td><td>Real; migrar de IdP dá trabalho</td></tr>
+  </tbody></table></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>"OAuth autoriza, OIDC autentica: o ID token vai para o cliente e diz quem logou; o access token vai para a API. SSO centraliza a sessão no IdP. SAML é o padrão XML mais antigo, ainda comum em integrações corporativas."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Identidade raramente é diferencial do produto; é um risco que precisa ser bem resolvido. Na maioria dos casos, comprar ou adotar um IdP pronto é a decisão certa. Construa só com motivo forte e documentado. Ao escolher, avalie: suporte a OIDC e SAML, MFA resistente a phishing, SCIM, logs exportáveis para o SIEM, região de armazenamento dos dados, SLA, preço na escala de daqui a três anos e plano de saída.</p></div>
+</section>
+
+<section class="chap" id="autorizacao">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Modelos de autorização, menor privilégio e contas de serviço</h2>
+  <p>Depois de saber quem é o usuário, o sistema decide o que ele pode fazer. Há três modelos principais, que se combinam na prática.</p>
+
+  <div class="tbl"><table><thead><tr><th>Modelo</th><th>Decide por</th><th>Exemplo em saúde</th><th>Limite</th></tr></thead><tbody>
+    <tr><td>RBAC (role-based)</td><td>Papel do usuário</td><td><code>recepcao</code> agenda consultas; <code>medico</code> registra evolução</td><td>Explosão de papéis quando surgem exceções ("médico, mas só da unidade X")</td></tr>
+    <tr><td>ABAC (attribute-based)</td><td>Atributos do usuário, do recurso e do contexto</td><td>Médico acessa prontuário se a unidade dele é a do atendimento e o horário está dentro do plantão</td><td>Regras mais difíceis de auditar e testar</td></tr>
+    <tr><td>ReBAC (relationship-based)</td><td>Relações entre entidades</td><td>Médico vê o paciente com quem tem vínculo de atendimento; responsável legal vê dados do menor</td><td>Exige modelar e manter o grafo de relações</td></tr>
+  </tbody></table></div>
+  <p>Ferramentas de política ajudam a tirar regras do código espalhado: OPA (Open Policy Agent), Cedar e OpenFGA (inspirado no Zanzibar, sistema de autorização do Google) são exemplos.</p>
+  <p>Sistemas de saúde costumam ter o recurso de <strong>"quebra de vidro"</strong> (break-glass): numa emergência, o profissional acessa um prontuário fora da regra normal, justifica o motivo e o acesso fica registrado para revisão posterior.</p>
+
+  <h3>Checagem no servidor, sempre</h3>
+  <p>Esconder um botão no front-end é experiência de uso. A decisão real acontece no servidor, a cada requisição, para cada recurso. A falha clássica é o <strong>IDOR</strong> (insecure direct object reference): o usuário troca o ID na URL e acessa dado de outra pessoa.</p>
+<pre><code class="http">GET /api/pacientes/1002/exames HTTP/1.1
+Authorization: Bearer eyJ...   # token da paciente 1001, que trocou o ID na URL</code></pre>
+<pre data-file="exames.js"><code class="js">app.get('/api/pacientes/:id/exames', autenticar, async (req, res) =&gt; {
+  const paciente = await repo.buscarPaciente(req.params.id);
+  // checagem por registro: o token prova quem é, não o que pode ver
+  if (!paciente || !(await podeVer(req.usuario, paciente))) {
+    return res.status(404).end();   // 404 para não confirmar que o ID existe
+  }
+  await auditoria.registrar(req.usuario.sub, 'ver_exames', paciente.id);
+  res.json(await repo.examesDo(paciente.id));
+});</code></pre>
+  <p>IDOR e o restante do OWASP Top 10 estão no <a href="09-seguranca-web.html">módulo 9</a>.</p>
+
+  <h3>Menor privilégio</h3>
+  <p>Cada pessoa, serviço e chave recebe só o acesso necessário para a tarefa, pelo tempo necessário. Na prática: papéis mínimos por padrão, acesso administrativo temporário e aprovado (just-in-time), revisão periódica de acessos e remoção automática no desligamento.</p>
+
+  <h3>Contas de serviço e chaves de API</h3>
+  <p>Serviços também têm identidade. Boas práticas:</p>
+  <ul>
+    <li>Uma identidade por serviço, nunca uma credencial compartilhada por todos.</li>
+    <li>Preferir credenciais de curta duração: OAuth client credentials, identidade de workload da nuvem (o serviço recebe credenciais temporárias do provedor) ou mTLS.</li>
+    <li>Chaves de API longas e aleatórias, com prefixo identificável (ajuda scanners de segredo a encontrá-las em repositórios), escopo mínimo, data de expiração e rotação.</li>
+    <li>Guardar no banco só o hash da chave. Como a chave é aleatória e longa, um hash rápido como SHA-256 basta aqui, ao contrário de senhas.</li>
+    <li>Segredos em cofre (Vault, Key Vault, Secrets Manager), nunca no repositório. Detalhes de operação no <a href="06-backend-infra.html">módulo 6</a>.</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>A "conta de integração" com perfil de administrador, criada anos atrás, com senha que ninguém troca porque "pode quebrar algo". Ela aparece em quase toda auditoria. Trate como dívida de segurança com dono e prazo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"RBAC resolve o grosso; ABAC e ReBAC cobrem regras por contexto e vínculo, comuns em saúde. Toda checagem acontece no servidor e por registro, senão surge IDOR. Contas de serviço têm identidade própria, escopo mínimo e credencial de curta duração."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Institua revisão de acessos trimestral, com o gestor de cada área confirmando quem precisa de quê. Mantenha inventário de contas de serviço e chaves com dono, escopo e data de expiração. Em testes, peça casos de autorização negativa ("usuário A tenta ver dado de B") como parte obrigatória da definição de pronto.</p></div>
+</section>
+
+<section class="chap" id="protecao">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Ataques a login, recuperação de conta e LGPD</h2>
+
+  <h3>Força bruta, credential stuffing e password spraying</h3>
+  <div class="tbl"><table><thead><tr><th>Ataque</th><th>Como é</th><th>Defesa principal</th></tr></thead><tbody>
+    <tr><td>Força bruta</td><td>Muitas senhas contra uma conta</td><td>Limite por conta, atraso progressivo, bloqueio temporário</td></tr>
+    <tr><td>Credential stuffing</td><td>Pares usuário/senha vazados de outros sites, testados em massa</td><td>MFA, checagem de senhas vazadas, detecção de bots, limite por IP e por padrão de tráfego</td></tr>
+    <tr><td>Password spraying</td><td>Poucas senhas comuns contra muitas contas, para não disparar bloqueio por conta</td><td>Bloqueio de senhas comuns, monitoramento de falhas distribuídas, MFA</td></tr>
+  </tbody></table></div>
+  <p>Rate limiting (limitação de taxa) responde com <code>429 Too Many Requests</code> e, idealmente, <code>Retry-After</code>. Combine limites por IP, por conta e globais: limitar só por IP não segura ataques distribuídos por botnets e proxies residenciais.</p>
+<pre><code class="http">HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+Content-Type: application/json
+
+{"erro": "muitas tentativas, tente novamente em instantes"}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Bloqueio permanente após 5 erros. O atacante não entra, mas consegue bloquear qualquer usuário de propósito, inclusive o plantonista no meio do turno. Prefira bloqueio temporário, atraso crescente e desafio adicional.</p></div>
+
+  <h3>Enumeração de usuários</h3>
+  <p>O sistema não deve revelar se um e-mail ou CPF está cadastrado. Lugares onde isso costuma vazar:</p>
+  <ul>
+    <li>Login: "usuário não encontrado" x "senha incorreta". Use mensagem única: "usuário ou senha inválidos".</li>
+    <li>Recuperação: "enviamos o link" só quando a conta existe. Responda sempre "se houver conta com esse e-mail, enviaremos instruções".</li>
+    <li>Cadastro: "e-mail já cadastrado". Alternativa: aceitar e avisar o dono da conta por e-mail.</li>
+    <li>Tempo de resposta: calcular hash só quando o usuário existe deixa a resposta mais rápida para usuários inexistentes. Calcule um hash de mentira no caminho negativo.</li>
+  </ul>
+
+  <h3>Recuperação de conta</h3>
+  <ol class="seq">
+    <li><div><strong>Token forte.</strong> Aleatório, de uso único, com validade curta. Guarde só o hash dele no banco.</div></li>
+    <li><div><strong>Canal verificado.</strong> Envie para o e-mail ou telefone já cadastrado, nunca para um informado no pedido.</div></li>
+    <li><div><strong>Depois da troca.</strong> Invalide o token, encerre as sessões abertas e avise o usuário pelos canais cadastrados.</div></li>
+    <li><div><strong>MFA continua valendo.</strong> Redefinir senha não deve desligar o segundo fator. Recuperar o segundo fator exige processo próprio, com verificação de identidade proporcional ao risco.</div></li>
+  </ol>
+
+  <h3>LGPD aplicada a identidade</h3>
+  <p>A Lei Geral de Proteção de Dados (Lei 13.709/2018) se aplica a quase tudo deste módulo:</p>
+  <ul>
+    <li><strong>Dados pessoais</strong>: nome, CPF, e-mail, telefone, endereço IP e identificadores de login são dados pessoais.</li>
+    <li><strong>Dado sensível</strong>: dado referente à saúde é classificado como dado pessoal sensível (art. 5º, II), com regras mais restritas de tratamento. Num sistema de saúde, até o fato de alguém ter conta numa clínica específica pode revelar informação de saúde.</li>
+    <li><strong>Segurança</strong>: a lei exige medidas técnicas e administrativas para proteger os dados. MFA, menor privilégio e hash correto de senha são exemplos concretos disso.</li>
+    <li><strong>Minimização</strong>: colete no cadastro só o necessário e não coloque dados de saúde em tokens, URLs ou logs.</li>
+    <li><strong>Log de acesso</strong>: registre quem acessou qual dado sensível, quando e de onde. Isso serve para auditoria, investigação de incidentes e para responder ao titular. O Marco Civil da Internet (Lei 12.965/2014) também obriga provedores de aplicação a guardar registros de acesso por seis meses.</li>
+    <li><strong>Incidentes</strong>: vazamento de credenciais ou de dados de pacientes pode exigir comunicação à ANPD e aos titulares. O jurídico e o encarregado (DPO) decidem; a engenharia precisa entregar os fatos rápido.</li>
+  </ul>
+<pre><code class="json">{
+  "ts": "2026-11-25T10:02:11Z",
+  "acao": "ver_prontuario",
+  "ator": "u-77120",
+  "papel": "medico",
+  "recurso": "paciente:p-30551",
+  "motivo": "atendimento:at-99812",
+  "ip": "10.20.4.17",
+  "resultado": "permitido"
+}</code></pre>
+  <p>O log identifica o ator e o recurso por ID, sem nome de paciente nem conteúdo clínico, e nunca contém senha, token ou código de MFA.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Contra credential stuffing combino MFA, checagem de senha vazada, rate limiting por IP e por conta e detecção de bots. Mensagens de login e recuperação são genéricas para não permitir enumeração."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tenha um painel com tentativas de login falhas, bloqueios e redefinições de senha por hora. Picos indicam ataque antes de virar incidente. Envolva o encarregado de dados desde o desenho do login e do log de acesso, e defina retenção dos logs com o jurídico. Logs de acesso a prontuário precisam ser imutáveis para quem é auditado.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Autenticação (authn)</dt><dd>Confirmar a identidade de quem faz a requisição.</dd></div>
+    <div><dt>Autorização (authz)</dt><dd>Decidir se uma identidade pode executar uma ação sobre um recurso.</dd></div>
+    <div><dt>MFA</dt><dd>Autenticação com fatores de categorias diferentes: conhecimento, posse, inerência.</dd></div>
+    <div><dt>Salt</dt><dd>Valor aleatório por usuário somado à senha antes do hash.</dd></div>
+    <div><dt>Pepper</dt><dd>Segredo da aplicação, guardado fora do banco, usado no hash de senhas.</dd></div>
+    <div><dt>Argon2id</dt><dd>Função de hash de senha com custo de memória e CPU configuráveis.</dd></div>
+    <div><dt>TOTP</dt><dd>Código temporário calculado a partir de um segredo compartilhado e do horário.</dd></div>
+    <div><dt>FIDO2 / WebAuthn</dt><dd>Padrões de autenticação por chave pública ligada à origem do site.</dd></div>
+    <div><dt>Passkey</dt><dd>Credencial FIDO2 que substitui a senha, sincronizada ou presa ao dispositivo.</dd></div>
+    <div><dt>Session fixation</dt><dd>Ataque em que a vítima loga com um identificador de sessão escolhido pelo atacante.</dd></div>
+    <div><dt>JWT</dt><dd>Token em JSON com header, payload e assinatura, codificados em Base64URL.</dd></div>
+    <div><dt>JWKS</dt><dd>Conjunto de chaves públicas publicado pelo emissor para validar assinaturas.</dd></div>
+    <div><dt>Claim</dt><dd>Afirmação dentro de um token, como <code>sub</code>, <code>aud</code> ou <code>exp</code>.</dd></div>
+    <div><dt>Refresh token</dt><dd>Credencial de vida longa usada só para obter novos access tokens.</dd></div>
+    <div><dt>BFF</dt><dd>Backend for frontend: servidor da aplicação que guarda tokens no lugar do navegador.</dd></div>
+    <div><dt>OAuth 2.0</dt><dd>Framework de autorização delegada baseado em tokens com escopo.</dd></div>
+    <div><dt>PKCE</dt><dd>Extensão do OAuth que amarra a troca do código ao cliente que iniciou o fluxo.</dd></div>
+    <div><dt>OpenID Connect</dt><dd>Camada de identidade sobre o OAuth que entrega o ID token.</dd></div>
+    <div><dt>IdP</dt><dd>Provedor de identidade: sistema que autentica usuários para outros sistemas.</dd></div>
+    <div><dt>SAML 2.0</dt><dd>Padrão de SSO baseado em asserções XML assinadas.</dd></div>
+    <div><dt>SCIM</dt><dd>Padrão para provisionar e desativar contas entre sistemas.</dd></div>
+    <div><dt>RBAC / ABAC / ReBAC</dt><dd>Autorização por papel, por atributos ou por relações entre entidades.</dd></div>
+    <div><dt>IDOR</dt><dd>Acesso a objeto de outro usuário trocando um identificador na requisição.</dd></div>
+    <div><dt>Credential stuffing</dt><dd>Teste em massa de credenciais vazadas de outros serviços.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+
+  <h3>1. Um token vazou no log</h3>
+  <p>Um desenvolvedor descobre que o middleware de log grava o cabeçalho <code>Authorization</code> completo, e os logs vão para uma ferramenta de observabilidade acessada por terceirizados.</p>
+  <ul>
+    <li><strong>Agora:</strong> estimar exposição (desde quando, quem tem acesso aos logs). Se houver refresh tokens ou chaves de API de longa duração nos logs, revogar. Access tokens curtos já expirados representam risco menor, mas entram no relatório.</li>
+    <li><strong>Correção:</strong> mascarar <code>Authorization</code>, <code>Cookie</code> e <code>Set-Cookie</code> no middleware; expurgar os registros afetados conforme a política de retenção.</li>
+    <li><strong>Gestão:</strong> acionar segurança e encarregado de dados para avaliar se é incidente reportável; adicionar teste automatizado que falha se o log contiver padrão de token; registrar post-mortem sem caça a culpados.</li>
+  </ul>
+
+  <h3>2. Precisamos de login único entre três sistemas</h3>
+  <p>Agenda (novo), prontuário (legado com SAML) e portal financeiro (login próprio com senha em SHA-1).</p>
+  <ul>
+    <li>Escolher um IdP que fale OIDC e SAML. Agenda integra por OIDC; prontuário por SAML.</li>
+    <li>Portal financeiro: migrar para OIDC. Na transição, importar usuários e forçar redefinição ou re-hash no primeiro login.</li>
+    <li>Ligar o IdP ao RH via SCIM para desativação automática no desligamento.</li>
+    <li>Gestão: plano em fases, comunicação com usuários, janela de convivência entre logins e critério claro de desligamento do login antigo.</li>
+  </ul>
+
+  <h3>3. Ataque de credential stuffing no portal do paciente</h3>
+  <p>O painel mostra milhares de logins falhos por minuto, de IPs variados, com taxa de sucesso pequena e constante.</p>
+  <ul>
+    <li>Ativar desafio adicional e limites mais rígidos no endpoint de login; bloquear padrões de bot no WAF ou gateway.</li>
+    <li>Identificar contas com login bem-sucedido durante o ataque: encerrar sessões, forçar redefinição e avisar os titulares.</li>
+    <li>Médio prazo: checagem de senhas vazadas no cadastro, MFA ou passkey oferecidos ativamente.</li>
+  </ul>
+
+  <h3>4. Ex-funcionário ainda acessa um sistema</h3>
+  <ul>
+    <li>Causa típica: o sistema tem usuários locais fora do IdP, ou o refresh token tem vida longa demais.</li>
+    <li>Ação: revogar sessões e tokens, revisar logs de acesso desde o desligamento, levar o sistema para o SSO com SCIM.</li>
+    <li>Gestão: transformar em indicador ("tempo entre desligamento no RH e perda de acesso em todos os sistemas") e revisar trimestralmente.</li>
+  </ul>
+
+  <h3>5. Um laboratório parceiro precisa enviar resultados para nossa API</h3>
+  <ul>
+    <li>Cadastrar um cliente OAuth confidencial com client credentials e escopo <code>resultados:escrever</code>, restrito ao que o parceiro precisa.</li>
+    <li>Considerar mTLS ou chave privada para autenticar o cliente em vez de segredo compartilhado.</li>
+    <li>Contrato com cláusulas de proteção de dados, dono técnico de cada lado, procedimento de rotação e de revogação.</li>
+  </ul>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre autenticação e autorização? E entre 401 e 403?</span></summary><div class="ans"><p>Autenticação confirma quem é o usuário; autorização decide o que ele pode fazer. 401 indica credencial ausente ou inválida e deve vir com <code>WWW-Authenticate</code>. 403 indica identidade válida sem permissão. Para não revelar que um recurso existe, às vezes se responde 404.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Como você armazena senhas?</span></summary><div class="ans"><p>Com função de hash lenta e com custo ajustável, de preferência Argon2id, com salt aleatório por usuário e parâmetros calibrados pelas recomendações da OWASP. Opcionalmente um pepper guardado fora do banco. Nunca hash rápido como MD5 ou SHA-256 puro, nem criptografia reversível.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Por que a NIST não recomenda mais troca periódica de senha?</span></summary><div class="ans"><p>Troca forçada leva a senhas previsíveis (<code>Senha01</code>, <code>Senha02</code>) e não protege contra o vazamento em si. A recomendação é exigir troca quando houver indício de comprometimento, priorizar comprimento, bloquear senhas vazadas e comuns e usar MFA.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Por que passkeys resistem a phishing e TOTP não?</span></summary><div class="ans"><p>O código TOTP é um segredo que o usuário digita; uma página falsa repassa o código ao site verdadeiro em tempo real. A passkey é uma chave privada ligada ao domínio do site: o navegador informa a origem real e o autenticador só assina para o domínio registrado. Não há nada que o usuário possa entregar ao site falso.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Quais atributos você coloca num cookie de sessão?</span></summary><div class="ans"><p><code>HttpOnly</code> para JavaScript não ler, <code>Secure</code> para trafegar só em HTTPS, <code>SameSite=Lax</code> ou <code>Strict</code> contra CSRF, prefixo <code>__Host-</code> para impedir sobrescrita por subdomínio e expiração adequada. Além disso, gero novo identificador a cada login para evitar fixação de sessão.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>O payload de um JWT é seguro para guardar dados sensíveis?</span></summary><div class="ans"><p>Não. O JWT assinado (JWS) só garante integridade e origem; o payload é Base64URL e qualquer um decodifica. Para sigilo existe o JWE, mas o melhor é não colocar dado sensível no token e buscar o que for preciso na API.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Explique o ataque de confusão de algoritmos em JWT.</span></summary><div class="ans"><p>O servidor espera RS256, mas a biblioteca usa o <code>alg</code> informado pelo token. O atacante cria um token HS256 e o assina com a chave pública RSA usada como segredo HMAC. A validação passa. A defesa é fixar no servidor a lista de algoritmos aceitos e usar bibliotecas atualizadas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Como revogar um JWT antes de ele expirar?</span></summary><div class="ans"><p>Não dá diretamente, porque a validação é local. As opções são: access token curto mais refresh token revogável; lista de bloqueio por <code>jti</code> ou por usuário; ou trocar por token opaco com introspecção (RFC 7662). Cada opção troca simplicidade por estado no servidor.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Onde guardar tokens numa SPA?</span></summary><div class="ans"><p>Evito localStorage porque qualquer script, inclusive um XSS ou dependência comprometida, lê e exfiltra o token. Para dados sensíveis uso o padrão BFF: o back-end faz o fluxo OAuth e guarda os tokens, e o navegador recebe só um cookie HttpOnly, Secure e SameSite.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Descreva o fluxo authorization code com PKCE e o que o PKCE resolve.</span></summary><div class="ans"><p>O cliente gera um <code>code_verifier</code> e envia o hash (<code>code_challenge</code>) no pedido de autorização. O usuário loga no servidor de autorização, que devolve um <code>code</code> via redirect. O cliente troca o <code>code</code> pelo token enviando o verifier. Quem interceptar o <code>code</code> não tem o verifier e não consegue trocá-lo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Qual a diferença entre OAuth 2.0 e OpenID Connect?</span></summary><div class="ans"><p>OAuth 2.0 delega autorização: entrega um access token para chamar APIs. OIDC adiciona autenticação: com o escopo <code>openid</code>, o cliente recebe um ID token que diz quem logou, além do endpoint userinfo e do discovery.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Por que o implicit flow e o password grant são desaconselhados?</span></summary><div class="ans"><p>O implicit devolve o token na URL, sujeito a vazamento por histórico e logs, sem vínculo com o cliente nem refresh seguro. O password grant entrega a senha do usuário ao aplicativo e impede MFA moderno e federação. Authorization code com PKCE cobre os dois casos com mais segurança.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>RBAC, ABAC ou ReBAC: como escolher?</span></summary><div class="ans"><p>Começo com RBAC para permissões gerais por função. Quando surgem regras de contexto (unidade, horário, tipo de dado) entra ABAC; quando o acesso depende de vínculo entre entidades (médico e paciente, responsável e menor), ReBAC. Em saúde é comum combinar os três, com checagem sempre no servidor.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Como você protege o login contra credential stuffing?</span></summary><div class="ans"><p>MFA, checagem de senhas vazadas, rate limiting por IP, por conta e global, detecção de bots, mensagens genéricas para não permitir enumeração e monitoramento de picos de falha. Em caso de sucesso suspeito, encerro sessões e forço redefinição.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>(Gestão) Você construiria o sistema de login da empresa ou usaria um provedor?</span></summary><div class="ans"><p>Na maioria dos casos uso um IdP pronto, SaaS ou Keycloak, porque MFA, passkeys, SSO, SCIM e correções de segurança vêm prontos e o risco de erro cai. Construo só com motivo forte, como restrição regulatória que nenhum fornecedor atende. Na escolha avalio padrões suportados, região dos dados, custo na escala futura, logs e plano de saída.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>(Gestão) Como garantir que quem sai da empresa perde acesso a tudo?</span></summary><div class="ans"><p>Centralizando identidade num IdP com SSO, integrado ao RH por SCIM, e eliminando contas locais. Medir o tempo entre o desligamento e a perda de acesso, revisar acessos trimestralmente com os gestores das áreas e manter tokens com vida curta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>(Gestão) O que a LGPD muda no projeto de autenticação de um sistema de saúde?</span></summary><div class="ans"><p>Dados de saúde são dados pessoais sensíveis, então o controle de acesso precisa ser mais rigoroso e auditável: menor privilégio, MFA para quem acessa dados em massa, log de quem viu qual registro, minimização de dados em tokens e logs, e processo de resposta a incidentes envolvendo o encarregado de dados.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

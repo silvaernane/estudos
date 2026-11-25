@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 06: Confiabilidade e performance</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 06 de 10 · Confiabilidade e performance</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html" aria-current="page"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li class="sub"><ol>
+      <li><a href="#rede-mente"><span class="n">1</span>Falhas em sistemas distribuídos: por que a rede mente</a></li>
+      <li><a href="#timeouts"><span class="n">2</span>Timeouts: conexão, leitura e orçamento</a></li>
+      <li><a href="#retries"><span class="n">3</span>Retries: backoff exponencial, jitter e tempestade</a></li>
+      <li><a href="#idempotencia"><span class="n">4</span>Idempotência a fundo: a chave de idempotência</a></li>
+      <li><a href="#resiliencia"><span class="n">5</span>Circuit breaker, bulkhead, fallback e load shedding</a></li>
+      <li><a href="#rate-limiting"><span class="n">6</span>Rate limiting: algoritmos, 429 e implementação distribuída</a></li>
+      <li><a href="#cache-concorrencia"><span class="n">7</span>Cache HTTP e concorrência otimista (ETag, If-Match, 412)</a></li>
+      <li><a href="#performance"><span class="n">8</span>Desempenho: percentis, payload, N+1, pools e testes de caos</a></li>
+      <li><a href="#cenarios"><span class="n">9</span>Cenários práticos</a></li>
+      <li><a href="#glossario"><span class="n">10</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 06 · <span class="lvl l3">Avançado</span></div>
+  <h1>Confiabilidade e performance</h1>
+  <p class="lede">Uma API não é confiável porque o código está certo, e sim porque continua se comportando bem quando a rede, o banco ou o parceiro falham. Este módulo cobre timeouts, retries, idempotência, circuit breaker, rate limiting, cache, concorrência otimista e desempenho, com foco no que você cobra do time e responde em entrevista.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar por que a rede mente e desenhar timeouts, deadlines e retries que não pioram a falha.</li>
+    <li>Implementar idempotência com chave (Idempotency-Key), tratando corrida, resposta guardada, TTL e conflito de payload.</li>
+    <li>Usar circuit breaker, bulkhead, fallback e load shedding para isolar um parceiro instável.</li>
+    <li>Comparar algoritmos de rate limit (token bucket, leaky bucket, janelas), devolver 429 com Retry-After e implementar com Redis.</li>
+    <li>Aplicar cache HTTP (ETag, 304, Vary) e concorrência otimista (If-Match, 412), e ler latência por percentil.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="rede-mente">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Falhas em sistemas distribuídos: por que a rede mente</h2>
+  <p>Uma chamada local ou funciona ou lança erro. Uma chamada de rede tem um terceiro resultado: <strong>não sei</strong>. O pacote pode ter se perdido na ida, o servidor pode ter processado e a resposta se perdido na volta, ou o servidor pode estar lento demais. Do lado do cliente, os três casos são idênticos: silêncio e depois timeout.</p>
+  <p>Isso muda o design inteiro. O cliente de um <code>POST /agendamentos</code> que deu timeout não sabe se a consulta foi marcada. Se repetir, pode marcar duas; se não repetir, pode deixar o paciente sem consulta. A resposta é combinar <strong>timeouts, retries e idempotência</strong>.</p>
+
+  <h3>As falácias da computação distribuída (resumo)</h3>
+  <ul>
+    <li>A rede é confiável. Não é: há perda, reordenação, duplicação.</li>
+    <li>A latência é zero e a banda é infinita. Nenhuma das duas.</li>
+    <li>A topologia não muda, há um só administrador, o custo de transporte é zero. Falso nos três.</li>
+    <li>Relógios estão sincronizados. Quase nunca exatamente: não use hora de máquinas diferentes para decidir "quem veio primeiro".</li>
+  </ul>
+
+  <h3>Tipos de falha que importam em APIs</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Falha</th><th>Sintoma</th><th>Resposta de design</th></tr></thead>
+    <tbody>
+      <tr><td>Erro explícito (4xx/5xx)</td><td>O servidor respondeu e disse que falhou.</td><td>4xx não se repete sem corrigir; 5xx/503 pode repetir com cuidado.</td></tr>
+      <tr><td>Timeout</td><td>Sem resposta no prazo. Resultado desconhecido.</td><td>Repetir só o que é idempotente ou tem chave de idempotência.</td></tr>
+      <tr><td>Conexão recusada/reset</td><td>Serviço fora ou sobrecarregado.</td><td>Retry com backoff, circuit breaker, outra réplica.</td></tr>
+      <tr><td>Lentidão (a pior)</td><td>Responde, mas devagar. Ocupa threads, filas e conexões.</td><td>Timeout curto, limite de concorrência (bulkhead), load shedding.</td></tr>
+      <tr><td>Falha parcial</td><td>Uma dependência cai; o resto está bem.</td><td>Degradação graciosa e fallback.</td></tr>
+      <tr><td>Resposta incorreta ou duplicada</td><td>Dado velho, mensagem entregue duas vezes.</td><td>Idempotência, versionamento/ETag, validação.</td></tr>
+    </tbody></table></div>
+  <p>Falha total é fácil de detectar. A <strong>lentidão</strong> é mais perigosa: o sistema parece vivo, mas cada requisição presa consome um recurso, e a falha se propaga para quem o chama.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Em toda chamada remota, pergunte: "e se demorar? e se falhar? e se for repetida? e se responder duas vezes?". Quatro perguntas, quatro respostas no design.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que não basta fazer retry em toda falha?" Porque timeout não significa falha: a operação pode ter sido concluída. Repetir sem idempotência duplica efeitos (duas consultas, duas cobranças), e repetir demais amplifica a sobrecarga. Retry, timeout e idempotência são um conjunto.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Trate "o que acontece se o parceiro ficar lento por 30 minutos?" como pergunta obrigatória de revisão de design. Peça um mapa de dependências por fluxo crítico (agendar, autenticar, consultar resultado) com o comportamento esperado de cada uma em falha.</p></div>
+</section>
+
+<section class="chap" id="timeouts">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Timeouts: conexão, leitura e orçamento</h2>
+  <p>Um cliente HTTP sem timeout espera para sempre (ou pelo padrão da biblioteca, que pode ser infinito). Cada chamada presa segura uma thread, uma conexão e memória. Sem timeout, uma dependência lenta vira indisponibilidade do seu serviço.</p>
+
+  <h3>Os vários timeouts</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Timeout</th><th>O que limita</th><th>Valor típico</th></tr></thead>
+    <tbody>
+      <tr><td>Conexão (connect)</td><td>Estabelecer TCP/TLS. Se o host está fora, falha rápido.</td><td>Curto: centenas de ms a poucos segundos.</td></tr>
+      <tr><td>Leitura (read/response)</td><td>Esperar bytes depois da conexão. Entre dois pacotes, em muitas bibliotecas.</td><td>Baseado no p99 do serviço chamado, mais folga.</td></tr>
+      <tr><td>Total da requisição</td><td>Tempo máximo do início ao fim, incluindo corpo.</td><td>O que o chamador pode esperar.</td></tr>
+      <tr><td>Aquisição de conexão do pool</td><td>Esperar uma conexão livre. Evita fila infinita.</td><td>Curto; falhe rápido quando o pool está saturado.</td></tr>
+      <tr><td>Ociosidade (idle/keep-alive)</td><td>Quanto tempo uma conexão parada permanece aberta.</td><td>Menor que o idle timeout do balanceador, para evitar reuso de conexão já cortada.</td></tr>
+    </tbody></table></div>
+  <p>Um detalhe que gera bug: o timeout de leitura de muitas bibliotecas é "tempo sem receber dados", não "tempo total". Um servidor que envia um byte por segundo nunca estoura o timeout de leitura. Por isso defina também um <strong>timeout total</strong>.</p>
+
+  <h3>Orçamento de timeout e propagação de deadline</h3>
+  <p>Em uma cadeia cliente → API → serviços → parceiro, cada camada precisa de um timeout <strong>menor que o da camada acima</strong>. Se o app espera 3 s e a API espera 10 s pelo parceiro, o app já desistiu e a API continua trabalhando para ninguém (trabalho desperdiçado e fila crescendo).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 220" role="img" aria-label="Linha do tempo de um orçamento de 3000 ms dividido entre banco, chamada à operadora e uma segunda tentativa">
+      <rect class="box" x="40" y="24" width="620" height="28" rx="4"/><text x="350" y="43" text-anchor="middle">App: deadline total 3000 ms</text>
+      <rect class="box-a" x="60" y="62" width="540" height="28" rx="4"/><text x="330" y="81" text-anchor="middle">API de agenda: repassa o que resta (~2700 ms)</text>
+      <rect class="box" x="80" y="100" width="56" height="28" rx="4"/><text x="108" y="119" text-anchor="middle">BD</text>
+      <rect class="box-w" x="144" y="100" width="260" height="28" rx="4"/><text x="274" y="119" text-anchor="middle">operadora: 1200 ms (estoura)</text>
+      <rect class="box-w" x="412" y="100" width="188" height="28" rx="4"/><text x="506" y="119" text-anchor="middle">retry: o que resta</text>
+      <line class="ln-b" x1="660" y1="140" x2="660" y2="164"/>
+      <text class="lbl" x="660" y="178" text-anchor="middle">3000 ms</text>
+      <text class="lbl" x="40" y="164">Cada nível tem timeout menor que o de cima; o retry só ocorre se ainda houver orçamento.</text>
+      <text class="lbl" x="40" y="184">O deadline viaja nos cabeçalhos/contexto: quem recebe sabe quanto tempo realmente resta.</text>
+      <text class="lbl" x="40" y="204">gRPC tem deadline nativo; em HTTP, propague um cabeçalho próprio ou use o contexto do framework.</text>
+    </svg>
+    <figcaption>O orçamento é dividido: um retry sem orçamento restante é trabalho jogado fora.</figcaption>
+  </figure>
+  <pre data-file="deadline.js"><code class="js">// Node: AbortSignal.timeout limita a requisição inteira (conexão + leitura)
+async function consultarOperadora(carteirinha, deadlineMs) {
+  const restante = deadlineMs - Date.now();
+  if (restante &lt;= 50) throw new Error("orçamento esgotado");
+  const resp = await fetch(`https://operadora.example/elegibilidade/${carteirinha}`, {
+    signal: AbortSignal.timeout(Math.min(1200, restante)),
+    headers: { "X-Deadline": String(deadlineMs) },     // propaga o prazo
+  });
+  if (!resp.ok) throw new Error("operadora " + resp.status);
+  return resp.json();
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Timeouts "no olho": 30 s por padrão em todo lugar. Meça o p99 real da dependência e fixe o timeout um pouco acima. E configure o timeout do balanceador, do gateway e do cliente de forma coerente (o do cliente menor que o do gateway).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como escolhe um timeout?" Parto do p99 (ou p99,9) medido da dependência, somo folga e verifico que cabe no orçamento do chamador. Separo conexão e leitura, defino um total, e propago o deadline para que as camadas abaixo não trabalhem depois que o cliente desistiu.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija que nenhum cliente HTTP do código vá para produção com timeout padrão da biblioteca. Uma regra de revisão (ou lint) que falhe quando falta timeout evita a classe inteira de incidente "tudo travou".</p></div>
+</section>
+
+<section class="chap" id="retries">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Retries: backoff exponencial, jitter e tempestade</h2>
+  <p>Muitas falhas são transitórias: um pico, uma troca de réplica, um pacote perdido. Repetir ajuda. Mas repetir imediatamente, todos ao mesmo tempo, transforma uma falha pequena em uma grande.</p>
+
+  <h3>O que é seguro repetir</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Situação</th><th>Repetir?</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET</code>, <code>HEAD</code>, <code>PUT</code>, <code>DELETE</code> (idempotentes por definição do HTTP)</td><td>Sim, se a implementação respeitar a semântica.</td></tr>
+      <tr><td><code>POST</code>, <code>PATCH</code> (criação, ação)</td><td>Só com chave de idempotência (seção 4).</td></tr>
+      <tr><td>Erros 5xx (500, 502, 503, 504), timeouts, reset de conexão</td><td>Sim, com limite e backoff.</td></tr>
+      <tr><td><code>429</code></td><td>Sim, respeitando <code>Retry-After</code>.</td></tr>
+      <tr><td>4xx (400, 401, 403, 404, 409, 422)</td><td>Não: repetir não muda o resultado (401 pode renovar token uma vez).</td></tr>
+    </tbody></table></div>
+
+  <h3>Backoff exponencial com jitter</h3>
+  <p>O <strong>backoff</strong> aumenta o intervalo a cada tentativa (100 ms, 200 ms, 400 ms...). Sem <strong>jitter</strong> (aleatoriedade), mil clientes que falharam juntos tentarão juntos de novo, em ondas. Com jitter, eles se espalham no tempo. A variante "full jitter" sorteia entre 0 e o teto da tentativa.</p>
+  <pre data-file="retry.js"><code class="js">const dormir = (ms) =&gt; new Promise((r) =&gt; setTimeout(r, ms));
+
+export async function comRetry(fn, { tentativas = 4, base = 100, teto = 2000, deadline } = {}) {
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const ultima = i + 1 &gt;= tentativas;
+      if (ultima || !repetivel(e)) throw e;
+      // full jitter: sorteia entre 0 e min(teto, base * 2^i)
+      let espera = Math.random() * Math.min(teto, base * 2 ** i);
+      if (e.retryAfterMs) espera = Math.max(espera, e.retryAfterMs);   // respeita o servidor
+      if (deadline &amp;&amp; Date.now() + espera &gt;= deadline) throw e;      // sem orçamento
+      await dormir(espera);
+    }
+  }
+}
+
+function repetivel(e) {
+  return e.name === "TimeoutError" || [429, 502, 503, 504].includes(e.status);
+}</code></pre>
+
+  <h3>Tempestade de retries (retry storm)</h3>
+  <p>Se cada camada de uma cadeia tenta até 3 vezes (1 original + 2 retries) e há 3 camadas, uma única requisição do usuário pode virar até <strong>27</strong> chamadas ao banco em falha. O serviço já sobrecarregado recebe <em>mais</em> tráfego exatamente quando precisa de menos, e a recuperação se torna impossível.</p>
+  <ul>
+    <li><strong>Retry em um só lugar</strong> da cadeia (geralmente a borda ou o cliente mais próximo da falha), não em todas as camadas.</li>
+    <li><strong>Orçamento de retries</strong> (retry budget): permitir, por exemplo, retries até 10% do volume de requisições originais. Acima disso, falha direto.</li>
+    <li><strong>Respeitar <code>Retry-After</code></strong> e parar quando o circuit breaker abrir (seção 5).</li>
+    <li><strong>Limite baixo</strong> de tentativas (2 a 4) e teto de espera.</li>
+    <li>Distinguir quem repete: o usuário clicando de novo também é retry. Desabilite o botão e use a chave de idempotência.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Retry de operação não idempotente sem chave: a operadora processa o pagamento, a resposta se perde, o retry cobra de novo. O mesmo vale para agendamentos e envio de resultados.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Retry = limite de tentativas + backoff exponencial + jitter + orçamento + só o que é idempotente + um nível apenas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Para que serve o jitter?" Para dessincronizar os clientes. Sem ele, o backoff exponencial faz todos repetirem nos mesmos instantes (100, 200, 400 ms), criando picos periódicos contra o serviço que está tentando se recuperar.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize uma biblioteca/política de retry para todos os times, com os parâmetros em configuração. Acompanhe no painel a razão "tentativas / requisições originais": se passa de 1,1 em regime normal, há retry demais escondendo problema.</p></div>
+</section>
+
+<section class="chap" id="idempotencia">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Idempotência a fundo: a chave de idempotência</h2>
+  <p>O módulo 08 da trilha web apresentou idempotência: repetir a mesma operação produz o mesmo efeito que fazê-la uma vez. <code>PUT</code> e <code>DELETE</code> já são assim. <code>POST</code> não é, e é justamente o método que cria agendamentos, pagamentos e pedidos. A solução prática é a <strong>chave de idempotência</strong>: o cliente gera um identificador único por <em>intenção</em> e o envia a cada tentativa.</p>
+  <pre><code class="http">POST /agendamentos HTTP/1.1
+Host: api.exemplo.com
+Content-Type: application/json
+Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324
+
+{"pacienteId":"p_4f2a","slotId":"s_9981","tipo":"consulta"}</code></pre>
+
+  <div class="note"><b>Saiba mais: status do cabeçalho</b><p><code>Idempotency-Key</code> é de uso consolidado em APIs de pagamento, mas como padrão IETF ainda é um <strong>Internet-Draft</strong> (<code>draft-ietf-httpapi-idempotency-key-header</code>, do grupo HTTPAPI), não um RFC. Revisões já tiveram mudanças de texto, inclusive nos códigos de erro. Confira o estado atual no datatracker do IETF antes de citar como padrão fechado; na prática, documente o comportamento da sua API.</p></div>
+
+  <h3>O que o servidor faz</h3>
+  <ol class="seq">
+    <li><div><strong>Reserva a chave atomicamente</strong> antes de processar: grava <code>(chave, cliente, hash do payload, estado = em andamento)</code> com unicidade. Quem perder a corrida não processa.</div></li>
+    <li><div><strong>Processa</strong> a operação e grava o efeito (o agendamento) <em>na mesma transação</em> em que marca a chave como concluída, sempre que possível.</div></li>
+    <li><div><strong>Guarda a resposta</strong> (status, corpo essencial, cabeçalhos relevantes) junto da chave.</div></li>
+    <li><div><strong>Na repetição</strong> com a mesma chave e o mesmo payload, devolve a resposta guardada, sem reprocessar.</div></li>
+    <li><div><strong>Expira</strong> a chave após um TTL (por exemplo, 24 h), limpando o armazenamento.</div></li>
+  </ol>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 346" role="img" aria-label="Diagrama de sequência: cliente envia POST com chave, a resposta se perde, cliente repete e a API devolve a resposta guardada sem duplicar">
+      <defs><marker id="ah-idem" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="30" y="8" width="120" height="28" rx="4"/><text x="90" y="27" text-anchor="middle">Cliente</text>
+      <rect class="box" x="270" y="8" width="120" height="28" rx="4"/><text x="330" y="27" text-anchor="middle">API</text>
+      <rect class="box-m" x="510" y="8" width="120" height="28" rx="4"/><text x="570" y="27" text-anchor="middle">Armazenamento</text>
+      <line class="ln" x1="90" y1="36" x2="90" y2="318"/><line class="ln" x1="330" y1="36" x2="330" y2="318"/><line class="ln" x1="570" y1="36" x2="570" y2="318"/>
+      <line class="ln-a" x1="92" y1="66" x2="328" y2="66" marker-end="url(#ah-idem)"/><text class="lbl" x="210" y="60" text-anchor="middle">POST + Idempotency-Key: K1</text>
+      <line class="ln" x1="332" y1="96" x2="568" y2="96" marker-end="url(#ah-idem)"/><text class="lbl" x="450" y="90" text-anchor="middle">reserva K1 (em andamento)</text>
+      <line class="ln" x1="332" y1="126" x2="568" y2="126" marker-end="url(#ah-idem)"/><text class="lbl" x="450" y="120" text-anchor="middle">agendamento + resposta 201 (K1)</text>
+      <line class="ln-b" x1="328" y1="156" x2="92" y2="156" marker-end="url(#ah-idem)"/><text class="lbl" x="210" y="150" text-anchor="middle">201 Created (perdida na rede)</text>
+      <text class="lbl" x="100" y="184">timeout: resultado desconhecido</text>
+      <line class="ln-a" x1="92" y1="214" x2="328" y2="214" marker-end="url(#ah-idem)"/><text class="lbl" x="210" y="208" text-anchor="middle">retry: mesmo POST, mesma K1</text>
+      <line class="ln" x1="332" y1="244" x2="568" y2="244" marker-end="url(#ah-idem)"/><text class="lbl" x="450" y="238" text-anchor="middle">busca K1: concluída, hash igual</text>
+      <line class="ln-a" x1="328" y1="274" x2="92" y2="274" marker-end="url(#ah-idem)"/><text class="lbl" x="210" y="268" text-anchor="middle">201 igual, sem duplicar</text>
+      <text class="lbl" x="350" y="336" text-anchor="middle">Um único agendamento, apesar de duas tentativas.</text>
+    </svg>
+    <figcaption>O retry com a mesma chave devolve a resposta guardada em vez de criar outro agendamento.</figcaption>
+  </figure>
+
+  <h3>Armazenamento e a corrida entre requisições iguais</h3>
+  <p>Duas requisições com a mesma chave podem chegar <em>ao mesmo tempo</em> (o cliente deu timeout cedo e reenviou, ou há duas réplicas). A reserva precisa ser atômica: uma restrição de unicidade no banco ou <code>SET NX</code> no Redis. Quem perde a corrida tem opções: responder <code>409 Conflict</code> ("em andamento, tente depois") ou esperar e devolver a resposta quando a primeira terminar.</p>
+  <pre data-file="idempotencia.sql"><code class="text">CREATE TABLE idempotencia (
+  cliente_id   text        NOT NULL,
+  chave        text        NOT NULL,
+  hash_payload text        NOT NULL,   -- método + caminho + corpo
+  estado       text        NOT NULL,   -- 'em_andamento' | 'concluida'
+  status_http  int,
+  resposta     jsonb,
+  criada_em    timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (cliente_id, chave)      -- a chave vale por cliente
+);
+
+-- reserva atômica: se já existe, não insere e a aplicação lê o registro
+INSERT INTO idempotencia (cliente_id, chave, hash_payload, estado)
+VALUES ($1, $2, $3, 'em_andamento')
+ON CONFLICT (cliente_id, chave) DO NOTHING;</code></pre>
+  <pre data-file="handler.js"><code class="js">app.post("/agendamentos", async (req, res) =&gt; {
+  const chave = req.get("Idempotency-Key");
+  if (!chave) return res.status(400).json({ title: "Idempotency-Key obrigatório" });
+  const hash = sha256(req.method + req.path + JSON.stringify(req.body));
+
+  const r = await db.query(INSERT_RESERVA, [req.cliente, chave, hash]);
+  if (r.rowCount === 0) {                       // chave já existe
+    const ex = (await db.query(SELECT_CHAVE, [req.cliente, chave])).rows[0];
+    if (ex.hash_payload !== hash)               // mesma chave, outro conteúdo
+      return res.status(422).json({ title: "Chave reutilizada com payload diferente" });
+    if (ex.estado === "em_andamento")           // corrida: o primeiro ainda processa
+      return res.status(409).set("Retry-After", "1").json({ title: "Em andamento" });
+    return res.status(ex.status_http).json(ex.resposta);   // resposta guardada
+  }
+
+  await db.tx(async (t) =&gt; {                    // efeito + conclusão na MESMA transação
+    const ag = await criarAgendamento(t, req.body);
+    await t.query(UPDATE_CONCLUIDA, [201, ag, req.cliente, chave]);
+    res.status(201).json(ag);
+  });
+});</code></pre>
+  <h3>Pontos de projeto</h3>
+  <ul>
+    <li><strong>Escopo da chave</strong>: por cliente (e por endpoint), para que dois clientes com a mesma chave não colidam.</li>
+    <li><strong>Mesma chave, payload diferente</strong>: é erro do cliente. Compare o hash e rejeite (o rascunho do IETF sugere 422; confirme o texto vigente). Nunca devolva a resposta antiga para um pedido diferente.</li>
+    <li><strong>TTL</strong>: longo o bastante para cobrir a janela de retries do cliente (de horas a dias), curto o bastante para não crescer sem fim; documente. Depois do TTL, a mesma chave é tratada como nova.</li>
+    <li><strong>Falhas</strong>: se o processamento falhou <em>antes</em> do efeito, libere a chave (ou marque como falha retentável); se falhou depois do efeito, a resposta guardada vale. Por isso o efeito e a marcação devem ser atômicos.</li>
+    <li><strong>Chave gerada no cliente</strong> (UUID v4) por intenção do usuário, reutilizada nos retries; um novo clique intencional gera nova chave.</li>
+    <li><strong>Efeitos externos</strong> (e-mail, SMS, chamada à operadora) também precisam de idempotência própria (propague a chave) ou de padrão outbox.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Guardar a chave <em>depois</em> do processamento e checar antes sem trava: duas requisições simultâneas passam pela checagem e ambas processam. A reserva atômica antes do efeito é o que elimina a corrida.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como implementar idempotência em um POST de agendamento?" Cliente envia uma chave por intenção; servidor reserva a chave com unicidade antes de processar, executa o efeito e grava a resposta na mesma transação, e devolve a resposta guardada nas repetições. Trato corrida (409 ou espera), payload diferente (rejeitar) e TTL.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina quais endpoints de escrita exigem a chave (pagamento, agendamento, envio de resultado) e inclua no guia de API da empresa. Teste o caso real: derrubar a conexão depois de o servidor processar e verificar que o retry não duplica.</p></div>
+</section>
+
+<section class="chap" id="resiliencia">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Circuit breaker, bulkhead, fallback e load shedding</h2>
+  <p>Timeout e retry tratam falhas individuais. Quando uma dependência fica ruim por minutos, o que protege o sistema é <strong>parar de chamá-la</strong> por um tempo e <strong>isolar o estrago</strong>. São padrões de resiliência: circuit breaker, bulkhead, fallback e load shedding.</p>
+
+  <h3>Circuit breaker (disjuntor)</h3>
+  <p>Como o disjuntor de uma casa: se a dependência está falhando, abre o circuito e as chamadas falham <em>imediatamente</em>, sem esperar timeout, dando tempo para a dependência se recuperar e poupando suas threads.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 240" role="img" aria-label="Máquina de estados do circuit breaker: fechado, aberto e semiaberto, com as condições de transição">
+      <defs><marker id="ah-cb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="60" width="150" height="60" rx="6"/><text class="ttl" x="95" y="86" text-anchor="middle">Fechado</text><text class="lbl" x="95" y="104" text-anchor="middle">chamadas passam</text>
+      <rect class="box-b" x="275" y="60" width="150" height="60" rx="6"/><text class="ttl" x="350" y="86" text-anchor="middle">Aberto</text><text class="lbl" x="350" y="104" text-anchor="middle">falha rápida</text>
+      <rect class="box-w" x="530" y="60" width="150" height="60" rx="6"/><text class="ttl" x="605" y="86" text-anchor="middle">Semiaberto</text><text class="lbl" x="605" y="104" text-anchor="middle">poucas sondas</text>
+      <line class="ln-b" x1="170" y1="82" x2="273" y2="82" marker-end="url(#ah-cb)"/><text class="lbl" x="222" y="74" text-anchor="middle">falhas &gt; limiar</text>
+      <line class="ln" x1="425" y1="82" x2="528" y2="82" marker-end="url(#ah-cb)"/><text class="lbl" x="477" y="74" text-anchor="middle">tempo esgotado</text>
+      <path class="ln-a" d="M605,120 L605,168 L95,168 L95,122" marker-end="url(#ah-cb)"/><text class="lbl" x="240" y="162" text-anchor="middle">sondas OK: volta a fechar</text>
+      <path class="ln-b" d="M560,120 L560,196 L350,196 L350,122" marker-end="url(#ah-cb)"/><text class="lbl" x="455" y="214" text-anchor="middle">sonda falha: reabre</text>
+      <text class="lbl" x="20" y="234">Limiar típico: taxa de falhas e de lentidão numa janela, com volume mínimo de chamadas.</text>
+    </svg>
+    <figcaption>Três estados: fechado (normal), aberto (bloqueia) e semiaberto (testa se a dependência voltou).</figcaption>
+  </figure>
+  <pre data-file="breaker.js"><code class="js">class Breaker {
+  constructor({ limiar = 0.5, minimo = 20, janelaMs = 10000, esperaMs = 15000 } = {}) {
+    Object.assign(this, { limiar, minimo, janelaMs, esperaMs });
+    this.estado = "FECHADO"; this.amostras = []; this.abertoEm = 0; this.sondas = 0;
+  }
+  async executar(fn, fallback) {
+    if (this.estado === "ABERTO") {
+      if (Date.now() - this.abertoEm &lt; this.esperaMs) return fallback();     // falha rápida
+      this.estado = "SEMIABERTO"; this.sondas = 0;
+    }
+    if (this.estado === "SEMIABERTO" &amp;&amp; this.sondas++ &gt;= 3) return fallback(); // poucas sondas
+    try {
+      const r = await fn();
+      this.registrar(true);
+      if (this.estado === "SEMIABERTO") this.estado = "FECHADO";
+      return r;
+    } catch (e) {
+      this.registrar(false);
+      if (this.estado === "SEMIABERTO") this.abrir();
+      return fallback(e);
+    }
+  }
+  registrar(ok) {
+    const agora = Date.now();
+    this.amostras = this.amostras.filter(a =&gt; agora - a.t &lt; this.janelaMs).concat({ t: agora, ok });
+    const falhas = this.amostras.filter(a =&gt; !a.ok).length;
+    if (this.amostras.length &gt;= this.minimo &amp;&amp; falhas / this.amostras.length &gt;= this.limiar) this.abrir();
+  }
+  abrir() { this.estado = "ABERTO"; this.abertoEm = Date.now(); }
+}</code></pre>
+  <p>Em produção use uma biblioteca madura (Resilience4j, Polly, opossum, Envoy/malha de serviços) em vez de escrever a sua; o código acima mostra o mecanismo. Conte também <strong>lentidão</strong> como falha: um serviço que responde em 20 s é tão ruim quanto um que dá erro.</p>
+
+  <h3>Bulkhead (compartimentos)</h3>
+  <p>Em um navio, divisórias impedem que um furo alague tudo. No software: <strong>pools separados</strong> (threads, conexões, semáforos) por dependência ou por tipo de tráfego. Se a operadora ficar lenta, ela esgota só o pool dela (digamos, 20 slots), e o resto do sistema segue usando os seus. Sem isso, a dependência lenta consome o pool compartilhado e derruba funcionalidades que nada têm a ver com ela.</p>
+
+  <h3>Fallback e degradação graciosa</h3>
+  <p>Quando uma dependência falha, o que o usuário vê? Opções, da melhor para a pior:</p>
+  <ul>
+    <li><strong>Valor em cache</strong> (dado levemente antigo, marcado como tal): lista de convênios aceitos, horários da agenda com aviso.</li>
+    <li><strong>Funcionalidade reduzida</strong>: agendar sem validar a carteirinha agora, deixando a validação para depois (fila), com status "pendente de elegibilidade".</li>
+    <li><strong>Resposta padrão segura</strong>: "não foi possível verificar agora" em vez de erro genérico.</li>
+    <li><strong>Falhar rápido e claro</strong> (503 com <code>Retry-After</code>) quando não há alternativa segura.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Fallback que esconde erro de negócio. Em saúde, "assumir que o paciente tem cobertura" quando a operadora não responde pode gerar glosa ou atendimento sem direito; já "assumir que não tem" bloqueia atendimento. A decisão de fallback é regra de negócio: defina-a com os donos do processo, não só com engenharia.</p></div>
+
+  <h3>Load shedding (descartar carga)</h3>
+  <p>Quando o sistema está saturado, aceitar tudo faz <em>todos</em> demorarem (filas crescem, o p99 explode, timeouts em cascata). É melhor rejeitar cedo uma parte das requisições e atender bem as demais.</p>
+  <ul>
+    <li><strong>Limite de concorrência</strong> por instância: acima de N requisições em andamento, responder <code>503</code> imediatamente.</li>
+    <li><strong>Prioridade</strong>: descartar primeiro o tráfego de baixo valor (relatórios, consultas em lote) e proteger o crítico (login, atendimento de emergência, registro de resultado).</li>
+    <li><strong>Fila com limite e prazo</strong>: descartar o que já passou do deadline, porque o cliente desistiu.</li>
+    <li>Responder rápido com <code>503</code> e <code>Retry-After</code>; clientes bem-comportados recuam.</li>
+  </ul>
+  <div class="tbl"><table>
+    <thead><tr><th>Padrão</th><th>Protege contra</th><th>Custo / cuidado</th></tr></thead>
+    <tbody>
+      <tr><td>Timeout</td><td>Espera infinita.</td><td>Escolher o valor certo.</td></tr>
+      <tr><td>Retry com backoff</td><td>Falhas transitórias.</td><td>Amplificação; exige idempotência.</td></tr>
+      <tr><td>Circuit breaker</td><td>Dependência fora por minutos; efeito cascata.</td><td>Ajuste de limiar; estado por instância.</td></tr>
+      <tr><td>Bulkhead</td><td>Dependência lenta consumindo todos os recursos.</td><td>Dimensionar cada pool.</td></tr>
+      <tr><td>Fallback</td><td>Indisponibilidade percebida pelo usuário.</td><td>Decisão de negócio; testar o caminho alternativo.</td></tr>
+      <tr><td>Load shedding / rate limit</td><td>Sobrecarga e clientes abusivos.</td><td>Rejeita tráfego legítimo no pico; priorizar.</td></tr>
+    </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como evitar que a queda de um parceiro derrube seu sistema?" Timeout curto, circuit breaker que falha rápido, bulkhead isolando o pool dessa integração, fallback definido com o negócio (cache ou fila), retry limitado e com backoff, e métricas e alertas na dependência. Mostro que cada padrão cobre uma parte do problema.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Classifique as dependências como críticas ou não críticas para cada fluxo e exija que as não críticas nunca derrubem o fluxo. Pergunta de revisão: "se esta integração sumir por uma hora, o que continua funcionando? quem decidiu o fallback?". Exercícios de falha (seção 8) validam a resposta.</p></div>
+</section>
+
+<section class="chap" id="rate-limiting">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Rate limiting: algoritmos, 429 e implementação distribuída</h2>
+  <p>O rate limit protege o serviço (de picos e abuso), distribui capacidade de forma justa entre clientes e sustenta planos comerciais. Do ponto de vista de segurança (módulo 05, API4), é o freio contra consumo irrestrito.</p>
+
+  <h3>Algoritmos</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Algoritmo</th><th>Como funciona</th><th>Rajadas</th><th>Custo e ponto fraco</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Janela fixa</strong></td><td>Contador por intervalo (ex.: 100 por minuto, zera a cada minuto).</td><td>Permite o dobro na virada da janela (100 no fim + 100 no começo).</td><td>Barato (um contador). Imprecisão na borda.</td></tr>
+      <tr><td><strong>Janela deslizante (log)</strong></td><td>Guarda o horário de cada requisição; conta as dos últimos 60 s.</td><td>Precisa, sem efeito de borda.</td><td>Memória proporcional ao limite; caro em limites altos.</td></tr>
+      <tr><td><strong>Janela deslizante (contador ponderado)</strong></td><td>Combina a janela atual e a anterior, ponderando pela fração decorrida.</td><td>Aproximação boa.</td><td>Dois contadores; aproximado, mas barato.</td></tr>
+      <tr><td><strong>Token bucket</strong></td><td>Balde de capacidade B reabastecido a R tokens/s; cada requisição gasta tokens.</td><td>Permite rajada até B, depois taxa média R.</td><td>Dois valores (tokens, último instante). O mais usado.</td></tr>
+      <tr><td><strong>Leaky bucket</strong></td><td>Fila que "vaza" a taxa constante; excedente é descartado (ou atrasado).</td><td>Suaviza: saída constante.</td><td>Adiciona latência se enfileira; bom para proteger um backend lento.</td></tr>
+    </tbody></table></div>
+  <p>Regra de escolha: <strong>token bucket</strong> quando se aceitam rajadas curtas (um app que abre e faz 5 chamadas); <strong>leaky bucket</strong> quando o destino exige vazão constante; <strong>janela deslizante</strong> quando o limite é uma promessa precisa ("100 por minuto"); janela fixa só quando a simplicidade vale mais que a precisão.</p>
+  <pre data-file="token-bucket.js"><code class="js">// Token bucket em memória (uma instância). capacidade = rajada; taxa = tokens/segundo
+class TokenBucket {
+  constructor(capacidade, taxa) {
+    this.cap = capacidade; this.taxa = taxa;
+    this.tokens = capacidade; this.ultimo = Date.now();
+  }
+  tentar(custo = 1) {
+    const agora = Date.now();
+    this.tokens = Math.min(this.cap, this.tokens + ((agora - this.ultimo) / 1000) * this.taxa);
+    this.ultimo = agora;
+    if (this.tokens &gt;= custo) { this.tokens -= custo; return { ok: true }; }
+    const faltam = custo - this.tokens;
+    return { ok: false, retryAfter: Math.ceil(faltam / this.taxa) };   // segundos
+  }
+}
+const baldes = new Map();                       // um balde por cliente
+function limitar(req, res, next) {
+  const id = req.cliente.id;
+  if (!baldes.has(id)) baldes.set(id, new TokenBucket(20, 5));   // rajada 20, 5/s
+  const r = baldes.get(id).tentar();
+  if (r.ok) return next();
+  res.set("Retry-After", String(r.retryAfter)).status(429)
+     .json({ title: "Muitas requisições", status: 429 });
+}</code></pre>
+
+  <h3>429 e Retry-After</h3>
+  <p>Ao exceder, responda <code>429 Too Many Requests</code> e diga <strong>quando</strong> voltar: <code>Retry-After</code> em segundos (ou data). Clientes bem-comportados esperam esse tempo (e a seção 3 mostrou como o retry deve respeitá-lo).</p>
+  <pre><code class="http">HTTP/1.1 429 Too Many Requests
+Content-Type: application/problem+json
+Retry-After: 12
+RateLimit-Policy: "padrao";q=100;w=60
+RateLimit: "padrao";r=0;t=12
+
+{"title":"Limite excedido","detail":"100 requisições por minuto no plano padrão","status":429}</code></pre>
+
+  <h3>Cabeçalhos RateLimit</h3>
+  <div class="note"><b>Saiba mais: status dos cabeçalhos</b><p>A proposta do IETF (<code>draft-ietf-httpapi-ratelimit-headers</code>, HTTPAPI) define os campos <code>RateLimit-Policy</code> (a política: cota e janela) e <code>RateLimit</code> (o que resta e quando reinicia). É um <strong>Internet-Draft</strong>, não um RFC, e o formato mudou entre revisões (versões antigas usavam <code>RateLimit-Limit</code>, <code>RateLimit-Remaining</code> e <code>RateLimit-Reset</code>). Muitas APIs públicas usam variações <code>X-RateLimit-*</code>. Verifique a revisão vigente no datatracker do IETF; o exemplo acima segue o formato recente do rascunho e pode mudar.</p></div>
+  <p>O ponto prático independe do formato: <strong>informe o limite, o restante e o reinício</strong> em todas as respostas, não só nos 429, para o cliente se autorregular. Esses campos são informativos; não são controle de acesso.</p>
+
+  <h3>Limites por cliente, por plano e por recurso</h3>
+  <ul>
+    <li><strong>Chave do limite</strong>: cliente (API key/<code>client_id</code>), usuário, IP, tenant (convênio/hospital), ou uma combinação. IP sozinho falha atrás de NAT.</li>
+    <li><strong>Planos</strong>: limites diferentes (padrão, parceiro integrado, interno) definidos em configuração, não em código.</li>
+    <li><strong>Por recurso</strong>: endpoints caros (exportações, buscas) com limites próprios, além do limite global.</li>
+    <li><strong>Custo ponderado</strong>: uma consulta pesada consome mais tokens que uma leve.</li>
+    <li><strong>Camadas</strong>: borda (gateway/WAF) para abuso grosseiro; aplicação para cota por cliente e regras de negócio.</li>
+  </ul>
+
+  <h3>Implementação distribuída com Redis</h3>
+  <p>Com várias instâncias da API, o contador precisa ser <strong>compartilhado</strong>. O Redis é o armazenamento usual: rápido e com operações atômicas. A leitura-modificação-escrita do token bucket deve acontecer em um único passo atômico, o que se faz com um script Lua.</p>
+  <pre data-file="bucket.lua"><code class="text">-- KEYS[1] = chave do cliente; ARGV = capacidade, taxa (tokens/ms), agora (ms), custo
+local d = redis.call('HMGET', KEYS[1], 'tokens', 'ts')
+local cap, taxa, agora, custo = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3]), tonumber(ARGV[4])
+local tokens = tonumber(d[1]) or cap
+local ts = tonumber(d[2]) or agora
+tokens = math.min(cap, tokens + (agora - ts) * taxa)
+local ok = 0
+if tokens &gt;= custo then tokens = tokens - custo; ok = 1 end
+redis.call('HSET', KEYS[1], 'tokens', tokens, 'ts', agora)
+redis.call('PEXPIRE', KEYS[1], math.ceil(cap / taxa) * 2)
+return { ok, math.floor(tokens) }</code></pre>
+  <ul>
+    <li><strong>Atomicidade</strong>: o script roda inteiro, sem intercalar com outros comandos; evita a corrida de "ler, decidir e gravar" em instâncias diferentes.</li>
+    <li><strong>Relógio</strong>: use um relógio único (o do Redis via <code>TIME</code>, ou do cliente com cuidado) para não depender da hora de cada máquina.</li>
+    <li><strong>TTL</strong> nas chaves, para não acumular baldes de clientes inativos.</li>
+    <li><strong>Falha do Redis</strong>: decida <em>fail-open</em> (deixa passar, arriscando abuso) ou <em>fail-closed</em> (bloqueia, arriscando indisponibilidade). Para a maioria das APIs, fail-open com limite local de contingência é mais seguro para o negócio; para endpoints de alto risco (login), prefira fail-closed.</li>
+    <li><strong>Latência</strong>: uma ida ao Redis por requisição. Alternativas: limite local aproximado por instância (cota / nº de instâncias), sincronizado de tempos em tempos.</li>
+    <li>Gateways e malhas de serviço já trazem rate limit pronto; use-os antes de escrever o seu.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Rate limit local por instância em um serviço com N réplicas: o limite efetivo é N vezes o desejado e muda a cada escalonamento. Outra: não limitar o endpoint de login e de recuperação de senha com chave por conta além de por IP.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como implementaria rate limit para uma API com várias instâncias?" Token bucket por chave de cliente em Redis, com script Lua atômico, TTL nas chaves, resposta 429 com Retry-After e cabeçalhos de limite, planos em configuração, e política explícita de falha do Redis (fail-open ou fail-closed).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Os limites são decisão de produto e de capacidade: defina com quem vende e com quem opera. Publique-os na documentação, meça os 429 por cliente (cliente com muitos 429 precisa de orientação ou de plano maior) e alerte quando um cliente consome acima de 80% da cota.</p></div>
+</section>
+
+<section class="chap" id="cache-concorrencia">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cache HTTP e concorrência otimista (ETag, If-Match, 412)</h2>
+  <p>O cache HTTP está descrito na trilha web (módulo 06, backend e infraestrutura). Em APIs, ele reduz carga e latência, e o mesmo mecanismo do <code>ETag</code> serve para impedir que duas pessoas sobrescrevam as alterações uma da outra.</p>
+
+  <h3>Cache-Control para APIs</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Diretiva</th><th>Efeito</th><th>Uso em API de saúde</th></tr></thead>
+    <tbody>
+      <tr><td><code>max-age=300</code></td><td>Pode reutilizar por 300 s sem perguntar ao servidor.</td><td>Dado público e estável: lista de especialidades, unidades.</td></tr>
+      <tr><td><code>public</code> / <code>private</code></td><td>Caches compartilhados (CDN, proxy) podem ou não guardar.</td><td><code>private</code> para dado do usuário.</td></tr>
+      <tr><td><code>no-cache</code></td><td>Pode guardar, mas <strong>deve revalidar</strong> antes de usar.</td><td>Dado que muda, mas é caro de reenviar.</td></tr>
+      <tr><td><code>no-store</code></td><td>Não guardar em lugar nenhum.</td><td>Dado sensível: prontuário, resultado de exame.</td></tr>
+      <tr><td><code>stale-while-revalidate</code></td><td>Serve o velho enquanto atualiza em segundo plano.</td><td>Catálogos onde frescor de segundos não importa.</td></tr>
+    </tbody></table></div>
+
+  <h3>Validação condicional: ETag, If-None-Match e 304</h3>
+  <p>O servidor devolve um <code>ETag</code> (identificador da versão do recurso). Na próxima vez, o cliente pergunta "mudou?" com <code>If-None-Match</code>. Se não mudou, <code>304 Not Modified</code> sem corpo: economiza banda e processamento de serialização.</p>
+  <pre><code class="http">GET /agendamentos/8841 HTTP/1.1
+Host: api.exemplo.com
+
+HTTP/1.1 200 OK
+ETag: "v7"
+Cache-Control: private, no-cache
+Content-Type: application/json
+
+{"id":8841,"status":"CONFIRMADO","horario":"2026-12-03T14:30:00-03:00"}
+
+GET /agendamentos/8841 HTTP/1.1
+If-None-Match: "v7"
+
+HTTP/1.1 304 Not Modified
+ETag: "v7"</code></pre>
+
+  <h3>Vary</h3>
+  <p><code>Vary</code> informa de quais cabeçalhos da requisição a resposta depende, para que caches não misturem variantes: <code>Vary: Accept-Encoding</code> (gzip/br), <code>Vary: Accept-Language</code>, <code>Vary: Origin</code> (CORS). Esquecer o <code>Vary</code> faz um cache entregar a versão errada. Para respostas que dependem de <code>Authorization</code>, use <code>private</code> ou <code>no-store</code> e nunca deixe um cache compartilhado guardar.</p>
+
+  <h3>Cache de aplicação</h3>
+  <ul>
+    <li><strong>Cache-aside</strong>: lê do cache; se faltar, busca na fonte e grava com TTL.</li>
+    <li><strong>Invalidação</strong>: TTL curto é o mais simples; invalide por evento quando a consistência importa.</li>
+    <li><strong>Cache stampede</strong>: o item expira e mil requisições vão ao banco ao mesmo tempo. Mitigação: uma só requisição reconstrói (<em>single flight</em>/trava), TTL com jitter, renovação antecipada.</li>
+    <li><strong>Chave do cache</strong> deve incluir tudo que muda a resposta (tenant, papel, idioma, filtros) para não vazar dados entre usuários.</li>
+    <li><strong>Dado de paciente</strong> em cache compartilhado exige cuidado extra (criptografia, TTL curto, escopo por usuário) ou simplesmente não cachear.</li>
+  </ul>
+
+  <h3>Concorrência otimista: dois atendentes, um agendamento</h3>
+  <p>A atendente A abre o agendamento e demora para editar. A atendente B o altera e salva. Quando A salva, apaga a mudança de B sem perceber (<em>lost update</em>). O bloqueio pessimista (travar o registro enquanto alguém edita) é ruim em HTTP, sem estado. A saída é a <strong>concorrência otimista</strong>: a edição só vale se o recurso ainda estiver na versão que o cliente viu.</p>
+  <pre><code class="http">GET /agendamentos/8841 HTTP/1.1
+
+HTTP/1.1 200 OK
+ETag: "v7"
+...
+
+PUT /agendamentos/8841 HTTP/1.1
+If-Match: "v7"
+Content-Type: application/json
+
+{"horario":"2026-12-03T16:00:00-03:00"}
+
+HTTP/1.1 412 Precondition Failed
+Content-Type: application/problem+json
+
+{"title":"O agendamento foi alterado por outra pessoa","status":412,
+ "detail":"Recarregue o recurso e aplique a mudança novamente."}</code></pre>
+  <p>O <code>412</code> diz ao cliente: "sua versão está velha". A interface pode mostrar "outra pessoa alterou, veja as mudanças" e deixar a atendente decidir. Para obrigar o uso do cabeçalho, responda <code>428 Precondition Required</code> a <code>PUT</code>/<code>PATCH</code> sem <code>If-Match</code>.</p>
+  <pre data-file="atualizar.sql"><code class="text">-- por trás do If-Match: versão como coluna, atualização condicional
+UPDATE agendamento
+   SET horario = :horario, versao = versao + 1
+ WHERE id = :id AND versao = :versao_do_etag;
+-- 0 linhas afetadas = alguém alterou antes: responder 412</code></pre>
+  <p>O ETag pode ser derivado de uma coluna de versão (inteiro) ou de um hash do conteúdo. Se houver mais de uma instância do cliente editando, prefira um número de versão: é barato e sem ambiguidade.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Cache compartilhado servindo dado de um usuário para outro porque faltou <code>Vary</code>, <code>private</code> ou a chave de cache não incluía o tenant. Em saúde isso é vazamento. Revise toda resposta cacheável por esse ângulo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como evita que dois usuários sobrescrevam a edição um do outro?" Concorrência otimista: o GET devolve ETag (ou versão), o PUT/PATCH envia If-Match, e o servidor, atualizando com condição na versão, responde 412 se mudou (e 428 se o cliente não enviou o cabeçalho). Bloqueio pessimista não combina com HTTP sem estado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina quais recursos exigem controle de concorrência (agenda, cadastro, prescrição) e ponha no guia de API. Peça tratamento do 412 na interface, com mensagem clara: sem isso o recurso vira "erro estranho" para o usuário e chamado no suporte.</p></div>
+</section>
+
+<section class="chap" id="performance">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Desempenho: percentis, payload, N+1, pools e testes de caos</h2>
+
+  <h3>Latência: p50, p95, p99 e por que a média engana</h3>
+  <p>O <strong>percentil</strong> pXX é o valor abaixo do qual ficam XX% das requisições. O p50 (mediana) é a experiência típica; p95 e p99 mostram a "cauda": os piores casos, que são os que geram reclamação e timeout.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Cenário (100 requisições)</th><th>Média</th><th>p50</th><th>p99</th></tr></thead>
+    <tbody>
+      <tr><td>95 em 100 ms, 5 em 3000 ms</td><td>195 ms</td><td>100 ms</td><td>3000 ms</td></tr>
+      <tr><td>Todas em 195 ms</td><td>195 ms</td><td>195 ms</td><td>195 ms</td></tr>
+    </tbody></table></div>
+  <p>A média é a mesma (195 ms), mas os dois sistemas são completamente diferentes. A média esconde a cauda. Meça, alerte e defina SLO em percentis (por exemplo "p95 menor que 400 ms e p99 menor que 1 s para <code>GET /agendamentos</code>").</p>
+  <ul>
+    <li><strong>Amplificação da cauda</strong>: se uma tela chama 10 serviços e cada um tem p99 de 1 s, a chance de ao menos um passar de 1 s é 1 - 0,99<sup>10</sup>, cerca de 9,6%. Quanto mais chamadas em fan-out, mais a cauda de cada uma domina o resultado.</li>
+    <li><strong>Histogramas</strong> (não médias) nas métricas; percentis não se somam nem se tiram a média entre instâncias: agregue os histogramas.</li>
+    <li>Meça do lado do cliente também (inclui rede, DNS, TLS), não só no servidor.</li>
+    <li>Separe por endpoint, por cliente e por tamanho de resposta.</li>
+  </ul>
+
+  <h3>Tamanho de payload e compressão</h3>
+  <ul>
+    <li><strong>Compressão</strong> (<code>Accept-Encoding: gzip, br</code>): reduz JSON de forma drástica, ao custo de CPU. Não comprima corpos minúsculos nem formatos já comprimidos (imagens, PDFs); atenção a misturar segredos e dados controlados pelo atacante em respostas comprimidas e TLS (ataques de compressão como BREACH).</li>
+    <li><strong>Menos campos</strong>: seleção de campos (<code>?fields=</code>), DTOs enxutos, evitar objetos aninhados desnecessários.</li>
+    <li><strong>Paginação sempre</strong> (módulo 01). Para volumes grandes, paginação por cursor/keyset em vez de <code>OFFSET</code>, que degrada à medida que a página avança (visto na trilha de SQL).</li>
+    <li><strong>Arquivos grandes</strong> (imagens de exame): URL assinada para armazenamento de objetos, não passando pelo JSON da API.</li>
+  </ul>
+
+  <h3>N+1 e chamadas em cascata</h3>
+  <p>O <strong>N+1</strong> acontece quando, para listar N itens, o código faz 1 consulta para a lista e depois 1 consulta por item para os detalhes. Para 50 consultas de agenda são 51 idas ao banco, cada uma com sua latência de rede.</p>
+  <div class="tabs">
+    <pre data-label="N+1"><code class="js">const ags = await db.query("SELECT * FROM agendamento WHERE data = $1", [dia]);
+for (const a of ags.rows) {
+  a.paciente = (await db.query("SELECT nome FROM paciente WHERE id = $1", [a.paciente_id])).rows[0];
+}   // 1 + N consultas</code></pre>
+    <pre data-label="Corrigido"><code class="js">const ags = await db.query(
+  `SELECT a.id, a.horario, p.nome AS paciente
+     FROM agendamento a JOIN paciente p ON p.id = a.paciente_id
+    WHERE a.data = $1`, [dia]);       // 1 consulta (ou IN com lote)</code></pre>
+  </div>
+  <p>O mesmo padrão ocorre entre serviços: uma API que, para cada item, chama outra API. Corrija com endpoints em lote (<code>GET /pacientes?ids=...</code>), com um agregador/BFF, ou com cópia local de dados de leitura. Em GraphQL, use um <em>dataloader</em> (módulo 03). Para chamadas independentes, faça-as em <strong>paralelo</strong> (com timeout e limite de concorrência), em vez de em série: a latência total passa de "soma" para "a maior".</p>
+  <p>Cadeias longas (A chama B, que chama C, que chama D) somam latência e multiplicam falhas: a disponibilidade da cadeia é o produto das disponibilidades (quatro serviços de 99,9% dão cerca de 99,6%). Reduza o número de saltos síncronos no caminho crítico.</p>
+
+  <h3>Pool de conexões</h3>
+  <p>Abrir uma conexão ao banco é caro (rede, TLS, autenticação). Um <strong>pool</strong> as reutiliza. Pontos:</p>
+  <ul>
+    <li><strong>Tamanho</strong>: mais conexões não significa mais velocidade; o banco tem núcleos e discos limitados, e conexões em excesso causam contenção. Uma heurística comum é um pool relativamente pequeno por instância, dimensionado a partir dos núcleos do banco e testado com carga. Lembre: <em>instâncias x pool</em> é o total no banco (PostgreSQL tem limite de conexões; costuma-se usar um pooler como PgBouncer; no Oracle, o limite de sessões também importa).</li>
+    <li><strong>Timeout de aquisição</strong>: quem não consegue conexão em poucos centenas de ms falha rápido, em vez de formar fila.</li>
+    <li><strong>Vazamento de conexões</strong>: sempre devolver ao pool (<code>finally</code>); monitore conexões em uso.</li>
+    <li><strong>HTTP</strong>: reutilize conexões (keep-alive, HTTP/2) para chamadas entre serviços; criar TLS a cada chamada é desperdício.</li>
+    <li><strong>Transações curtas</strong>: nunca segure uma conexão enquanto espera uma API externa.</li>
+  </ul>
+
+  <h3>Testes de caos (resumo)</h3>
+  <p>Como saber se timeout, breaker e fallback funcionam? Provocando a falha de propósito, de forma controlada: injetar latência, erros e queda de dependência em homologação (e, com maturidade, em produção com raio de impacto pequeno). Comece com um "game day": uma hora, com hipótese escrita ("se a operadora ficar lenta, a agenda continua"), observação das métricas e plano de reversão. Ferramentas existem para isso (proxies de falha, chaos engineering em Kubernetes), mas o valor está em <strong>testar a hipótese</strong> e corrigir o que falhar.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Otimizar sem medir. Antes de adicionar cache ou índice, tenha o perfil: onde o tempo é gasto (banco, rede, serialização, CPU)? Traces distribuídos (módulo 08) mostram qual salto domina o p99.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A API está lenta, por onde começa?" Vejo as métricas por percentil e por endpoint para confirmar onde dói, uso o trace para achar o salto mais lento, e então ataco a causa típica: N+1, falta de índice, payload grande, cascata de chamadas ou pool saturado. Só depois penso em cache e escala.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina SLOs por percentil para os fluxos críticos e acompanhe o orçamento de erro. Reserve tempo para teste de carga antes de campanhas (vacinação, abertura de agenda) e um game day por trimestre para os fluxos críticos. Pergunta de revisão: "qual é o p99 hoje e o que acontece com ele no dobro da carga?".</p></div>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+
+  <h3>Cenário 1: a operadora instável derrubou o sistema inteiro</h3>
+  <p>Segunda-feira, 8h: a API de elegibilidade da operadora começa a responder em 25 s. Em 10 minutos, o aplicativo inteiro (login, agenda, resultados) fica fora do ar, mesmo sem relação com a operadora.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Antes: pool único esgotado pela operadora derruba tudo. Depois: bulkhead e circuit breaker isolam a operadora">
+      <defs><marker id="ah-cena" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Antes: pool compartilhado</text>
+      <rect class="box-b" x="20" y="34" width="310" height="60" rx="6"/>
+      <text x="175" y="60" text-anchor="middle">Pool único: 200 threads</text><text x="175" y="80" text-anchor="middle">180 presas na operadora</text>
+      <line class="ln-b" x1="175" y1="94" x2="175" y2="124" marker-end="url(#ah-cena)"/>
+      <rect class="box-b" x="20" y="126" width="94" height="40" rx="5"/><text x="67" y="150" text-anchor="middle">Login</text>
+      <rect class="box-b" x="123" y="126" width="94" height="40" rx="5"/><text x="170" y="150" text-anchor="middle">Agenda</text>
+      <rect class="box-b" x="226" y="126" width="104" height="40" rx="5"/><text x="278" y="150" text-anchor="middle">Resultados</text>
+      <text class="lbl" x="20" y="190">Sem timeout curto e sem isolamento: tudo espera na mesma fila.</text>
+      <text class="ttl" x="370" y="22">Depois: bulkhead + breaker</text>
+      <rect class="box-w" x="370" y="34" width="100" height="40" rx="5"/><text x="420" y="58" text-anchor="middle">operadora 20</text>
+      <rect class="box-a" x="480" y="34" width="94" height="40" rx="5"/><text x="527" y="58" text-anchor="middle">agenda 100</text>
+      <rect class="box-a" x="584" y="34" width="96" height="40" rx="5"/><text x="632" y="58" text-anchor="middle">login 80</text>
+      <line class="ln" x1="420" y1="74" x2="420" y2="104" marker-end="url(#ah-cena)"/>
+      <rect class="box" x="370" y="106" width="310" height="60" rx="6"/>
+      <text x="525" y="130" text-anchor="middle">breaker aberto: falha rápida</text><text x="525" y="150" text-anchor="middle">fallback: validar depois (fila)</text>
+      <text class="lbl" x="370" y="190">A operadora esgota só o pool dela; o resto segue.</text>
+      <text class="lbl" x="20" y="236">Timeout de 1 a 2 s, retry limitado, breaker e fallback definido com o negócio.</text>
+    </svg>
+    <figcaption>O mesmo incidente, sem e com isolamento.</figcaption>
+  </figure>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Agora</strong>: abrir manualmente (feature flag) o desvio da validação de elegibilidade para a fila, reduzir o timeout da chamada e reiniciar o que travou; comunicar o suporte.</li>
+    <li><strong>Depois</strong>: timeout de leitura de 1 a 2 s (a operadora devolve em 300 ms normalmente), circuit breaker, bulkhead com pool próprio, retry limitado com jitter e fallback "agendamento pendente de elegibilidade" validado com o negócio.</li>
+    <li>Tornar a validação assíncrona quando possível (fila + reprocesso), com idempotência na chamada à operadora.</li>
+    <li>Alertas no p99 e na taxa de falhas dessa dependência; teste de caos que simule a lentidão; revisão do contrato (SLA, canal de incidente) com a operadora.</li>
+  </ul></div>
+
+  <h3>Cenário 2: o paciente com duas consultas marcadas no mesmo horário</h3>
+  <p>O aplicativo móvel tem conexão ruim. O paciente toca em "Agendar", a resposta demora, ele toca de novo. Aparecem dois agendamentos.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Gerar a <code>Idempotency-Key</code> no app por intenção e reutilizá-la nos retries; reserva atômica da chave no servidor.</li>
+    <li>Defesa de negócio extra: restrição única (paciente, profissional, horário) no banco.</li>
+    <li>No app: desabilitar o botão durante a chamada e, no timeout, consultar o estado antes de oferecer nova tentativa.</li>
+    <li>Limpar duplicatas existentes com script revisado, avisando os pacientes.</li>
+  </ul></div>
+
+  <h3>Cenário 3: tempestade de retries após o banco reiniciar</h3>
+  <p>O banco reinicia por 40 s. Ao voltar, cai de novo logo depois: todas as instâncias da API repetem as chamadas ao mesmo tempo, em ondas de 100 ms.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Retry em apenas uma camada, com backoff exponencial, jitter e orçamento de retries.</li>
+    <li>Circuit breaker para o banco e load shedding na API (503 com Retry-After) enquanto ele se recupera.</li>
+    <li>Pool com timeout de aquisição curto e filas limitadas; subida gradual (warm-up) após reinício.</li>
+    <li>Revisar o ciclo: por que o banco caiu de novo (conexões acumuladas?) e registrar no postmortem.</li>
+  </ul></div>
+
+  <h3>Cenário 4: um parceiro integrado consome toda a capacidade</h3>
+  <p>Um laboratório faz uma carga de resultados em laço, 800 requisições por segundo, e a API fica lenta para todos.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Rate limit por cliente (token bucket, 429 com Retry-After) com plano para parceiros e cota diária.</li>
+    <li>Oferecer endpoint de lote ou importação assíncrona, que é a forma correta de carregar volume.</li>
+    <li>Falar com o parceiro, entender o caso e documentar os limites; alertar quando um cliente passar de 80% da cota.</li>
+  </ul></div>
+
+  <h3>Cenário 5: duas atendentes alteram o mesmo agendamento</h3>
+  <p>A recepção reclama que "o sistema desfaz minhas mudanças": uma mudou o horário e outra mudou o profissional, e a última gravação apagou a primeira.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>ETag/versão no GET e <code>If-Match</code> no PUT/PATCH; <code>412</code> quando a versão mudou e <code>428</code> sem o cabeçalho.</li>
+    <li>Interface que, ao receber 412, recarrega e mostra o que mudou, deixando a pessoa decidir.</li>
+    <li>Usar PATCH com campos específicos para reduzir conflitos entre campos distintos, quando o negócio permitir.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Timeout</dt><dd>Tempo máximo de espera por uma operação antes de desistir.</dd></div>
+    <div><dt>Deadline</dt><dd>Instante absoluto limite de uma requisição, propagado entre serviços.</dd></div>
+    <div><dt>Backoff exponencial</dt><dd>Aumentar o intervalo entre tentativas de forma exponencial.</dd></div>
+    <div><dt>Jitter</dt><dd>Aleatoriedade no intervalo para dessincronizar retries.</dd></div>
+    <div><dt>Retry storm</dt><dd>Amplificação de carga causada por retries simultâneos em várias camadas.</dd></div>
+    <div><dt>Idempotência</dt><dd>Repetir a operação produz o mesmo efeito que executá-la uma vez.</dd></div>
+    <div><dt>Idempotency-Key</dt><dd>Cabeçalho com chave única por intenção; proposto em Internet-Draft do IETF.</dd></div>
+    <div><dt>Circuit breaker</dt><dd>Padrão que interrompe chamadas a uma dependência com falhas (fechado, aberto, semiaberto).</dd></div>
+    <div><dt>Bulkhead</dt><dd>Isolamento de recursos por dependência para conter falhas.</dd></div>
+    <div><dt>Load shedding</dt><dd>Rejeitar parte da carga para preservar a qualidade do restante.</dd></div>
+    <div><dt>Token bucket</dt><dd>Balde de tokens reabastecido em taxa fixa; permite rajadas até a capacidade.</dd></div>
+    <div><dt>429 / Retry-After</dt><dd>Status de limite excedido e cabeçalho que informa quando tentar de novo.</dd></div>
+    <div><dt>ETag / If-Match</dt><dd>Identificador de versão e pré-condição que só aplica a mudança se a versão coincidir (412 se não).</dd></div>
+    <div><dt>Percentil (p95, p99)</dt><dd>Valor abaixo do qual está essa fração das requisições; mostra a cauda da latência.</dd></div>
+    <div><dt>N+1</dt><dd>1 consulta para a lista e N para os detalhes; corrige-se com JOIN ou lote.</dd></div>
+    <div><dt>Chaos engineering</dt><dd>Injeção controlada de falhas para validar a resiliência.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Por que "a rede mente"?</span></summary><div class="ans"><p>Porque uma chamada pode falhar de três formas indistinguíveis para o cliente: o pedido se perdeu, o servidor processou e a resposta se perdeu, ou o servidor está lento. O resultado é "desconhecido", e o design precisa tratar isso com timeout, retry e idempotência.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre timeout de conexão e de leitura?</span></summary><div class="ans"><p>O de conexão limita o estabelecimento de TCP/TLS e pode ser bem curto; o de leitura limita a espera pelos dados depois de conectar, baseado no p99 do serviço. Defina também um timeout total, pois o de leitura costuma ser "tempo sem receber bytes".</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>O que é propagação de deadline?</span></summary><div class="ans"><p>Passar adiante o prazo restante da requisição original, para que cada serviço da cadeia use um timeout menor que o do chamador e pare de trabalhar quando o cliente já desistiu.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Como se implementa retry corretamente?</span></summary><div class="ans"><p>Limite de tentativas, backoff exponencial com jitter, só para falhas repetíveis (5xx, timeout, 429) e operações idempotentes, respeitando Retry-After, com orçamento de retries e em um nível da cadeia, não em todos.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>O que é uma tempestade de retries e como evitar?</span></summary><div class="ans"><p>Quando vários clientes ou camadas repetem ao mesmo tempo, multiplicando a carga sobre quem está se recuperando (3 camadas x 3 tentativas = 27 chamadas). Evita-se com retry em uma camada, jitter, orçamento, circuit breaker e load shedding.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Quais métodos HTTP são idempotentes e por que POST não é?</span></summary><div class="ans"><p>GET, HEAD, PUT e DELETE (e OPTIONS) são idempotentes por definição; POST cria um novo efeito a cada chamada. Torna-se seguro repetir com uma chave de idempotência.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como funciona a Idempotency-Key e qual o seu status como padrão?</span></summary><div class="ans"><p>O cliente envia uma chave única por intenção; o servidor a reserva atomicamente, executa, guarda a resposta e a devolve nas repetições. Como padrão, é um Internet-Draft do IETF (grupo HTTPAPI), ainda não um RFC; é amplamente usada na prática em APIs de pagamento.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Duas requisições com a mesma chave chegam ao mesmo tempo. O que acontece?</span></summary><div class="ans"><p>A reserva atômica (unicidade no banco ou SET NX) deixa só uma processar. A outra recebe "em andamento" (409 com Retry-After) ou espera o resultado e devolve a resposta guardada.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>E se a mesma chave chegar com um corpo diferente?</span></summary><div class="ans"><p>É erro do cliente: o servidor compara um hash do payload e rejeita (o rascunho do IETF sugere 422), sem devolver a resposta antiga. Quando o TTL expira, a chave é tratada como nova.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como funciona um circuit breaker?</span></summary><div class="ans"><p>Três estados: fechado (chamadas normais, monitorando falhas), aberto (falha rápida após ultrapassar o limiar) e semiaberto (poucas sondas após um tempo; se der certo, fecha; se falhar, reabre). Poupa recursos e dá tempo à dependência.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>O que é bulkhead e quando usar?</span></summary><div class="ans"><p>Isolar pools de recursos por dependência ou tipo de tráfego, para que uma dependência lenta não consuma tudo. Use em integrações externas e em tráfego de baixa prioridade.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Compare token bucket, leaky bucket e janela fixa.</span></summary><div class="ans"><p>Token bucket aceita rajada até a capacidade e depois a taxa média; leaky bucket impõe saída constante; janela fixa é simples, mas permite o dobro na virada da janela. A janela deslizante é mais precisa, a custo de mais memória ou de aproximação.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como implementar rate limit distribuído?</span></summary><div class="ans"><p>Estado compartilhado no Redis, com operação atômica (script Lua) por chave de cliente, TTL nas chaves, 429 com Retry-After, e política explícita para falha do Redis (fail-open ou fail-closed). Gateways costumam oferecer isso pronto.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como o ETag ajuda no cache e na concorrência?</span></summary><div class="ans"><p>No cache, If-None-Match permite 304 sem corpo. Na concorrência, If-Match no PUT/PATCH faz a atualização valer só se a versão for a que o cliente viu; senão, 412 Precondition Failed. 428 exige o cabeçalho.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Para que serve o cabeçalho Vary e que risco há ao esquecê-lo?</span></summary><div class="ans"><p>Indica de quais cabeçalhos da requisição a resposta depende (Accept-Encoding, Origin, idioma). Sem ele, um cache pode entregar uma variante errada, inclusive a de outro usuário; para dados pessoais, use private/no-store.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Por que a média de latência engana e o que acompanhar?</span></summary><div class="ans"><p>Esconde a cauda: poucas requisições muito lentas quase não mexem na média, mas dominam a experiência e os timeouts. Acompanhe p50, p95 e p99 por endpoint, com histogramas, e defina SLOs em percentis.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>A API de listagem está lenta. Como investiga?</span></summary><div class="ans"><p>Percentis por endpoint, trace para achar o salto dominante e as causas típicas: N+1, índice faltando, OFFSET profundo, payload grande, cascata de chamadas, pool saturado. Corrijo a causa medida antes de colocar cache ou escalar.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Um parceiro instável derrubou o sistema. Como evitar na próxima, como gestora?</span></summary><div class="ans"><p>Exigir: timeouts curtos e explícitos, circuit breaker, bulkhead por integração, fallback acordado com o negócio, retries limitados, alertas por dependência e game days que simulem a falha. Classificar dependências como críticas ou não e garantir que as não críticas nunca derrubem o fluxo; pós-incidente sem culpa e com ações rastreadas.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

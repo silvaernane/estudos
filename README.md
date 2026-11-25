@@ -5,6 +5,9 @@ Repositório pessoal de estudos. Cada assunto fica na sua própria pasta, com um
 | Assunto | Pasta | Descrição |
 |---|---|---|
 | SQL | [`sql/`](sql/) | Do básico à otimização de consultas, com foco em Oracle e PostgreSQL |
+| Docker | [`docker/`](docker/) | Do container ao Compose com várias imagens, com foco em entrevista |
+| Desenvolvimento web | [`web/`](web/) | Da internet à cibersegurança em 10 módulos, para entrevista e gestão de equipes |
+| APIs | [`apis/`](apis/) | Trilha aprofundada: design, contratos, segurança, confiabilidade, saúde (FHIR/HL7) e gestão |
 
 ## Adicionando um assunto novo
 

@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 05: Segurança de APIs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 05 de 10 · Segurança de APIs</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html" aria-current="page"><span class="n">05</span>Segurança de APIs</a></li>
+    <li class="sub"><ol>
+      <li><a href="#alvo-top10"><span class="n">1</span>Por que APIs são o alvo e o OWASP API Top 10</a></li>
+      <li><a href="#bola"><span class="n">2</span>BOLA/IDOR: o prontuário do paciente errado</a></li>
+      <li><a href="#autenticacao"><span class="n">3</span>Autenticação de máquinas: chaves, OAuth, mTLS e JWT</a></li>
+      <li><a href="#autorizacao"><span class="n">4</span>Autorização fina: escopos, papéis, atributos e políticas</a></li>
+      <li><a href="#entrada-saida"><span class="n">5</span>Validação de entrada e saída, consumo e fluxos de negócio</a></li>
+      <li><a href="#ssrf-cors-segredos"><span class="n">6</span>SSRF, CORS, segredos e consumo de APIs de terceiros</a></li>
+      <li><a href="#inventario-gateway"><span class="n">7</span>Inventário de APIs e gateway como ponto de controle</a></li>
+      <li><a href="#logs-lgpd-testes"><span class="n">8</span>Logs, LGPD, testes de segurança e checklist de revisão</a></li>
+      <li><a href="#cenarios"><span class="n">9</span>Cenários práticos</a></li>
+      <li><a href="#glossario"><span class="n">10</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 05 · <span class="lvl l3">Avançado</span></div>
+  <h1>Segurança de APIs</h1>
+  <p class="lede">Em uma API não há tela, formulário nem usuário "burro" no meio do caminho: quem chama é um programa que faz exatamente o que o contrato permite. Este módulo mostra onde isso quebra (autorização por objeto, propriedades, consumo, fluxos de negócio) e como o gestor cobra defesas que funcionam.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar cada item do OWASP API Security Top 10 (2023) com exemplo vulnerável, correção e cenário de saúde.</li>
+    <li>Distinguir API key, OAuth 2.0 client credentials, mTLS e JWT, e validar um JWT sem as falhas clássicas.</li>
+    <li>Desenhar autorização fina: escopos, papéis (RBAC), atributos (ABAC), checagem por objeto e políticas centralizadas.</li>
+    <li>Tratar validação de entrada e de saída, mass assignment, SSRF em webhooks, CORS e segredos.</li>
+    <li>Montar inventário, gateway, logs sem PII, testes (DAST, fuzzing) e um checklist de revisão para o gestor.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="alvo-top10">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Por que APIs são o alvo e o OWASP API Top 10</h2>
+  <p>Um site tem uma superfície visível: telas, formulários, fluxos. Uma API expõe <strong>diretamente</strong> a lógica e os dados: cada endpoint é uma porta documentada (às vezes em um OpenAPI público), com identificadores previsíveis, JSON estruturado e nenhuma interface para "esconder" nada. O atacante não precisa de navegador: usa <code>curl</code>, um script ou um proxy como o Burp e testa milhares de variações por minuto.</p>
+  <ul>
+    <li><strong>Documentação gratuita.</strong> Contratos OpenAPI, SDKs e apps móveis (que podem ser desmontados) revelam rotas, parâmetros e campos.</li>
+    <li><strong>Autorização é lógica de negócio.</strong> Nenhum scanner sabe sozinho que o paciente 124 não pode ver o prontuário do 123. Quem define isso é o seu código.</li>
+    <li><strong>Automação.</strong> Enumerar IDs, repetir um fluxo de agendamento, raspar a base inteira: tudo vira um laço.</li>
+    <li><strong>Muitos consumidores.</strong> Apps, parceiros, operadoras, laboratórios, integrações internas. Cada um é uma credencial a proteger e um cliente que pode ser comprometido.</li>
+    <li><strong>Superfície que cresce sozinha.</strong> Versões antigas, endpoints de teste e rotas esquecidas continuam respondendo.</li>
+  </ul>
+  <div class="note"><b>Saiba mais</b><p>A trilha web (módulo 09, OWASP Top 10 web) cobre injeção, XSS e CSRF. Aqui o foco é o que muda quando o cliente é um programa: o OWASP mantém uma lista própria, o <strong>OWASP API Security Top 10</strong>. A edição vigente é a de <strong>2023</strong> (a anterior é de 2019). Confira em owasp.org/www-project-api-security se saiu edição mais nova antes de citar em uma entrevista.</p></div>
+
+  <h3>Os 10 itens (edição 2023)</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Cenário de saúde</th><th>Defesa principal</th></tr></thead>
+    <tbody>
+      <tr><td><strong>API1</strong> Broken Object Level Authorization</td><td>Paciente troca o <code>id</code> na URL e lê o prontuário de outro.</td><td>Checar dono/relação do objeto em <em>todo</em> acesso por id.</td></tr>
+      <tr><td><strong>API2</strong> Broken Authentication</td><td>Login sem limite de tentativas; JWT aceito com <code>alg: none</code>; token que nunca expira.</td><td>Fluxos padrão (OIDC/OAuth), validação estrita de token, expiração curta.</td></tr>
+      <tr><td><strong>API3</strong> Broken Object Property Level Authorization</td><td>Resposta traz <code>cpf</code> e <code>diagnostico</code> a quem só precisava do nome; paciente envia <code>"plano":"premium"</code> no PATCH.</td><td>Allowlist de campos na saída e na entrada (DTOs); nada de serializar a entidade inteira.</td></tr>
+      <tr><td><strong>API4</strong> Unrestricted Resource Consumption</td><td><code>?limit=1000000</code> em <code>/exames</code> derruba o banco; SMS de confirmação disparado em massa gera custo.</td><td>Limites de página, tamanho, tempo e cota; rate limit; orçamento por cliente.</td></tr>
+      <tr><td><strong>API5</strong> Broken Function Level Authorization</td><td>Usuário comum chama <code>DELETE /agendamentos/{id}</code> ou <code>/admin/convenios</code> só por conhecer a rota.</td><td>Autorização por função (papel/escopo) em cada rota e método, negando por padrão.</td></tr>
+      <tr><td><strong>API6</strong> Unrestricted Access to Sensitive Business Flows</td><td>Robô reserva todos os horários de um especialista e revende, ou testa números de carteirinha.</td><td>Proteção do fluxo: limites por identidade, antifraude, CAPTCHA/step-up, detecção de comportamento.</td></tr>
+      <tr><td><strong>API7</strong> Server Side Request Forgery</td><td>URL de webhook cadastrada pelo cliente aponta para os metadados da nuvem.</td><td>Allowlist de destinos, bloqueio de IP interno, proxy de saída, sem redirecionamento.</td></tr>
+      <tr><td><strong>API8</strong> Security Misconfiguration</td><td>Stack trace na resposta, CORS <code>*</code> com credenciais, Swagger de produção aberto, TLS fraco.</td><td>Baseline endurecido, configuração como código, varredura contínua.</td></tr>
+      <tr><td><strong>API9</strong> Improper Inventory Management</td><td><code>/v1</code> "aposentada" ainda no ar, sem a autenticação nova; homologação com dados reais.</td><td>Inventário vivo, gateway como ponto único, ciclo de desativação.</td></tr>
+      <tr><td><strong>API10</strong> Unsafe Consumption of APIs</td><td>Sistema confia cegamente no retorno da operadora/laboratório e grava ou segue redirecionamentos sem validar.</td><td>Tratar APIs de terceiros como entrada não confiável: validar, limitar tempo e tamanho.</td></tr>
+    </tbody></table></div>
+  <p>As seções a seguir mostram o par "vulnerável versus corrigido" de cada um: API1 na seção 2, API2 na 3, API3 e API5 na 4, API3 e API4 na 5, API6 na 5, API7, API8 e API10 na 6, API9 na 7.</p>
+
+  <h3>Padrão geral</h3>
+  <p>Quase todos os itens seguem a mesma forma: o código <strong>confia</strong> em algo que veio do cliente (um id, um campo, uma URL, um número) ou em algo que o cliente "não deveria" fazer. A correção é validar no servidor, com política explícita. Um par rápido para API8 (configuração):</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="http">HTTP/1.1 500 Internal Server Error
+Content-Type: application/json
+Server: Apache-Tomcat/9.0.x
+X-Powered-By: Spring
+
+{"error":"ORA-00942: table or view does not exist",
+ "trace":"at br.com.exemplo.agenda.AgendaRepo.find(AgendaRepo.java:88) ...",
+ "sql":"SELECT * FROM SCHEMA_PROD.AGENDAMENTO WHERE ..."}</code></pre>
+    <pre data-label="Corrigido"><code class="http">HTTP/1.1 500 Internal Server Error
+Content-Type: application/problem+json
+
+{"type":"https://api.exemplo.com/erros/interno",
+ "title":"Erro interno",
+ "status":500,
+ "traceId":"3f9a1c2e"}</code></pre>
+  </div>
+  <p>O detalhe fica no log, ligado ao <code>traceId</code>. O cliente recebe só o que precisa para abrir um chamado (formato de erro do módulo 01).</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Cite os três mais importantes do OWASP API Top 10." Resposta sênior: BOLA (API1), porque é a falha mais frequente e nenhuma ferramenta a encontra sem conhecer o negócio; BOPLA (API3), que une exposição excessiva de dados e mass assignment; e consumo irrestrito de recursos (API4), que vira indisponibilidade e custo. Complete dizendo que a causa comum é confiar no cliente.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Use o Top 10 como linguagem comum em revisão de design: para cada endpoint novo, pergunte "qual item se aplica e qual é o controle?". Meça: percentual de endpoints com teste automatizado de autorização por objeto e número de achados de pentest por item do Top 10 em cada trimestre.</p></div>
+</section>
+
+<section class="chap" id="bola">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l3">Avançado</span></div>
+  <h2>BOLA/IDOR: o prontuário do paciente errado</h2>
+  <p>BOLA (Broken Object Level Authorization, também chamado IDOR) acontece quando a API recebe o identificador de um objeto e <strong>não verifica se aquele chamador pode acessá-lo</strong>. Estar autenticado não basta: o token prova quem é você, não que o objeto 124 é seu.</p>
+  <p>Em saúde, o dano é direto: dado sensível exposto, quebra de sigilo, comunicação obrigatória à ANPD e aos titulares, risco jurídico. É por isso que é o exemplo central deste módulo.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Comparação do fluxo de GET /pacientes/124/prontuario sem e com verificação de dono do objeto">
+      <defs><marker id="ah-bola" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Vulnerável (BOLA)</text>
+      <rect class="box-a" x="20" y="34" width="310" height="34" rx="5"/><text x="175" y="56" text-anchor="middle">1. token válido (sub=123)</text>
+      <line class="ln" x1="175" y1="68" x2="175" y2="88" marker-end="url(#ah-bola)"/>
+      <rect class="box-b" x="20" y="90" width="310" height="34" rx="5"/><text x="175" y="112" text-anchor="middle">2. SELECT ... WHERE id = 124</text>
+      <line class="ln-b" x1="175" y1="124" x2="175" y2="144" marker-end="url(#ah-bola)"/>
+      <rect class="box-b" x="20" y="146" width="310" height="34" rx="5"/><text x="175" y="168" text-anchor="middle">3. 200 OK + dados de outra pessoa</text>
+      <text class="lbl" x="20" y="204">Autenticou, mas nunca perguntou "o 124 é do 123?".</text>
+      <text class="ttl" x="370" y="22">Corrigido</text>
+      <rect class="box-a" x="370" y="34" width="310" height="34" rx="5"/><text x="525" y="56" text-anchor="middle">1. token válido (sub=123)</text>
+      <line class="ln" x1="525" y1="68" x2="525" y2="88" marker-end="url(#ah-bola)"/>
+      <rect class="box-a" x="370" y="90" width="310" height="34" rx="5"/><text x="525" y="112" text-anchor="middle">2. 123 pode ver o objeto 124?</text>
+      <line class="ln-a" x1="525" y1="124" x2="525" y2="144" marker-end="url(#ah-bola)"/>
+      <rect class="box" x="370" y="146" width="310" height="34" rx="5"/><text x="525" y="168" text-anchor="middle">3. não: 404 e log de auditoria</text>
+      <text class="lbl" x="370" y="204">A checagem faz parte da consulta ou de uma política.</text>
+      <text class="lbl" x="20" y="238">Requisição em ambos: GET /pacientes/124/prontuario com o token da paciente 123.</text>
+    </svg>
+    <figcaption>O mesmo pedido, tratado sem e com verificação por objeto.</figcaption>
+  </figure>
+
+  <h3>Código vulnerável e corrigido</h3>
+  <div class="tabs">
+    <pre data-label="Vulnerável" data-file="prontuario.js"><code class="js">// Express + PostgreSQL (exemplo)
+app.get("/pacientes/:id/prontuario", requireAuth, async (req, res) =&gt; {
+  // req.user.sub vem do token, mas ninguém o compara com :id
+  const { rows } = await db.query(
+    "SELECT * FROM prontuario WHERE paciente_id = $1", [req.params.id]);
+  res.json(rows);
+});</code></pre>
+    <pre data-label="Corrigido" data-file="prontuario.js"><code class="js">app.get("/pacientes/:id/prontuario", requireAuth, async (req, res) =&gt; {
+  // 1) a regra de acesso é uma função única e testada
+  const pode = await politica.podeVer(req.user, "prontuario", req.params.id);
+  if (!pode) {
+    audit.negado(req, "prontuario", req.params.id);
+    return res.status(404).json({ title: "Não encontrado" });
+  }
+  // 2) só as colunas necessárias (veja a seção 5 sobre saída)
+  const { rows } = await db.query(
+    "SELECT id, data, resumo FROM prontuario WHERE paciente_id = $1",
+    [req.params.id]);
+  res.json(rows);
+});</code></pre>
+  </div>
+  <p>A regra não é só "o paciente vê o próprio": um profissional vê pacientes com vínculo assistencial ativo, um paciente vê o seu, um responsável legal vê o do dependente. Por isso ela vive em uma <strong>política</strong> (<code>politica.podeVer</code>), não espalhada em <code>if</code>s.</p>
+
+  <h3>Por que identificadores aleatórios não resolvem</h3>
+  <p>Trocar <code>/pacientes/124</code> por um UUID reduz a enumeração, mas não é controle de acesso: UUIDs vazam em logs, e-mails, links compartilhados e respostas de outras APIs. Use UUID/ULID por boa prática (não revelar volume nem ordem), mas <strong>sempre</strong> autorize.</p>
+
+  <h3>404 ou 403?</h3>
+  <p>Responder 403 confirma que o recurso existe. Para dados sensíveis, 404 evita que o atacante descubra quais ids são válidos. Decida e padronize; registre sempre a tentativa no log de auditoria.</p>
+
+  <h3>Padrões de BOLA que passam despercebidos</h3>
+  <ul>
+    <li><strong>Id no corpo ou em filtro</strong>: <code>POST /exames {"pacienteId":124}</code> ou <code>GET /exames?pacienteId=124</code>. O id não está no caminho, a falha é a mesma.</li>
+    <li><strong>Objetos aninhados</strong>: <code>/pacientes/123/exames/987</code> checa o paciente 123, mas o exame 987 pertence a outro.</li>
+    <li><strong>Escrita e exclusão</strong>, não só leitura: cancelar o agendamento de outro paciente.</li>
+    <li><strong>Operações em lote e GraphQL</strong>: um array de ids ou vários campos em uma consulta. Cada objeto precisa ser autorizado.</li>
+    <li><strong>Exportações, anexos, URLs assinadas</strong>: o link do PDF do laudo funciona para quem o possuir? Por quanto tempo?</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Confiar no gateway ou no front-end para isso. O gateway não conhece o relacionamento paciente-profissional-unidade. A checagem de objeto pertence ao serviço dono do dado, em <strong>todo</strong> endpoint, e deve ser coberta por teste automatizado.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Todo handler que recebe um identificador responde, no código, a: "quem está pedindo, o que quer fazer, em qual objeto, e por que isso é permitido?". Sem as quatro respostas, não passa na revisão.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como previne IDOR?" Autorização por objeto no servidor em cada acesso, preferencialmente por política central e filtro na consulta; 404 para não revelar existência; testes automatizados com dois usuários (A tenta ler o objeto de B); IDs não sequenciais como camada extra, nunca como controle.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija um teste de segurança por endpoint na pipeline: "usuário A não acessa recurso do usuário B". Pergunta de revisão: "se eu trocar este id por outro válido, o que acontece?". Indicador: cobertura de testes de autorização por objeto nos endpoints que tocam dado de paciente.</p></div>
+</section>
+
+<section class="chap" id="autenticacao">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Autenticação de máquinas: chaves, OAuth, mTLS e JWT</h2>
+  <p>O módulo 07 da trilha web explicou OAuth 2.0, OIDC e JWT do ponto de vista do usuário que faz login. Em APIs o chamador muitas vezes é <strong>um sistema</strong>: o laboratório que envia resultados, a operadora que consulta elegibilidade, outro serviço seu. As escolhas aqui são outras (e é onde mora API2, Broken Authentication).</p>
+
+  <h3>Comparativo de mecanismos</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Mecanismo</th><th>Bom para</th><th>Limites</th></tr></thead>
+    <tbody>
+      <tr><td>API key</td><td>Identificar o consumidor, medir uso, plano e cota; integrações simples de baixo risco.</td><td>Segredo estático e compartilhável; sem escopo nem expiração nativos; vaza em log, repositório, app móvel. Não identifica o usuário final. Nunca em query string.</td></tr>
+      <tr><td>OAuth 2.0 <em>client credentials</em></td><td>Serviço para serviço (sem usuário). Token de curta duração com escopos.</td><td>Ainda há um segredo do cliente a guardar; precisa de servidor de autorização; sem contexto de usuário.</td></tr>
+      <tr><td>OAuth 2.0 + OIDC (código com PKCE)</td><td>Apps e usuários finais (paciente no aplicativo).</td><td>Fluxo mais complexo; visto na trilha web.</td></tr>
+      <tr><td>mTLS</td><td>Parceiros regulados, B2B de alto risco; pode vincular o token ao certificado do cliente.</td><td>Gestão de certificados (emissão, rotação, revogação); difícil em navegador; a terminação de TLS precisa preservar a identidade.</td></tr>
+      <tr><td>JWT assinado</td><td>Token autocontido validável offline, com claims e escopos.</td><td>Difícil de revogar antes do <code>exp</code>; validação incorreta é uma das falhas mais comuns.</td></tr>
+      <tr><td>Token opaco + introspecção</td><td>Revogação imediata e controle central; token que carrega pouco dado.</td><td>Cada chamada (ou cache) consulta o servidor de autorização: latência e dependência.</td></tr>
+    </tbody></table></div>
+
+  <h3>Client credentials na prática</h3>
+  <pre><code class="http">POST /oauth/token HTTP/1.1
+Host: auth.exemplo.com
+Authorization: Basic bGFiLWV4ZW1wbG86c2VncmVkbw==
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&amp;scope=resultados.escrever</code></pre>
+  <pre><code class="json">{
+  "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMjYtMTEifQ...",
+  "token_type": "Bearer",
+  "expires_in": 600,
+  "scope": "resultados.escrever"
+}</code></pre>
+  <p>Observe <code>expires_in: 600</code>: dez minutos. Tokens de máquina devem ser curtos e com o <strong>menor escopo possível</strong> (<code>resultados.escrever</code>, não <code>*</code>). O cliente guarda o token em memória e pede outro ao expirar.</p>
+
+  <h3>Validando um JWT corretamente</h3>
+  <p>Receber um JWT e "decodificar" não é validar. A validação mínima:</p>
+  <ol class="seq">
+    <li><div><strong>Algoritmo fixo.</strong> Configure no servidor os algoritmos aceitos (ex.: <code>RS256</code> ou <code>ES256</code>). Nunca aceite o que o cabeçalho do token disser: <code>alg: none</code> e o ataque que troca RS256 por HS256 (usando a chave pública como segredo) vêm daí.</div></li>
+    <li><div><strong>Assinatura com a chave certa.</strong> Busque a chave no endpoint JWKS do emissor pelo <code>kid</code>; faça cache e re-busque quando aparecer um <code>kid</code> desconhecido (rotação de chaves), com limite de frequência para não virar vetor de DoS.</div></li>
+    <li><div><strong><code>iss</code></strong> igual ao emissor esperado (comparação exata).</div></li>
+    <li><div><strong><code>aud</code></strong> contém <em>esta</em> API. Sem isso, um token emitido para outro sistema funciona na sua.</div></li>
+    <li><div><strong><code>exp</code> e <code>nbf</code></strong> respeitados, com tolerância pequena de relógio (segundos, não minutos).</div></li>
+    <li><div><strong>Escopos e identidade.</strong> Verifique o que a rota exige (ex.: <code>scope</code> contém <code>resultados.escrever</code>) e, para usuários, a identidade em <code>sub</code>.</div></li>
+  </ol>
+  <pre data-file="validar-jwt.js"><code class="js">// Biblioteca "jose" (exemplo). Algoritmos e emissor são FIXOS no servidor.
+import { createRemoteJWKSet, jwtVerify } from "jose";
+
+const jwks = createRemoteJWKSet(new URL("https://auth.exemplo.com/.well-known/jwks.json"));
+
+export async function validar(token) {
+  const { payload } = await jwtVerify(token, jwks, {
+    issuer: "https://auth.exemplo.com/",
+    audience: "api-resultados",
+    algorithms: ["RS256"],
+    clockTolerance: 5,           // segundos
+  });
+  const escopos = String(payload.scope ?? "").split(" ");
+  return { sub: payload.sub, escopos };
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Guardar dado sensível no payload do JWT achando que está protegido: ele é só codificado em Base64URL, qualquer um lê. Outra: homologação e produção com o mesmo emissor ou as mesmas chaves, de modo que um token de teste vale em produção.</p></div>
+
+  <h3>JWT autocontido ou opaco com introspecção?</h3>
+  <p>JWT valida offline e escala bem, mas não se revoga: um token roubado vale até <code>exp</code>. Mitigação: validade curta (minutos), refresh controlado e uma lista de revogação para casos críticos. O token opaco com introspecção (RFC 7662) consulta o servidor de autorização a cada uso, o que dá revogação imediata em troca de latência e de uma dependência; um cache curto do resultado equilibra. Regra prática: JWT de vida curta entre serviços internos; opaco, ou JWT muito curto com checagem extra, onde o requisito é revogar rápido (acesso a dado de paciente por parceiro).</p>
+
+  <h3>mTLS e tokens vinculados ao certificado</h3>
+  <p>No mTLS o cliente apresenta um certificado e o servidor o valida contra uma CA confiável. Combinado ao OAuth (tokens vinculados a certificado, RFC 8705), um token roubado não funciona sem a chave privada do cliente. É a escolha usual quando o parceiro é regulado ou o impacto de abuso é alto. O custo é operacional: inventário de certificados, alertas de expiração, rotação automatizada.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Tokens curtos, escopo mínimo, audiência explícita, algoritmo fixo, segredos em cofre e rotacionáveis. Se o desenho depende de um segredo que "nunca muda", ele já falhou.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Quando usaria API key e quando OAuth?" API key para identificar o consumidor e aplicar cota em integrações de baixo risco; OAuth client credentials quando é preciso escopo, expiração e revogação centralizadas; mTLS quando o risco ou a regulação pede identidade forte do cliente. Diga que API key sozinha não é autenticação de usuário.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cobrar: inventário de credenciais de integração com dono e data de rotação; tempo máximo de vida dos tokens; nenhuma chave em repositório (varredura de segredos na pipeline). Pergunta de revisão: "se este segredo vazar hoje, em quanto tempo o rotacionamos sem derrubar o parceiro?".</p></div>
+</section>
+
+<section class="chap" id="autorizacao">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Autorização fina: escopos, papéis, atributos e políticas</h2>
+  <p>Autenticar responde "quem é?". Autorizar responde "pode fazer isto, com este objeto, agora?". Em APIs a autorização acontece em <strong>três camadas</strong> e confundi-las é a origem de BOLA (API1) e BFLA (API5).</p>
+
+  <h3>Escopo, papel e atributo</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Modelo</th><th>Pergunta que responde</th><th>Exemplo</th><th>Limite</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Escopo</strong> (OAuth)</td><td>O que este <em>cliente/token</em> foi autorizado a fazer em nome de alguém?</td><td><code>agenda.ler</code>, <code>exames.escrever</code></td><td>Grosso: não diz nada sobre <em>qual</em> paciente.</td></tr>
+      <tr><td><strong>Papel</strong> (RBAC)</td><td>O que alguém com esta função pode fazer?</td><td><code>recepcionista</code>, <code>medico</code>, <code>auditor</code></td><td>Explosão de papéis; não captura contexto (unidade, horário, vínculo).</td></tr>
+      <tr><td><strong>Atributo</strong> (ABAC)</td><td>Dadas as propriedades do sujeito, do recurso e do contexto, é permitido?</td><td>"médico com vínculo ativo com o paciente, na mesma unidade, em atendimento em andamento"</td><td>Mais poder, mais complexidade; exige dados de atributos confiáveis.</td></tr>
+      <tr><td><strong>Relação</strong> (ReBAC)</td><td>Existe uma relação entre sujeito e objeto?</td><td>"é responsável legal de", "faz parte da equipe de"</td><td>Precisa de grafo/serviço dedicado em escala.</td></tr>
+    </tbody></table></div>
+  <p>Uma checagem completa combina os três: o <strong>escopo</strong> do token permite ler prontuário, o <strong>papel</strong> do usuário permite a função, e o <strong>atributo/relação</strong> confirma que aquele paciente está sob seus cuidados.</p>
+
+  <h3>BFLA: autorização por função</h3>
+  <p>BFLA (Broken Function Level Authorization) é acessar uma <em>função</em> que não deveria: rota administrativa, método mais poderoso (<code>DELETE</code>, <code>PUT</code>) ou endpoint "interno" exposto. Costuma nascer de rotas que foram protegidas só pela falta de um botão na tela.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="http">DELETE /agendamentos/8841 HTTP/1.1
+Authorization: Bearer &lt;token de paciente&gt;
+
+HTTP/1.1 204 No Content        &lt;- qualquer autenticado apaga</code></pre>
+    <pre data-label="Corrigido" data-file="rotas.js"><code class="js">// negar por padrão: cada rota declara escopo + papel exigidos
+router.delete("/agendamentos/:id",
+  exige({ escopo: "agenda.escrever", papeis: ["recepcao", "gestor_agenda"] }),
+  async (req, res) =&gt; {
+    const ag = await repo.buscar(req.params.id);
+    if (!ag || !(await politica.pode(req.user, "cancelar", ag))) {
+      return res.status(404).end();
+    }
+    await repo.cancelar(ag.id, req.user.sub);   // soft delete + auditoria
+    res.status(204).end();
+  });</code></pre>
+  </div>
+  <div class="note trap"><b>Armadilha comum</b><p>Papel dentro do token como única verdade. Se o papel muda (a médica sai da unidade), o token antigo ainda diz o contrário até expirar. Para ações sensíveis, consulte o estado atual (vínculo, status do profissional) na hora, ou mantenha tokens curtos.</p></div>
+
+  <h3>Políticas centralizadas (resumo de OPA)</h3>
+  <p>Quando as regras se espalham por dez serviços, ficam inconsistentes e impossíveis de auditar. A alternativa é separar a <strong>decisão</strong> (PDP, Policy Decision Point) da <strong>aplicação</strong> (PEP, Policy Enforcement Point: gateway ou o próprio serviço). O <strong>Open Policy Agent (OPA)</strong> é um motor de políticas de código aberto, com a linguagem declarativa Rego: o serviço envia uma entrada (quem, ação, recurso, contexto) e recebe permitido ou negado.</p>
+  <pre data-file="prontuario.rego"><code class="text">package saude.prontuario
+
+default permitir := false
+
+# profissional com vínculo ativo, na mesma unidade
+permitir if {
+  input.acao == "ler"
+  "prontuario.ler" in input.token.escopos
+  input.sujeito.papel == "medico"
+  some v in data.vinculos[input.recurso.paciente_id]
+  v.profissional_id == input.sujeito.id
+  v.ativo
+  v.unidade == input.recurso.unidade
+}
+
+# o próprio paciente
+permitir if {
+  input.acao == "ler"
+  input.sujeito.papel == "paciente"
+  input.sujeito.id == input.recurso.paciente_id
+}</code></pre>
+  <p>O ganho está na <strong>política como código</strong>: versionada no Git, revisada, testada com casos de teste e implantada separadamente. O custo é mais uma peça operacional (latência da consulta, disponibilidade, fornecimento de dados de vínculos). Para equipes pequenas, uma biblioteca interna de autorização bem testada pode bastar; a decisão de usar um PDP externo se justifica quando há vários serviços e requisitos de auditoria.</p>
+
+  <h3>Princípios que valem em qualquer modelo</h3>
+  <ul>
+    <li><strong>Negar por padrão.</strong> Rota nova sem regra declarada responde 403, não 200.</li>
+    <li><strong>Menor privilégio</strong> nos escopos, nos papéis e nas contas de serviço (a conta do serviço de agenda não precisa ler prontuário).</li>
+    <li><strong>Checar no servidor, no ponto de uso</strong>, nunca confiar em campo enviado pelo cliente (<code>"papel":"admin"</code> no corpo).</li>
+    <li><strong>Separação de deveres</strong> e dupla aprovação em operações críticas (exportação em massa de pacientes).</li>
+    <li><strong>"Quebra de vidro"</strong> auditada: acesso emergencial é permitido, mas registrado e revisado depois.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Escopo diz o que o app pode, papel diz o que a função pode, atributo/relação diz o que ESTE usuário pode fazer COM ESTE objeto. Falta uma das três, falta autorização.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"RBAC ou ABAC?" Papéis para o grosso (quem trabalha em quê), atributos e relações para o fino (este paciente, esta unidade, este horário). Cite que a decisão deve ser centralizada e testável (política como código, ex.: OPA) e aplicada no serviço dono do dado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça uma matriz de autorização por endpoint (rota x papel x escopo x regra de objeto), revisada a cada release. Meça: rotas sem regra declarada (meta zero) e tempo para revogar o acesso de um profissional desligado.</p></div>
+</section>
+
+<section class="chap" id="entrada-saida">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Validação de entrada e saída, consumo e fluxos de negócio</h2>
+  <p>A API é um contrato: aceite <strong>só</strong> o que o contrato descreve e devolva <strong>só</strong> o que o consumidor precisa. O módulo 02 mostrou como o OpenAPI descreve isso; aqui ele vira controle de segurança.</p>
+
+  <h3>Validação de entrada (allowlist)</h3>
+  <ul>
+    <li><strong>Esquema</strong>: tipos, formatos, tamanhos, enums, <code>additionalProperties: false</code>. Rejeite com 400/422 o que não bate.</li>
+    <li><strong>Limites</strong>: tamanho do corpo (ex.: 1 MB), profundidade do JSON, tamanho de arrays, tamanho de string, tipos de arquivo e tamanho em uploads.</li>
+    <li><strong>Consultas parametrizadas</strong> sempre (SQL e Oracle com bind variables): injeção continua valendo, inclusive em filtros e ordenação.</li>
+    <li><strong>Normalização antes de validar</strong> (Unicode, caminhos) e <code>Content-Type</code> checado: não processe XML se espera JSON.</li>
+  </ul>
+  <pre data-file="openapi.yaml"><code class="yaml">components:
+  schemas:
+    NovoAgendamento:
+      type: object
+      additionalProperties: false      # campo extra = erro
+      required: [pacienteId, slotId]
+      properties:
+        pacienteId: { type: string, format: uuid }
+        slotId:     { type: string, format: uuid }
+        observacao: { type: string, maxLength: 500 }</code></pre>
+
+  <h3>Mass assignment e BOPLA (API3)</h3>
+  <p>Se o código copia o JSON do cliente direto para a entidade, o cliente escolhe campos que não deveria: <code>"status":"CONFIRMADO"</code>, <code>"valorCobrado":0</code>, <code>"papel":"admin"</code>. É o <strong>mass assignment</strong>, lado de escrita do BOPLA. O lado de leitura é a <strong>exposição excessiva de dados</strong>: a API serializa a entidade inteira e confia que o front esconda o que sobra.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável" data-file="paciente.js"><code class="js">app.patch("/pacientes/:id", requireAuth, async (req, res) =&gt; {
+  // o cliente manda { "nome": "...", "convenioStatus": "ATIVO", "perfil": "admin" }
+  const p = await Paciente.findById(req.params.id);
+  Object.assign(p, req.body);             // mass assignment
+  await p.save();
+  res.json(p);                             // devolve cpf, notas clínicas, hash...
+});</code></pre>
+    <pre data-label="Corrigido" data-file="paciente.js"><code class="js">const EditavelPeloPaciente = ["nome", "telefone", "email"];   // allowlist
+const Publico = ["id", "nome", "telefone", "email"];
+
+app.patch("/pacientes/:id", requireAuth, async (req, res) =&gt; {
+  await autorizar(req, "editar", "paciente", req.params.id);
+  const dados = pick(req.body, EditavelPeloPaciente);
+  const extra = Object.keys(req.body).filter(k =&gt; !EditavelPeloPaciente.includes(k));
+  if (extra.length) return res.status(422).json({ title: "Campos não permitidos", campos: extra });
+  const p = await repo.atualizar(req.params.id, dados);
+  res.json(pick(p, Publico));              // DTO de saída explícito
+});</code></pre>
+  </div>
+  <p>Resposta vulnerável típica de um <code>GET /pacientes/124</code> feito por um atendente:</p>
+  <pre><code class="json">{ "id": 124, "nome": "Maria Exemplo", "cpf": "000.000.000-00",
+  "nascimento": "1980-02-10", "diagnosticoPrincipal": "E11",
+  "convenioToken": "tkn_9d8...", "senhaHash": "$2b$12$..." }</code></pre>
+  <p>Defina <strong>DTOs por papel</strong> (visão da recepção, do médico, do paciente). Valide o formato de saída no teste de contrato: um campo novo na entidade não deve aparecer automaticamente na resposta.</p>
+
+  <h3>Consumo irrestrito de recursos (API4)</h3>
+  <p>Cada requisição custa CPU, memória, banco e, às vezes, dinheiro (SMS, e-mail, consulta paga à operadora). Sem limites, um cliente (ou um bug) esgota a capacidade ou a conta. Controles:</p>
+  <ul>
+    <li>Tamanho máximo de página e de corpo; <code>limit</code> com teto no servidor (ex.: máximo 100).</li>
+    <li>Tempo máximo de execução, tamanho máximo de resposta e profundidade/complexidade em GraphQL.</li>
+    <li>Rate limit por cliente, por usuário, por IP e por endpoint sensível (detalhes no módulo 06).</li>
+    <li>Cotas e alertas de gasto para serviços pagos de terceiros.</li>
+    <li>Operações caras (exportações, relatórios) assíncronas, em fila, com limite por cliente.</li>
+  </ul>
+  <pre><code class="http">GET /exames?limit=100000 HTTP/1.1
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{"title":"Parâmetro inválido","detail":"limit deve ser no máximo 100","status":400}</code></pre>
+
+  <h3>Fluxos de negócio sensíveis (API6)</h3>
+  <p>Algumas ações são legítimas uma a uma, mas abusivas em volume: reservar horários, aplicar cupom, validar carteirinha, solicitar segunda via de laudo, recuperar senha. Um robô pode "esvaziar" a agenda de um especialista ou enumerar números de carteirinha válidos, sem explorar nenhum bug técnico.</p>
+  <ul>
+    <li>Identifique os fluxos de maior valor ou abuso no mapeamento de ameaças, <em>por negócio</em>, não só por endpoint.</li>
+    <li>Limites por identidade: máximo de reservas ativas por paciente, tempo mínimo entre ações, bloqueio de reserva sem confirmação.</li>
+    <li>Fricção proporcional ao risco: confirmação por código, CAPTCHA ou reautenticação (step-up) quando o comportamento foge do padrão.</li>
+    <li>Respostas que não confirmam existência (login, validação de carteirinha, recuperação de senha).</li>
+    <li>Detecção de padrão: dispositivo, ritmo, sequência de ids, múltiplas contas com o mesmo telefone.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Rate limit apenas por IP: atrás de NAT (um hospital inteiro) bloqueia gente legítima; um atacante com botnet contorna. Combine limites por conta/cliente, por IP e por fluxo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é mass assignment e como evitar?" Copiar o corpo da requisição para o modelo permite ao cliente definir campos que não deveria. Evita-se com DTOs de entrada com allowlist, rejeição de campos desconhecidos e DTOs de saída explícitos; no OpenAPI, <code>additionalProperties: false</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Torne o contrato OpenAPI a fonte de validação (gerar validação a partir dele) e inclua na definição de pronto: "campos de entrada e saída aprovados por revisão de dados pessoais". Para cada API com custo por chamada de terceiro, exija cota e alerta de gasto.</p></div>
+</section>
+
+<section class="chap" id="ssrf-cors-segredos">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>SSRF, CORS, segredos e consumo de APIs de terceiros</h2>
+
+  <h3>SSRF em webhooks e URLs fornecidas pelo cliente (API7)</h3>
+  <p>Server Side Request Forgery: a API faz uma requisição para uma URL que o <em>cliente</em> escolheu, e o atacante a aponta para onde ele não alcança, mas o seu servidor sim: o serviço de metadados da nuvem (credenciais temporárias), a rede interna, bancos, painéis administrativos. Webhooks (módulo 04), importação por URL, "buscar imagem por link" e geração de PDF a partir de URL são os pontos clássicos.</p>
+  <pre><code class="http">POST /webhooks HTTP/1.1
+Content-Type: application/json
+
+{"url": "http://169.254.169.254/latest/meta-data/iam/security-credentials/"}</code></pre>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 240" role="img" aria-label="Worker de webhooks passa por proxy de saída que permite parceiro externo e bloqueia metadados da nuvem e rede interna">
+      <defs><marker id="ah-ssrf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="90" width="140" height="44" rx="5"/><text x="90" y="110" text-anchor="middle">Worker de</text><text x="90" y="126" text-anchor="middle">webhooks</text>
+      <line class="ln" x1="160" y1="112" x2="220" y2="112" marker-end="url(#ah-ssrf)"/>
+      <rect class="box-a" x="222" y="64" width="170" height="96" rx="5"/>
+      <text class="ttl" x="307" y="86" text-anchor="middle">Proxy de saída</text>
+      <text x="307" y="108" text-anchor="middle">allowlist de hosts</text>
+      <text x="307" y="126" text-anchor="middle">valida IP resolvido</text>
+      <text x="307" y="144" text-anchor="middle">sem redirecionar</text>
+      <line class="ln-a" x1="392" y1="90" x2="470" y2="46" marker-end="url(#ah-ssrf)"/>
+      <rect class="box" x="472" y="26" width="208" height="40" rx="5"/><text x="576" y="50" text-anchor="middle">parceiro.example (HTTPS)</text>
+      <text class="lbl" x="400" y="86" >permitido</text>
+      <line class="ln-b" x1="392" y1="112" x2="470" y2="124" marker-end="url(#ah-ssrf)"/>
+      <rect class="box-b" x="472" y="102" width="208" height="40" rx="5"/><text x="576" y="126" text-anchor="middle">169.254.169.254 (metadados)</text>
+      <line class="ln-b" x1="392" y1="140" x2="470" y2="186" marker-end="url(#ah-ssrf)"/>
+      <rect class="box-b" x="472" y="166" width="208" height="40" rx="5"/><text x="576" y="190" text-anchor="middle">10.0.0.0/8 (rede interna)</text>
+      <text class="lbl" x="400" y="162">bloqueado</text>
+      <text class="lbl" x="20" y="232">A defesa está na camada de rede/proxy, não só na validação da URL cadastrada.</text>
+    </svg>
+    <figcaption>Egress controlado: o servidor só sai para destinos aprovados, e valida o IP depois da resolução de DNS.</figcaption>
+  </figure>
+  <p>Defesas, em camadas:</p>
+  <ul>
+    <li><strong>Allowlist</strong> de domínios/hosts aprovados quando possível; senão, exigir HTTPS e validar o <strong>IP resolvido</strong> (bloqueando loopback, link-local, redes privadas e IPv6 equivalentes).</li>
+    <li><strong>Proteção contra DNS rebinding</strong>: resolver uma vez, conectar ao IP validado, e não resolver de novo.</li>
+    <li><strong>Não seguir redirecionamentos</strong> automáticos (ou revalidar cada salto); permitir só <code>http</code>/<code>https</code>, sem <code>file:</code>, <code>gopher:</code> etc.</li>
+    <li><strong>Egress controlado na rede</strong>: o worker de webhooks roda em uma sub-rede sem rota para a rede interna e sem acesso ao serviço de metadados (use a versão com sessão obrigatória do serviço de metadados do seu provedor).</li>
+    <li>Não devolver ao cliente o corpo da resposta recebida; limitar tempo e tamanho; assinar os webhooks enviados (HMAC) para que o parceiro verifique a origem.</li>
+  </ul>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// busca a URL que o cliente mandou, sem checar nada
+const r = await fetch(req.body.url);
+res.send(await r.text());</code></pre>
+    <pre data-label="Corrigido" data-file="webhook-url.js"><code class="js">import { lookup } from "node:dns/promises";
+import ipaddr from "ipaddr.js";
+
+export async function urlSegura(texto) {
+  const u = new URL(texto);
+  if (u.protocol !== "https:") throw new Error("somente https");
+  if (!HOSTS_PERMITIDOS.has(u.hostname)) throw new Error("host não aprovado");
+  const { address } = await lookup(u.hostname);
+  if (ipaddr.parse(address).range() !== "unicast")      // bloqueia privado, loopback, link-local
+    throw new Error("destino não público");
+  return { url: u, ip: address };                       // conectar neste IP, redirect: "error"
+}</code></pre>
+  </div>
+
+  <h3>CORS correto para APIs</h3>
+  <p>CORS controla quais <em>origens de navegador</em> podem ler respostas da sua API. Não protege a API de <code>curl</code> nem de servidores: é uma regra do navegador (visto na trilha web). Erros comuns de API8:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Configuração</th><th>Problema</th></tr></thead>
+    <tbody>
+      <tr><td><code>Access-Control-Allow-Origin: *</code> com dados autenticados por cookie</td><td>Navegadores bloqueiam <code>*</code> com credenciais, e a "correção" de refletir qualquer <code>Origin</code> abre a API a qualquer site.</td></tr>
+      <tr><td>Refletir o <code>Origin</code> recebido sem allowlist</td><td>Equivale a liberar tudo, inclusive com <code>Allow-Credentials: true</code>.</td></tr>
+      <tr><td>Regex frouxa (<code>.*exemplo.com</code>)</td><td>Casa com <code>exemplo.com.atacante.net</code>.</td></tr>
+      <tr><td>Aceitar <code>null</code> como origem</td><td>Páginas em <code>iframe</code> sandbox e arquivos locais enviam <code>null</code>.</td></tr>
+    </tbody></table></div>
+  <p>Correto: allowlist exata de origens do seu front-end, <code>Vary: Origin</code> para os caches, métodos e cabeçalhos mínimos, <code>Max-Age</code> do preflight definido, e credenciais só quando necessário. APIs puramente máquina-a-máquina (sem navegador) não precisam de CORS.</p>
+  <pre><code class="http">HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: https://portal.exemplo.com
+Access-Control-Allow-Methods: GET, POST
+Access-Control-Allow-Headers: Authorization, Content-Type
+Access-Control-Max-Age: 600
+Vary: Origin</code></pre>
+
+  <h3>Gestão de segredos</h3>
+  <ul>
+    <li><strong>Nada de segredo no repositório, imagem de contêiner, log ou front-end.</strong> Use varredura automática de segredos (pré-commit e CI) e trate qualquer vazamento como incidente: revogar e rotacionar.</li>
+    <li><strong>Cofre de segredos</strong> (do provedor de nuvem ou HashiCorp Vault) com acesso por identidade da carga de trabalho, não por senha compartilhada.</li>
+    <li><strong>Rotação automática</strong> e segredos de curta duração (credenciais dinâmicas de banco). Um segredo por ambiente e por consumidor.</li>
+    <li>Chaves de assinatura de JWT e de webhook em KMS/HSM quando possível; rotação com sobreposição (duas chaves válidas durante a transição, <code>kid</code> distingue).</li>
+    <li>Variáveis de ambiente são aceitáveis como veículo, mas não como armazenamento; cuidado com dumps de configuração e endpoints de diagnóstico.</li>
+  </ul>
+
+  <h3>Consumo inseguro de APIs de terceiros (API10)</h3>
+  <p>As integrações com operadora, laboratório e gateway de pagamento costumam receber <em>menos</em> desconfiança que o usuário final. Mas a resposta delas é entrada externa: pode vir malformada, enorme, comprometida ou trazer redirecionamentos.</p>
+  <ul>
+    <li>Valide a resposta contra um esquema antes de usar ou gravar; descarte campos desconhecidos.</li>
+    <li>Defina timeouts, limite de tamanho, número máximo de redirecionamentos e TLS verificado.</li>
+    <li>Nunca interpole dados da resposta em consultas, comandos ou URLs sem tratamento.</li>
+    <li>Isole a integração: se a operadora cair ou responder lixo, o resto do sistema segue (módulo 06).</li>
+    <li>Contrato (DPA/LGPD) e requisitos de segurança com o fornecedor; revise as credenciais que ele tem sobre você.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Validar a URL do webhook só na hora do cadastro. O DNS pode mudar depois (um nome que hoje aponta para um IP público passa a apontar para <code>10.x</code>). Valide o IP no momento de <em>cada</em> envio.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como protege um recurso de webhook contra SSRF?" Allowlist e HTTPS, validar o IP depois do DNS, sem redirecionamentos, saída por proxy/egress controlado sem rota para a rede interna nem para os metadados da nuvem, limite de tempo e tamanho, e não devolver o corpo ao cliente.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pergunte em revisão de design: "este serviço faz requisições para URLs que não controlamos? Para onde ele consegue chegar na rede?". Cobre: política de egress por serviço, varredura de segredos bloqueando o merge, e inventário de integrações com dono e nível de dado trafegado.</p></div>
+</section>
+
+<section class="chap" id="inventario-gateway">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Inventário de APIs e gateway como ponto de controle</h2>
+  <p>Não se protege o que não se conhece. API9 (Improper Inventory Management) descreve o problema: versões antigas, ambientes de teste e endpoints internos esquecidos continuam acessíveis, muitas vezes <strong>sem</strong> as proteções que a versão atual recebeu.</p>
+
+  <h3>Shadow e zombie APIs</h3>
+  <ul>
+    <li><strong>Shadow API</strong>: existe e responde, mas ninguém a registrou (criada por um time para uma integração rápida, sem passar por revisão).</li>
+    <li><strong>Zombie API</strong>: foi "desativada" na documentação, mas o endpoint segue vivo (a <code>/v1</code> depois do lançamento da <code>/v2</code>).</li>
+    <li><strong>Ambientes paralelos</strong>: homologação ou "teste" com dados reais copiados da produção e sem autenticação forte.</li>
+    <li><strong>Documentação de depuração</strong> aberta em produção (<code>/swagger</code>, <code>/actuator</code>, <code>/graphql</code> com introspecção).</li>
+  </ul>
+  <h3>O que manter no inventário</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Campo</th><th>Para quê</th></tr></thead>
+    <tbody>
+      <tr><td>Nome, dono (time e pessoa), repositório</td><td>Quem responde por falhas e por desativar.</td></tr>
+      <tr><td>Ambiente, versão, URL, status (ativa, depreciada, removida)</td><td>Ciclo de vida e datas de desativação (módulo 07).</td></tr>
+      <tr><td>Consumidores conhecidos</td><td>Impacto de uma mudança; revisão de credenciais.</td></tr>
+      <tr><td>Classificação de dados (pessoal, sensível/saúde)</td><td>Define controles, logs e retenção (seção 8).</td></tr>
+      <tr><td>Autenticação e escopos exigidos; contrato OpenAPI</td><td>Auditoria e teste automatizado.</td></tr>
+      <tr><td>Dependências externas (operadoras, laboratórios)</td><td>Risco de terceiros e mapa de falhas (módulo 06).</td></tr>
+    </tbody></table></div>
+  <p>Mantenha o inventário <strong>vivo</strong>, alimentado por fontes reais: contratos OpenAPI no repositório, rotas observadas no gateway, DNS e certificados, tráfego e logs. A diferença entre "o que está registrado" e "o que recebe tráfego" é a lista de shadow APIs.</p>
+
+  <h3>Gateway como ponto de controle</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 700 260" role="img" aria-label="Clientes passam pelo API gateway com controles transversais, depois por serviços que fazem autorização por objeto consultando um ponto de decisão de políticas">
+      <defs><marker id="ah-gw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="104" width="110" height="44" rx="5"/><text x="75" y="130" text-anchor="middle">Clientes</text>
+      <line class="ln" x1="130" y1="126" x2="170" y2="126" marker-end="url(#ah-gw)"/>
+      <rect class="box-a" x="172" y="30" width="200" height="190" rx="6"/>
+      <text class="ttl" x="272" y="54" text-anchor="middle">API Gateway</text>
+      <text x="272" y="82" text-anchor="middle">TLS / mTLS</text>
+      <text x="272" y="106" text-anchor="middle">valida JWT e escopo</text>
+      <text x="272" y="130" text-anchor="middle">rate limit e cota</text>
+      <text x="272" y="154" text-anchor="middle">valida schema OpenAPI</text>
+      <text x="272" y="178" text-anchor="middle">logs e métricas</text>
+      <text class="lbl" x="272" y="204" text-anchor="middle">controles transversais</text>
+      <line class="ln" x1="372" y1="126" x2="410" y2="62" marker-end="url(#ah-gw)"/>
+      <line class="ln" x1="372" y1="126" x2="410" y2="126" marker-end="url(#ah-gw)"/>
+      <line class="ln" x1="372" y1="126" x2="410" y2="190" marker-end="url(#ah-gw)"/>
+      <rect class="box" x="412" y="40" width="150" height="44" rx="5"/><text x="487" y="66" text-anchor="middle">Serviço agenda</text>
+      <rect class="box" x="412" y="104" width="150" height="44" rx="5"/><text x="487" y="130" text-anchor="middle">Serv. prontuário</text>
+      <rect class="box" x="412" y="168" width="150" height="44" rx="5"/><text x="487" y="194" text-anchor="middle">Serviço exames</text>
+      <line class="ln-a" x1="562" y1="126" x2="590" y2="126" marker-end="url(#ah-gw)"/>
+      <rect class="box-m" x="592" y="92" width="92" height="68" rx="5"/><text x="638" y="122" text-anchor="middle">Política</text><text x="638" y="140" text-anchor="middle">(OPA)</text>
+      <text class="lbl" x="20" y="244">Cada serviço ainda autoriza por objeto: o gateway não conhece o vínculo paciente-profissional.</text>
+    </svg>
+    <figcaption>O gateway concentra o que é comum a todas as rotas; a regra de objeto fica no serviço dono do dado.</figcaption>
+  </figure>
+  <p>O que o gateway faz bem: terminar TLS/mTLS, validar token (assinatura, <code>iss</code>, <code>aud</code>, escopo), aplicar rate limit e cota por consumidor, validar o corpo contra o OpenAPI, bloquear rotas não registradas, padronizar cabeçalhos de segurança e centralizar logs e métricas. É também o lugar natural para um <strong>catálogo</strong> e um portal de desenvolvedores (módulo 10).</p>
+  <ul>
+    <li><strong>Não fazer</strong>: tratar o gateway como a única defesa. Se alguém alcançar o serviço pela rede interna, tudo é contornado: autentique também entre serviços (mTLS interno, tokens com <code>aud</code> do serviço) e restrinja a rede para que o serviço aceite tráfego apenas do gateway.</li>
+    <li><strong>Rotas não registradas</strong> devem responder 404, nunca atravessar para o backend por padrão.</li>
+    <li>Gateway é ponto único de falha e de custo: dimensione, replique e monitore como o resto da produção.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Se uma API não está no inventário, não deveria estar no ar. Se está no ar e não passa pelo gateway, é achado de auditoria.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é uma shadow API e como encontra?" Endpoint em produção que não está no inventário. Encontra-se comparando o catálogo (OpenAPI) com o tráfego real (gateway, logs, DNS, scanners de superfície externa), e fecha-se com processo: nada sobe sem registro e dono.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Meta objetiva: 100% das APIs expostas com dono, contrato e classificação de dados; data de desativação para toda versão depreciada. Trimestralmente, compare o inventário com o tráfego e investigue a diferença. Pergunta de revisão: "qual a versão mais antiga ainda recebendo tráfego e quem a usa?".</p></div>
+</section>
+
+<section class="chap" id="logs-lgpd-testes">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Logs, LGPD, testes de segurança e checklist de revisão</h2>
+
+  <h3>Logs e auditoria sem PII</h3>
+  <p>Logs precisam responder "quem fez o quê, em qual objeto, quando e com qual resultado", e ao mesmo tempo <strong>não</strong> podem virar um segundo banco de dados pessoais sem controle. Em saúde, log com prontuário, CPF ou corpo da requisição é um vazamento esperando acontecer.</p>
+  <div class="tabs">
+    <pre data-label="Ruim"><code class="json">{"msg":"GET /pacientes/124/prontuario","authorization":"Bearer eyJ...",
+ "resposta":{"nome":"Maria Exemplo","cpf":"000.000.000-00","diagnostico":"E11"}}</code></pre>
+    <pre data-label="Bom"><code class="json">{"ts":"2026-11-25T14:03:11Z","traceId":"3f9a1c2e","cliente":"app-portal",
+ "ator":"u_8841","acao":"prontuario.ler","objeto":"paciente:p_4f2a",
+ "resultado":"negado","motivo":"sem_vinculo","ip":"203.0.113.9","status":404}</code></pre>
+  </div>
+  <ul>
+    <li><strong>Nunca registrar</strong>: senhas, tokens, chaves, corpo clínico, CPF, cartão. Aplique redação (<em>masking</em>) automática por campo conhecido.</li>
+    <li><strong>Registrar identificadores indiretos</strong> (id interno ou pseudônimo) e correlacionar por <code>traceId</code>.</li>
+    <li><strong>Trilha de auditoria</strong> separada do log operacional, imutável (append-only), com acesso restrito e retenção definida. Acesso a prontuário, negações e mudanças de permissão são eventos obrigatórios.</li>
+    <li><strong>Alertas</strong> sobre padrões: muitas negações 403/404 do mesmo cliente (enumeração), picos de leitura por profissional, acesso fora do horário.</li>
+    <li>Sincronize relógios e proteja a integridade (hash encadeado, envio a armazenamento WORM) se a auditoria for requisito.</li>
+  </ul>
+
+  <h3>LGPD e dado de saúde</h3>
+  <p>Dado de saúde é <strong>dado pessoal sensível</strong> (LGPD, Lei 13.709/2018, art. 5º, II) e o tratamento tem bases legais específicas no <strong>art. 11</strong> (por exemplo, consentimento específico e destacado, tutela da saúde em procedimento por profissionais de saúde, cumprimento de obrigação legal, proteção da vida). A segurança é um dever do controlador e do operador (art. 46) e incidentes com risco ou dano relevante devem ser comunicados à ANPD e aos titulares (art. 48).</p>
+  <p>Consequências de engenharia para a API:</p>
+  <ul>
+    <li><strong>Minimização</strong>: devolva e registre só o necessário; paginação e DTOs por papel reduzem o volume exposto.</li>
+    <li><strong>Finalidade e acesso</strong>: o acesso do profissional deve estar ligado a um vínculo assistencial; a trilha comprova isso.</li>
+    <li><strong>Retenção e descarte</strong> definidos por tipo de dado (e a lei de prontuário tem prazos próprios, tema para validar com o jurídico).</li>
+    <li><strong>Direitos do titular</strong> (acesso, correção, eliminação quando cabível) precisam ter caminho técnico: API e logs devem permitir localizar os dados de uma pessoa.</li>
+    <li><strong>Transferência a terceiros</strong> (operadoras, laboratórios): contrato com o operador, finalidade e controles equivalentes; cuidado com serviços fora do país.</li>
+  </ul>
+  <div class="note"><b>Saiba mais</b><p>Este módulo trata do lado técnico. Interpretação de bases legais, prazos de guarda do prontuário e comunicação de incidentes devem ser validados com o encarregado (DPO) e o jurídico.</p></div>
+
+  <h3>Testes de segurança de API</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Técnica</th><th>O que faz</th><th>Limite</th></tr></thead>
+    <tbody>
+      <tr><td>SAST / revisão de código</td><td>Encontra padrões inseguros (injeção, segredos, falta de autorização declarada).</td><td>Não entende autorização de negócio.</td></tr>
+      <tr><td>DAST</td><td>Ataca a API em execução (homologação) procurando falhas conhecidas.</td><td>Fraco em BOLA e lógica de negócio sem configuração.</td></tr>
+      <tr><td>Fuzzing guiado pelo OpenAPI</td><td>Gera entradas inválidas e inesperadas a partir do contrato e verifica 5xx, vazamentos e violações do schema.</td><td>Cobertura depende da qualidade do contrato.</td></tr>
+      <tr><td>Testes automatizados de autorização</td><td>Dois usuários, matriz de papéis x rotas: A não acessa o objeto de B.</td><td>Exige manutenção da matriz.</td></tr>
+      <tr><td>Pentest</td><td>Humano explora lógica de negócio e encadeia falhas.</td><td>Pontual e caro; faça antes de lançamentos e após mudanças grandes.</td></tr>
+      <tr><td>Bug bounty / divulgação responsável</td><td>Mais olhos sobre a superfície externa.</td><td>Requer processo de triagem e correção.</td></tr>
+    </tbody></table></div>
+  <pre data-file="pipeline"><code class="sh"># exemplo conceitual: fuzzing guiado pelo contrato em homologação
+schemathesis run https://hml-api.exemplo.com/openapi.json \
+  --header "Authorization: Bearer $TOKEN_TESTE" \
+  --checks all --max-examples 200
+
+# varredura de segredos no repositório
+gitleaks detect --source . --no-banner</code></pre>
+  <p>(Ferramentas citadas como exemplos de categoria; escolha as que a sua equipe consegue operar.) Rode somente contra ambientes de teste autorizados e com dados fictícios.</p>
+
+  <h3>Checklist de revisão de segurança para o gestor</h3>
+  <ol>
+    <li>Todos os endpoints têm autenticação e escopo declarados e <strong>negam por padrão</strong>?</li>
+    <li>Cada acesso por identificador passa por checagem de objeto? Há teste automatizado "A não lê B"?</li>
+    <li>Entradas validadas por esquema (campos extras rejeitados) e saídas por DTO explícito?</li>
+    <li>Limites de página, corpo, tempo e rate limit por cliente; fluxos sensíveis protegidos?</li>
+    <li>JWT validado com algoritmo, <code>iss</code>, <code>aud</code>, <code>exp</code> fixos; tokens curtos e escopos mínimos?</li>
+    <li>Segredos em cofre, rotacionáveis e com varredura no CI; plano de rotação testado?</li>
+    <li>Chamadas a URLs externas (webhooks, importação) com allowlist e egress controlado?</li>
+    <li>CORS por allowlist; erros sem detalhes internos; documentação de depuração desligada em produção?</li>
+    <li>API no inventário, com dono, contrato, classificação de dados e plano de desativação?</li>
+    <li>Logs sem PII, auditoria de acessos a dado de saúde, alertas e plano de resposta a incidente (art. 48)?</li>
+    <li>Integrações de terceiros tratadas como entrada não confiável (validação, timeout, isolamento)?</li>
+    <li>Pentest/DAST/fuzzing com cadência definida e achados rastreados até o fechamento?</li>
+  </ol>
+  <div class="note iv"><b>Na entrevista</b><p>"Como incluiria segurança no ciclo de desenvolvimento de APIs?" Modelagem de ameaças no design, contrato OpenAPI como fonte de validação, testes automatizados de autorização e fuzzing na pipeline, varredura de segredos e dependências, gateway e inventário em produção, e pentest periódico. Dê ao final métricas, não só ferramentas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina o "mínimo inegociável" para uma API que toca dado de paciente (autorização por objeto testada, logs sem PII, inventário, dono) e transforme em critério de pronto. Acompanhe: tempo médio de correção de achados críticos, achados reincidentes por categoria e percentual de APIs com teste de autorização automatizado.</p></div>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+
+  <h3>Cenário 1: a paciente que viu o exame do vizinho</h3>
+  <p>Uma paciente relata ao SAC que, ao abrir o laudo no app, a URL tinha <code>/exames/50231</code> e, por curiosidade, trocou para <code>50232</code> e viu o laudo de outra pessoa.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Tratar como <strong>incidente</strong>: acionar o encarregado e o jurídico; preservar logs; avaliar se houve acesso por terceiros (consulta aos logs por padrão de ids sequenciais).</li>
+    <li>Contenção imediata: bloquear a rota ou adicionar a checagem de dono no serviço de exames; só depois pensar em refatorar.</li>
+    <li>Corrigir a causa: autorização por objeto em todos os endpoints de exame (inclusive PDFs e URLs assinadas), com teste automatizado.</li>
+    <li>Rever outros endpoints com o mesmo padrão (id sequencial + sem checagem). Avaliar a comunicação à ANPD e aos titulares conforme o risco (art. 48).</li>
+  </ul></div>
+
+  <h3>Cenário 2: pentest aponta JWT aceito com <code>alg: none</code></h3>
+  <p>O relatório mostra que um token forjado, sem assinatura, é aceito pelo serviço de agenda.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Corrigir a validação para algoritmos fixos e emissor/audiência obrigatórios; atualizar a biblioteca; revisar todos os serviços que validam tokens.</li>
+    <li>Criar um <strong>teste de regressão</strong> (token <code>none</code>, token com <code>aud</code> errado, expirado, <code>kid</code> desconhecido).</li>
+    <li>Procurar nos logs evidência de uso de tokens forjados; considerar rotação de chaves se houver suspeita.</li>
+    <li>Padronizar a validação em uma biblioteca/gateway comum, para não depender de cada time.</li>
+  </ul></div>
+
+  <h3>Cenário 3: parceiro pede "uma chave que nunca expire"</h3>
+  <p>O laboratório parceiro quer integrar resultados e diz que não consegue renovar tokens.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Explicar o risco e oferecer alternativa: client credentials com tokens de 10 a 15 minutos (é só uma chamada a mais) com escopo <code>resultados.escrever</code>.</li>
+    <li>Se o parceiro realmente não puder, usar mTLS e/ou API key com <strong>expiração anual</strong>, IP de origem permitido, cota e alerta de uso fora do padrão; registrar a exceção com dono e data de revisão.</li>
+    <li>Nunca criar uma chave com acesso a toda a API: escopo mínimo e um consumidor por chave.</li>
+  </ul></div>
+
+  <h3>Cenário 4: cadastro de webhook para operadoras</h3>
+  <p>O time quer deixar cada operadora cadastrar a URL de callback pelo portal.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Exigir HTTPS e domínio previamente aprovado no contrato; validar o IP a cada envio; egress controlado.</li>
+    <li>Assinar as chamadas (HMAC com segredo por operadora, rotacionável) e documentar o replay window.</li>
+    <li>Timeout e limite de tamanho, sem redirecionamentos, e fila com <em>dead letter</em> para falhas (módulos 04 e 06).</li>
+    <li>Logar o envio (destino, status, latência), sem o corpo clínico.</li>
+  </ul></div>
+
+  <h3>Cenário 5: ambiente de homologação com dados reais</h3>
+  <p>Descobre-se que a homologação foi populada com um dump de produção e tem uma API sem autenticação forte, exposta à internet.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Tirar do ar ou restringir imediatamente (VPN/IP); avaliar acesso indevido nos logs e acionar o processo de incidente se houver risco.</li>
+    <li>Substituir por dados sintéticos ou anonimizados; proibir cópia de produção sem aprovação do encarregado.</li>
+    <li>Incluir ambientes não produtivos no inventário e na varredura de superfície externa.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>BOLA / IDOR</dt><dd>Acesso a objeto de outro usuário por troca do identificador, por falta de checagem de dono.</dd></div>
+    <div><dt>BFLA</dt><dd>Acesso a uma função (rota/método) além do permitido ao chamador.</dd></div>
+    <div><dt>BOPLA</dt><dd>Falha de autorização em propriedades: exposição excessiva e mass assignment.</dd></div>
+    <div><dt>Mass assignment</dt><dd>Copiar o corpo da requisição para o modelo, deixando o cliente definir campos indevidos.</dd></div>
+    <div><dt>RBAC</dt><dd>Controle de acesso por papéis (funções).</dd></div>
+    <div><dt>ABAC / ReBAC</dt><dd>Controle por atributos do sujeito, recurso e contexto / por relações entre eles.</dd></div>
+    <div><dt>PDP / PEP</dt><dd>Ponto que decide a política / ponto que a aplica (gateway ou serviço).</dd></div>
+    <div><dt>OPA / Rego</dt><dd>Motor de políticas de código aberto e sua linguagem declarativa.</dd></div>
+    <div><dt>Client credentials</dt><dd>Fluxo OAuth 2.0 de serviço para serviço, sem usuário.</dd></div>
+    <div><dt>mTLS</dt><dd>TLS em que cliente e servidor se autenticam por certificado.</dd></div>
+    <div><dt>JWKS</dt><dd>Conjunto de chaves públicas (JSON Web Key Set) publicado pelo emissor para validar assinaturas.</dd></div>
+    <div><dt>Introspecção</dt><dd>Consulta ao servidor de autorização para saber se um token opaco é válido (RFC 7662).</dd></div>
+    <div><dt>SSRF</dt><dd>Fazer o servidor requisitar um destino escolhido pelo atacante, alcançando recursos internos.</dd></div>
+    <div><dt>Shadow / zombie API</dt><dd>API fora do inventário / API que deveria estar desativada mas continua ativa.</dd></div>
+    <div><dt>DAST</dt><dd>Teste dinâmico de segurança sobre a aplicação em execução.</dd></div>
+    <div><dt>Dado pessoal sensível</dt><dd>Categoria da LGPD que inclui dado de saúde, com bases legais próprias (art. 11).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre autenticação e autorização em uma API?</span></summary><div class="ans"><p>Autenticação estabelece quem é o chamador (token válido, certificado). Autorização decide se ele pode executar aquela ação naquele objeto. A maior parte das falhas graves em APIs (BOLA, BFLA) é de autorização: o chamador estava autenticado.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>O que é BOLA e por que é o item número 1 do OWASP API Top 10?</span></summary><div class="ans"><p>É acessar objeto de outro usuário trocando um identificador, porque o servidor não verifica o relacionamento com o objeto. É o primeiro por ser muito frequente, de alto impacto e invisível para scanners genéricos, já que depende da regra de negócio.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Usar UUID em vez de id sequencial resolve IDOR?</span></summary><div class="ans"><p>Não. Dificulta a enumeração, mas ids vazam por logs, links e respostas. O controle real é a checagem de autorização por objeto; o UUID é defesa extra.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Devolver 403 ou 404 quando o usuário não pode ver um recurso?</span></summary><div class="ans"><p>Para dados sensíveis, 404 evita confirmar a existência do recurso. 403 é válido quando a existência não é segredo e ajuda o consumidor. Padronize e registre a tentativa na auditoria.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Quando usar API key, OAuth client credentials ou mTLS?</span></summary><div class="ans"><p>API key para identificar consumidor e aplicar cota em baixo risco. Client credentials para serviço a serviço com escopo e expiração curta. mTLS (idealmente com tokens vinculados ao certificado) para parceiros regulados ou risco alto, aceitando o custo de gerir certificados.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Quais verificações são obrigatórias ao validar um JWT?</span></summary><div class="ans"><p>Algoritmo fixo no servidor (nunca o do cabeçalho), assinatura pela chave do JWKS (pelo <code>kid</code>), <code>iss</code>, <code>aud</code> desta API, <code>exp</code>/<code>nbf</code> com pouca tolerância e os escopos exigidos pela rota.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como tratar rotação de chaves de assinatura de JWT?</span></summary><div class="ans"><p>O emissor publica as chaves no JWKS com <code>kid</code>; durante a rotação, a nova e a antiga ficam publicadas. O validador faz cache do JWKS e re-busca ao ver <code>kid</code> desconhecido, com limite de frequência. Tokens curtos tornam a transição simples.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>JWT ou token opaco com introspecção?</span></summary><div class="ans"><p>JWT valida offline e escala, mas não se revoga antes do <code>exp</code>; mitigue com vida curta. Opaco com introspecção permite revogação imediata ao custo de latência e dependência (com cache curto). A escolha depende do requisito de revogação e do perfil de tráfego.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Qual a diferença entre escopo, papel e atributo?</span></summary><div class="ans"><p>Escopo limita o que o token/cliente pode; papel agrupa permissões por função; atributo (ou relação) avalia o contexto concreto: este médico, este paciente, esta unidade. Uma decisão completa combina os três.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>O que é mass assignment e como se defende?</span></summary><div class="ans"><p>É copiar o corpo da requisição diretamente na entidade, deixando o cliente definir campos como <code>status</code> ou <code>perfil</code>. Defesa: DTOs de entrada com allowlist, rejeição de campos extras (<code>additionalProperties: false</code>) e DTOs de saída explícitos.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Como evitar que a API vaze campos na resposta?</span></summary><div class="ans"><p>Nunca serializar a entidade do banco; usar DTOs de saída por papel, testes de contrato que falham se aparecer campo novo e revisão de dados pessoais no design. Em consultas, selecionar só as colunas necessárias.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que é SSRF e onde aparece em APIs?</span></summary><div class="ans"><p>O servidor faz requisição a uma URL controlada pelo atacante e alcança recursos internos (metadados da nuvem, bancos). Aparece em webhooks, importação por URL, geração de PDF e pré-visualização de links. Defesa: allowlist, validar IP após DNS, sem redirecionamento, egress controlado.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>CORS protege a minha API contra acessos indevidos?</span></summary><div class="ans"><p>Não. É uma política do navegador sobre quais origens podem ler respostas; <code>curl</code> e servidores ignoram. Serve para limitar sites terceiros em chamadas de navegador, com allowlist exata, <code>Vary: Origin</code> e sem refletir qualquer origem com credenciais.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como proteger fluxos de negócio como reserva de consulta contra robôs?</span></summary><div class="ans"><p>Identificar os fluxos de valor, limitar por identidade (reservas ativas, intervalo), aplicar fricção proporcional ao risco (código, CAPTCHA, step-up), não confirmar existência em respostas e detectar padrões. Rate limit por IP sozinho não basta.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>O que são shadow e zombie APIs e como combatê-las?</span></summary><div class="ans"><p>Shadow: em produção sem registro. Zombie: depreciada que continua no ar. Combate-se com inventário vivo (contratos, gateway, DNS), comparação com tráfego real, dono e data de desativação para cada versão, e bloqueio de rotas não registradas no gateway.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>O que não pode estar em logs de uma API de saúde e o que deve estar na auditoria?</span></summary><div class="ans"><p>Não: tokens, senhas, CPF, corpo clínico. Sim: ator, ação, objeto (id interno), resultado, motivo da negação, traceId, origem e horário, em trilha imutável com acesso restrito. Dado de saúde é sensível (LGPD, art. 11) e o log precisa respeitar minimização.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Como o gateway ajuda na segurança e quais são os seus limites?</span></summary><div class="ans"><p>Centraliza TLS, validação de token, rate limit, validação de esquema, logs e bloqueio de rotas não registradas. Não conhece regras de objeto e não protege contra acesso direto ao serviço pela rede interna: a autorização por objeto e a autenticação entre serviços continuam necessárias.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você, como gestora, garantiria segurança consistente em vários times de API?</span></summary><div class="ans"><p>Padrões e bibliotecas comuns (validação de token, autorização, logs), um mínimo inegociável como critério de pronto, testes de segurança automatizados na pipeline, inventário com dono, revisão de design com checklist e métricas (cobertura de testes de autorização, tempo de correção, achados reincidentes). Mais incentivo a reportar falhas sem culpa.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

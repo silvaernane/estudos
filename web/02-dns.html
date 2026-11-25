@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 02: DNS e domínios</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 02 de 10 · DNS e domínios</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html" aria-current="page"><span class="n">02</span>DNS e domínios</a></li>
+    <li class="sub"><ol>
+      <li><a href="#hierarquia"><span class="n">1</span>O papel do DNS e a hierarquia</a></li>
+      <li><a href="#resolucao"><span class="n">2</span>Resolução e resolvers</a></li>
+      <li><a href="#cache-ttl"><span class="n">3</span>Cache e TTL</a></li>
+      <li><a href="#registros"><span class="n">4</span>Tipos de registro</a></li>
+      <li><a href="#dominio"><span class="n">5</span>Registro de domínio</a></li>
+      <li><a href="#ferramentas"><span class="n">6</span>Ferramentas e arquivo hosts</a></li>
+      <li><a href="#migracao"><span class="n">7</span>Propagação e migrações</a></li>
+      <li><a href="#email"><span class="n">8</span>DNS e e-mail</a></li>
+      <li><a href="#cdn"><span class="n">9</span>Balanceamento, GeoDNS e anycast</a></li>
+      <li><a href="#seguranca"><span class="n">10</span>DNSSEC, DoH e ataques</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 02 · <span class="lvl l1">Básico</span> → <span class="lvl l2">Intermediário</span></div>
+  <h1>DNS e domínios</h1>
+  <p class="lede">O DNS transforma nomes em endereços e diz para onde vão os e-mails de um domínio. Quando ele falha ou é mal configurado, sites somem, migrações se arrastam e e-mails caem no spam. Este módulo cobre o funcionamento, os registros, a administração de domínios e os riscos.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar a hierarquia do DNS e o caminho de uma consulta, do navegador ao servidor autoritativo.</li>
+    <li>Escolher o tipo de registro certo (A, AAAA, CNAME, ALIAS, MX, TXT, NS, SOA, CAA, SRV, PTR) e conhecer suas restrições.</li>
+    <li>Planejar TTLs para uma migração sem usuários presos no servidor antigo.</li>
+    <li>Configurar SPF, DKIM e DMARC e entender por que e-mails legítimos caem no spam.</li>
+    <li>Reconhecer ataques ao DNS e aos domínios e cobrar as defesas certas do time e dos fornecedores.</li>
+    <li>Diagnosticar problemas com nslookup, dig e Resolve-DnsName.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="hierarquia">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O papel do DNS e a hierarquia de nomes</h2>
+  <p>Computadores se conectam por endereço IP (<a href="01-internet.html">módulo 1</a>). Pessoas lembram nomes. O <strong>DNS</strong> (<em>Domain Name System</em>) é o sistema distribuído que traduz <code>portal.exemplo.com.br</code> em <code>203.0.113.10</code>, além de guardar outras informações sobre o domínio, como os servidores de e-mail.</p>
+  <p>Nenhum servidor sabe todos os nomes. O espaço de nomes é uma árvore, e cada nível <strong>delega</strong> a responsabilidade pelo nível de baixo.</p>
+  <ul>
+    <li><strong>Raiz</strong> (<code>.</code>): o topo. Existem 13 identidades de servidores raiz, de <code>a.root-servers.net</code> a <code>m.root-servers.net</code>, operadas por 12 organizações. Cada uma é replicada em muitos locais via anycast, somando mais de mil instâncias pelo mundo. A raiz só sabe quem responde por cada TLD.</li>
+    <li><strong>TLDs</strong> (<em>top-level domains</em>, domínios de topo): genéricos como <code>.com</code> e <code>.org</code>, e de código de país como <code>.br</code>. O <code>.br</code> é administrado pelo NIC.br, por meio do Registro.br.</li>
+    <li><strong>Domínios de segundo nível e abaixo</strong>: no Brasil é comum o terceiro nível sob uma categoria, como <code>exemplo.com.br</code>. Quem registra o domínio controla tudo abaixo dele: <code>www</code>, <code>portal</code>, <code>api</code>.</li>
+    <li><strong>Servidores autoritativos</strong>: os que têm a resposta oficial para uma zona. Para <code>exemplo.com.br</code>, são os servidores indicados nos registros NS do domínio.</li>
+  </ul>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 290" role="img" aria-label="Árvore DNS: raiz, TLDs com, br e org, categorias com.br e gov.br, domínio exemplo.com.br e os nomes www, portal e api">
+      <rect class="box-m" x="300" y="15" width="100" height="32" rx="5"/>
+      <text x="350" y="36" text-anchor="middle">. (raiz)</text>
+      <rect class="box" x="120" y="85" width="90" height="32" rx="5"/>
+      <text x="165" y="106" text-anchor="middle">com</text>
+      <rect class="box-w" x="305" y="85" width="90" height="32" rx="5"/>
+      <text x="350" y="106" text-anchor="middle">br</text>
+      <rect class="box" x="490" y="85" width="90" height="32" rx="5"/>
+      <text x="535" y="106" text-anchor="middle">org</text>
+      <line class="ln" x1="350" y1="47" x2="165" y2="85"/>
+      <line class="ln" x1="350" y1="47" x2="350" y2="85"/>
+      <line class="ln" x1="350" y1="47" x2="535" y2="85"/>
+      <rect class="box-w" x="230" y="155" width="100" height="32" rx="5"/>
+      <text x="280" y="176" text-anchor="middle">com.br</text>
+      <rect class="box" x="370" y="155" width="100" height="32" rx="5"/>
+      <text x="420" y="176" text-anchor="middle">gov.br</text>
+      <line class="ln" x1="350" y1="117" x2="280" y2="155"/>
+      <line class="ln" x1="350" y1="117" x2="420" y2="155"/>
+      <rect class="box-a" x="200" y="215" width="160" height="32" rx="5"/>
+      <text x="280" y="236" text-anchor="middle">exemplo.com.br</text>
+      <line class="ln" x1="280" y1="187" x2="280" y2="215"/>
+      <text x="420" y="225">www</text>
+      <text x="420" y="245">portal</text>
+      <text x="420" y="265">api</text>
+      <line class="ln-a" x1="360" y1="231" x2="414" y2="221"/>
+      <line class="ln-a" x1="360" y1="231" x2="414" y2="241"/>
+      <line class="ln-a" x1="360" y1="231" x2="414" y2="261"/>
+      <text class="lbl" x="10" y="36">zona da raiz</text>
+      <text class="lbl" x="10" y="106">zonas dos TLDs</text>
+      <text class="lbl" x="10" y="176">categorias do .br</text>
+      <text class="lbl" x="10" y="236">sua zona</text>
+      <text class="lbl" x="490" y="245">nomes dentro da zona</text>
+    </svg>
+    <figcaption>Cada nível só conhece o nível imediatamente abaixo e aponta (delega) para os servidores responsáveis por ele. Um nome se lê da direita para a esquerda: <code>portal</code> dentro de <code>exemplo</code> dentro de <code>com</code> dentro de <code>br</code>.</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>"O DNS é um banco de dados hierárquico e distribuído. A raiz delega aos TLDs, os TLDs delegam a cada domínio, e os servidores autoritativos do domínio respondem pelos nomes dele."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O domínio é um ativo da empresa, como a marca. Saiba quem é o titular legal, em que conta ele está, quem tem acesso e quando vence. Domínios registrados no CPF de um ex-funcionário ou de uma agência de marketing são um risco real e comum.</p></div>
+</section>
+
+<section class="chap" id="resolucao">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Resolução recursiva, iterativa e os resolvers</h2>
+  <p>Há três papéis numa resolução:</p>
+  <ul>
+    <li><strong>Stub resolver</strong>: a parte do sistema operacional que suas aplicações chamam. Ela não percorre a árvore; só pergunta a um resolver e espera a resposta final.</li>
+    <li><strong>Resolver recursivo</strong> (ou recursor): faz o trabalho pesado, percorre a hierarquia e guarda as respostas em cache. Pode ser o do seu provedor de internet, o servidor DNS interno da empresa (em redes Windows, em geral os controladores de domínio do Active Directory) ou um resolver público como <code>1.1.1.1</code> (Cloudflare), <code>8.8.8.8</code> (Google) e <code>9.9.9.9</code> (Quad9).</li>
+    <li><strong>Servidores autoritativos</strong>: raiz, TLD e os servidores do domínio. Respondem só pelo que lhes cabe.</li>
+  </ul>
+  <p>A consulta do stub ao resolver é <strong>recursiva</strong>: "me traga a resposta final". As consultas do resolver aos autoritativos são <strong>iterativas</strong>: cada um responde o que sabe ou indica (<em>referral</em>) a quem perguntar a seguir.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Resolução DNS: o stub pergunta ao resolver recursivo, que pergunta à raiz, ao TLD .br e ao autoritativo de exemplo.com.br, e devolve o IP ao stub">
+      <defs><marker id="ah-res" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="10" y="120" width="140" height="50" rx="6"/>
+      <text x="80" y="142" text-anchor="middle">Navegador / SO</text>
+      <text class="lbl" x="80" y="160" text-anchor="middle">stub resolver</text>
+      <rect class="box-a" x="230" y="120" width="150" height="50" rx="6"/>
+      <text x="305" y="142" text-anchor="middle">Resolver recursivo</text>
+      <text class="lbl" x="305" y="160" text-anchor="middle">ISP, empresa, 1.1.1.1</text>
+      <rect class="box-m" x="520" y="20" width="190" height="44" rx="6"/>
+      <text x="615" y="47" text-anchor="middle">Raiz (.)</text>
+      <rect class="box-w" x="520" y="123" width="190" height="44" rx="6"/>
+      <text x="615" y="150" text-anchor="middle">TLD .br</text>
+      <rect class="box" x="520" y="226" width="190" height="44" rx="6"/>
+      <text x="615" y="253" text-anchor="middle">NS de exemplo.com.br</text>
+      <line class="ln-a" x1="150" y1="135" x2="228" y2="135" marker-end="url(#ah-res)"/>
+      <text x="189" y="128" text-anchor="middle">1</text>
+      <line class="ln-a" x1="228" y1="157" x2="152" y2="157" marker-end="url(#ah-res)"/>
+      <text x="189" y="182" text-anchor="middle">8</text>
+      <line class="ln" x1="380" y1="125" x2="518" y2="38" marker-end="url(#ah-res)"/>
+      <line class="ln" x1="518" y1="52" x2="390" y2="132" marker-end="url(#ah-res)"/>
+      <text x="440" y="70">2</text>
+      <text x="470" y="100">3</text>
+      <line class="ln" x1="380" y1="140" x2="518" y2="140" marker-end="url(#ah-res)"/>
+      <line class="ln" x1="518" y1="152" x2="380" y2="152" marker-end="url(#ah-res)"/>
+      <text x="450" y="134">4</text>
+      <text x="450" y="168">5</text>
+      <line class="ln" x1="380" y1="165" x2="518" y2="240" marker-end="url(#ah-res)"/>
+      <line class="ln" x1="518" y1="256" x2="380" y2="172" marker-end="url(#ah-res)"/>
+      <text x="470" y="210">6</text>
+      <text x="430" y="232">7</text>
+      <text class="lbl" x="10" y="220">1 consulta recursiva: "qual o IP de portal.exemplo.com.br?"</text>
+      <text class="lbl" x="10" y="238">2-3 raiz: "não sei; pergunte aos servidores do .br"</text>
+      <text class="lbl" x="10" y="256">4-5 TLD: "pergunte aos NS de exemplo.com.br"</text>
+      <text class="lbl" x="10" y="274">6-7 autoritativo: "203.0.113.10, TTL 300"</text>
+      <text class="lbl" x="10" y="292">8 resolver devolve a resposta e guarda em cache</text>
+    </svg>
+    <figcaption>Na prática, o resolver já tem em cache as respostas da raiz e do <code>.br</code> na maior parte do tempo, e só os passos 6 e 7 acontecem de fato.</figcaption>
+  </figure>
+
+  <p>O DNS usa a porta 53, principalmente sobre UDP. Respostas grandes (por exemplo, com DNSSEC) e transferências de zona usam TCP. Ambos precisam estar liberados nos firewalls.</p>
+
+  <h3>Resolver público ou do provedor?</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Prós</th><th>Contras</th></tr></thead>
+    <tbody>
+      <tr><td>Resolver do ISP</td><td>Configurado automaticamente; geralmente próximo</td><td>Qualidade variável; alguns já foram usados para redirecionar erros a páginas de anúncio</td></tr>
+      <tr><td>Público (1.1.1.1, 8.8.8.8, 9.9.9.9)</td><td>Alta disponibilidade; suporte a DoH/DoT; Quad9 bloqueia domínios maliciosos conhecidos</td><td>Mais um terceiro vendo suas consultas; pode piorar a escolha geográfica de algumas CDNs</td></tr>
+      <tr><td>Resolver interno da empresa</td><td>Resolve nomes internos; aplica filtros e registra consultas para segurança</td><td>Se cair, "a internet cai" para todo mundo; precisa de redundância</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>"O stub do sistema faz uma consulta recursiva ao resolver; o resolver faz consultas iterativas à raiz, ao TLD e ao autoritativo, seguindo as delegações, e guarda tudo em cache pelo TTL."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Confirme que a empresa tem pelo menos dois resolvers internos em locais distintos e que o monitoramento alerta quando um deles para. DNS interno fora do ar parece, para os usuários, que "tudo caiu": e-mail, sistemas e internet ao mesmo tempo. Os logs de consultas DNS são valiosos na investigação de incidentes de segurança; garanta que existam e por quanto tempo ficam guardados.</p></div>
+</section>
+
+<section class="chap" id="cache-ttl">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cache e TTL</h2>
+  <p>Toda resposta DNS vem com um <strong>TTL</strong> (<em>time to live</em>), em segundos: quanto tempo quem recebeu pode reutilizá-la sem perguntar de novo. O cache existe em várias camadas:</p>
+  <ol>
+    <li>O navegador mantém um cache próprio e curto.</li>
+    <li>O sistema operacional mantém outro (no Windows, o serviço Cliente DNS).</li>
+    <li>O resolver recursivo guarda as respostas para todos os seus usuários.</li>
+    <li>Aplicações e runtimes podem ter o seu, e conexões já abertas continuam usando o IP antigo independentemente do DNS.</li>
+  </ol>
+  <p>Respostas negativas também vão para cache (<strong>negative caching</strong>). Se alguém consultou um nome antes de ele existir, o "não existe" (NXDOMAIN) fica guardado pelo tempo definido no registro SOA da zona. Esse é o motivo de um subdomínio recém-criado "demorar" a aparecer para quem já tinha tentado acessá-lo.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>TTL</th><th>Vantagens</th><th>Desvantagens</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td>Baixo (60 a 300 s)</td><td>Mudanças valem rápido; failover por DNS viável</td><td>Mais consultas (custo em provedores que cobram por consulta); mais dependência da disponibilidade do DNS</td><td>Registros que podem mudar em emergência; antes de migrações</td></tr>
+      <tr><td>Alto (1 h a 1 dia)</td><td>Menos consultas; usuários seguem acessando mesmo se o DNS autoritativo ficar instável</td><td>Erros demoram a ser corrigidos para quem já fez cache</td><td>Registros estáveis: MX, NS, TXT de verificação</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Baixar o TTL no mesmo minuto da mudança. Quem fez cache com o TTL antigo de 24 horas continua com a resposta antiga por até 24 horas. O TTL novo só vale depois que o antigo expirar.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O TTL diz por quanto tempo uma resposta pode ficar em cache. TTL baixo permite mudar rápido ao custo de mais consultas; TTL alto dá desempenho e resiliência mas atrasa correções. Antes de uma migração, baixo o TTL com antecedência de pelo menos um TTL antigo."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina uma política de TTL por tipo de registro e peça que os registros críticos (site, APIs, portal do paciente) tenham TTL que permita trocar de destino numa emergência em minutos. Ao contratar provedor de DNS, verifique se ele cobra por consulta: TTLs muito baixos em domínios com muito tráfego aumentam a conta.</p></div>
+</section>
+
+<section class="chap" id="registros">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Tipos de registro</h2>
+  <p>Uma zona DNS é um conjunto de registros. Cada um tem nome, TTL, classe (quase sempre <code>IN</code>), tipo e valor.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Para que serve</th><th>Exemplo de valor</th></tr></thead>
+    <tbody>
+      <tr><td><code>A</code></td><td>Nome para endereço IPv4</td><td><code>203.0.113.10</code></td></tr>
+      <tr><td><code>AAAA</code></td><td>Nome para endereço IPv6</td><td><code>2001:db8::10</code></td></tr>
+      <tr><td><code>CNAME</code></td><td>Apelido: este nome é outro nome</td><td><code>app-123.nuvem.example.</code></td></tr>
+      <tr><td><code>ALIAS</code> / <code>ANAME</code></td><td>Comportamento de CNAME no apex; recurso do provedor, não um tipo padrão</td><td>Resolvido pelo provedor e entregue como A/AAAA</td></tr>
+      <tr><td><code>MX</code></td><td>Servidores que recebem e-mail do domínio, com prioridade (menor número é preferido)</td><td><code>10 mx1.provedor-email.example.</code></td></tr>
+      <tr><td><code>TXT</code></td><td>Texto livre: SPF, DKIM, DMARC, verificações de posse de domínio</td><td><code>"v=spf1 include:... -all"</code></td></tr>
+      <tr><td><code>NS</code></td><td>Servidores autoritativos da zona (delegação)</td><td><code>ns1.provedor-dns.example.</code></td></tr>
+      <tr><td><code>SOA</code></td><td>Metadados da zona: servidor primário, contato, serial, tempos de atualização e do cache negativo</td><td>Um por zona</td></tr>
+      <tr><td><code>CAA</code></td><td>Quais autoridades certificadoras podem emitir certificados para o domínio</td><td><code>0 issue "letsencrypt.org"</code></td></tr>
+      <tr><td><code>SRV</code></td><td>Localiza um serviço: prioridade, peso, porta e host</td><td><code>10 60 5060 sip1.exemplo.com.br.</code></td></tr>
+      <tr><td><code>PTR</code></td><td>DNS reverso: IP para nome</td><td><code>portal.exemplo.com.br.</code></td></tr>
+    </tbody>
+  </table></div>
+
+<pre data-file="trecho de zona (formato de arquivo de zona, ilustrativo)"><code class="text">$TTL 3600
+exemplo.com.br.          IN SOA  ns1.provedor-dns.example. hostmaster.exemplo.com.br. (
+                                 2026112501 ; serial
+                                 7200       ; refresh
+                                 900        ; retry
+                                 1209600    ; expire
+                                 300 )      ; TTL do cache negativo
+exemplo.com.br.          IN NS     ns1.provedor-dns.example.
+exemplo.com.br.          IN NS     ns2.provedor-dns.example.
+exemplo.com.br.     300  IN A      203.0.113.10
+www.exemplo.com.br. 300  IN CNAME  exemplo.com.br.
+portal.exemplo.com.br. 300 IN CNAME app-123.nuvem.example.
+exemplo.com.br.          IN MX     10 mx1.provedor-email.example.
+exemplo.com.br.          IN CAA    0 issue "letsencrypt.org"
+_sip._tcp.exemplo.com.br. IN SRV   10 60 5060 sip1.exemplo.com.br.</code></pre>
+  <p>O ponto final em <code>exemplo.com.br.</code> indica nome absoluto, terminado na raiz. Em arquivos de zona, esquecê-lo faz o servidor completar o nome com o domínio da zona.</p>
+
+  <h3>CNAME e a restrição no apex</h3>
+  <p>Um nome que tem CNAME não pode ter nenhum outro registro. O <strong>apex</strong> (o domínio "pelado", <code>exemplo.com.br</code>) obrigatoriamente tem SOA e NS. Logo, não pode ter CNAME. Isso é um problema quando o serviço de destino só fornece um nome (balanceadores de nuvem, CDNs, plataformas de hospedagem) e não um IP fixo.</p>
+  <p>Soluções:</p>
+  <ul>
+    <li><strong>ALIAS, ANAME, CNAME flattening</strong> ou o "alias" do Route 53: o provedor de DNS resolve o nome de destino e entrega um A/AAAA no apex. São recursos proprietários e funcionam só dentro daquele provedor.</li>
+    <li>Usar <code>www</code> como endereço principal (com CNAME) e redirecionar o apex para ele com um serviço de redirecionamento HTTP.</li>
+  </ul>
+
+  <h3>Outros cuidados</h3>
+  <ul>
+    <li><strong>MX</strong> deve apontar para um nome com A/AAAA, não para um CNAME nem para um IP.</li>
+    <li><strong>CAA</strong>: sem nenhum registro CAA, qualquer autoridade certificadora pode emitir para o domínio. Com CAA, só as listadas (detalhes de certificados no <a href="04-tls.html">módulo 4</a>).</li>
+    <li><strong>PTR</strong> fica numa zona especial (<code>in-addr.arpa</code> para IPv4, <code>ip6.arpa</code> para IPv6) controlada por quem detém o bloco de IP: o provedor de nuvem ou a operadora. Você pede a eles. Servidores de e-mail sem PTR coerente têm mensagens rejeitadas.</li>
+    <li><strong>Curingas</strong> (<code>*.exemplo.com.br</code>) respondem por qualquer nome inexistente abaixo do domínio. Úteis em alguns casos, mas escondem erros de digitação e confundem diagnósticos.</li>
+  </ul>
+
+  <div class="note iv"><b>Na entrevista</b><p>"A e AAAA mapeiam para IPv4 e IPv6, CNAME é apelido para outro nome e não pode coexistir com outros registros, por isso não cabe no apex, onde se usa ALIAS ou flattening do provedor. MX aponta servidores de e-mail, TXT carrega SPF, DKIM e DMARC, NS delega, SOA descreve a zona, CAA restringe emissores de certificado e PTR faz o reverso."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Gerencie a zona DNS como código: registros versionados num repositório e aplicados por ferramenta (Terraform, por exemplo), com revisão por outra pessoa. Edição manual no painel do provedor, sem histórico, é a origem de boa parte dos incidentes de DNS e impede saber "o que mudou" na hora do problema.</p></div>
+</section>
+
+<section class="chap" id="dominio">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Registro de domínio: registry, registrar e provedor DNS</h2>
+  <p>Três papéis que muita gente confunde:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Papel</th><th>O que faz</th><th>Exemplos</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Registry</strong> (registro)</td><td>Administra o TLD: mantém a base de domínios e publica as delegações (NS) na zona do TLD</td><td>Registro.br para <code>.br</code>; Verisign para <code>.com</code></td></tr>
+      <tr><td><strong>Registrar</strong> (agente de registro)</td><td>Vende e administra o registro do domínio em nome do titular, junto ao registry</td><td>Empresas credenciadas para <code>.com</code>; no <code>.br</code>, o registro costuma ser feito diretamente no Registro.br</td></tr>
+      <tr><td><strong>Provedor de DNS</strong></td><td>Hospeda a zona e opera os servidores autoritativos</td><td>Cloudflare, Route 53, Azure DNS, Google Cloud DNS; o próprio Registro.br oferece hospedagem básica</td></tr>
+    </tbody>
+  </table></div>
+  <p>Os papéis podem estar na mesma empresa ou separados. A ligação entre eles é o registro <strong>NS</strong>: no painel do registrar (ou do Registro.br) você informa quais servidores respondem pelo domínio, e o registry publica essa delegação na zona do TLD.</p>
+
+  <h3>Particularidades do .br</h3>
+  <ul>
+    <li>O registro exige CPF ou CNPJ do titular. Algumas categorias têm regras próprias; <code>.gov.br</code>, por exemplo, é restrito a órgãos de governo.</li>
+    <li>O titular é o dono legal. Quem tem acesso à conta pode trocar os NS e, na prática, tomar o domínio.</li>
+    <li>Domínios vencidos e não renovados acabam liberados para novo registro, e há quem monitore domínios em vencimento para registrá-los.</li>
+    <li>O Registro.br permite ativar DNSSEC para o domínio (seção <a href="#seguranca">10</a>).</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>O domínio está no nome de uma agência ou de um ex-colaborador, a renovação está no cartão pessoal de alguém, e o e-mail de aviso de vencimento vai para uma caixa que ninguém lê. Um dia o site e o e-mail param.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O registry administra o TLD, o registrar registra o domínio em nome do titular e o provedor de DNS hospeda a zona. O que liga tudo é a delegação NS que o registry publica."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Mantenha um inventário de domínios com titular (CNPJ da empresa), conta, quem tem acesso, data de vencimento e provedor de DNS.</li>
+      <li>Ative renovação automática com meio de pagamento corporativo, e aponte os avisos para uma lista de e-mail do time, não para uma pessoa.</li>
+      <li>Exija autenticação de múltiplos fatores nas contas do registrar e do provedor de DNS, com acesso nominal e revisão periódica de quem tem acesso.</li>
+      <li>Registre variações óbvias do domínio principal (com e sem hífen, erros comuns de digitação, outros TLDs relevantes) para dificultar golpes que imitam a empresa, um risco alto em saúde, onde pacientes recebem links de resultados de exames.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="ferramentas">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Ferramentas e o arquivo hosts</h2>
+  <p>As saídas abaixo são <strong>ilustrativas</strong> e foram resumidas.</p>
+
+  <h3>dig (Linux, macOS, WSL)</h3>
+<pre data-file="dig (saída ilustrativa)"><code class="sh">$ dig portal.exemplo.com.br A
+
+;; ANSWER SECTION:
+portal.exemplo.com.br.   300  IN  CNAME  app-123.nuvem.example.
+app-123.nuvem.example.    60  IN  A      203.0.113.10
+
+;; Query time: 12 msec
+;; SERVER: 192.168.0.1#53(192.168.0.1) (UDP)</code></pre>
+  <p>O número após o nome é o TTL restante no cache do resolver. A linha <code>SERVER</code> diz quem respondeu.</p>
+  <pre><code class="sh">dig +short exemplo.com.br MX              # só os valores
+dig @8.8.8.8 portal.exemplo.com.br        # pergunta a um resolver específico
+dig @ns1.provedor-dns.example portal.exemplo.com.br   # pergunta direto ao autoritativo, sem cache
+dig +trace portal.exemplo.com.br          # percorre raiz, TLD e autoritativo como um resolver faria
+dig -x 203.0.113.10                       # consulta reversa (PTR)
+dig exemplo.com.br NS +short              # quem é autoritativo</code></pre>
+
+  <h3>nslookup e Resolve-DnsName (Windows)</h3>
+  <div class="tabs">
+<pre data-label="nslookup"><code class="sh">nslookup portal.exemplo.com.br
+nslookup -type=MX exemplo.com.br
+nslookup -type=TXT _dmarc.exemplo.com.br 1.1.1.1   # último argumento: servidor a consultar</code></pre>
+<pre data-label="PowerShell"><code class="sh">Resolve-DnsName portal.exemplo.com.br
+Resolve-DnsName exemplo.com.br -Type MX
+Resolve-DnsName _dmarc.exemplo.com.br -Type TXT -Server 1.1.1.1
+Resolve-DnsName portal.exemplo.com.br -DnsOnly     # ignora hosts e cache local</code></pre>
+<pre data-label="Cache local"><code class="sh">ipconfig /displaydns          # Windows: mostra o cache do sistema
+ipconfig /flushdns            # Windows: limpa o cache do sistema
+resolvectl flush-caches       # Linux com systemd-resolved
+# Navegadores têm cache próprio; no Chrome: chrome://net-internals/#dns</code></pre>
+  </div>
+
+  <h3>O arquivo hosts</h3>
+  <p>Antes do DNS, os nomes ficavam num arquivo de texto. Ele ainda existe e, na configuração padrão, tem precedência sobre o DNS:</p>
+  <ul>
+    <li>Windows: <code>C:\Windows\System32\drivers\etc\hosts</code></li>
+    <li>Linux e macOS: <code>/etc/hosts</code> (a ordem de consulta fica em <code>/etc/nsswitch.conf</code> no Linux)</li>
+  </ul>
+<pre data-file="hosts"><code class="text">127.0.0.1       localhost
+203.0.113.50    portal.exemplo.com.br    # teste do servidor novo antes de virar o DNS</code></pre>
+  <p>Uso legítimo: testar um servidor novo pelo nome real antes de mudar o DNS. Riscos: entradas esquecidas que fazem uma máquina acessar um servidor antigo por meses, e malware que altera o arquivo para desviar acessos a sites legítimos.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>O <code>nslookup</code> faz a consulta diretamente ao servidor DNS e ignora o arquivo hosts. O navegador respeita o hosts. Por isso o <code>nslookup</code> pode mostrar um IP e o navegador acessar outro. Para ver o que o sistema realmente usa, teste com <code>ping</code> (que mostra o IP resolvido) ou <code>Resolve-DnsName</code> sem <code>-DnsOnly</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uso dig ou Resolve-DnsName perguntando a resolvers diferentes e direto ao autoritativo para separar problema de cache de problema de configuração. dig +trace mostra a cadeia de delegação. E sempre confiro o arquivo hosts e o cache local da máquina."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando alguém disser "o DNS está certo", pergunte: "certo segundo qual servidor?". A resposta do autoritativo, a de um resolver público e a da máquina do usuário podem ser diferentes, e cada uma aponta para uma ação diferente. Em estações gerenciadas, alterações no arquivo hosts devem ser monitoradas pela ferramenta de segurança.</p></div>
+</section>
+
+<section class="chap" id="migracao">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>"Propagação" e planejamento de migrações</h2>
+  <p>Não existe um processo que empurra a mudança para o mundo. O que se chama de "propagação" é a <strong>expiração dos caches</strong>: cada resolver continua usando a resposta antiga até o TTL dela acabar. Por isso o tempo de "propagação" é, no pior caso, o TTL que estava valendo antes da mudança, somado a eventuais caches que não respeitam o TTL.</p>
+
+  <h3>Roteiro de troca de IP de um site</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 720 220" role="img" aria-label="Linha do tempo de migração: reduzir TTL dois dias antes, trocar o registro no dia D, monitorar tráfego residual, desligar o servidor antigo e subir o TTL dias depois">
+      <defs><marker id="ah-mig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <line class="ln" x1="20" y1="110" x2="700" y2="110" marker-end="url(#ah-mig)"/>
+      <rect class="box-w" x="20" y="30" width="150" height="56" rx="6"/>
+      <text x="95" y="52" text-anchor="middle">D-2</text>
+      <text class="lbl" x="95" y="72" text-anchor="middle">TTL 86400 para 300</text>
+      <rect class="box-a" x="200" y="30" width="150" height="56" rx="6"/>
+      <text x="275" y="52" text-anchor="middle">D0</text>
+      <text class="lbl" x="275" y="72" text-anchor="middle">troca o registro A</text>
+      <rect class="box" x="380" y="30" width="150" height="56" rx="6"/>
+      <text x="455" y="52" text-anchor="middle">D0 + minutos</text>
+      <text class="lbl" x="455" y="72" text-anchor="middle">maioria já no novo</text>
+      <rect class="box-m" x="560" y="30" width="140" height="56" rx="6"/>
+      <text x="630" y="52" text-anchor="middle">D+7</text>
+      <text class="lbl" x="630" y="72" text-anchor="middle">desliga antigo; TTL sobe</text>
+      <line class="ln" x1="95" y1="86" x2="95" y2="110"/>
+      <line class="ln" x1="275" y1="86" x2="275" y2="110"/>
+      <line class="ln" x1="455" y1="86" x2="455" y2="110"/>
+      <line class="ln" x1="630" y1="86" x2="630" y2="110"/>
+      <rect class="box-b" x="200" y="135" width="430" height="30" rx="4"/>
+      <text x="415" y="155" text-anchor="middle">servidor antigo ainda recebe tráfego residual</text>
+      <text class="lbl" x="20" y="195">A espera entre D-2 e D0 precisa ser maior que o TTL antigo (aqui, 1 dia),</text>
+      <text class="lbl" x="20" y="212">para que todos os caches já tenham o TTL curto no momento da troca.</text>
+    </svg>
+    <figcaption>Os prazos são exemplo. O que importa é a ordem: baixar o TTL, esperar o TTL antigo expirar, trocar, manter os dois lados funcionando, e só então desligar e subir o TTL.</figcaption>
+  </figure>
+  <ol class="seq">
+    <li><div><strong>Reduza o TTL com antecedência.</strong> Pelo menos o valor do TTL atual antes da troca; com folga, o dobro.</div></li>
+    <li><div><strong>Teste o destino novo pelo nome real.</strong> Use o arquivo hosts ou <code>curl --resolve portal.exemplo.com.br:443:203.0.113.50 https://portal.exemplo.com.br/</code>, que força o IP sem mexer no DNS. O certificado TLS do novo servidor precisa cobrir o nome.</div></li>
+    <li><div><strong>Troque o registro.</strong> Confirme direto no autoritativo e em alguns resolvers públicos.</div></li>
+    <li><div><strong>Mantenha o antigo funcionando</strong> e monitore o tráfego que ainda chega nele. Se houver banco de dados, defina antes como evitar gravações nos dois lados.</div></li>
+    <li><div><strong>Desligue o antigo</strong> quando o tráfego residual zerar ou ficar irrelevante, e suba o TTL de volta.</div></li>
+  </ol>
+
+  <h3>Trocar de provedor de DNS é outra história</h3>
+  <p>Mudar os registros NS no registry altera a delegação, e a delegação publicada na zona do TLD tem TTL controlado pelo registry, em geral de horas a dias. Durante a transição, alguns resolvers perguntam ao provedor antigo e outros ao novo. A regra é: a zona precisa estar idêntica nos dois provedores antes da troca, e o antigo só pode ser desativado dias depois. Se houver DNSSEC, a troca exige um procedimento próprio, senão o domínio fica inacessível para resolvers que validam.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Clientes e aplicações que ignoram o TTL: conexões persistentes e pools que nunca reconectam, runtimes com cache de DNS próprio, equipamentos de parceiros com o IP fixo configurado. Eles continuam no servidor antigo muito depois do esperado. Por isso o passo 4 existe.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Propagação é expiração de cache. Para migrar, baixo o TTL com antecedência de pelo menos um TTL antigo, testo o novo destino com hosts ou curl --resolve, troco, mantenho o antigo de pé monitorando tráfego residual e só depois desligo e subo o TTL."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija um plano de migração por escrito com: data da redução de TTL, janela da troca, critério de sucesso, plano de volta (que também depende do TTL) e data de desligamento do antigo. Desligar o servidor antigo no mesmo dia da troca é a causa típica de "metade dos usuários sem acesso". Comunique parceiros que acessam por IP fixo com antecedência.</p></div>
+</section>
+
+<section class="chap" id="email">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>DNS e e-mail: MX, SPF, DKIM e DMARC</h2>
+  <p>O e-mail depende do DNS em duas direções. Para <strong>receber</strong>, o remetente consulta o MX do seu domínio. Para <strong>provar que você é você ao enviar</strong>, o destinatário consulta três registros TXT.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mecanismo</th><th>O que verifica</th><th>Onde fica</th></tr></thead>
+    <tbody>
+      <tr><td><strong>SPF</strong></td><td>Quais servidores (IPs) podem enviar e-mail usando o domínio no envelope da mensagem</td><td>TXT no domínio: <code>v=spf1 ...</code></td></tr>
+      <tr><td><strong>DKIM</strong></td><td>Assinatura criptográfica no cabeçalho da mensagem; o destinatário busca a chave pública no DNS</td><td>TXT em <code>seletor._domainkey.dominio</code></td></tr>
+      <tr><td><strong>DMARC</strong></td><td>Exige que SPF ou DKIM passe <em>e</em> esteja alinhado com o domínio do campo "De" que o usuário vê; diz o que fazer com quem falha e para onde mandar relatórios</td><td>TXT em <code>_dmarc.dominio</code></td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="registros de e-mail (ilustrativos)"><code class="text">exemplo.com.br.                    TXT "v=spf1 include:_spf.provedor-email.example include:envios.plataforma.example -all"
+sel1._domainkey.exemplo.com.br.    TXT "v=DKIM1; k=rsa; p=MIIBIjANBgkq..."
+_dmarc.exemplo.com.br.             TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@exemplo.com.br"</code></pre>
+  <ul>
+    <li><strong>SPF</strong>: <code>-all</code> manda rejeitar quem não está listado; <code>~all</code> marca como suspeito. O SPF tem limite de 10 consultas DNS na avaliação (cada <code>include</code> conta); passar disso faz o SPF falhar. Deve haver um único registro SPF por domínio.</li>
+    <li><strong>DKIM</strong>: cada serviço que envia em nome do domínio (e-mail corporativo, plataforma de marketing, sistema que manda resultados de exame) precisa de seu próprio seletor e chave.</li>
+    <li><strong>DMARC</strong>: comece com <code>p=none</code> e relatórios (<code>rua</code>) para descobrir quem envia em nome do domínio; depois passe para <code>quarantine</code> e, por fim, <code>reject</code>.</li>
+  </ul>
+  <p>Desde 2024, Google e Yahoo exigem SPF, DKIM e DMARC de remetentes de grande volume. Sem eles, notificações legítimas, como lembretes de consulta, vão para o spam ou são rejeitadas.</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Um sistema novo começa a mandar e-mails "como" <code>@exemplo.com.br</code> por um serviço que ninguém incluiu no SPF nem configurou no DKIM. Com DMARC em <code>reject</code>, as mensagens somem; com <code>none</code>, chegam mas qualquer golpista também pode se passar pelo domínio.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"SPF lista quem pode enviar pelo domínio, DKIM assina a mensagem com chave publicada no DNS, e DMARC exige que um dos dois passe alinhado com o remetente visível, define a política para falhas e envia relatórios. A implantação vai de p=none para reject, guiada pelos relatórios."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Inclua "configurar SPF e DKIM" na lista de verificação de todo projeto ou fornecedor que envie e-mail em nome da empresa.</li>
+      <li>Defina um responsável por ler os relatórios DMARC (há ferramentas que os resumem) e uma meta de chegar a <code>p=reject</code>. Em saúde, golpes que se passam por clínica ou laboratório são frequentes; DMARC em <code>reject</code> impede o uso direto do seu domínio nesses golpes.</li>
+      <li>Domínios que não enviam e-mail também devem ter SPF <code>v=spf1 -all</code> e DMARC <code>p=reject</code>, para não servirem de disfarce.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="cdn">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>DNS em balanceamento e CDNs: GeoDNS e anycast</h2>
+  <p>Como o DNS decide para qual IP mandar o usuário, ele virou uma ferramenta de distribuição de tráfego.</p>
+  <ul>
+    <li><strong>Round-robin</strong>: vários registros A para o mesmo nome; os clientes se espalham entre eles. Não detecta servidor fora do ar.</li>
+    <li><strong>Roteamento ponderado, por latência ou por geografia (GeoDNS)</strong>: o autoritativo responde de acordo com a origem da consulta. Quem pergunta do Brasil recebe o IP da região de São Paulo; da Europa, o de Frankfurt.</li>
+    <li><strong>Failover por DNS</strong>: o provedor verifica a saúde dos destinos (<em>health checks</em>) e deixa de responder com o que falhou. A troca só alcança cada usuário quando o cache dele expira, por isso exige TTL baixo e não é instantânea.</li>
+  </ul>
+  <p>Um detalhe do GeoDNS: o autoritativo vê o IP do <strong>resolver</strong>, não o do usuário. Se o usuário usa um resolver público distante, pode receber um destino ruim. A extensão EDNS Client Subnet (ECS) repassa parte do IP do usuário para melhorar isso, mas alguns resolvers públicos não a enviam por privacidade.</p>
+
+  <h3>Anycast</h3>
+  <p>No <strong>anycast</strong>, o mesmo IP é anunciado via BGP a partir de muitos locais. Cada usuário chega ao local mais próximo em termos de roteamento (<a href="01-internet.html#roteamento">módulo 1</a>). Servidores raiz, resolvers públicos como <code>1.1.1.1</code> e grandes CDNs usam anycast. A vantagem sobre o GeoDNS é não depender de cache nem do resolver: se um local sai do ar, o anúncio BGP é retirado e o tráfego vai para outro.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>GeoDNS</th><th>Anycast</th></tr></thead>
+    <tbody>
+      <tr><td>Onde decide</td><td>Na resposta DNS</td><td>No roteamento BGP</td></tr>
+      <tr><td>IPs</td><td>Um por região</td><td>O mesmo IP em todos os locais</td></tr>
+      <tr><td>Velocidade de failover</td><td>Limitada pelo TTL e pelos caches</td><td>Rápida, na escala da convergência do BGP</td></tr>
+      <tr><td>Quem usa</td><td>Aplicações multirregião, provedores de DNS gerenciado</td><td>CDNs, DNS raiz, resolvers públicos, proteção contra DDoS</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ao colocar uma CDN na frente do site, você em geral aponta um CNAME (ou ALIAS, no apex) para um nome da CDN, e ela cuida do resto. Mais sobre CDNs e balanceadores no <a href="06-backend-infra.html">módulo 6</a>.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"GeoDNS responde IPs diferentes conforme a origem da consulta e depende do TTL para failover; anycast anuncia o mesmo IP de vários locais via BGP e o roteamento leva cada usuário ao mais próximo, com failover rápido. CDNs combinam os dois."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>O provedor de DNS é um ponto único de falha. Em 2016, um ataque DDoS contra a Dyn derrubou o acesso a muitos sites grandes que só usavam aquele provedor. Avalie provedor com anycast e SLA forte, ou dois provedores autoritativos em paralelo para domínios críticos.</li>
+      <li>Failover por DNS não substitui alta disponibilidade na aplicação. Pergunte ao time quanto tempo, na prática, os usuários levariam para chegar ao ambiente reserva, e teste.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="seguranca">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>DNSSEC, DoH/DoT e ataques</h2>
+
+  <h3>DNSSEC: autenticidade das respostas</h3>
+  <p>O DNS original não tem como provar que uma resposta veio do dono da zona. O <strong>DNSSEC</strong> acrescenta assinaturas digitais: cada conjunto de registros ganha uma assinatura (RRSIG), a zona publica suas chaves públicas (DNSKEY), e a zona-mãe publica um resumo da chave da filha (DS). Isso forma uma <strong>cadeia de confiança</strong> desde a raiz. Um resolver que valida rejeita respostas adulteradas.</p>
+  <p>O DNSSEC garante integridade e autenticidade. Ele não cifra nada: as consultas continuam visíveis. Seu risco operacional é que erro de assinatura ou de troca de chaves faz resolvers que validam responderem SERVFAIL, e o domínio some para parte dos usuários.</p>
+
+  <h3>DoT e DoH: privacidade das consultas</h3>
+  <p>Consultas DNS tradicionais viajam em texto claro: qualquer um no caminho vê quais sites você acessa e pode adulterar respostas. Duas soluções cifram o trecho entre o cliente e o resolver:</p>
+  <ul>
+    <li><strong>DoT</strong> (<em>DNS over TLS</em>): DNS dentro de TLS, na porta 853. Fácil de identificar e bloquear numa rede.</li>
+    <li><strong>DoH</strong> (<em>DNS over HTTPS</em>): DNS dentro de HTTPS, na porta 443, misturado ao tráfego web.</li>
+  </ul>
+  <p>Na empresa, isso tem dois lados. Protege usuários em redes públicas. Mas navegadores com DoH ativado podem ignorar o DNS corporativo, contornando filtros de segurança e quebrando a resolução de nomes internos. Navegadores oferecem políticas corporativas para desativar o DoH ou apontá-lo para o resolver da empresa.</p>
+
+  <h3>Ataques ao DNS e aos domínios</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ataque</th><th>Como funciona</th><th>Defesa</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Spoofing / cache poisoning</strong></td><td>O atacante injeta uma resposta falsa num resolver, que passa a enviar todos os seus usuários a um IP malicioso</td><td>Resolvers atualizados (porta de origem e ID aleatórios), DNSSEC, HTTPS com certificado válido como última barreira</td></tr>
+      <tr><td><strong>Sequestro de domínio</strong></td><td>Invasão da conta no registrar ou provedor de DNS, ou engenharia social com o suporte; o atacante troca NS ou registros</td><td>MFA, acesso nominal, alertas de alteração, bloqueio de transferência ou <em>registry lock</em> quando disponível</td></tr>
+      <tr><td><strong>Subdomain takeover</strong></td><td>Um CNAME continua apontando para um recurso de nuvem que foi apagado (bucket, app, site estático); o atacante cria um recurso com o mesmo nome e passa a servir conteúdo no seu subdomínio</td><td>Remover o registro DNS junto com o recurso; varrer periodicamente registros que apontam para destinos inexistentes</td></tr>
+      <tr><td><strong>Expiração de domínio</strong></td><td>O domínio vence, alguém registra, e recebe o tráfego e os e-mails destinados a ele, inclusive redefinições de senha</td><td>Renovação automática, inventário, avisos para uma lista do time</td></tr>
+      <tr><td><strong>Domínios parecidos</strong> (<em>typosquatting</em>)</td><td>Registro de nomes semelhantes para phishing</td><td>Registro defensivo, monitoramento de novos domínios parecidos, DMARC</td></tr>
+      <tr><td><strong>Amplificação</strong></td><td>Resolvers abertos ou autoritativos respondem a consultas com IP de origem forjado, inundando a vítima com respostas grandes</td><td>Não manter resolver aberto para a internet; limitar taxa de respostas</td></tr>
+      <tr><td><strong>Túnel DNS</strong></td><td>Malware usa consultas DNS para vazar dados ou receber comandos, aproveitando que o DNS quase sempre é liberado</td><td>Forçar uso do resolver interno, bloquear DNS direto para fora, monitorar volume e padrões de consulta</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>"DNSSEC assina as respostas e garante autenticidade, sem sigilo; DoH e DoT cifram a consulta entre cliente e resolver. Os ataques mais comuns na prática são sequestro de conta do registrar, subdomain takeover por CNAME pendurado e domínio expirado, e as defesas são MFA, inventário e limpeza de DNS."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Coloque contas de registrar e de DNS no mesmo nível de proteção das contas de administrador da nuvem: quem controla o DNS consegue emitir certificados válidos e receber e-mails do domínio.</li>
+      <li>Inclua "remover registros DNS" no procedimento de desativação de qualquer sistema. É a prevenção barata de subdomain takeover.</li>
+      <li>Antes de ativar DNSSEC, confirme que o provedor automatiza assinatura e troca de chaves e que o time conhece o procedimento de troca de provedor com DNSSEC ativo.</li>
+      <li>Decida, junto com segurança, a política de DoH nas estações da empresa. Mais sobre gestão de riscos no <a href="10-ciberseguranca.html">módulo 10</a>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Anycast</dt><dd>Mesmo IP anunciado de vários locais; o roteamento leva cada usuário ao mais próximo.</dd></div>
+    <div><dt>Apex</dt><dd>O domínio sem subdomínio, como <code>exemplo.com.br</code>. Não aceita CNAME.</dd></div>
+    <div><dt>Autoritativo</dt><dd>Servidor que tem a resposta oficial de uma zona.</dd></div>
+    <div><dt>CNAME flattening / ALIAS</dt><dd>Recurso do provedor que resolve um nome de destino e entrega A/AAAA, contornando a restrição do apex.</dd></div>
+    <div><dt>Delegação</dt><dd>Registros NS que transferem a responsabilidade por uma zona filha.</dd></div>
+    <div><dt>DKIM</dt><dd>Assinatura de e-mail cuja chave pública fica no DNS.</dd></div>
+    <div><dt>DMARC</dt><dd>Política que exige SPF ou DKIM alinhado ao remetente visível e define o tratamento de falhas.</dd></div>
+    <div><dt>DNSSEC</dt><dd>Extensão que assina registros DNS e cria cadeia de confiança desde a raiz.</dd></div>
+    <div><dt>DoH / DoT</dt><dd>DNS cifrado sobre HTTPS (porta 443) ou TLS (porta 853).</dd></div>
+    <div><dt>GeoDNS</dt><dd>Resposta DNS que varia conforme a localização de quem pergunta.</dd></div>
+    <div><dt>Negative caching</dt><dd>Cache da resposta "nome não existe", com tempo definido pelo SOA.</dd></div>
+    <div><dt>NXDOMAIN</dt><dd>Código de resposta para nome inexistente.</dd></div>
+    <div><dt>Referral</dt><dd>Resposta que indica a quem perguntar a seguir, em vez da resposta final.</dd></div>
+    <div><dt>Registrar</dt><dd>Empresa que registra domínios em nome do titular junto ao registry.</dd></div>
+    <div><dt>Registry</dt><dd>Organização que administra um TLD. Para o .br, o Registro.br.</dd></div>
+    <div><dt>Resolver recursivo</dt><dd>Servidor que percorre a hierarquia em nome do cliente e mantém cache.</dd></div>
+    <div><dt>SERVFAIL</dt><dd>Código de falha do servidor; comum com DNSSEC quebrado ou autoritativo inacessível.</dd></div>
+    <div><dt>SPF</dt><dd>Registro TXT que lista quem pode enviar e-mail pelo domínio.</dd></div>
+    <div><dt>Stub resolver</dt><dd>Cliente DNS do sistema operacional, que só repassa a consulta ao resolver.</dd></div>
+    <div><dt>Subdomain takeover</dt><dd>Tomada de um subdomínio cujo CNAME aponta para recurso de nuvem apagado.</dd></div>
+    <div><dt>TLD</dt><dd>Domínio de topo, como <code>.com</code> ou <code>.br</code>.</dd></div>
+    <div><dt>TTL (DNS)</dt><dd>Tempo, em segundos, que uma resposta pode ficar em cache.</dd></div>
+    <div><dt>Zona</dt><dd>Parte do espaço de nomes administrada como uma unidade, com seus registros.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e troubleshooting</h2>
+
+  <h3>"Migramos o servidor e metade dos usuários ainda cai no antigo"</h3>
+  <p><strong>Causa provável:</strong> o TTL antigo era longo e não foi reduzido com antecedência; ou clientes e integrações com cache próprio ou IP fixo.</p>
+  <p><strong>Como verificar:</strong> <code>dig @ns1.provedor-dns.example portal.exemplo.com.br</code> confirma o valor no autoritativo; <code>dig @8.8.8.8</code> e <code>dig @1.1.1.1</code> mostram o TTL restante em cache. Nos logs do servidor antigo, veja quais IPs de origem ainda chegam.</p>
+  <p><strong>Ação:</strong> manter o servidor antigo funcionando (ou redirecionando para o novo) até o cache expirar; contatar parceiros que ainda chegam por IP fixo. Na próxima migração, seguir o roteiro da seção <a href="#migracao">7</a>.</p>
+
+  <h3>"Os e-mails com resultados de exame estão caindo no spam"</h3>
+  <p><strong>Causa provável:</strong> o serviço que envia não está no SPF, não assina com DKIM do domínio, ou o DMARC falha por desalinhamento (o DKIM assina com o domínio do fornecedor, não com o seu).</p>
+  <p><strong>Como verificar:</strong> abra uma mensagem recebida e veja o cabeçalho <code>Authentication-Results</code>: ele mostra o resultado de SPF, DKIM e DMARC. Consulte os registros com <code>Resolve-DnsName -Type TXT</code>. Leia os relatórios DMARC.</p>
+  <p><strong>Ação:</strong> incluir o serviço no SPF (respeitando o limite de 10 consultas), publicar o seletor DKIM fornecido por ele e validar o alinhamento.</p>
+
+  <h3>"O site e o e-mail pararam de uma vez"</h3>
+  <p><strong>Hipóteses:</strong> domínio expirado; NS alterado (por engano ou sequestro); provedor de DNS fora do ar; DNSSEC quebrado.</p>
+  <p><strong>Como verificar:</strong> consulte o WHOIS do domínio (no .br, pelo site do Registro.br) para ver vencimento e NS publicados; rode <code>dig +trace</code> para ver onde a cadeia quebra; se a resposta for SERVFAIL em resolvers que validam e funcionar com <code>dig +cd</code> (que desativa a checagem), o problema é DNSSEC.</p>
+  <p><strong>Para o gestor:</strong> é incidente grave. Acione quem tem acesso à conta do domínio, e se houver suspeita de sequestro, trate como incidente de segurança.</p>
+
+  <h3>"Funciona em casa, mas não na rede da empresa" (ou o contrário)</h3>
+  <p><strong>Hipóteses:</strong> o DNS interno responde diferente do externo (<em>split-horizon</em>, comum quando o mesmo nome tem IP interno e externo); filtro de segurança no resolver corporativo bloqueando o domínio; entrada no arquivo hosts; navegador usando DoH e ignorando o DNS interno.</p>
+  <p><strong>Como verificar:</strong> compare <code>Resolve-DnsName nome</code> com <code>Resolve-DnsName nome -Server 1.1.1.1</code>; confira o hosts; veja a configuração de DoH do navegador.</p>
+
+  <h3>"Um subdomínio antigo está mostrando conteúdo estranho"</h3>
+  <p><strong>Causa provável:</strong> subdomain takeover. O CNAME aponta para um recurso de nuvem apagado, e alguém criou um recurso com o mesmo nome.</p>
+  <p><strong>Ação imediata:</strong> remover o registro DNS. Depois, varrer a zona inteira em busca de outros CNAMEs pendurados e avaliar se cookies do domínio principal podem ter sido expostos (<a href="09-seguranca-web.html">módulo 9</a>).</p>
+
+  <h3>"A emissão do certificado falha"</h3>
+  <p><strong>Hipóteses:</strong> registro CAA que não autoriza a certificadora escolhida; registro TXT de validação ausente ou com TTL antigo em cache.</p>
+  <p><strong>Como verificar:</strong> <code>dig exemplo.com.br CAA</code> e o TXT de validação, direto no autoritativo.</p>
+
+  <div class="note mgr"><b>Para gestores</b><p>Em quase todo incidente de DNS, a primeira pergunta útil é "o que mudou, e quando?". Ter a zona versionada responde isso em segundos. A segunda é "segundo qual servidor?": autoritativo, resolver público ou máquina do usuário.</p></div>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que acontece quando você resolve um nome pela primeira vez?</span></summary><div class="ans"><p>O stub do sistema pergunta ao resolver recursivo. Sem cache, o resolver consulta a raiz, que indica os servidores do TLD; o TLD indica os autoritativos do domínio; o autoritativo responde com o registro e o TTL. O resolver guarda em cache e devolve ao cliente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre consulta recursiva e iterativa?</span></summary><div class="ans"><p>Na recursiva, o cliente pede a resposta final e o servidor faz todo o trabalho. Na iterativa, cada servidor responde o que sabe ou indica a quem perguntar a seguir. O stub faz consultas recursivas ao resolver; o resolver faz consultas iterativas aos autoritativos.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Por que não posso colocar um CNAME em exemplo.com.br?</span></summary><div class="ans"><p>Porque um nome com CNAME não pode ter outros registros, e o apex obrigatoriamente tem SOA e NS. A saída é usar ALIAS, ANAME ou CNAME flattening do provedor, ou adotar o <code>www</code> como endereço principal e redirecionar o apex.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>O que é TTL e como você o usa numa migração?</span></summary><div class="ans"><p>É o tempo em segundos que uma resposta pode ficar em cache. Numa migração, reduzo o TTL com antecedência de pelo menos o valor do TTL antigo, troco o registro, mantenho o servidor antigo funcionando enquanto houver tráfego residual e depois subo o TTL de novo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>O que é "propagação de DNS"?</span></summary><div class="ans"><p>É o nome popular para a expiração dos caches. Nada é empurrado: cada resolver só busca a resposta nova quando a antiga expira. No caso de troca de NS, a delegação no TLD tem TTL próprio, em geral longo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Explique SPF, DKIM e DMARC.</span></summary><div class="ans"><p>SPF lista quais servidores podem enviar pelo domínio. DKIM assina a mensagem com uma chave cuja parte pública está no DNS. DMARC exige que SPF ou DKIM passe alinhado com o domínio do "De", define o que fazer com falhas (none, quarantine, reject) e envia relatórios.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Qual a diferença entre registry, registrar e provedor de DNS?</span></summary><div class="ans"><p>O registry administra o TLD (Registro.br para .br). O registrar registra o domínio em nome do titular. O provedor de DNS hospeda a zona e responde as consultas. A delegação NS publicada pelo registry liga o domínio ao provedor de DNS.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>DNSSEC cifra as consultas?</span></summary><div class="ans"><p>Não. DNSSEC assina as respostas, garantindo autenticidade e integridade com uma cadeia de confiança desde a raiz. Para sigilo da consulta entre cliente e resolver, usam-se DoT (porta 853) ou DoH (porta 443).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é subdomain takeover e como prevenir?</span></summary><div class="ans"><p>Um registro DNS (geralmente CNAME) continua apontando para um recurso de nuvem que foi apagado; o atacante cria um recurso com o mesmo nome e controla o conteúdo daquele subdomínio. Prevenção: remover registros DNS junto com os recursos e varrer periodicamente a zona por destinos inexistentes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Qual a diferença entre GeoDNS e anycast?</span></summary><div class="ans"><p>GeoDNS responde IPs diferentes conforme a origem da consulta, e o failover depende do TTL. Anycast anuncia o mesmo IP de vários locais via BGP e a rede leva cada usuário ao mais próximo, com failover rápido. CDNs e DNS públicos usam anycast.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>nslookup mostra um IP e o navegador acessa outro. Por quê?</span></summary><div class="ans"><p>O nslookup consulta o servidor DNS diretamente e ignora o arquivo hosts e o cache do navegador. Entrada no hosts, cache do navegador ou do sistema, ou DoH no navegador usando outro resolver explicam a diferença.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Para que serve o registro CAA?</span></summary><div class="ans"><p>Diz quais autoridades certificadoras podem emitir certificados para o domínio. As certificadoras são obrigadas a consultá-lo antes de emitir. Reduz o risco de emissão indevida por outra AC.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Como gestor, que controles você exige sobre os domínios da empresa?</span></summary><div class="ans"><p>Inventário com titular no CNPJ, vencimento e provedores; renovação automática com avisos para uma lista do time; MFA e acesso nominal no registrar e no DNS; zona versionada com revisão; remoção de registros na desativação de sistemas; SPF, DKIM e DMARC rumo a reject; e registro defensivo de variações do nome.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Seu time vai migrar o portal do paciente para outro provedor de nuvem. O que você pede no plano?</span></summary><div class="ans"><p>Data da redução do TTL com antecedência suficiente, teste do ambiente novo pelo nome real antes da troca, certificado TLS pronto no destino, plano de volta, tratamento do banco de dados para não haver gravação nos dois lados, monitoramento do tráfego residual no antigo, comunicação a parceiros que acessam por IP e data de desligamento do antigo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>O site e o e-mail pararam ao mesmo tempo. Qual sua primeira hipótese e como confirma?</span></summary><div class="ans"><p>Algo no DNS do domínio: expiração, NS alterado, provedor fora do ar ou DNSSEC quebrado. Confirmo pelo WHOIS (vencimento e NS), com dig +trace para ver onde a cadeia quebra e comparando com dig +cd para isolar DNSSEC. Se houver indício de alteração não autorizada, trato como incidente de segurança.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Qual o risco do DoH numa rede corporativa e como lidar?</span></summary><div class="ans"><p>Navegadores com DoH podem ignorar o resolver da empresa, contornando filtros de segurança, perdendo a resolução de nomes internos e tirando visibilidade das consultas. A empresa pode desativar o DoH por política ou apontá-lo para um resolver corporativo que ofereça DoH.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

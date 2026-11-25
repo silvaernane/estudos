@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 01: Como a internet funciona</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 01 de 10 · Como a internet funciona</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <ol id="modulos">
+    <li><a href="01-internet.html" aria-current="page"><span class="n">01</span>Como a internet funciona</a></li>
+    <li class="sub"><ol>
+      <li><a href="#rede-de-redes"><span class="n">1</span>Uma rede de redes</a></li>
+      <li><a href="#pacotes"><span class="n">2</span>Pacotes e comutação</a></li>
+      <li><a href="#enderecos-ip"><span class="n">3</span>Endereços IP, NAT e CIDR</a></li>
+      <li><a href="#portas"><span class="n">4</span>Portas e cliente-servidor</a></li>
+      <li><a href="#roteamento"><span class="n">5</span>Roteamento e BGP</a></li>
+      <li><a href="#camadas"><span class="n">6</span>Modelos TCP/IP e OSI</a></li>
+      <li><a href="#tcp-udp"><span class="n">7</span>TCP e UDP</a></li>
+      <li><a href="#latencia"><span class="n">8</span>Latência e largura de banda</a></li>
+      <li><a href="#ferramentas"><span class="n">9</span>Ferramentas de diagnóstico</a></li>
+      <li><a href="#url"><span class="n">10</span>Quando você digita uma URL</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 01 · <span class="lvl l1">Básico</span></div>
+  <h1>Como a internet funciona</h1>
+  <p class="lede">Tudo o que a trilha cobre depois (DNS, HTTP, TLS, APIs, segurança) roda em cima de pacotes IP que atravessam redes de dezenas de empresas diferentes. Este módulo explica esse chão: endereços, portas, roteamento, TCP e UDP, latência e as ferramentas para diagnosticar quando algo falha.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar a internet como rede de redes, com ISPs, IXPs, backbones e cabos submarinos.</li>
+    <li>Ler e planejar endereços IPv4 e IPv6, entender NAT, faixas privadas e notação CIDR.</li>
+    <li>Situar cada protocolo nas camadas TCP/IP e OSI e explicar o handshake do TCP.</li>
+    <li>Explicar por que a latência pesa mais que a largura de banda na maioria dos sistemas web.</li>
+    <li>Usar ping, traceroute, ipconfig/ip, netstat/ss e curl para diagnosticar um problema de rede.</li>
+    <li>Conduzir a investigação de um incidente de conectividade fazendo as perguntas certas ao time e aos fornecedores.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="rede-de-redes">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Uma rede de redes</h2>
+  <p>A internet não tem dono nem centro. Ela é a interligação de dezenas de milhares de redes independentes, cada uma administrada por uma organização: operadoras, provedores de nuvem, universidades, bancos, grandes empresas. Cada rede dessas, quando participa do roteamento global, recebe o nome de <strong>sistema autônomo</strong> (AS, <em>autonomous system</em>) e um número que a identifica (ASN). O que permite que todas conversem é um acordo comum: todas falam IP e anunciam umas às outras quais endereços sabem alcançar.</p>
+
+  <h3>Quem é quem</h3>
+  <ul>
+    <li><strong>ISP de acesso</strong> (<em>Internet Service Provider</em>, provedor de internet): a operadora que leva o link até sua casa ou empresa. No Brasil, além das grandes operadoras, existe um número grande de provedores regionais, muitos deles responsáveis pela fibra no interior.</li>
+    <li><strong>Provedores de trânsito</strong>: redes maiores que vendem acesso ao resto da internet. Os chamados <em>tier 1</em> alcançam a internet inteira sem pagar trânsito a ninguém.</li>
+    <li><strong>Backbone</strong> (espinha dorsal): os enlaces de alta capacidade, quase sempre fibra óptica, que ligam cidades, países e continentes.</li>
+    <li><strong>IXP</strong> (<em>Internet Exchange Point</em>, ponto de troca de tráfego): um local neutro onde várias redes se conectam para trocar tráfego diretamente, sem passar por um provedor de trânsito. No Brasil, o <strong>IX.br</strong>, mantido pelo NIC.br, tem pontos em dezenas de cidades. O de São Paulo está entre os maiores IXPs do mundo em volume de tráfego.</li>
+    <li><strong>Cabos submarinos</strong>: carregam a grande maioria do tráfego entre continentes. Satélites atendem regiões remotas, mas respondem por uma fração pequena do tráfego intercontinental. Fortaleza é um dos principais pontos de chegada de cabos no Brasil, com ligações para a América do Norte, a Europa e a África.</li>
+    <li><strong>Provedores de nuvem e CDNs</strong>: AWS, Azure, Google Cloud, Cloudflare e outros têm backbones próprios e se conectam diretamente a muitos ISPs e IXPs. Por isso o caminho até eles costuma ser curto.</li>
+  </ul>
+
+  <h3>Peering e trânsito</h3>
+  <p>Duas redes trocam tráfego de duas formas. No <strong>trânsito</strong>, uma paga à outra para alcançar o resto da internet. No <strong>peering</strong>, as duas trocam tráfego entre seus próprios clientes, muitas vezes sem cobrança, porque ambas ganham. Um IXP existe para facilitar peering: em vez de um cabo dedicado para cada parceiro, cada rede leva uma conexão até o IXP e conversa com várias outras ali.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 720 250" role="img" aria-label="Caminho de um acesso: rede da empresa, ISP de acesso, IX.br, provedor de nuvem no Brasil, e caminho alternativo por trânsito e cabo submarino até um datacenter no exterior">
+      <defs><marker id="ah-net" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="10" y="40" width="130" height="50" rx="6"/>
+      <text x="75" y="62" text-anchor="middle">Rede da empresa</text>
+      <text class="lbl" x="75" y="80" text-anchor="middle">IPs privados + NAT</text>
+      <rect class="box-a" x="190" y="40" width="130" height="50" rx="6"/>
+      <text x="255" y="62" text-anchor="middle">ISP de acesso</text>
+      <text class="lbl" x="255" y="80" text-anchor="middle">AS da operadora</text>
+      <rect class="box-m" x="370" y="40" width="130" height="50" rx="6"/>
+      <text x="435" y="62" text-anchor="middle">IX.br (IXP)</text>
+      <text class="lbl" x="435" y="80" text-anchor="middle">peering</text>
+      <rect class="box" x="560" y="40" width="150" height="50" rx="6"/>
+      <text x="635" y="62" text-anchor="middle">Nuvem (região BR)</text>
+      <text class="lbl" x="635" y="80" text-anchor="middle">AS do provedor</text>
+      <line class="ln" x1="140" y1="65" x2="188" y2="65" marker-end="url(#ah-net)"/>
+      <line class="ln-a" x1="320" y1="65" x2="368" y2="65" marker-end="url(#ah-net)"/>
+      <line class="ln-a" x1="500" y1="65" x2="558" y2="65" marker-end="url(#ah-net)"/>
+      <rect class="box-w" x="190" y="160" width="130" height="50" rx="6"/>
+      <text x="255" y="182" text-anchor="middle">Trânsito</text>
+      <text class="lbl" x="255" y="200" text-anchor="middle">provedor pago</text>
+      <rect class="box" x="370" y="160" width="160" height="50" rx="6"/>
+      <text x="450" y="182" text-anchor="middle">Cabo submarino</text>
+      <text class="lbl" x="450" y="200" text-anchor="middle">ex.: saída por Fortaleza</text>
+      <rect class="box" x="560" y="160" width="150" height="50" rx="6"/>
+      <text x="635" y="182" text-anchor="middle">Datacenter exterior</text>
+      <text class="lbl" x="635" y="200" text-anchor="middle">ex.: costa leste EUA</text>
+      <line class="ln" x1="255" y1="90" x2="255" y2="158" marker-end="url(#ah-net)"/>
+      <line class="ln" x1="320" y1="185" x2="368" y2="185" marker-end="url(#ah-net)"/>
+      <line class="ln" x1="530" y1="185" x2="558" y2="185" marker-end="url(#ah-net)"/>
+      <text class="ttl" x="10" y="22">Dois caminhos possíveis a partir do mesmo ISP</text>
+      <text class="lbl" x="10" y="240">Verde: caminho curto por peering no IXP. Cinza/laranja: caminho longo por trânsito e cabo submarino.</text>
+    </svg>
+    <figcaption>Cada caixa é uma rede de uma organização diferente. O pacote atravessa várias delas, e nenhuma controla o trajeto inteiro.</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>"A internet é uma rede de redes: milhares de sistemas autônomos independentes que se interligam por acordos de trânsito e peering, muitas vezes em IXPs como o IX.br, e anunciam suas rotas entre si com BGP."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li><strong>Redundância de link:</strong> dois links de operadoras diferentes só protegem de verdade se seguirem caminhos físicos diferentes. Pergunte às operadoras por onde a fibra entra no prédio e até onde os caminhos se separam. Duas operadoras no mesmo poste caem juntas com o mesmo acidente.</li>
+      <li><strong>Região de nuvem:</strong> hospedar perto do usuário reduz latência. Para dados de saúde, a escolha de região também tem efeito jurídico (transferência internacional de dados, tema do <a href="10-ciberseguranca.html">módulo 10</a>).</li>
+      <li><strong>Custo:</strong> nuvens cobram pelo tráfego que sai delas (<em>egress</em>). Sistemas que trafegam imagens médicas ou exames grandes podem ter essa linha como uma das maiores da fatura. Peça ao time a estimativa de egress em qualquer projeto que mova arquivos grandes.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="pacotes">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Pacotes e comutação de pacotes</h2>
+  <p>A rede telefônica antiga usava <strong>comutação de circuitos</strong>: para cada ligação, a central reservava um caminho fixo de ponta a ponta durante toda a conversa. Funciona, mas desperdiça capacidade nos silêncios e cai inteiro se um trecho falhar.</p>
+  <p>A internet usa <strong>comutação de pacotes</strong>. Os dados são quebrados em pedaços pequenos, os pacotes, cada um com um cabeçalho que diz origem e destino. Cada roteador olha o destino e encaminha o pacote para o próximo salto, sem reservar nada. Pacotes da mesma conversa podem seguir caminhos diferentes, chegar fora de ordem, chegar duplicados ou se perder.</p>
+  <p>O tamanho máximo de um pacote em um enlace é o <strong>MTU</strong> (<em>Maximum Transmission Unit</em>). Em redes Ethernet ele costuma ser de 1500 bytes. Um exame de imagem de 5 MB vira, portanto, alguns milhares de pacotes.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Aspecto</th><th>Comutação de circuitos</th><th>Comutação de pacotes</th></tr></thead>
+    <tbody>
+      <tr><td>Reserva de recurso</td><td>Caminho dedicado durante toda a sessão</td><td>Nenhuma; cada pacote disputa a capacidade</td></tr>
+      <tr><td>Uso da capacidade</td><td>Ociosa nos silêncios</td><td>Compartilhada entre milhões de fluxos</td></tr>
+      <tr><td>Falha de um trecho</td><td>Derruba a sessão</td><td>Os roteadores desviam por outro caminho</td></tr>
+      <tr><td>Garantias</td><td>Atraso previsível</td><td>Melhor esforço: perda, atraso variável, fora de ordem</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>O IP oferece entrega de <strong>melhor esforço</strong> (<em>best effort</em>): tenta entregar, sem promessa. Quem precisa de confiabilidade constrói em cima, como o TCP faz (seção <a href="#tcp-udp">7</a>).</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>A rede vai perder, atrasar e reordenar pacotes. Software bem feito trata isso como normal: timeouts definidos, novas tentativas com espera crescente e operações que podem ser repetidas sem efeito duplicado (idempotência, assunto do <a href="08-apis.html">módulo 8</a>).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Na comutação de pacotes os dados viajam em pedaços independentes, cada um roteado salto a salto pelo endereço de destino. Isso torna a rede resistente a falhas e eficiente, mas a entrega é de melhor esforço, então confiabilidade fica a cargo de camadas superiores como o TCP."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Ao contratar link ou VPN, peça os números de <strong>perda de pacotes</strong> e <strong>jitter</strong> além da banda. Perda de 1% já degrada bastante uma transferência TCP e uma chamada de vídeo de telemedicina. Na revisão de código, cobre do time timeouts explícitos em toda chamada de rede; o padrão de muitas bibliotecas é esperar muito tempo ou para sempre.</p></div>
+</section>
+
+<section class="chap" id="enderecos-ip">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>Endereços IP, NAT e CIDR</h2>
+  <p>Todo dispositivo que fala IP precisa de um endereço. Existem duas versões em uso.</p>
+
+  <h3>IPv4 e IPv6</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>IPv4</th><th>IPv6</th></tr></thead>
+    <tbody>
+      <tr><td>Tamanho</td><td>32 bits</td><td>128 bits</td></tr>
+      <tr><td>Notação</td><td>4 números decimais: <code>203.0.113.10</code></td><td>8 grupos hexadecimais: <code>2001:db8:0:0:0:0:0:1</code>, abreviado <code>2001:db8::1</code></td></tr>
+      <tr><td>Quantidade</td><td>Cerca de 4,3 bilhões; esgotado nos registros regionais</td><td>Praticamente inesgotável</td></tr>
+      <tr><td>NAT</td><td>Usado em quase toda parte</td><td>Em geral desnecessário</td></tr>
+      <tr><td>Loopback</td><td><code>127.0.0.1</code></td><td><code>::1</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Na notação IPv6, zeros à esquerda de cada grupo podem ser omitidos, e uma única sequência de grupos zerados pode virar <code>::</code>. As duas versões convivem (<em>dual stack</em>): muitas redes móveis e de fibra no Brasil já entregam IPv6 ao cliente.</p>
+
+  <h3>Públicos e privados</h3>
+  <p>Endereços <strong>públicos</strong> são únicos na internet e roteáveis globalmente. Endereços <strong>privados</strong> podem ser repetidos em qualquer rede interna e não são roteados na internet.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Faixa</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code></td><td>Redes privadas (RFC 1918): escritórios, casas, VPCs na nuvem</td></tr>
+      <tr><td><code>100.64.0.0/10</code></td><td>Espaço compartilhado para CGNAT das operadoras</td></tr>
+      <tr><td><code>127.0.0.0/8</code></td><td>Loopback: a própria máquina</td></tr>
+      <tr><td><code>169.254.0.0/16</code></td><td>Link-local: a máquina se deu um endereço sozinha porque não obteve um por DHCP. Costuma indicar problema</td></tr>
+      <tr><td><code>192.0.2.0/24</code>, <code>198.51.100.0/24</code>, <code>203.0.113.0/24</code>, <code>2001:db8::/32</code></td><td>Reservados para documentação; usados nos exemplos deste módulo</td></tr>
+    </tbody>
+  </table></div>
+  <p>Quem distribui endereços dentro de uma rede local costuma ser o <strong>DHCP</strong> (<em>Dynamic Host Configuration Protocol</em>), que entrega IP, máscara, gateway padrão e servidores DNS.</p>
+
+  <h3>NAT</h3>
+  <p>O <strong>NAT</strong> (<em>Network Address Translation</em>, tradução de endereços) permite que muitas máquinas com IP privado saiam para a internet usando um único IP público. O roteador troca o endereço e a porta de origem de cada pacote que sai e guarda a correspondência numa tabela, para desfazer a troca na resposta.</p>
+<pre data-file="tabela de NAT (ilustrativa)"><code class="text">Interno (privado)        Externo (público)        Destino
+192.168.0.15:51544  -&gt;   198.51.100.7:40001  -&gt;   203.0.113.10:443
+192.168.0.22:60210  -&gt;   198.51.100.7:40002  -&gt;   203.0.113.10:443</code></pre>
+  <p>Consequência importante: quem está atrás de NAT inicia conexões, mas não recebe conexões vindas de fora sem uma regra explícita (<em>port forwarding</em>). Muitas operadoras aplicam NAT também do lado delas, o <strong>CGNAT</strong> (<em>carrier-grade NAT</em>), e aí vários clientes compartilham o mesmo IP público.</p>
+
+  <h3>CIDR: blocos de endereços</h3>
+  <p>A notação <strong>CIDR</strong> (<em>Classless Inter-Domain Routing</em>) escreve um bloco como <code>endereço/prefixo</code>. O prefixo diz quantos bits iniciais são fixos; o resto varia dentro do bloco.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Bloco</th><th>Máscara</th><th>Endereços no bloco</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><code>/32</code></td><td>255.255.255.255</td><td>1</td><td>Um host específico (regra de firewall)</td></tr>
+      <tr><td><code>/28</code></td><td>255.255.255.240</td><td>16</td><td>Sub-rede pequena</td></tr>
+      <tr><td><code>/24</code></td><td>255.255.255.0</td><td>256</td><td>Sub-rede de escritório ou de aplicação</td></tr>
+      <tr><td><code>/16</code></td><td>255.255.0.0</td><td>65.536</td><td>Rede inteira de uma VPC</td></tr>
+    </tbody>
+  </table></div>
+  <p>Cada bit a menos no prefixo dobra o tamanho do bloco. Numa sub-rede tradicional, o primeiro e o último endereço são reservados (rede e broadcast); provedores de nuvem reservam alguns a mais (a AWS, por exemplo, reserva 5 por sub-rede).</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Criar a VPC da nuvem com a mesma faixa da rede do escritório (por exemplo, as duas em <code>10.0.0.0/16</code>). Funciona até o dia em que alguém precisa de VPN ou peering entre elas. Sobreposição de faixas não tem solução simples e costuma obrigar a renumerar uma das redes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"IPv4 tem 32 bits e se esgotou, por isso usamos faixas privadas com NAT; IPv6 tem 128 bits e dispensa NAT. CIDR descreve blocos: um /24 tem 256 endereços, e cada bit a menos no prefixo dobra o bloco."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Exija um <strong>plano de endereçamento</strong> documentado para escritórios, VPN e nuvem antes de criar redes novas. É barato no início e caríssimo depois.</li>
+      <li>Parceiros que exigem "IP fixo para liberar no firewall" pedem o IP de <strong>saída</strong> da sua aplicação. Na nuvem isso exige um NAT gateway ou IP elástico; servidores sem isso trocam de IP e a integração quebra sem aviso.</li>
+      <li>Liberar acesso por IP de clientes finais funciona mal: com CGNAT, muitos clientes compartilham o mesmo IP e o IP de um cliente muda.</li>
+      <li>Para identificar um usuário atrás de CGNAT, os registros precisam de IP, <strong>porta de origem</strong> e horário preciso. IP em log é dado pessoal na LGPD: defina retenção e acesso.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="portas">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l1">Básico</span></div>
+  <h2>Portas e o modelo cliente-servidor</h2>
+  <p>O IP leva o pacote até a máquina. A <strong>porta</strong> diz para qual programa dentro dela. Portas são números de 16 bits, de 0 a 65535. Uma conexão fica identificada por cinco valores, a <strong>5-tupla</strong>: protocolo, IP de origem, porta de origem, IP de destino e porta de destino.</p>
+
+  <h3>Cliente e servidor</h3>
+  <p>No modelo <strong>cliente-servidor</strong>, o servidor abre uma porta conhecida e fica escutando (<em>listen</em>). O cliente inicia a conexão a partir de uma <strong>porta efêmera</strong>, escolhida pelo sistema operacional numa faixa alta. O navegador é cliente; o servidor web, a API e o banco de dados são servidores. O mesmo programa pode ser os dois papéis: a API é servidora para o navegador e cliente do banco.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Porta</th><th>Protocolo</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>22</td><td>SSH</td><td>Administração remota de servidores Linux</td></tr>
+      <tr><td>25 / 587</td><td>SMTP</td><td>Envio de e-mail entre servidores / submissão autenticada</td></tr>
+      <tr><td>53</td><td>DNS</td><td>UDP e TCP (<a href="02-dns.html">módulo 2</a>)</td></tr>
+      <tr><td>80 / 443</td><td>HTTP / HTTPS</td><td>Web (<a href="03-http.html">módulo 3</a>, <a href="04-tls.html">módulo 4</a>)</td></tr>
+      <tr><td>1433 / 1521 / 3306 / 5432</td><td>SQL Server / Oracle / MySQL / PostgreSQL</td><td>Bancos de dados: nunca expostos à internet</td></tr>
+      <tr><td>3389</td><td>RDP</td><td>Área de trabalho remota do Windows: alvo frequente de ataques</td></tr>
+      <tr><td>6379</td><td>Redis</td><td>Cache; já teve muitas instâncias expostas sem senha</td></tr>
+    </tbody>
+  </table></div>
+  <p>A IANA divide as portas em três faixas: conhecidas (0 a 1023), registradas (1024 a 49151) e dinâmicas (49152 a 65535). Os sistemas operacionais escolhem sua própria faixa efêmera; o Linux, por padrão, usa uma faixa que começa em 32768.</p>
+
+  <h3>Em qual endereço o servidor escuta</h3>
+  <p>Um servidor escutando em <code>127.0.0.1:8080</code> só aceita conexões da própria máquina. Escutando em <code>0.0.0.0:8080</code> (ou <code>[::]:8080</code>), aceita de qualquer interface. Esse detalhe explica tanto o "funciona na minha máquina mas não no container" quanto bancos expostos por acidente.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"O IP identifica a máquina e a porta identifica o processo. O servidor escuta numa porta conhecida, como 443, e o cliente conecta a partir de uma porta efêmera; a conexão é identificada pela 5-tupla."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Banco de dados, RDP e SSH abertos para a internet estão entre as causas mais comuns de invasão. Cobre um inventário de portas expostas e uma varredura externa periódica, e trate qualquer exceção como risco aceito formalmente.</li>
+      <li>Aplicações que abrem muitas conexões de saída por um mesmo NAT podem esgotar as portas de origem disponíveis. O sintoma são falhas intermitentes de conexão sob carga. A correção é reutilizar conexões (pool, keep-alive), não só aumentar máquinas.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="roteamento">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Roteamento e BGP</h2>
+  <p>Um <strong>roteador</strong> recebe um pacote, olha o IP de destino, consulta sua <strong>tabela de rotas</strong> e encaminha para o próximo salto. Ele não conhece o caminho inteiro, só o próximo passo. Quando várias rotas servem, vence a mais específica (<em>longest prefix match</em>): uma rota para <code>203.0.113.0/24</code> ganha de uma para <code>203.0.0.0/16</code>. Se nada casar, o pacote segue a <strong>rota padrão</strong> (<em>default gateway</em>), que no seu computador é o roteador da rede local.</p>
+<pre data-file="tabela de rotas no Linux (saída ilustrativa)"><code class="sh">$ ip route
+default via 192.168.0.1 dev eth0
+10.20.0.0/16 via 10.8.0.1 dev tun0
+192.168.0.0/24 dev eth0 proto kernel scope link src 192.168.0.15</code></pre>
+  <p>Leitura: o tráfego para a rede da empresa (<code>10.20.0.0/16</code>) vai pela VPN (<code>tun0</code>); a rede local é alcançada direto; todo o resto sai pelo roteador <code>192.168.0.1</code>. No Windows, o equivalente é <code>route print</code>.</p>
+
+  <h3>TTL: o limite de saltos</h3>
+  <p>Todo pacote IP carrega um campo <strong>TTL</strong> (<em>time to live</em>; no IPv6, <em>hop limit</em>). Cada roteador diminui o valor em 1. Se chegar a zero, o roteador descarta o pacote e devolve uma mensagem ICMP <em>Time Exceeded</em>. Isso impede que um pacote fique circulando para sempre num laço de roteamento, e é o mecanismo que o traceroute explora (seção <a href="#ferramentas">9</a>).</p>
+
+  <h3>Dentro de uma rede e entre redes</h3>
+  <p>Dentro de um sistema autônomo, os roteadores trocam rotas com protocolos internos como OSPF. Entre sistemas autônomos, o protocolo é o <strong>BGP</strong> (<em>Border Gateway Protocol</em>). Cada AS anuncia aos vizinhos os prefixos que alcança, e cada vizinho escolhe a rota segundo suas próprias políticas comerciais e técnicas. O caminho escolhido nem sempre é o mais curto: é o que as políticas preferem.</p>
+  <p>O BGP foi desenhado com base em confiança entre operadoras. Por isso acontecem:</p>
+  <ul>
+    <li><strong>Vazamentos de rota</strong> (<em>route leaks</em>): uma rede anuncia por engano rotas que não deveria, e tráfego de terceiros passa a fluir por ela.</li>
+    <li><strong>Sequestros de prefixo</strong> (<em>BGP hijacking</em>): uma rede anuncia prefixos que não são dela, por erro ou de propósito. O caso do YouTube em 2008, derrubado por um anúncio de uma operadora do Paquistão, é o exemplo clássico.</li>
+    <li><strong>Retirada de rotas</strong>: em outubro de 2021, uma mudança de configuração fez o Facebook retirar do BGP as rotas que levavam a seus servidores DNS. A empresa sumiu da internet por horas, e as ferramentas internas que dependiam da mesma rede também ficaram fora.</li>
+  </ul>
+  <p>A principal defesa é o <strong>RPKI</strong> (<em>Resource Public Key Infrastructure</em>): o dono de um bloco publica, assinado, qual AS pode anunciá-lo, e as operadoras que validam descartam anúncios que não batem.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Cada roteador decide só o próximo salto, pela rota mais específica da tabela. Entre as redes da internet as rotas são trocadas por BGP, que escolhe caminhos por política e confia nos anúncios, por isso existem vazamentos e sequestros de rota; RPKI mitiga."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Parte dos incidentes de conectividade acontece em redes que você não controla. Tenha contatos de suporte das operadoras e do provedor de nuvem e acompanhe as páginas de status deles durante um incidente.</li>
+      <li>Lição do caso Facebook: ferramentas de acesso emergencial, monitoramento e comunicação não devem depender da mesma infraestrutura que pode cair. Pergunte ao time: "se nossa rede principal sumir, como entramos para consertar?"</li>
+      <li>Se a empresa tiver bloco IP e ASN próprios, cobre a publicação de ROAs no RPKI. Ao contratar link, pergunte se a operadora valida RPKI.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="camadas">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Modelos TCP/IP e OSI</h2>
+  <p>Redes são organizadas em camadas. Cada camada resolve um problema e usa os serviços da camada de baixo, sem precisar saber como ela funciona. O HTTP não sabe se o pacote viaja por fibra ou Wi-Fi.</p>
+  <p>Existem dois modelos. O <strong>OSI</strong> tem sete camadas e serve de vocabulário de referência. O <strong>TCP/IP</strong> tem quatro e descreve o que de fato roda na internet. O mercado mistura os dois: diz "camada 7" (do OSI) para falar de aplicação e "camada 4" para falar de TCP e UDP.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>OSI</th><th>TCP/IP</th><th>Protocolos e exemplos</th><th>Unidade de dados</th><th>Equipamento típico</th></tr></thead>
+    <tbody>
+      <tr><td>7 Aplicação</td><td rowspan="3">Aplicação</td><td>HTTP, DNS, SMTP, SSH</td><td rowspan="3">Mensagem</td><td rowspan="3">Balanceador L7, WAF, proxy reverso</td></tr>
+      <tr><td>6 Apresentação</td><td>Codificação, compressão; TLS costuma ser citado aqui ou na 5</td></tr>
+      <tr><td>5 Sessão</td><td>Controle de sessão</td></tr>
+      <tr><td>4 Transporte</td><td>Transporte</td><td>TCP, UDP</td><td>Segmento (TCP) / datagrama (UDP)</td><td>Balanceador L4, firewall de estado</td></tr>
+      <tr><td>3 Rede</td><td>Internet</td><td>IP, ICMP</td><td>Pacote</td><td>Roteador</td></tr>
+      <tr><td>2 Enlace</td><td rowspan="2">Acesso à rede (enlace)</td><td>Ethernet, Wi-Fi, ARP</td><td>Quadro (frame)</td><td>Switch, ponto de acesso</td></tr>
+      <tr><td>1 Física</td><td>Fibra, cobre, rádio</td><td>Bits</td><td>Cabo, transceptor</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Encapsulamento</h3>
+  <p>Ao enviar, cada camada embrulha os dados da camada de cima com seu próprio cabeçalho. Ao receber, cada camada retira o seu e entrega o resto para cima.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 720 270" role="img" aria-label="Encapsulamento: a mensagem HTTP recebe cabeçalho TCP, depois cabeçalho IP, depois cabeçalho e trailer Ethernet">
+      <text class="ttl" x="10" y="20">Uma requisição HTTP descendo as camadas</text>
+      <text class="lbl" x="10" y="58">Aplicação</text>
+      <rect class="box-a" x="420" y="38" width="200" height="32" rx="4"/>
+      <text x="520" y="59" text-anchor="middle">GET /exames HTTP/1.1</text>
+      <text class="lbl" x="10" y="108">Transporte</text>
+      <rect class="box-w" x="330" y="88" width="90" height="32" rx="4"/>
+      <text x="375" y="109" text-anchor="middle">TCP</text>
+      <rect class="box-a" x="420" y="88" width="200" height="32" rx="4"/>
+      <text x="520" y="109" text-anchor="middle">dados</text>
+      <text class="lbl" x="10" y="158">Internet</text>
+      <rect class="box-m" x="240" y="138" width="90" height="32" rx="4"/>
+      <text x="285" y="159" text-anchor="middle">IP</text>
+      <rect class="box-w" x="330" y="138" width="90" height="32" rx="4"/>
+      <text x="375" y="159" text-anchor="middle">TCP</text>
+      <rect class="box-a" x="420" y="138" width="200" height="32" rx="4"/>
+      <text x="520" y="159" text-anchor="middle">dados</text>
+      <text class="lbl" x="10" y="208">Enlace</text>
+      <rect class="box" x="130" y="188" width="110" height="32" rx="4"/>
+      <text x="185" y="209" text-anchor="middle">Ethernet</text>
+      <rect class="box-m" x="240" y="188" width="90" height="32" rx="4"/>
+      <text x="285" y="209" text-anchor="middle">IP</text>
+      <rect class="box-w" x="330" y="188" width="90" height="32" rx="4"/>
+      <text x="375" y="209" text-anchor="middle">TCP</text>
+      <rect class="box-a" x="420" y="188" width="200" height="32" rx="4"/>
+      <text x="520" y="209" text-anchor="middle">dados</text>
+      <rect class="box" x="620" y="188" width="60" height="32" rx="4"/>
+      <text x="650" y="209" text-anchor="middle">FCS</text>
+      <text class="lbl" x="130" y="245">portas de origem/destino ficam no TCP; IPs de origem/destino no IP;</text>
+      <text class="lbl" x="130" y="262">endereços MAC no Ethernet, trocados a cada salto pelo roteador.</text>
+    </svg>
+    <figcaption>O cabeçalho Ethernet vale só até o próximo equipamento; o cabeçalho IP vale de ponta a ponta (a menos que um NAT o reescreva); o TCP e os dados viajam intactos.</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>"O OSI tem sete camadas e é o vocabulário de referência; o TCP/IP tem quatro e é o que roda. Cada camada encapsula a de cima: HTTP dentro de TCP, dentro de IP, dentro de Ethernet. Um balanceador L4 decide por IP e porta; um L7 enxerga o HTTP."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Use as camadas para organizar o diagnóstico em incidentes: "a máquina responde ping?" (3), "a porta aceita conexão?" (4), "a aplicação responde certo?" (7). Times que pulam direto para a camada 7 perdem horas olhando código quando o problema é uma regra de firewall. A mesma distinção aparece em compras: firewall de rede filtra em L3/L4, WAF filtra em L7 (<a href="09-seguranca-web.html">módulo 9</a>); balanceadores L4 e L7 estão no <a href="06-backend-infra.html">módulo 6</a>.</p></div>
+</section>
+
+<section class="chap" id="tcp-udp">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>TCP e UDP</h2>
+  <p>Na camada de transporte há dois protocolos principais. O <strong>TCP</strong> (<em>Transmission Control Protocol</em>) entrega um fluxo de bytes confiável e em ordem. O <strong>UDP</strong> (<em>User Datagram Protocol</em>) entrega mensagens soltas, sem garantia nenhuma, com o mínimo de custo.</p>
+
+  <h3>Handshake de três vias</h3>
+  <p>Antes de enviar dados, o TCP estabelece a conexão. Cada lado escolhe um número de sequência inicial, e o outro confirma.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 640 330" role="img" aria-label="Handshake TCP: SYN do cliente, SYN-ACK do servidor, ACK do cliente com a requisição, resposta do servidor. Um RTT antes de enviar dados">
+      <defs><marker id="ah-tcp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="60" y="10" width="140" height="32" rx="5"/>
+      <text x="130" y="31" text-anchor="middle">Cliente</text>
+      <rect class="box-a" x="440" y="10" width="140" height="32" rx="5"/>
+      <text x="510" y="31" text-anchor="middle">Servidor :443</text>
+      <line class="ln" x1="130" y1="42" x2="130" y2="320"/>
+      <line class="ln" x1="510" y1="42" x2="510" y2="320"/>
+      <line class="ln-a" x1="130" y1="70" x2="508" y2="110" marker-end="url(#ah-tcp)"/>
+      <text x="320" y="80" text-anchor="middle">SYN seq=x</text>
+      <line class="ln-a" x1="510" y1="130" x2="132" y2="170" marker-end="url(#ah-tcp)"/>
+      <text x="320" y="140" text-anchor="middle">SYN-ACK seq=y ack=x+1</text>
+      <line class="ln-a" x1="130" y1="190" x2="508" y2="230" marker-end="url(#ah-tcp)"/>
+      <text x="320" y="200" text-anchor="middle">ACK ack=y+1 (+ dados)</text>
+      <line class="ln" x1="510" y1="250" x2="132" y2="290" marker-end="url(#ah-tcp)"/>
+      <text x="320" y="260" text-anchor="middle">dados da resposta</text>
+      <line class="ln-b" x1="40" y1="70" x2="40" y2="170"/>
+      <text class="lbl" x="34" y="125" text-anchor="end">1 RTT</text>
+      <text class="lbl" x="530" y="74">conexão</text>
+      <text class="lbl" x="530" y="90">semiaberta</text>
+      <text class="lbl" x="530" y="236">ESTABLISHED</text>
+    </svg>
+    <figcaption>O cliente só pode enviar dados depois de receber o SYN-ACK: o handshake custa uma viagem de ida e volta (RTT). Com TLS, somam-se mais viagens (<a href="04-tls.html">módulo 4</a>).</figcaption>
+  </figure>
+
+  <h3>Como o TCP garante a entrega</h3>
+  <ul>
+    <li><strong>Números de sequência e confirmações (ACK):</strong> cada byte tem posição; o receptor confirma o que recebeu, e o emissor retransmite o que não foi confirmado a tempo.</li>
+    <li><strong>Ordenação:</strong> o receptor remonta os segmentos na ordem certa antes de entregar à aplicação.</li>
+    <li><strong>Controle de fluxo:</strong> o receptor anuncia quanto espaço tem no buffer (a janela de recepção), e o emissor não manda mais que isso.</li>
+    <li><strong>Controle de congestionamento:</strong> o emissor começa devagar (<em>slow start</em>), acelera enquanto não há perda e recua quando detecta perda ou atraso crescente. Algoritmos comuns são CUBIC e BBR. É por isso que uma conexão nova não usa a banda toda de imediato.</li>
+    <li><strong>Encerramento:</strong> FIN fecha de forma ordenada; RST aborta. O erro "connection reset by peer" significa que o outro lado (ou algo no meio) mandou RST.</li>
+  </ul>
+  <p>Um efeito colateral: se um segmento se perde, os seguintes esperam a retransmissão antes de chegar à aplicação. É o <strong>bloqueio de cabeça de fila</strong> (<em>head-of-line blocking</em>), um dos motivos de o HTTP/3 ter migrado para o QUIC, sobre UDP (<a href="03-http.html">módulo 3</a>).</p>
+
+  <h3>Comparação</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>TCP</th><th>UDP</th></tr></thead>
+    <tbody>
+      <tr><td>Conexão</td><td>Sim, com handshake</td><td>Não</td></tr>
+      <tr><td>Entrega e ordem</td><td>Garantidas, com retransmissão</td><td>Sem garantia</td></tr>
+      <tr><td>Controle de fluxo e congestionamento</td><td>Sim</td><td>Não (a aplicação decide)</td></tr>
+      <tr><td>Custo por mensagem</td><td>Maior</td><td>Mínimo</td></tr>
+      <tr><td>Usos</td><td>HTTP/1.1 e HTTP/2, bancos de dados, SSH, e-mail</td><td>DNS, VoIP e vídeo em tempo real, jogos, QUIC/HTTP/3</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>"O TCP abre conexão com SYN, SYN-ACK e ACK e garante entrega ordenada com sequência, confirmação e retransmissão, além de controlar fluxo e congestionamento. O UDP só envia datagramas, sem garantias, o que serve para DNS, voz e vídeo em tempo real e para o QUIC, que implementa a confiabilidade por conta própria."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Cada conexão nova custa pelo menos um RTT de handshake, mais o TLS. Reutilizar conexões (pool de conexões, keep-alive) é uma das otimizações mais baratas que existem. Pergunte se o time usa pool para banco e para chamadas HTTP a outros serviços.</li>
+      <li>Firewalls, NATs e balanceadores derrubam conexões ociosas depois de alguns minutos. O sintoma clássico é "a primeira consulta depois de um tempo parado falha". A correção é configurar keep-alive e validação de conexão no pool, não reiniciar o servidor.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="latencia">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Latência e largura de banda</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Medida</th><th>O que é</th><th>Analogia</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Latência</strong></td><td>Tempo para um dado ir de um ponto a outro. Normalmente se mede o RTT (<em>round-trip time</em>), ida e volta</td><td>Comprimento da estrada</td></tr>
+      <tr><td><strong>Largura de banda</strong> (<em>bandwidth</em>)</td><td>Capacidade máxima do enlace, em bits por segundo</td><td>Número de faixas</td></tr>
+      <tr><td><strong>Vazão</strong> (<em>throughput</em>)</td><td>Quanto de fato passou por segundo</td><td>Carros que chegaram por hora</td></tr>
+      <tr><td><strong>Jitter</strong></td><td>Variação da latência entre pacotes</td><td>Trânsito irregular</td></tr>
+      <tr><td><strong>Perda</strong></td><td>Percentual de pacotes que não chegam</td><td>Carros que somem no caminho</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>A física impõe um piso</h3>
+  <p>A luz na fibra viaja a cerca de dois terços da velocidade no vácuo, algo em torno de 200 mil km por segundo. Na prática, isso dá perto de 1 ms de RTT para cada 100 km de fibra, e os cabos raramente seguem linha reta. Nenhum upgrade de banda reduz esse piso.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Trajeto (a partir de São Paulo)</th><th>RTT típico (ordem de grandeza)</th></tr></thead>
+    <tbody>
+      <tr><td>Mesma cidade ou mesma região de nuvem</td><td>1 a 5 ms</td></tr>
+      <tr><td>Outras capitais do Brasil</td><td>dezenas de ms</td></tr>
+      <tr><td>Costa leste dos EUA</td><td>por volta de 100 ms ou mais</td></tr>
+      <tr><td>Europa</td><td>de 150 a 250 ms</td></tr>
+      <tr><td>Ásia</td><td>300 ms ou mais</td></tr>
+    </tbody>
+  </table></div>
+  <p><em>Valores aproximados; variam com a rota, a operadora e o horário.</em></p>
+
+  <h3>Por que a latência domina</h3>
+  <p>Uma página ou uma chamada de API raramente é limitada pela banda. Ela é limitada pelo número de viagens de ida e volta que precisa fazer em sequência. Numa conexão nova a um servidor HTTPS, antes do primeiro byte de resposta há, em geral: consulta DNS (1 RTT ao resolver), handshake TCP (1 RTT), handshake TLS 1.3 (1 RTT) e a requisição em si (1 RTT). Com 120 ms de RTT, são quase meio segundo antes de qualquer conteúdo. Uma tela que faz 20 chamadas em sequência a uma API em outro continente acumula segundos, com qualquer banda.</p>
+  <p>Além disso, o controle de congestionamento do TCP só aumenta a janela a cada RTT. Quanto maior o RTT, mais tempo a conexão leva para usar a banda disponível. A quantidade de dados "em voo" necessária para encher um enlace é o <strong>produto banda-atraso</strong> (<em>bandwidth-delay product</em>): banda × RTT.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Para ficar mais rápido: reduza a distância (CDN, região próxima do usuário), reduza o número de viagens (menos chamadas em sequência, agrupar requisições, reutilizar conexões) e só depois pense em banda.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Medir só a média. Usuários sentem a cauda: acompanhe percentis como p95 e p99. Uma média de 200 ms pode esconder 5% de requisições acima de 3 s.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Latência é o tempo de ida e volta; banda é a capacidade. Como cada handshake e cada chamada em sequência custam um RTT, a latência domina o tempo percebido na web. Melhora-se aproximando o conteúdo do usuário e cortando viagens, mais do que aumentando a banda."</p></div>
+  <div class="note mgr"><b>Para gestores</b>
+    <ul>
+      <li>Sistemas cliente-servidor antigos, comuns em hospitais e clínicas, em que o programa desktop conversa direto com o banco de dados, fazem centenas de consultas pequenas por tela. Funcionam bem na rede local e ficam inutilizáveis numa filial com 40 ms de RTT. Antes de mover o banco para a nuvem ou centralizar filiais, peça um teste com latência simulada.</li>
+      <li>Coloque aplicação e banco na mesma região e zona sempre que possível. Uma API em São Paulo com banco nos EUA paga um RTT internacional por consulta.</li>
+      <li>Ao avaliar um fornecedor SaaS, pergunte onde ficam os servidores e qual é a latência esperada a partir das suas unidades.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chap" id="ferramentas">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Ferramentas de diagnóstico</h2>
+  <p>As saídas abaixo são <strong>ilustrativas</strong>: endereços de documentação e números inventados para mostrar o formato.</p>
+
+  <h3>ping: a máquina responde?</h3>
+  <p>Envia ICMP <em>Echo Request</em> e mede o RTT. Se não houver resposta, não conclua que o servidor caiu: muitos servidores, firewalls e provedores de nuvem bloqueiam ICMP.</p>
+<pre data-file="Windows (saída ilustrativa)"><code class="sh">&gt; ping exemplo.com.br
+Disparando exemplo.com.br [203.0.113.10] com 32 bytes de dados:
+Resposta de 203.0.113.10: bytes=32 tempo=14ms TTL=54
+Resposta de 203.0.113.10: bytes=32 tempo=13ms TTL=54
+Estatísticas do Ping para 203.0.113.10:
+    Pacotes: Enviados = 4, Recebidos = 4, Perdidos = 0 (0% de perda)</code></pre>
+
+  <h3>traceroute / tracert: por onde passa?</h3>
+  <p>Envia pacotes com TTL 1, 2, 3 e assim por diante. Cada roteador que zera o TTL devolve um ICMP <em>Time Exceeded</em>, revelando o salto. O <code>tracert</code> do Windows usa ICMP; o <code>traceroute</code> do Linux usa UDP por padrão (com <code>-I</code> usa ICMP, com <code>-T</code> usa TCP). Asteriscos indicam roteadores que não respondem, o que é comum e não significa falha se os saltos seguintes aparecem.</p>
+<pre data-file="Linux (saída ilustrativa)"><code class="sh">$ traceroute exemplo.com.br
+ 1  192.168.0.1      1.2 ms   1.0 ms   1.1 ms
+ 2  100.64.12.1      6.8 ms   7.1 ms   6.9 ms
+ 3  198.51.100.33    9.4 ms   9.2 ms   9.8 ms
+ 4  * * *
+ 5  203.0.113.10    14.1 ms  13.9 ms  14.0 ms</code></pre>
+  <p>O salto 2 em <code>100.64.x.x</code> indica CGNAT da operadora. Um salto em que o tempo pula de 10 para 120 ms e segue alto até o fim aponta onde a latência entra, como a travessia de um cabo submarino.</p>
+
+  <h3>Configuração da máquina, conexões e HTTP</h3>
+  <div class="tabs">
+<pre data-label="Windows"><code class="sh">ipconfig /all                      # IPs, gateway, DNS, DHCP de cada interface
+route print                        # tabela de rotas
+netstat -ano                       # conexões e portas em escuta, com PID
+Test-NetConnection exemplo.com.br -Port 443   # PowerShell: a porta TCP abre?
+curl.exe -v https://exemplo.com.br/           # use curl.exe: no Windows PowerShell 5.1, "curl" é alias de Invoke-WebRequest</code></pre>
+<pre data-label="Linux / macOS"><code class="sh">ip addr                            # IPs das interfaces (no macOS: ifconfig)
+ip route                           # tabela de rotas
+ss -tlnp                           # portas TCP em escuta e o processo (netstat -tlnp em sistemas antigos)
+nc -vz exemplo.com.br 443          # a porta TCP abre?
+curl -v https://exemplo.com.br/</code></pre>
+  </div>
+
+  <h3>curl -v: a conversa inteira</h3>
+<pre data-file="curl -v (saída ilustrativa, resumida)"><code class="text">*   Trying 203.0.113.10:443...
+* Connected to exemplo.com.br (203.0.113.10) port 443
+* SSL connection using TLSv1.3 / TLS_AES_128_GCM_SHA256
+* Server certificate: subject: CN=exemplo.com.br
+&gt; GET / HTTP/2
+&gt; Host: exemplo.com.br
+&gt; Accept: */*
+&lt; HTTP/2 200
+&lt; content-type: text/html; charset=utf-8</code></pre>
+  <p>Linhas com <code>*</code> são do próprio curl (IP resolvido, conexão TCP, TLS). Linhas com <code>&gt;</code> são o que foi enviado; com <code>&lt;</code>, o que voltou. Para medir onde o tempo vai:</p>
+<pre><code class="sh">curl -o /dev/null -s -w "dns=%{time_namelookup} tcp=%{time_connect} tls=%{time_appconnect} ttfb=%{time_starttransfer} total=%{time_total}\n" https://exemplo.com.br/</code></pre>
+  <p>Os tempos são cumulativos desde o início. Se <code>tcp</code> já é alto, o problema é de rede ou distância; se a diferença entre <code>ttfb</code> e <code>tls</code> é grande, o servidor demora para processar. No Windows, troque <code>/dev/null</code> por <code>NUL</code>.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Pergunta</th><th>Ferramenta</th></tr></thead>
+    <tbody>
+      <tr><td>Minha máquina tem IP, gateway e DNS certos?</td><td><code>ipconfig /all</code>, <code>ip addr</code>, <code>ip route</code></td></tr>
+      <tr><td>O nome resolve para o IP esperado?</td><td><code>nslookup</code>, <code>dig</code> (<a href="02-dns.html">módulo 2</a>)</td></tr>
+      <tr><td>O host responde e com qual latência?</td><td><code>ping</code></td></tr>
+      <tr><td>Onde o caminho quebra ou fica lento?</td><td><code>tracert</code>, <code>traceroute</code>, <code>mtr</code></td></tr>
+      <tr><td>A porta aceita conexão?</td><td><code>Test-NetConnection -Port</code>, <code>nc -vz</code></td></tr>
+      <tr><td>O serviço está escutando nesta máquina, e em qual endereço?</td><td><code>netstat -ano</code>, <code>ss -tlnp</code></td></tr>
+      <tr><td>A aplicação responde certo, e quanto demora cada etapa?</td><td><code>curl -v</code>, <code>curl -w</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Eu sigo as camadas: confiro IP e rota da máquina, resolvo o nome, testo alcance com ping e traceroute sabendo que ICMP pode estar bloqueado, testo a porta com Test-NetConnection ou nc e por fim a aplicação com curl -v, medindo o tempo de cada etapa."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em incidente, peça evidência, não opinião: a saída do <code>curl -v</code> ou do <code>curl -w</code>, um traceroute a partir da origem afetada e de uma origem que funciona, e o horário exato. Esse material é o que o suporte da operadora ou do provedor de nuvem vai pedir; quem chega com ele recebe atendimento mais rápido.</p></div>
+</section>
+
+<section class="chap" id="url">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O que acontece quando você digita uma URL</h2>
+  <p>Esta é uma das perguntas de entrevista mais comuns, e a resposta é também o mapa desta trilha. Tome como exemplo <code>https://portal.exemplo.com.br/exames</code>.</p>
+  <ol class="seq">
+    <li><div><strong>O navegador interpreta a URL.</strong> Separa esquema (<code>https</code>), host, porta implícita (443) e caminho. Verifica se tem a resposta em cache e se o domínio exige HTTPS (HSTS). Detalhes nos <a href="03-http.html">módulos 3</a> e <a href="05-navegador.html">5</a>.</div></li>
+    <li><div><strong>Resolução DNS.</strong> O nome vira um endereço IP, consultando caches e, se preciso, a hierarquia DNS. <a href="02-dns.html">Módulo 2</a>.</div></li>
+    <li><div><strong>Conexão TCP.</strong> Handshake de três vias com o IP e a porta 443, roteado por várias redes até o destino. Este módulo. Com HTTP/3, a conexão é QUIC sobre UDP.</div></li>
+    <li><div><strong>Handshake TLS.</strong> O servidor apresenta o certificado, o navegador valida a cadeia e os dois combinam chaves. <a href="04-tls.html">Módulo 4</a>.</div></li>
+    <li><div><strong>Requisição HTTP.</strong> <code>GET /exames</code> com cabeçalhos, cookies e eventual token de sessão. <a href="03-http.html">Módulo 3</a> e <a href="07-autenticacao.html">módulo 7</a>.</div></li>
+    <li><div><strong>Do lado do servidor.</strong> CDN, balanceador, proxy reverso, aplicação, cache e banco de dados. A aplicação pode chamar outras APIs. <a href="06-backend-infra.html">Módulo 6</a> e <a href="08-apis.html">módulo 8</a>.</div></li>
+    <li><div><strong>Resposta e renderização.</strong> O navegador recebe o HTML, busca CSS, JavaScript e imagens (repetindo parte dos passos para outros domínios), monta e pinta a página. <a href="05-navegador.html">Módulo 5</a>.</div></li>
+    <li><div><strong>Segurança em todas as etapas.</strong> Cada passo tem ataques e defesas próprios. <a href="09-seguranca-web.html">Módulo 9</a> e <a href="10-ciberseguranca.html">módulo 10</a>.</div></li>
+  </ol>
+
+  <figure class="figure">
+    <svg viewBox="0 0 720 200" role="img" aria-label="Linha do tempo de uma requisição nova: DNS, TCP, TLS, espera do servidor e download, cada um ocupando tempo em sequência">
+      <text class="ttl" x="10" y="20">Linha do tempo de uma conexão nova (RTT de 50 ms, ilustrativo)</text>
+      <rect class="box-m" x="40" y="45" width="100" height="30" rx="3"/>
+      <text x="90" y="65" text-anchor="middle">DNS</text>
+      <rect class="box-w" x="140" y="85" width="100" height="30" rx="3"/>
+      <text x="190" y="105" text-anchor="middle">TCP</text>
+      <rect class="box-b" x="240" y="125" width="100" height="30" rx="3"/>
+      <text x="290" y="145" text-anchor="middle">TLS 1.3</text>
+      <rect class="box" x="340" y="45" width="220" height="30" rx="3"/>
+      <text x="450" y="65" text-anchor="middle">espera (servidor processa)</text>
+      <rect class="box-a" x="560" y="85" width="120" height="30" rx="3"/>
+      <text x="620" y="105" text-anchor="middle">download</text>
+      <line class="ln" x1="40" y1="175" x2="690" y2="175"/>
+      <text class="lbl" x="40" y="192">0</text>
+      <text class="lbl" x="130" y="192">50 ms</text>
+      <text class="lbl" x="230" y="192">100 ms</text>
+      <text class="lbl" x="330" y="192">150 ms</text>
+      <text class="lbl" x="560" y="192" text-anchor="middle">TTFB</text>
+    </svg>
+    <figcaption>É o mesmo formato da aba Network das ferramentas do navegador. Três RTTs passam antes de a requisição sair; numa conexão reaproveitada eles desaparecem.</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>Responda em camadas e diga até onde quer ir: "DNS resolve o nome, TCP abre a conexão, TLS autentica o servidor e cifra o canal, o HTTP leva a requisição, o servidor processa passando por balanceador, aplicação e banco, e o navegador renderiza a resposta". Depois pergunte ao entrevistador em qual etapa ele quer que você aprofunde.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Use essa sequência como roteiro de triagem. Quando chega "o sistema não abre", pergunte em qual etapa falha: o nome resolve? a porta conecta? o certificado é aceito? o servidor responde e com qual código? Cada resposta descarta metade das hipóteses e indica quem acionar (DNS, rede, infraestrutura, aplicação).</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>AS / ASN</dt><dd>Sistema autônomo: rede sob uma única administração que participa do roteamento global. ASN é o número que a identifica.</dd></div>
+    <div><dt>Backbone</dt><dd>Enlaces de alta capacidade que formam a espinha dorsal entre cidades e países.</dd></div>
+    <div><dt>BGP</dt><dd>Protocolo com que os sistemas autônomos trocam rotas entre si.</dd></div>
+    <div><dt>CGNAT</dt><dd>NAT feito pela operadora; vários clientes compartilham um IP público.</dd></div>
+    <div><dt>CIDR</dt><dd>Notação de bloco de endereços como <code>10.0.0.0/16</code>; o número após a barra é o tamanho do prefixo fixo.</dd></div>
+    <div><dt>DHCP</dt><dd>Protocolo que entrega IP, máscara, gateway e DNS às máquinas de uma rede.</dd></div>
+    <div><dt>Encapsulamento</dt><dd>Cada camada envolve os dados da camada superior com o próprio cabeçalho.</dd></div>
+    <div><dt>Gateway padrão</dt><dd>Roteador para onde vai todo tráfego sem rota mais específica.</dd></div>
+    <div><dt>Handshake de três vias</dt><dd>SYN, SYN-ACK, ACK: abertura de conexão TCP.</dd></div>
+    <div><dt>ICMP</dt><dd>Protocolo de mensagens de controle e erro do IP, usado por ping e traceroute.</dd></div>
+    <div><dt>IXP</dt><dd>Ponto de troca de tráfego onde redes fazem peering. No Brasil, o IX.br.</dd></div>
+    <div><dt>Jitter</dt><dd>Variação da latência entre pacotes; prejudica voz e vídeo.</dd></div>
+    <div><dt>Latência / RTT</dt><dd>Tempo de trânsito; RTT é o tempo de ida e volta.</dd></div>
+    <div><dt>Largura de banda</dt><dd>Capacidade máxima de um enlace, em bits por segundo.</dd></div>
+    <div><dt>MTU</dt><dd>Maior pacote que um enlace transporta; 1500 bytes em Ethernet comum.</dd></div>
+    <div><dt>NAT</dt><dd>Tradução de endereço e porta que permite a IPs privados saírem por um IP público.</dd></div>
+    <div><dt>Peering</dt><dd>Troca direta de tráfego entre duas redes, em geral sem cobrança.</dd></div>
+    <div><dt>Porta efêmera</dt><dd>Porta alta escolhida pelo sistema para o lado cliente de uma conexão.</dd></div>
+    <div><dt>RPKI</dt><dd>Infraestrutura que permite validar se um AS pode anunciar um prefixo.</dd></div>
+    <div><dt>Trânsito</dt><dd>Serviço pago de acesso ao resto da internet vendido por uma rede maior.</dd></div>
+    <div><dt>TTL (IP)</dt><dd>Contador de saltos do pacote; chega a zero e o pacote é descartado.</dd></div>
+    <div><dt>5-tupla</dt><dd>Protocolo, IP e porta de origem, IP e porta de destino: identifica uma conexão.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e troubleshooting</h2>
+
+  <h3>"O portal não abre para alguns clientes"</h3>
+  <p><strong>Hipóteses:</strong> problema de rota numa operadora específica; DNS desatualizado em alguns resolvers; bloqueio por IP (WAF ou firewall barrando um IP compartilhado por CGNAT); IPv6 quebrado (o cliente tem IPv6, o registro AAAA existe, mas o servidor não responde em IPv6).</p>
+  <p><strong>Como investigar:</strong> descubra o que os afetados têm em comum (operadora, cidade, rede móvel ou fixa). Peça a um afetado o IP público, um <code>tracert</code> e um <code>curl -v</code>. Compare com um teste de outra operadora. Confira se o site responde em IPv4 e IPv6 separadamente (<code>curl -4</code> e <code>curl -6</code>). Verifique bloqueios no WAF para os IPs informados.</p>
+  <p><strong>Para o gestor:</strong> abra chamado com a operadora com traceroutes e horários; enquanto isso, comunique os clientes afetados com o que se sabe.</p>
+
+  <h3>"O sistema está lento só na filial"</h3>
+  <p><strong>Hipóteses:</strong> aplicação "conversadora" (muitas viagens por tela) somada à latência maior do link da filial; link saturado em horário de pico; perda de pacotes no link.</p>
+  <p><strong>Como investigar:</strong> ping prolongado da filial até o servidor (RTT e perda); monitoramento de uso do link; tempo da mesma operação na matriz e na filial. Se o tempo cresce na proporção do RTT, o problema é o número de viagens, e mais banda não resolve.</p>
+  <p><strong>Saídas:</strong> acesso via servidor de aplicação ou desktop remoto perto do banco, cache local, ou refatorar para menos chamadas.</p>
+
+  <h3>"O parceiro diz que nossas chamadas não chegam"</h3>
+  <p><strong>Hipóteses:</strong> o IP de saída da aplicação mudou (redeploy, troca de NAT gateway, migração) e não está na lista de liberação do parceiro; regra de firewall de saída do nosso lado; DNS do parceiro apontando para outro lugar.</p>
+  <p><strong>Como investigar:</strong> de dentro do servidor da aplicação, rode <code>Test-NetConnection host -Port 443</code> ou <code>nc -vz</code> e um <code>curl -v</code>. Descubra o IP de saída real consultando um serviço que ecoa o IP de origem. Compare com o que o parceiro liberou.</p>
+  <p><strong>Prevenção:</strong> IPs de saída fixos e documentados, e um teste de integração automático que alerta quando a chamada ao parceiro falha.</p>
+
+  <h3>"A primeira consulta depois de um tempo parado sempre falha"</h3>
+  <p><strong>Hipótese:</strong> um firewall, NAT ou balanceador no caminho derruba conexões ociosas, e o pool de conexões da aplicação entrega uma conexão já morta.</p>
+  <p><strong>Correção:</strong> ativar validação de conexão no pool, definir tempo máximo de ociosidade menor que o do equipamento, ou TCP keep-alive. Reiniciar a aplicação "resolve" até a próxima vez.</p>
+
+  <h3>"Funciona na minha máquina, mas no servidor ninguém conecta"</h3>
+  <p><strong>Hipóteses:</strong> serviço escutando em <code>127.0.0.1</code>; firewall do sistema operacional ou grupo de segurança da nuvem bloqueando a porta; container sem a porta publicada.</p>
+  <p><strong>Como investigar:</strong> no servidor, <code>ss -tlnp</code> ou <code>netstat -ano</code> mostra o endereço e a porta em escuta. Teste localmente (<code>curl localhost:porta</code>) e depois de outra máquina; se só o local funciona, o bloqueio está entre as duas.</p>
+
+  <div class="note mgr"><b>Para gestores</b><p>Em todos os cenários, o padrão de condução é o mesmo: delimitar quem é afetado e desde quando, perguntar o que mudou (deploy, regra, fornecedor), coletar evidência na origem do problema e comparar com um caso que funciona. Registre a linha do tempo durante o incidente: ela é a base do pós-incidente (<a href="10-ciberseguranca.html">módulo 10</a>).</p></div>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é a internet, em uma frase técnica?</span></summary><div class="ans"><p>Uma rede de redes: milhares de sistemas autônomos independentes interligados por acordos de trânsito e peering, que falam IP e trocam rotas via BGP.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre IPv4 e IPv6?</span></summary><div class="ans"><p>IPv4 usa 32 bits (cerca de 4,3 bilhões de endereços, já esgotados) e depende de NAT; IPv6 usa 128 bits, tem espaço praticamente ilimitado e dispensa NAT. As duas versões convivem em dual stack.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>O que é NAT e qual efeito colateral ele tem?</span></summary><div class="ans"><p>O roteador traduz IP e porta privados para um IP público e guarda o mapeamento na tabela. Efeitos: máquinas atrás de NAT não recebem conexões de fora sem regra explícita, e com CGNAT vários clientes compartilham o mesmo IP, o que atrapalha liberações e bloqueios por IP e exige porta de origem nos logs para identificar alguém.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Quantos endereços tem um /24? E um /16?</span></summary><div class="ans"><p>256 e 65.536. Cada bit a menos no prefixo dobra o bloco. Numa sub-rede, alguns endereços ficam reservados (rede, broadcast e, na nuvem, alguns a mais).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Explique o handshake do TCP.</span></summary><div class="ans"><p>O cliente envia SYN com seu número de sequência inicial; o servidor responde SYN-ACK confirmando e enviando o seu; o cliente confirma com ACK e já pode mandar dados. Custa um RTT antes da primeira requisição.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Quando usar UDP em vez de TCP?</span></summary><div class="ans"><p>Quando atraso importa mais que entrega perfeita ou quando a aplicação quer controlar a confiabilidade: voz e vídeo em tempo real, jogos, DNS (consultas curtas) e o QUIC do HTTP/3, que implementa confiabilidade e criptografia sobre UDP.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Qual a diferença entre latência e largura de banda, e qual pesa mais na web?</span></summary><div class="ans"><p>Latência é o tempo de ida e volta; banda é a capacidade. Na web, a latência costuma pesar mais, porque DNS, TCP, TLS e cada chamada em sequência custam RTTs, e o TCP aumenta a vazão a cada RTT. Acima de certo ponto, mais banda quase não muda o tempo de carregamento.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Em qual camada ficam HTTP, TLS, TCP, IP e Ethernet?</span></summary><div class="ans"><p>No TCP/IP: HTTP na aplicação, TCP no transporte, IP na internet, Ethernet no enlace. O TLS fica entre a aplicação e o transporte; no OSI costuma ser citado nas camadas 5 ou 6. Em conversa de mercado, "L7" é aplicação e "L4" é transporte.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Como funciona o traceroute?</span></summary><div class="ans"><p>Envia pacotes com TTL crescente. Cada roteador que zera o TTL descarta o pacote e devolve ICMP Time Exceeded, revelando seu endereço e o tempo. Asteriscos são roteadores que não respondem, o que não indica falha por si só.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>O ping para o servidor falha, mas o site abre. Como é possível?</span></summary><div class="ans"><p>O servidor ou um firewall no caminho bloqueia ICMP. Ping falhando não prova indisponibilidade; teste a porta do serviço (Test-NetConnection, nc) e a aplicação (curl).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>O que é BGP e por que incidentes de BGP afetam até grandes empresas?</span></summary><div class="ans"><p>É o protocolo com que os sistemas autônomos anunciam rotas uns aos outros. Ele confia nos anúncios e escolhe caminhos por política, então um anúncio errado (vazamento, sequestro) ou a retirada de rotas propaga pelo mundo em minutos, como no apagão do Facebook em 2021. RPKI ajuda a validar a origem dos anúncios.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O que acontece quando você digita uma URL e aperta Enter?</span></summary><div class="ans"><p>O navegador interpreta a URL e verifica caches, resolve o nome via DNS, abre a conexão TCP (ou QUIC), faz o handshake TLS, envia a requisição HTTP, o servidor processa passando por balanceador, aplicação e banco, e o navegador recebe e renderiza a resposta, buscando os recursos adicionais.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Você é gestor e a filial reclama de lentidão no sistema. Como conduz?</span></summary><div class="ans"><p>Delimito o problema (quais telas, desde quando, só a filial?), peço medições de RTT e perda da filial até o servidor e o uso do link, e comparo o tempo da mesma operação na matriz. Se o tempo cresce com o RTT, o problema é o número de viagens da aplicação, e a solução é arquitetural (aproximar a aplicação do banco, cache, menos chamadas), não mais banda.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Que perguntas você faz ao contratar links de internet para uma unidade crítica, como um hospital?</span></summary><div class="ans"><p>Se os dois links seguem caminhos físicos diferentes até o prédio; SLA de disponibilidade e de tempo de reparo; latência, perda e jitter garantidos; se há IP fixo e IPv6; como é o suporte em incidente e quem é o contato; e se a operadora valida RPKI.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Por que planejar faixas de IP antes de subir a primeira VPC na nuvem?</span></summary><div class="ans"><p>Porque redes com faixas sobrepostas não podem ser ligadas por VPN ou peering sem renumerar ou usar NAT entre elas. Planejar faixas distintas para escritórios, data center e cada ambiente de nuvem custa pouco no início e evita uma migração cara depois.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>A aplicação dá "connection reset" de vez em quando no acesso ao banco. O que você investigaria?</span></summary><div class="ans"><p>Se as falhas acontecem depois de períodos ociosos, o suspeito é um firewall, NAT ou balanceador derrubando conexões ociosas enquanto o pool as mantém. Verificaria os tempos de ociosidade dos equipamentos, ativaria validação de conexão no pool e keep-alive. Se acontece sob carga, investigaria limites de conexão no banco e esgotamento de portas de origem no NAT.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

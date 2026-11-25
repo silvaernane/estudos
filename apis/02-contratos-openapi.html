@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 02: Contratos e OpenAPI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 02 de 10 · Contratos e OpenAPI</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html" aria-current="page"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li class="sub"><ol>
+      <li><a href="#contrato"><span class="n">1</span>O que é um contrato de API e por que importa</a></li>
+      <li><a href="#design-vs-code"><span class="n">2</span>Design-first vs code-first</a></li>
+      <li><a href="#estrutura"><span class="n">3</span>Anatomia de um documento OpenAPI 3.1</a></li>
+      <li><a href="#yaml"><span class="n">4</span>Um contrato real: a API de agendamentos em YAML</a></li>
+      <li><a href="#json-schema"><span class="n">5</span>OpenAPI 3.1 e JSON Schema 2020-12: o que mudou da 3.0</a></li>
+      <li><a href="#boas-praticas"><span class="n">6</span>Boas práticas de schema: required, additionalProperties, formatos, enums, oneOf</a></li>
+      <li><a href="#validacao-geracao"><span class="n">7</span>Validação em runtime, geração de código e SDKs</a></li>
+      <li><a href="#ferramentas"><span class="n">8</span>Lint, mocks, documentação e experiência do desenvolvedor</a></li>
+      <li><a href="#ci-fluxo"><span class="n">9</span>Breaking changes na CI e o fluxo de trabalho do time</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos e glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 02 · <span class="lvl l2">Intermediário</span></div>
+  <h1>Contratos e OpenAPI</h1>
+  <p class="lede">Como escrever, revisar e proteger o contrato de uma API com OpenAPI 3.1, e transformá-lo na fonte da verdade que gera documentação, mocks, SDKs, validação e testes.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar o que é um contrato de API e escolher entre design-first e code-first</li>
+    <li>Ler e escrever um documento OpenAPI 3.1 real, com components, $ref e segurança</li>
+    <li>Aplicar as diferenças entre OpenAPI 3.0 e 3.1 e o alinhamento ao JSON Schema 2020-12</li>
+    <li>Escrever schemas que evoluem sem quebrar clientes (required, enums, oneOf)</li>
+    <li>Montar o ciclo: lint, mock, documentação, SDKs e testes de contrato</li>
+    <li>Bloquear breaking changes na CI e conduzir a revisão de contrato em PR</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="contrato">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O que é um contrato de API e por que importa</h2>
+  <p>Uma API é uma <strong>promessa entre dois times</strong>: quem fornece (provedor) e quem consome (cliente). O <strong>contrato</strong> é a forma escrita e verificável dessa promessa: quais endpoints existem, que parâmetros aceitam, que corpos trocam, que erros devolvem, como autenticar. Sem contrato escrito, a promessa mora na cabeça de quem implementou e no código; o consumidor descobre o comportamento por tentativa e erro, e o provedor descobre que quebrou alguém quando o telefone toca.</p>
+  <p>O padrão de mercado para APIs HTTP é a <strong>OpenAPI Specification (OAS)</strong>, um documento YAML ou JSON, legível por humanos e por máquinas, mantido pela OpenAPI Initiative. O módulo 01 desenhou a API de agendamentos; neste módulo vamos <strong>escrevê-la como contrato</strong> e ligar esse contrato a todo o ciclo: revisão, mock, documentação, código, testes e CI.</p>
+  <h3>O que o contrato resolve</h3>
+  <ul>
+    <li><strong>Trabalho em paralelo.</strong> Front-end, parceiros e QA começam a trabalhar contra um mock do contrato antes de existir backend.</li>
+    <li><strong>Uma fonte da verdade.</strong> Documentação, SDKs, validação, testes e portal saem do mesmo arquivo e não divergem.</li>
+    <li><strong>Revisão barata.</strong> Discutir 40 linhas de YAML num pull request custa uma tarde; discutir uma API em produção custa meses de compatibilidade.</li>
+    <li><strong>Automação de governança.</strong> Lint de padrões e detecção de mudanças incompatíveis rodam na CI, sem depender da memória de ninguém.</li>
+    <li><strong>Integração com terceiros.</strong> Em saúde, convênios, laboratórios e parceiros integram com a clínica; o contrato é o que se entrega e se versiona.</li>
+  </ul>
+  <h3>O que o contrato NÃO é</h3>
+  <p>Não é documentação "bonita" gerada no fim do projeto, nem garante que o servidor o cumpra: <strong>um contrato que ninguém valida é uma opinião</strong>. O valor aparece quando ele é verificado (lint, testes de contrato, validação em runtime, diff na CI). Também descreve a <em>interface</em>, não regras de negócio profundas: "não é possível cancelar com menos de 2 horas" vai no texto e nos exemplos de erro, não em um schema.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que escrever OpenAPI?" Resposta curta: <em>"Para ter uma fonte única da verdade que gera documentação, mocks, SDKs e testes, e para revisar e proteger compatibilidade na CI antes de o código existir. Contrato verificado automaticamente evita que a documentação minta."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Contrato é <strong>ativo da empresa</strong>, não artefato de um squad. Defina quem é o dono de cada contrato (um time, um CODEOWNERS), onde ele mora (repositório próprio ou junto do código, mas sempre versionado) e como mudanças são aprovadas. Métrica simples: porcentagem das APIs de produção que têm contrato publicado e validado na CI.</p></div>
+</section>
+
+<section class="chap" id="design-vs-code">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Design-first vs code-first</h2>
+  <p>Há dois fluxos para chegar ao contrato. A diferença é <strong>quem é a fonte da verdade</strong> e <strong>quando a discussão acontece</strong>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Dois fluxos: design-first começa pelo contrato, revisão, mock e SDK, depois implementação; code-first começa pelo código, gera o YAML e revisa depois">
+      <defs>
+        <marker id="ah-df" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="22">Design-first</text>
+      <rect class="box-a" x="20" y="34" width="140" height="44" rx="5"/><text x="90" y="52" text-anchor="middle">1. Contrato</text><text class="lbl" x="90" y="68" text-anchor="middle">YAML escrito</text>
+      <rect class="box-a" x="190" y="34" width="140" height="44" rx="5"/><text x="260" y="52" text-anchor="middle">2. Revisão</text><text class="lbl" x="260" y="68" text-anchor="middle">PR + consumidores</text>
+      <rect class="box-a" x="360" y="34" width="140" height="44" rx="5"/><text x="430" y="52" text-anchor="middle">3. Mock + SDK</text><text class="lbl" x="430" y="68" text-anchor="middle">trabalho em paralelo</text>
+      <rect class="box-a" x="530" y="34" width="130" height="44" rx="5"/><text x="595" y="52" text-anchor="middle">4. Código</text><text class="lbl" x="595" y="68" text-anchor="middle">valida o contrato</text>
+      <line class="ln-a" x1="160" y1="56" x2="188" y2="56" marker-end="url(#ah-df)"/>
+      <line class="ln-a" x1="330" y1="56" x2="358" y2="56" marker-end="url(#ah-df)"/>
+      <line class="ln-a" x1="500" y1="56" x2="528" y2="56" marker-end="url(#ah-df)"/>
+      <text class="ttl" x="20" y="132">Code-first</text>
+      <rect class="box-w" x="20" y="144" width="140" height="44" rx="5"/><text x="90" y="162" text-anchor="middle">1. Código</text><text class="lbl" x="90" y="178" text-anchor="middle">controllers+anotações</text>
+      <rect class="box-w" x="190" y="144" width="140" height="44" rx="5"/><text x="260" y="162" text-anchor="middle">2. Gera YAML</text><text class="lbl" x="260" y="178" text-anchor="middle">no build</text>
+      <rect class="box-w" x="360" y="144" width="140" height="44" rx="5"/><text x="430" y="162" text-anchor="middle">3. Publica docs</text><text class="lbl" x="430" y="178" text-anchor="middle">e SDKs depois</text>
+      <rect class="box-b" x="530" y="144" width="130" height="44" rx="5"/><text x="595" y="162" text-anchor="middle">4. Revisão</text><text class="lbl" x="595" y="178" text-anchor="middle">tarde (já em código)</text>
+      <line class="ln" x1="160" y1="166" x2="188" y2="166" marker-end="url(#ah-df)"/>
+      <line class="ln" x1="330" y1="166" x2="358" y2="166" marker-end="url(#ah-df)"/>
+      <line class="ln" x1="500" y1="166" x2="528" y2="166" marker-end="url(#ah-df)"/>
+      <text class="lbl" x="20" y="214">No design-first a discussão acontece antes de existir código; no code-first, depois.</text>
+    </svg>
+    <figcaption>Os dois fluxos de trabalho. A seta marca a ordem; a cor de destaque marca onde a mudança fica barata.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Design-first (contrato primeiro)</th><th>Code-first (código primeiro)</th></tr></thead>
+    <tbody>
+      <tr><td>Fonte da verdade</td><td>O arquivo OpenAPI</td><td>O código (o YAML é derivado)</td></tr>
+      <tr><td>Prós</td><td>Revisão barata; mock e SDK antes do backend; consumidores participam; API pensada para quem usa</td><td>Rápido para começar; baixa fricção para devs; o contrato nunca fica desatualizado por construção</td></tr>
+      <tr><td>Contras</td><td>Exige disciplina e ferramentas; risco de o código divergir do contrato se não houver validação; escrever YAML à mão cansa</td><td>A API vira um reflexo da implementação (vazam nomes de tabelas, tipos internos); revisão tardia; gerador pode produzir contrato ruim; difícil impor padrões</td></tr>
+      <tr><td>Quando usar</td><td>APIs públicas, de parceiros e entre times; integrações com convênios; muitos consumidores</td><td>APIs internas simples, protótipos, serviços com um único consumidor controlado pelo mesmo time</td></tr>
+      <tr><td>Risco típico</td><td>Contrato e implementação divergem</td><td>Mudança incompatível passa despercebida porque "só mudei o DTO"</td></tr>
+    </tbody>
+  </table></div>
+  <p>Na prática existe um <strong>meio-termo</strong> bastante usado: escrever o contrato à mão (design-first), gerar stubs/interfaces do servidor a partir dele e <strong>validar o código contra o contrato</strong> na CI. Outra variante é code-first com <em>revisão obrigatória do YAML gerado</em> no pull request, com lint e diff de breaking changes: o que importa é que o contrato seja revisado como um artefato e protegido por automação, qualquer que seja a direção em que é produzido.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Declarar "somos design-first" e deixar o YAML num wiki ou numa pasta sem CI. Em três meses ele diverge do código e ninguém confia nele. Todo fluxo precisa de um <strong>ponto de verificação automático</strong> que falha quando contrato e implementação discordam.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Design-first ou code-first?" Resposta sênior: <em>"Depende do número e do tipo de consumidores. Para APIs externas ou entre times, design-first: a discussão acontece antes do código e mock e SDK liberam os consumidores. Para API interna de um consumidor só, code-first com YAML gerado e revisado no PR é suficiente. Nos dois casos, a CI precisa garantir que contrato e código não divergem."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Escolha por <strong>risco de quebra</strong>: quanto mais consumidores fora do seu controle, mais design-first. Cobre uma definição de pronto que inclua "contrato revisado e atualizado". Cuidado com o time que "gera o YAML no fim para cumprir tabela": é code-first sem revisão, o pior dos mundos.</p></div>
+</section>
+
+<section class="chap" id="estrutura">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Anatomia de um documento OpenAPI 3.1</h2>
+  <p>O documento tem poucos blocos de topo. Conhecê-los é o suficiente para ler qualquer contrato:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Bloco</th><th>Para que serve</th></tr></thead>
+    <tbody>
+      <tr><td><code>openapi</code></td><td>Versão da especificação usada (<code>3.1.0</code>)</td></tr>
+      <tr><td><code>info</code></td><td>Título, descrição, <code>version</code> (versão <em>do contrato</em>, não da OpenAPI), contato, licença</td></tr>
+      <tr><td><code>servers</code></td><td>URLs base (produção, sandbox); aceitam variáveis</td></tr>
+      <tr><td><code>paths</code></td><td>Cada caminho com suas operações (<code>get</code>, <code>post</code>, <code>patch</code>…)</td></tr>
+      <tr><td>operação</td><td><code>operationId</code> (único, estável: vira nome de método no SDK), <code>summary</code>, <code>tags</code>, <code>parameters</code>, <code>requestBody</code>, <code>responses</code>, <code>security</code></td></tr>
+      <tr><td><code>parameters</code></td><td>Entradas fora do corpo: <code>in: path | query | header | cookie</code></td></tr>
+      <tr><td><code>requestBody</code></td><td>Corpo enviado, por tipo de mídia (<code>application/json</code>)</td></tr>
+      <tr><td><code>responses</code></td><td>Uma entrada por status (<code>"200"</code>, <code>"409"</code>, <code>default</code>), com cabeçalhos e corpo</td></tr>
+      <tr><td><code>components</code></td><td>Peças reutilizáveis: <code>schemas</code>, <code>parameters</code>, <code>responses</code>, <code>examples</code>, <code>securitySchemes</code>…</td></tr>
+      <tr><td><code>$ref</code></td><td>Referência a um componente: <code>"#/components/schemas/Agendamento"</code>; também aponta para outros arquivos</td></tr>
+      <tr><td><code>security</code> / <code>securitySchemes</code></td><td>Como autenticar (OAuth 2.0, API key, HTTP bearer, OpenID Connect) e quais escopos cada operação exige</td></tr>
+      <tr><td><code>tags</code></td><td>Agrupam operações na documentação</td></tr>
+      <tr><td><code>examples</code></td><td>Exemplos de requisição/resposta: alimentam documentação, mock e testes</td></tr>
+      <tr><td><code>webhooks</code></td><td>Chamadas que <em>a API faz</em> para o cliente (novidade da 3.1; módulo 04)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Regra de organização: <strong>defina uma vez em <code>components</code> e referencie com <code>$ref</code></strong>. Parâmetros de paginação, o formato de erro e os schemas principais ficam lá; as operações apenas apontam. Isso garante consistência e é o que permite ao lint verificar "toda operação de lista usa os parâmetros padrão".</p>
+  <div class="note rule"><b>Regra de bolso</b><p><code>operationId</code> é uma API dentro da API: o SDK gerado chama <code>client.criarAgendamento()</code>. Escolha nomes verbo+substantivo, únicos e <strong>estáveis</strong>; renomear é uma mudança incompatível para quem usa o SDK.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Mostre a estrutura de um OpenAPI." Cite os blocos na ordem em que lê: <code>info</code> e <code>servers</code>, <code>paths</code> com operações (parâmetros, corpo, respostas), e <code>components</code> com schemas, parâmetros e <code>securitySchemes</code> reaproveitados por <code>$ref</code>. Mencionar <code>operationId</code> estável mostra experiência com SDKs.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Arquivos de contrato crescem. Defina cedo a convenção de organização: um arquivo por serviço, <code>components</code> compartilhados (erro, paginação, tipos como <code>Dinheiro</code>) num repositório comum versionado, e uma ferramenta de bundling para publicar um único arquivo.</p></div>
+</section>
+
+<section class="chap" id="yaml">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Um contrato real: a API de agendamentos em YAML</h2>
+  <p>A seguir, um contrato coerente da API do módulo 01, em três partes: cabeçalho e segurança, operações e componentes. É um recorte (não cobre todos os endpoints), mas é válido e consistente: tudo que as operações referenciam está definido em <code>components</code>.</p>
+
+  <h3>Parte 1: cabeçalho, servidores, segurança</h3>
+  <pre data-file="openapi.yaml (1/3)"><code class="yaml">openapi: 3.1.0
+info:
+  title: API de Agendamento de Consultas
+  summary: Agenda, consulta e cancelamento de consultas
+  description: |
+    API da Rede Clínica (exemplo fictício).
+    Instantes em UTC (RFC 3339). Erros em application/problem+json (RFC 9457).
+  version: 1.2.0
+  contact:
+    name: Time de Plataforma
+    email: plataforma@clinica.example
+servers:
+  - url: https://api.clinica.example/v1
+    description: Produção
+  - url: https://sandbox.api.clinica.example/v1
+    description: Sandbox (dados fictícios)
+tags:
+  - name: Agendamentos
+    description: Criar, consultar e cancelar agendamentos
+security:
+  - oauth2: ["agendamentos:ler"]</code></pre>
+
+  <h3>Parte 2: operações</h3>
+  <pre data-file="openapi.yaml (2/3)"><code class="yaml">paths:
+  /agendamentos:
+    get:
+      tags: [Agendamentos]
+      operationId: listarAgendamentos
+      summary: Lista agendamentos com paginação por cursor
+      parameters:
+        - $ref: "#/components/parameters/Limite"
+        - $ref: "#/components/parameters/Cursor"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/StatusAgendamento"
+        - name: pacienteId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Página de agendamentos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginaAgendamentos"
+        "401":
+          $ref: "#/components/responses/NaoAutenticado"
+        "429":
+          $ref: "#/components/responses/LimiteExcedido"
+    post:
+      tags: [Agendamentos]
+      operationId: criarAgendamento
+      summary: Cria um agendamento
+      security:
+        - oauth2: ["agendamentos:escrever"]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Chave única por tentativa lógica; repetir devolve a mesma resposta.
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NovoAgendamento"
+            examples:
+              convenio:
+                summary: Consulta por convênio
+                value:
+                  pacienteId: 4d2f8a31-9c0e-4b7a-8a55-1e3f6c9b0d72
+                  profissionalId: 7a1c2b90-0f3e-4d11-8b6a-9c4e5d2f7a10
+                  unidadeId: u-03
+                  inicio: "2026-03-10T17:00:00Z"
+                  pagamento:
+                    tipo: convenio
+                    operadoraId: op-12
+                    carteirinha: "00012345678901234"
+      responses:
+        "201":
+          description: Agendamento criado
+          headers:
+            Location:
+              description: URL do novo agendamento
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agendamento"
+        "409":
+          description: Horário já ocupado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          description: Dados inválidos
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /agendamentos/{agendamentoId}/cancelamento:
+    post:
+      tags: [Agendamentos]
+      operationId: cancelarAgendamento
+      summary: Cancela um agendamento
+      security:
+        - oauth2: ["agendamentos:escrever"]
+      parameters:
+        - name: agendamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo:
+                  type: string
+                  enum: [paciente_desistiu, profissional_indisponivel, outro]
+                observacao:
+                  type: [string, "null"]
+                  maxLength: 500
+      responses:
+        "201":
+          description: Cancelamento registrado
+        "404":
+          description: Agendamento inexistente ou fora do escopo do chamador
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Agendamento já realizado
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"</code></pre>
+
+  <h3>Parte 3: componentes reutilizáveis</h3>
+  <pre data-file="openapi.yaml (3/3)"><code class="yaml">components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.clinica.example/oauth/token
+          scopes:
+            "agendamentos:ler": Ler agendamentos
+            "agendamentos:escrever": Criar e cancelar agendamentos
+  parameters:
+    Limite:
+      name: limite
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      description: Cursor opaco devolvido em paginacao.proximo
+      schema:
+        type: string
+  responses:
+    NaoAutenticado:
+      description: Credencial ausente ou inválida
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    LimiteExcedido:
+      description: Limite de requisições excedido
+      headers:
+        Retry-After:
+          description: Segundos até poder tentar de novo
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    StatusAgendamento:
+      type: string
+      enum: [confirmado, cancelado, realizado, faltou]
+    Agendamento:
+      type: object
+      required: [id, status, pacienteId, profissionalId, inicio, fim, criadoEm]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/StatusAgendamento"
+        pacienteId:
+          type: string
+          format: uuid
+        profissionalId:
+          type: string
+          format: uuid
+        inicio:
+          type: string
+          format: date-time
+        fim:
+          type: string
+          format: date-time
+        observacao:
+          type: [string, "null"]
+          maxLength: 500
+        criadoEm:
+          type: string
+          format: date-time
+    NovoAgendamento:
+      type: object
+      additionalProperties: false
+      required: [pacienteId, profissionalId, unidadeId, inicio, pagamento]
+      properties:
+        pacienteId:
+          type: string
+          format: uuid
+        profissionalId:
+          type: string
+          format: uuid
+        unidadeId:
+          type: string
+        inicio:
+          type: string
+          format: date-time
+        pagamento:
+          oneOf:
+            - $ref: "#/components/schemas/PagamentoConvenio"
+            - $ref: "#/components/schemas/PagamentoParticular"
+          discriminator:
+            propertyName: tipo
+            mapping:
+              convenio: "#/components/schemas/PagamentoConvenio"
+              particular: "#/components/schemas/PagamentoParticular"
+    PagamentoConvenio:
+      type: object
+      required: [tipo, operadoraId, carteirinha]
+      properties:
+        tipo:
+          const: convenio
+        operadoraId:
+          type: string
+        carteirinha:
+          type: string
+          pattern: "^[0-9]{17}$"
+    PagamentoParticular:
+      type: object
+      required: [tipo]
+      properties:
+        tipo:
+          const: particular
+    PaginaAgendamentos:
+      type: object
+      required: [itens, paginacao]
+      properties:
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Agendamento"
+        paginacao:
+          type: object
+          required: [limite, temMais]
+          properties:
+            limite:
+              type: integer
+            proximo:
+              type: [string, "null"]
+            temMais:
+              type: boolean
+    Problem:
+      type: object
+      description: Problem Details (RFC 9457)
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        traceId:
+          type: string</code></pre>
+  <p>Repare em decisões que vêm do módulo 01: o erro é <code>application/problem+json</code>; o cursor é opaco (<code>type: string</code>); <code>Idempotency-Key</code> é parâmetro obrigatório; o cancelamento é um sub-recurso substantivo; o <code>404</code> do cancelamento descreve explicitamente "fora do escopo". O contrato é onde essas decisões ficam registradas e verificáveis.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Contratos que só descrevem o caminho feliz (<code>200</code>) e ignoram erros. O consumidor passa a depender de comportamento não documentado. Documente os erros relevantes de cada operação (400/422, 401, 403/404, 409, 429) e reaproveite via <code>components/responses</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Pode ser pedido para "escrever um endpoint em OpenAPI" no papel. Mostre: <code>operationId</code>, parâmetros com <code>in</code> e <code>schema</code>, <code>requestBody</code> com <code>$ref</code>, respostas incluindo erro, e a reutilização via <code>components</code>. Explique o <em>porquê</em> de cada pedaço, não decore a sintaxe.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O arquivo acima é revisável por alguém de negócio: nomes de campos, enums e mensagens de erro são vocabulário do domínio. Convide produto e a área clínica para a revisão do contrato; é a oportunidade mais barata de descobrir que "faltou" e "não compareceu" são conceitos diferentes.</p></div>
+</section>
+
+<section class="chap" id="json-schema">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>OpenAPI 3.1 e JSON Schema 2020-12: o que mudou da 3.0</h2>
+  <p>Na versão 3.0, o "schema" do OpenAPI era um <em>subconjunto modificado</em> de uma versão antiga do JSON Schema, com extensões próprias (<code>nullable</code>, <code>example</code>) e incompatibilidades. A 3.1 <strong>alinhou-se totalmente ao JSON Schema 2020-12</strong>: um schema do OpenAPI passou a ser um schema JSON Schema válido, e as mesmas ferramentas e bibliotecas de validação servem aos dois mundos. Esse é o principal motivo para preferir 3.1 em contratos novos.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Assunto</th><th>OpenAPI 3.0</th><th>OpenAPI 3.1</th></tr></thead>
+    <tbody>
+      <tr><td>Nulo</td><td><code>type: string</code> + <code>nullable: true</code></td><td><code>type: [string, "null"]</code> (<code>nullable</code> foi removido)</td></tr>
+      <tr><td><code>type</code></td><td>Um único valor</td><td>Pode ser uma lista de tipos</td></tr>
+      <tr><td>Exemplos no schema</td><td><code>example: valor</code></td><td><code>examples: [valor, ...]</code> (array; <code>example</code> está obsoleto)</td></tr>
+      <tr><td>Limites exclusivos</td><td><code>exclusiveMinimum: true</code> (booleano, junto de <code>minimum</code>)</td><td><code>exclusiveMinimum: 0</code> (número, como em JSON Schema)</td></tr>
+      <tr><td>Binário e conteúdo codificado</td><td><code>format: binary</code> / <code>format: byte</code></td><td><code>contentMediaType</code> e <code>contentEncoding</code></td></tr>
+      <tr><td><code>$ref</code> com vizinhos</td><td>Irmãos de <code>$ref</code> eram ignorados</td><td>Permitidos (ex.: <code>$ref</code> + <code>description</code>)</td></tr>
+      <tr><td>Valor fixo</td><td><code>enum</code> com um item</td><td><code>const</code></td></tr>
+      <tr><td>Recursos novos</td><td>-</td><td><code>if/then/else</code>, <code>prefixItems</code>, <code>unevaluatedProperties</code>, <code>$defs</code>, <code>webhooks</code> no topo</td></tr>
+      <tr><td>Documento mínimo</td><td><code>paths</code> obrigatório</td><td>Basta ter <code>paths</code>, <code>components</code> ou <code>webhooks</code></td></tr>
+    </tbody>
+  </table></div>
+  <pre data-file="O mesmo campo, em 3.0 e em 3.1"><code class="yaml"># OpenAPI 3.0
+observacao:
+  type: string
+  nullable: true
+  example: "Retorno em 30 dias"
+
+# OpenAPI 3.1
+observacao:
+  type: [string, "null"]
+  examples: ["Retorno em 30 dias"]</code></pre>
+  <h3>Consequências práticas</h3>
+  <ul>
+    <li><strong>Migrar de 3.0 para 3.1 não é só trocar a versão</strong>: <code>nullable</code> precisa ser reescrito e geradores/validadores precisam suportar 3.1. O suporte de ferramentas é desigual; verifique os que você usa antes de migrar um portfólio inteiro.</li>
+    <li><strong>Reuso do ecossistema JSON Schema</strong>: o mesmo schema pode validar mensagens de eventos, configuração e respostas de API.</li>
+    <li><strong>Documentos 3.0 e 3.1 coexistem</strong> numa empresa durante a migração; o lint e o diff precisam entender ambos.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Contrato novo: 3.1. Contrato antigo em 3.0 funcionando: migre quando houver ganho concreto (por exemplo, uma biblioteca de validação que só fala 2020-12) e depois de confirmar o suporte nas ferramentas da CI.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que mudou do OpenAPI 3.0 para o 3.1?" <em>"Alinhamento completo com JSON Schema 2020-12: sai o nullable e entra type como lista com null; examples vira array; exclusiveMinimum vira numérico; $ref aceita irmãos; e webhooks entram como cidadão de primeira classe."</em> Quem lembra três diferenças específicas demonstra que já usou.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Migração de versão do contrato é projeto de plataforma, não tarefa de cada time: concentre num pacote de lint/CI que suporte as duas versões, defina prazo e meça adesão. Evite deixar cada squad migrar por conta própria com ferramentas diferentes.</p></div>
+</section>
+
+<section class="chap" id="boas-praticas">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>Boas práticas de schema: required, additionalProperties, formatos, enums, oneOf</h2>
+  <p>O schema é a parte do contrato que mais gera bugs sutis, porque ele decide o que é <em>válido</em> e como as ferramentas (validadores, geradores, mocks) interpretam isso. Cada escolha tem um efeito prático.</p>
+
+  <h3>required: o que o cliente pode assumir</h3>
+  <p>Em <strong>respostas</strong>, <code>required</code> é uma promessa do provedor: "este campo sempre vem". Cada campo marcado como obrigatório reduz a liberdade de evolução (remover é incompatível) e, em SDKs tipados, vira tipo não nulo. Marque como obrigatório só o que você garante para sempre. Em <strong>requisições</strong>, <code>required</code> é uma exigência ao cliente: adicionar um campo obrigatório a uma requisição existente é uma mudança incompatível.</p>
+  <p>Não confunda <em>opcional</em> com <em>anulável</em>: o campo pode estar ausente (fora de <code>required</code>), presente com <code>null</code> (<code>type: [string, "null"]</code>), ou ambos. Defina cada caso (veja a seção de nulos no módulo 01).</p>
+
+  <h3>additionalProperties: estrito ou tolerante?</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Estrito (<code>false</code>)</th><th>Aberto (padrão)</th></tr></thead>
+    <tbody>
+      <tr><td>Pró</td><td>Pega erro de digitação do cliente (<code>telefne</code>) e evita "mass assignment"</td><td>Permite evoluir sem quebrar: clientes ignoram campos novos</td></tr>
+      <tr><td>Contra</td><td>Qualquer campo novo enviado por cliente mais novo é rejeitado; clientes que validam respostas estritamente quebram quando o servidor adiciona campo</td><td>Erros de digitação passam despercebidos; dados indesejados podem chegar ao modelo</td></tr>
+      <tr><td>Recomendação</td><td><strong>Requisições</strong>: estrito, para falhar cedo (e proteger contra atribuição em massa)</td><td><strong>Respostas</strong>: aberto; o cliente deve seguir a "regra do leitor tolerante" e ignorar o que não conhece</td></tr>
+    </tbody>
+  </table></div>
+  <p>Detalhe técnico: <code>additionalProperties: false</code> não "enxerga" propriedades vindas de <code>allOf</code>/<code>$ref</code> em outro subschema; para composição com <code>allOf</code> use <code>unevaluatedProperties: false</code> (disponível por causa do alinhamento da 3.1 ao JSON Schema 2020-12).</p>
+
+  <h3>Formatos e restrições</h3>
+  <ul>
+    <li><strong>Formatos comuns</strong>: <code>date-time</code> (RFC 3339), <code>date</code>, <code>uuid</code>, <code>email</code>, <code>uri</code>, <code>uri-reference</code>. Atenção: em JSON Schema 2020-12, <code>format</code> é por padrão <em>anotação</em>; se o validador será assertivo ou não depende da configuração. Não presuma.</li>
+    <li><strong>Restrições que protegem</strong>: <code>maxLength</code> em toda string, <code>maxItems</code> em todo array, <code>minimum</code>/<code>maximum</code> em números, <code>pattern</code> para identificadores. Sem limites, o contrato aceita um corpo de 50 MB num campo de observação; isso é vetor de negação de serviço (OWASP API Security: consumo irrestrito de recursos, módulo 05).</li>
+    <li><strong>Dinheiro e decimais</strong>: <code>type: string</code> com <code>pattern</code> numérico, ou inteiro em centavos; evite <code>number</code> para valores exatos.</li>
+    <li><strong>Separe schemas de entrada e saída</strong> (<code>NovoAgendamento</code> vs <code>Agendamento</code>) em vez de reaproveitar um schema com <code>readOnly</code>/<code>writeOnly</code> em tudo. Facilita leitura, geração de código e evolução independente.</li>
+  </ul>
+
+  <h3>Enums e sua evolução</h3>
+  <p>Enums parecem inofensivos e são uma das maiores fontes de quebra silenciosa. Em <strong>respostas</strong>, adicionar um valor ao enum (<code>status: "reagendado"</code>) pode derrubar clientes que usam enums fechados (SDKs gerados em Java/TypeScript com desserialização estrita lançam exceção para valor desconhecido). Em <strong>requisições</strong>, adicionar valor é seguro e remover é incompatível.</p>
+  <ul>
+    <li>Documente que clientes <strong>devem tolerar valores desconhecidos</strong> em enums de resposta (enum "aberto"), e trate isso como parte do contrato.</li>
+    <li>Nos testes de SDK, inclua um valor de enum que o cliente não conhece.</li>
+    <li>Para enums muito voláteis (tipos de exame, especialidades), prefira uma <strong>coleção consultável</strong> (<code>GET /especialidades</code>) em vez de enum fixo no schema.</li>
+    <li>Valores em minúsculas, sem acento nem espaço, estáveis: <code>paciente_desistiu</code>, não "Paciente desistiu".</li>
+  </ul>
+
+  <h3>oneOf, anyOf, allOf e discriminator</h3>
+  <p><code>allOf</code> combina (todos precisam valer, útil para composição), <code>oneOf</code> escolhe exatamente um, <code>anyOf</code> ao menos um. Para <strong>polimorfismo</strong> (a forma de pagamento é convênio <em>ou</em> particular), use <code>oneOf</code> com <code>discriminator</code>: um campo (<code>tipo</code>) diz qual variante é, e o validador e os geradores não precisam testar todas as variantes.</p>
+  <pre><code class="yaml">pagamento:
+  oneOf:
+    - $ref: "#/components/schemas/PagamentoConvenio"
+    - $ref: "#/components/schemas/PagamentoParticular"
+  discriminator:
+    propertyName: tipo
+    mapping:
+      convenio: "#/components/schemas/PagamentoConvenio"
+      particular: "#/components/schemas/PagamentoParticular"</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Usar <code>oneOf</code> com variantes que se sobrepõem (ambas aceitam o mesmo objeto): a validação falha porque o valor casa com mais de uma. E <code>discriminator</code> é uma palavra do OpenAPI, não do JSON Schema: validadores genéricos podem ignorá-la, e o suporte em geradores de código é irregular. Teste a geração com o seu gerador antes de adotar polimorfismo em larga escala.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Contrato para <em>evoluir</em>: respostas abertas e poucos <code>required</code>; requisições estritas com limites; enums de resposta tratados como abertos; polimorfismo só quando o domínio realmente tem variantes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"additionalProperties false é bom?" <em>"Na requisição sim, para falhar cedo e evitar atribuição em massa. Na resposta não, porque impede o servidor de adicionar campos sem quebrar quem valida estritamente."</em> E "como adicionar um valor a um enum sem quebrar?" mostra maturidade: <em>"Em resposta é potencialmente incompatível; por isso a regra do leitor tolerante deve estar no contrato."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Escreva as regras de evolução no style guide (o que é compatível, o que não é) e <strong>automatize</strong>. Quando alguém pergunta "posso adicionar este valor ao enum?", a resposta deve estar numa página e na CI, não numa reunião. Pergunta de revisão: "como um cliente antigo se comporta com esta mudança?"</p></div>
+</section>
+
+<section class="chap" id="validacao-geracao">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Validação em runtime, geração de código e SDKs</h2>
+
+  <h3>Validação em runtime: o contrato como código</h3>
+  <p>Um contrato só vale se for <strong>aplicado</strong>. Há três pontos de aplicação, que se complementam:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Onde</th><th>O que valida</th><th>Observações</th></tr></thead>
+    <tbody>
+      <tr><td>Requisição, no servidor (middleware) ou no API gateway</td><td>Corpo, parâmetros e cabeçalhos contra o schema</td><td>Rejeita lixo cedo com 400/422 em Problem Details; também reforça limites de tamanho. Custo de CPU: meça.</td></tr>
+      <tr><td>Resposta, em testes e staging</td><td>O que o servidor devolve contra o schema</td><td>Detecta divergência entre código e contrato. Em produção costuma ser amostral ou desligado (custo e risco de falhar uma resposta válida para o negócio).</td></tr>
+      <tr><td>Testes de contrato na CI</td><td>Todas as operações do YAML contra uma instância real</td><td>Geração de casos a partir do contrato (por exemplo Schemathesis) ou testes dirigidos pelo consumidor (Pact). Aprofundado no módulo 08.</td></tr>
+    </tbody>
+  </table></div>
+  <pre data-file="Validação de requisição com Ajv (esboço)"><code class="js">import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
+
+const ajv = new Ajv2020({ allErrors: true, strict: false });
+addFormats(ajv);
+// schemas vindos do contrato (já com $ref resolvidos)
+const validar = ajv.compile(contrato.components.schemas.NovoAgendamento);
+
+app.post("/v1/agendamentos", (req, res) =&gt; {
+  if (!validar(req.body)) {
+    return res.status(422).type("application/problem+json").json({
+      type: "https://api.clinica.example/erros/validacao",
+      title: "Dados inválidos",
+      status: 422,
+      errors: validar.errors.map(e =&gt; ({ campo: e.instancePath, codigo: e.keyword }))
+    });
+  }
+  // ... regra de negócio
+});</code></pre>
+  <p>Atenção: palavras exclusivas do OpenAPI (como <code>discriminator</code>) e o tratamento de <code>$ref</code> entre arquivos exigem que o validador as suporte ou que o contrato seja previamente <em>bundlado</em> e <em>dereferenciado</em>. Bibliotecas específicas de OpenAPI para cada linguagem fazem esse papel; escolha por suporte a 3.1.</p>
+
+  <h3>Geração de código</h3>
+  <p>O contrato permite gerar <strong>SDKs de cliente</strong> e <strong>esqueletos de servidor</strong>. Ferramentas conhecidas: OpenAPI Generator (dezenas de linguagens), além de geradores focados em uma linguagem (por exemplo, para Go ou TypeScript) e o Kiota (Microsoft).</p>
+  <pre><code class="sh">npx @openapitools/openapi-generator-cli generate \
+  -i openapi.yaml -g typescript-fetch -o sdk/typescript
+
+npx @openapitools/openapi-generator-cli generate \
+  -i openapi.yaml -g spring -o servidor/ --additional-properties=interfaceOnly=true</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Benefício</th><th>Risco</th></tr></thead>
+    <tbody>
+      <tr><td>Parceiros integram em horas, com tipos e autocompletar</td><td><strong>Qualidade varia</strong> por gerador e linguagem; <code>oneOf</code>, <code>discriminator</code>, <code>nullable</code> e 3.1 são pontos frágeis</td></tr>
+      <tr><td>Cliente e servidor não divergem de tipos</td><td><strong>Enums fechados</strong> quebram quando o servidor adiciona valor (seção 6)</td></tr>
+      <tr><td>Elimina código repetitivo de HTTP e serialização</td><td><strong>Regeneração sobrescreve</strong> edições manuais; código gerado no repositório gera diffs enormes</td></tr>
+      <tr><td>Servidor só implementa a interface</td><td><strong>Acoplamento</strong> do domínio aos tipos gerados; difícil evoluir fora do contrato</td></tr>
+      <tr><td>Padroniza a experiência dos clientes</td><td>SDK oficial é <strong>produto</strong>: tem versão, suporte e documentação; vira custo contínuo</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Gere na CI</strong> e publique o pacote versionado (SDK); não edite o código gerado. Personalizações via templates do gerador ou classes que o encapsulam.</li>
+    <li><strong>No servidor</strong>, prefira gerar <em>interfaces</em> (<code>interfaceOnly</code>) e manter a implementação em código seu; não gere o projeto inteiro.</li>
+    <li><strong>Teste o SDK</strong> contra o mock e a sandbox, incluindo valor de enum desconhecido e campo extra.</li>
+    <li><strong>Decida se você oferece SDK oficial</strong>. Para parceiros de saúde com stacks variadas, um contrato bom e uma coleção Postman/HTTP de exemplos costumam bastar; SDK oficial só para as linguagens mais usadas.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Você gera SDKs a partir do OpenAPI?" <em>"Sim, na CI, com versão semântica e testes contra o mock, mas sem confiar às cegas: oneOf e enums são os pontos frágeis. No servidor gero só as interfaces, para não acoplar o domínio ao código gerado."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>SDK é produto com ciclo de vida: quem mantém, quem dá suporte, qual a política de versões. Se não houver dono, não publique. A alternativa barata (contrato + exemplos + sandbox) frequentemente entrega 80% do valor. Meça: tempo para o primeiro parceiro integrar e número de chamados de suporte por integração.</p></div>
+</section>
+
+<section class="chap" id="ferramentas">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Lint, mocks, documentação e experiência do desenvolvedor</h2>
+  <p>Com um contrato bom, ferramentas fazem o trabalho repetitivo. O contrato é o <strong>centro</strong> de uma cadeia de automações:</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 295" role="img" aria-label="O arquivo openapi.yaml no centro, recebendo mudanças por pull request e alimentando lint, mock, documentação, SDKs, testes de contrato e validação em runtime">
+      <defs><marker id="ah-hub" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-m" x="20" y="105" width="150" height="50" rx="5"/><text x="95" y="127" text-anchor="middle">Pull request</text><text class="lbl" x="95" y="144" text-anchor="middle">revisão do contrato</text>
+      <rect class="box-a" x="250" y="100" width="170" height="60" rx="5"/><text class="ttl" x="335" y="127" text-anchor="middle">openapi.yaml</text><text class="lbl" x="335" y="146" text-anchor="middle">fonte da verdade</text>
+      <line class="ln-a" x1="170" y1="130" x2="248" y2="130" marker-end="url(#ah-hub)"/>
+      <rect class="box" x="490" y="15" width="170" height="32" rx="5"/><text x="575" y="35" text-anchor="middle">Lint (Spectral)</text>
+      <rect class="box" x="490" y="61" width="170" height="32" rx="5"/><text x="575" y="81" text-anchor="middle">Mock (Prism)</text>
+      <rect class="box" x="490" y="107" width="170" height="32" rx="5"/><text x="575" y="127" text-anchor="middle">Docs (Redoc/Scalar)</text>
+      <rect class="box" x="490" y="153" width="170" height="32" rx="5"/><text x="575" y="173" text-anchor="middle">SDKs e stubs</text>
+      <rect class="box" x="490" y="199" width="170" height="32" rx="5"/><text x="575" y="219" text-anchor="middle">Testes de contrato</text>
+      <rect class="box" x="490" y="245" width="170" height="32" rx="5"/><text x="575" y="265" text-anchor="middle">Validação em runtime</text>
+      <line class="ln" x1="420" y1="125" x2="488" y2="31" marker-end="url(#ah-hub)"/>
+      <line class="ln" x1="420" y1="127" x2="488" y2="77" marker-end="url(#ah-hub)"/>
+      <line class="ln" x1="420" y1="130" x2="488" y2="123" marker-end="url(#ah-hub)"/>
+      <line class="ln" x1="420" y1="133" x2="488" y2="169" marker-end="url(#ah-hub)"/>
+      <line class="ln" x1="420" y1="135" x2="488" y2="215" marker-end="url(#ah-hub)"/>
+      <line class="ln" x1="420" y1="138" x2="488" y2="261" marker-end="url(#ah-hub)"/>
+    </svg>
+    <figcaption>Um arquivo, muitas saídas: tudo que muda no contrato propaga-se automaticamente.</figcaption>
+  </figure>
+
+  <h3>Lint e style guide automatizado (Spectral)</h3>
+  <p>O <strong>Spectral</strong> (Stoplight) valida um documento OpenAPI contra um conjunto de regras: as regras padrão do OpenAPI (<code>spectral:oas</code>) e as <strong>suas</strong>, que codificam o style guide da empresa. Transforma "regra no wiki" em falha na CI.</p>
+  <pre data-file=".spectral.yaml"><code class="yaml">extends: ["spectral:oas"]
+rules:
+  caminho-em-kebab-case:
+    description: Caminhos em minúsculas, com hífen
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(/([a-z0-9-]+|\\{[a-zA-Z]+\\}))+$"
+  operacao-com-resumo:
+    description: Toda operação precisa de summary
+    severity: error
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: summary
+      function: truthy</code></pre>
+  <pre><code class="sh">npx @stoplight/spectral-cli lint openapi.yaml --ruleset .spectral.yaml</code></pre>
+  <p>Regras úteis para uma empresa de saúde: <code>operationId</code> obrigatório e único; erros em <code>application/problem+json</code>; toda coleção com <code>limite</code> e <code>cursor</code>; strings com <code>maxLength</code>; operações de escrita com <code>security</code> explícita; exemplos presentes; nada de dado pessoal em parâmetros de query (<code>cpf</code>, <code>nome</code>).</p>
+
+  <h3>Mocks a partir do contrato (Prism)</h3>
+  <p>O <strong>Prism</strong> (Stoplight) sobe um servidor falso a partir do OpenAPI, respondendo com os exemplos do contrato. O front-end e os parceiros avançam sem esperar o backend, e o próprio mock <em>valida</em> as requisições contra o contrato.</p>
+  <pre><code class="sh">npx @stoplight/prism-cli mock openapi.yaml            # sobe em http://127.0.0.1:4010
+
+curl -i -X POST http://127.0.0.1:4010/agendamentos \
+  -H "Idempotency-Key: 8c0f1f6e-2c1b" -H "Content-Type: application/json" \
+  -H "Prefer: code=409" -d '{}'                       # força o cenário de erro 409</code></pre>
+  <p>O cabeçalho <code>Prefer</code> escolhe o código de status ou um exemplo nomeado (<code>Prefer: example=convenio</code>); o modo <code>proxy</code> repassa ao servidor real validando tráfego contra o contrato. Mock bom exige <strong>exemplos bons no contrato</strong>, inclusive para os erros.</p>
+
+  <h3>Documentação: Swagger UI, Redoc, Scalar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ferramenta</th><th>Perfil</th></tr></thead>
+    <tbody>
+      <tr><td>Swagger UI</td><td>O clássico; lista as operações e permite <em>"Try it out"</em> no navegador. Visual mais técnico, bom para equipes internas.</td></tr>
+      <tr><td>Redoc</td><td>Leitura em três painéis (navegação, descrição, exemplos); excelente como referência pública; sem execução de chamadas na versão aberta.</td></tr>
+      <tr><td>Scalar</td><td>Referência moderna com cliente de API embutido (testar chamadas), temas e geração de trechos de código.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Escolher é secundário; o que importa é que a documentação seja <strong>gerada do contrato</strong> e publicada <strong>automaticamente</strong> a cada merge, com a versão visível.</p>
+
+  <h3>Portal do desenvolvedor e DX</h3>
+  <p>A métrica central de experiência do desenvolvedor é o <strong>tempo até a primeira chamada bem-sucedida</strong> (<em>time to first call</em>, TTFC). Um parceiro de convênio que leva 3 semanas para integrar custa dinheiro a ambos os lados. O que reduz o TTFC:</p>
+  <ul>
+    <li>Um <strong>quickstart</strong> de cinco minutos: obter credencial, chamar um endpoint, ver a resposta.</li>
+    <li>Uma <strong>sandbox</strong> com dados fictícios e credenciais de teste, sem risco para produção (sem dados reais de pacientes).</li>
+    <li><strong>Exemplos reais</strong> por operação, incluindo erros; coleção importável (Postman, arquivo <code>.http</code>) gerada do contrato.</li>
+    <li>Um <strong>catálogo de erros</strong> com cada <code>type</code> do Problem Details explicado e a ação do cliente.</li>
+    <li>Um <strong>changelog</strong> e uma política de depreciação visíveis (módulo 07).</li>
+    <li>Um canal de suporte e status da API.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Publicar o Swagger UI apontando para produção, com "Try it out" habilitado e sem controle: qualquer pessoa pode disparar chamadas reais. Aponte a documentação interativa para a sandbox, exija autenticação e não exponha endpoints internos no contrato público (use filtros por tag para publicar só o que é externo).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como garante consistência entre 30 APIs?" <em>"Style guide em regras do Spectral rodando na CI, com um pacote de regras compartilhado; mocks e documentação gerados do contrato; e métricas de DX como tempo até a primeira chamada."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Trate o <strong>portal do desenvolvedor como produto</strong> com dono e métrica. Investimento barato e de alto retorno: lint na CI (horas de configuração, anos de consistência). Cuidado com o excesso de regras: comece com poucas, severidade <em>warning</em>, e promova a <em>error</em> quando o legado estiver adequado, ou o time vai desabilitar o lint.</p></div>
+</section>
+
+<section class="chap" id="ci-fluxo">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Breaking changes na CI e o fluxo de trabalho do time</h2>
+  <p>O valor máximo do contrato aparece quando a CI <strong>compara a versão nova com a que está em produção</strong> e falha se a mudança for incompatível. Isso impede aquele "só renomeei um campo" que derruba um parceiro numa sexta à noite.</p>
+
+  <h3>O que é uma mudança incompatível (breaking)</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Quebra clientes existentes</th><th>Em geral é compatível</th></tr></thead>
+    <tbody>
+      <tr><td>Remover ou renomear endpoint, parâmetro ou campo de resposta</td><td>Adicionar endpoint novo</td></tr>
+      <tr><td>Tornar obrigatório um campo ou parâmetro de requisição</td><td>Adicionar campo <em>opcional</em> à requisição ou parâmetro opcional</td></tr>
+      <tr><td>Mudar tipo ou formato (<code>string</code> para <code>integer</code>, <code>date</code> para <code>date-time</code>)</td><td>Adicionar campo novo à resposta (se os clientes forem tolerantes)</td></tr>
+      <tr><td>Remover valor de enum de requisição; em resposta, adicionar valor pode quebrar clientes estritos</td><td>Adicionar valor a enum de requisição</td></tr>
+      <tr><td>Apertar restrições (<code>maxLength</code> menor, <code>pattern</code> mais restrito) em requisição</td><td>Afrouxar restrições de requisição</td></tr>
+      <tr><td>Mudar status code ou formato de erro; exigir nova permissão (escopo)</td><td>Melhorar descrições e exemplos</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ferramentas de diff entendem essas regras. O <strong>oasdiff</strong> compara dois contratos e classifica as mudanças (erro, aviso, informação):</p>
+  <pre><code class="sh">oasdiff breaking base.yaml openapi.yaml --fail-on ERR   # falha se houver quebra
+oasdiff changelog base.yaml openapi.yaml                # lista de mudanças para o changelog</code></pre>
+  <figure class="figure">
+    <svg viewBox="0 0 680 210" role="img" aria-label="Pipeline de CI do contrato: pull request, lint, verificação de breaking changes com bloqueio, testes de contrato e publicação">
+      <defs><marker id="ah-ci" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-m" x="15" y="30" width="100" height="50" rx="5"/><text x="65" y="52" text-anchor="middle">Pull request</text><text class="lbl" x="65" y="68" text-anchor="middle">muda o YAML</text>
+      <rect class="box-a" x="155" y="30" width="100" height="50" rx="5"/><text x="205" y="52" text-anchor="middle">Lint</text><text class="lbl" x="205" y="68" text-anchor="middle">Spectral</text>
+      <rect class="box-w" x="295" y="30" width="100" height="50" rx="5"/><text x="345" y="52" text-anchor="middle">Breaking?</text><text class="lbl" x="345" y="68" text-anchor="middle">oasdiff vs main</text>
+      <rect class="box-a" x="435" y="30" width="100" height="50" rx="5"/><text x="485" y="52" text-anchor="middle">Testes</text><text class="lbl" x="485" y="68" text-anchor="middle">de contrato</text>
+      <rect class="box-a" x="575" y="30" width="100" height="50" rx="5"/><text x="625" y="52" text-anchor="middle">Publicar</text><text class="lbl" x="625" y="68" text-anchor="middle">docs + SDK</text>
+      <line class="ln-a" x1="115" y1="55" x2="153" y2="55" marker-end="url(#ah-ci)"/>
+      <line class="ln-a" x1="255" y1="55" x2="293" y2="55" marker-end="url(#ah-ci)"/>
+      <line class="ln-a" x1="395" y1="55" x2="433" y2="55" marker-end="url(#ah-ci)"/>
+      <line class="ln-a" x1="535" y1="55" x2="573" y2="55" marker-end="url(#ah-ci)"/>
+      <rect class="box-b" x="275" y="125" width="140" height="36" rx="5"/><text x="345" y="148" text-anchor="middle">Bloqueia o merge</text>
+      <line class="ln-b" x1="345" y1="80" x2="345" y2="123" marker-end="url(#ah-ci)"/>
+      <text class="lbl" x="355" y="106">se quebra</text>
+      <text class="lbl" x="15" y="190">Exceção: nova versão (/v2) ou aprovação explícita com plano de migração.</text>
+    </svg>
+    <figcaption>Pipeline de contrato na CI. O gate de breaking changes é o que protege os consumidores.</figcaption>
+  </figure>
+  <pre data-file=".github/workflows/contrato.yml (esboço)"><code class="yaml">name: contrato
+on: pull_request
+jobs:
+  contrato:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lint
+        run: npx @stoplight/spectral-cli lint openapi.yaml
+      - name: Breaking changes
+        run: |
+          git show origin/main:openapi.yaml &gt; base.yaml
+          oasdiff breaking base.yaml openapi.yaml --fail-on ERR</code></pre>
+
+  <h3>Fluxo de trabalho do time</h3>
+  <ol class="seq">
+    <li><div><strong>Proposta.</strong> Quem quer a mudança abre um PR só com o YAML (e exemplos), descrevendo o problema e os clientes afetados.</div></li>
+    <li><div><strong>Revisão do contrato.</strong> O CODEOWNERS do contrato inclui o time dono <em>e</em> um representante dos consumidores (front, parceiros). Revisam nomes, erros, evolução. A CI roda lint e diff.</div></li>
+    <li><div><strong>Mock disponível.</strong> Com o PR aprovado, publica-se o mock; consumidores começam em paralelo.</div></li>
+    <li><div><strong>Implementação.</strong> O backend implementa e a CI roda testes de contrato contra o serviço; divergência falha a build.</div></li>
+    <li><div><strong>Publicação.</strong> No merge, documentação e SDKs são publicados com versão e changelog gerado do diff.</div></li>
+  </ol>
+  <p>O contrato é a <strong>fonte da verdade</strong>: se o servidor e o YAML discordam, é um <em>bug</em> a corrigir (normalmente no código; no contrato só com a revisão do passo 2).</p>
+
+  <h3>Outras especificações do ecossistema</h3>
+  <ul>
+    <li><strong>AsyncAPI</strong>: o equivalente do OpenAPI para APIs assíncronas e orientadas a eventos (filas, WebSockets, mensagens). Será visto no módulo 04.</li>
+    <li><strong>Arazzo</strong> (OpenAPI Initiative): descreve <em>fluxos de trabalho</em> que encadeiam chamadas a uma ou mais APIs (por exemplo, "consultar horários, criar agendamento, confirmar"), úteis para documentação de jornadas e testes. É relativamente novo; avalie a maturidade das ferramentas antes de adotar.</li>
+    <li><strong>JSON Schema</strong> puro para validar eventos e configurações com o mesmo vocabulário do OpenAPI 3.1.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Mudança incompatível não é proibida, é <em>cara e deliberada</em>: exige nova versão ou plano de migração aprovado, aviso aos consumidores e prazo. A CI deve tornar o caminho certo o mais fácil e o caminho errado impossível de fazer sem querer.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como evita quebrar clientes?" <em>"Diff do contrato na CI contra a versão em produção com bloqueio de breaking changes, revisão do contrato por consumidores e testes de contrato. Mudança incompatível só com nova versão ou plano de migração aprovado."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina o <strong>processo de exceção</strong> (quem aprova uma mudança incompatível, com que prazo de aviso) e meça: número de breaking changes bloqueados na CI (indicador saudável!) e incidentes por quebra de contrato (deve tender a zero). Se ninguém nunca é bloqueado, o gate provavelmente não está funcionando.</p></div>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e glossário</h2>
+
+  <h3>Cenário 1: a documentação mente</h3>
+  <p>O PDF/Swagger publicado diz que <code>observacao</code> é obrigatório, mas o servidor aceita sem. Um parceiro implementou do jeito errado e agora a correção "quebra" a integração dele.</p>
+  <div class="note"><b>O que fazer</b><p>Decidir qual é a verdade (normalmente o comportamento real); alinhar contrato e código; adotar testes de contrato e validação de resposta em staging para detectar divergência; comunicar o parceiro com prazo. Daqui para frente, documentação gerada do contrato, nunca à mão.</p></div>
+
+  <h3>Cenário 2: o SDK quebrou depois de um valor novo no enum</h3>
+  <p>Adicionamos <code>status: "reagendado"</code>. O app Android, com SDK gerado, passou a lançar exceção ao listar agendamentos.</p>
+  <div class="note"><b>O que fazer</b><p>Hotfix: o SDK deve mapear valor desconhecido para um <code>desconhecido</code> padrão. Processo: documentar "enums de resposta são abertos", testar SDKs com valor desconhecido na CI e incluir a regra de enum no style guide e no revisor de PR.</p></div>
+
+  <h3>Cenário 3: o "só renomeei o campo"</h3>
+  <p>Um dev renomeou <code>inicio</code> para <code>dataHoraInicio</code> num DTO; no code-first o YAML mudou sozinho e ninguém notou. O sistema do convênio parou.</p>
+  <div class="note"><b>O que fazer</b><p>Reverter ou manter os dois campos durante uma janela de depreciação; adicionar o gate de oasdiff na CI e a revisão obrigatória do YAML gerado no PR (CODEOWNERS); medir incidentes de quebra de contrato.</p></div>
+
+  <h3>Cenário 4: parceiro leva um mês para integrar</h3>
+  <p>O laboratório parceiro reclama que a integração demora, com muitas dúvidas sobre erros e formatos.</p>
+  <div class="note"><b>O que fazer</b><p>Medir o TTFC; criar sandbox e quickstart; enriquecer o contrato com exemplos e um catálogo de erros; publicar coleção de requisições; abrir um canal de suporte. Reavaliar o TTFC no próximo parceiro.</p></div>
+
+  <h3>Cenário 5: o design-first travou</h3>
+  <p>Os times reclamam que a revisão do contrato demora e vira gargalo; alguns voltaram a codificar primeiro.</p>
+  <div class="note"><b>O que fazer</b><p>Revisão com SLA curto (por exemplo 1 dia útil), PRs pequenos, regras mecânicas passadas para o lint (o revisor humano discute só design), revisores rotativos e um template de proposta. Para APIs internas de baixo risco, permitir code-first com YAML revisado no PR.</p></div>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>OpenAPI (OAS)</dt><dd>Especificação para descrever APIs HTTP em YAML/JSON.</dd></div>
+    <div><dt>Contrato</dt><dd>Descrição verificável da interface: o que o provedor promete e o cliente pode assumir.</dd></div>
+    <div><dt>Design-first</dt><dd>Escrever e revisar o contrato antes do código.</dd></div>
+    <div><dt>Code-first</dt><dd>Implementar primeiro e gerar o contrato do código.</dd></div>
+    <div><dt>$ref</dt><dd>Referência a um componente ou arquivo; evita duplicação.</dd></div>
+    <div><dt>operationId</dt><dd>Identificador único e estável de uma operação; vira nome de método em SDKs.</dd></div>
+    <div><dt>JSON Schema 2020-12</dt><dd>Vocabulário de validação ao qual o OpenAPI 3.1 se alinhou.</dd></div>
+    <div><dt>discriminator</dt><dd>Campo que indica qual variante de um oneOf se aplica.</dd></div>
+    <div><dt>Breaking change</dt><dd>Mudança que pode quebrar clientes existentes.</dd></div>
+    <div><dt>Leitor tolerante</dt><dd>Cliente que ignora campos e valores desconhecidos.</dd></div>
+    <div><dt>Spectral</dt><dd>Linter de contratos OpenAPI com regras customizáveis.</dd></div>
+    <div><dt>Prism</dt><dd>Servidor de mock gerado do contrato.</dd></div>
+    <div><dt>oasdiff</dt><dd>Compara dois contratos e detecta quebras.</dd></div>
+    <div><dt>Time to first call</dt><dd>Tempo até a primeira chamada bem-sucedida de um novo integrador.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é OpenAPI e para que serve?</span></summary><div class="ans"><p>Uma especificação para descrever APIs HTTP em YAML/JSON: endpoints, parâmetros, corpos, respostas, erros e segurança. Serve de contrato legível por humanos e máquinas e gera documentação, mocks, SDKs, validação e testes.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>O que é um contrato de API e por que importa para os times?</span></summary><div class="ans"><p>É a promessa verificável entre provedor e consumidor. Permite trabalho em paralelo, revisão antes do código e proteção contra quebras, e reduz dependência de conhecimento tácito entre equipes.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Design-first ou code-first?</span></summary><div class="ans"><p>Design-first para APIs com vários consumidores ou externas: discussão barata e mock antecipado. Code-first para APIs internas simples, com YAML gerado e revisado no PR. Nos dois, a CI deve impedir divergência entre código e contrato.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Cite os blocos principais de um documento OpenAPI.</span></summary><div class="ans"><p><code>openapi</code>, <code>info</code>, <code>servers</code>, <code>paths</code> (operações com parâmetros, <code>requestBody</code> e <code>responses</code>), <code>components</code> (<code>schemas</code>, <code>parameters</code>, <code>responses</code>, <code>securitySchemes</code>), <code>security</code> e <code>tags</code>; <code>webhooks</code> na 3.1.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Para que servem <code>components</code> e <code>$ref</code>?</span></summary><div class="ans"><p>Para definir uma vez e reutilizar: schemas, parâmetros de paginação, respostas de erro. Garante consistência, reduz tamanho e permite que o lint verifique padrões.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>O que mudou do OpenAPI 3.0 para o 3.1?</span></summary><div class="ans"><p>Alinhamento total ao JSON Schema 2020-12: <code>nullable</code> some e <code>type</code> vira lista com <code>"null"</code>; <code>examples</code> é array; <code>exclusiveMinimum</code> é numérico; <code>$ref</code> aceita irmãos; <code>contentMediaType</code> substitui <code>format: binary</code>; <code>webhooks</code> no topo.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como representar um campo anulável em 3.1?</span></summary><div class="ans"><p><code>type: [string, "null"]</code>. Distingo de campo opcional (fora de <code>required</code>): um campo pode ser opcional, anulável ou ambos, e o contrato deve dizer qual.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Quando usar <code>additionalProperties: false</code>?</span></summary><div class="ans"><p>Em requisições, para falhar cedo com campos desconhecidos e evitar atribuição em massa. Em respostas, não: o servidor precisa poder adicionar campos, e os clientes devem ignorar o que não conhecem. Com <code>allOf</code>, usar <code>unevaluatedProperties</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Adicionar um valor a um enum é compatível?</span></summary><div class="ans"><p>Em requisição, sim. Em resposta, pode quebrar clientes com enum fechado (SDKs que lançam exceção). Por isso o contrato deve declarar que enums de resposta são abertos, e os SDKs devem ser testados com valor desconhecido.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como modelar polimorfismo (convênio ou particular)?</span></summary><div class="ans"><p><code>oneOf</code> com <code>discriminator</code> (<code>propertyName: tipo</code> e <code>mapping</code>), garantindo variantes mutuamente exclusivas. Verifico o suporte do gerador de código, que é irregular nesse ponto.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Como garantir que a implementação cumpre o contrato?</span></summary><div class="ans"><p>Validação de requisição em runtime (middleware ou gateway), validação de resposta em testes e staging, e testes de contrato na CI (por exemplo gerados a partir do OpenAPI, ou dirigidos pelo consumidor). Divergência é bug e falha a build.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Quais os riscos de gerar código e SDKs a partir do OpenAPI?</span></summary><div class="ans"><p>Qualidade irregular por gerador (<code>oneOf</code>, nulos, 3.1), enums fechados quebrando, regeneração sobrescrevendo edições, acoplamento do domínio ao código gerado e custo de manter o SDK como produto. Mitigo gerando na CI, só interfaces no servidor e testando os SDKs.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como automatiza um style guide de API?</span></summary><div class="ans"><p>Com Spectral: regras padrão do OAS mais regras da empresa (kebab-case nos caminhos, <code>operationId</code> obrigatório, erros em Problem Details, paginação padronizada). Roda na CI, começa em <em>warning</em> e é promovido a <em>error</em>.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como destrava o front-end antes de o backend existir?</span></summary><div class="ans"><p>Mock gerado do contrato com Prism, com exemplos de sucesso e de erro, mais SDK ou tipos gerados. O mock também valida as requisições do cliente contra o contrato.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>O que é uma mudança incompatível e como detectar na CI?</span></summary><div class="ans"><p>Remover ou renomear campo/endpoint, tornar obrigatório um campo de requisição, mudar tipos ou status, apertar restrições. Na CI comparo o contrato do PR com o da <code>main</code> usando oasdiff e falho o build em quebra, salvo exceção aprovada com plano de migração.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Swagger UI, Redoc ou Scalar? (e portal do desenvolvedor)</span></summary><div class="ans"><p>Todos geram documentação do contrato: Swagger UI com "Try it out", Redoc como referência de leitura, Scalar com cliente de API moderno. A escolha é secundária; o essencial é publicar automaticamente a cada merge, apontando para sandbox, e medir o tempo até a primeira chamada.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Como é o fluxo de trabalho com contrato em PR? (sênior)</span></summary><div class="ans"><p>PR só com o YAML e exemplos; CODEOWNERS com o time dono e consumidores; lint e diff na CI; mock publicado após aprovação; implementação com testes de contrato; publicação automática de docs e SDKs com changelog do diff. O contrato é a fonte da verdade.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você implantaria contratos numa empresa que não tem? (gestão)</span></summary><div class="ans"><p>Começo pelas APIs mais críticas e com mais consumidores externos (convênios, parceiros). Contrato versionado no repositório, lint básico em <em>warning</em>, documentação gerada, depois o gate de breaking changes e testes de contrato. Defino donos, SLA de revisão e métricas: cobertura de APIs com contrato, breaking changes bloqueados, tempo até a primeira chamada.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

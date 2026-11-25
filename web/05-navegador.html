@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 05: Navegador e front-end</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 05 de 10 · Navegador e front-end</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html" aria-current="page"><span class="n">05</span>Navegador e front-end</a></li>
+    <li class="sub"><ol>
+      <li><a href="#papel"><span class="n">1</span>O papel do navegador e de HTML, CSS e JS</a></li>
+      <li><a href="#pixels"><span class="n">2</span>Do HTML aos pixels</a></li>
+      <li><a href="#caminho-critico"><span class="n">3</span>Caminho crítico e recursos que bloqueiam</a></li>
+      <li><a href="#event-loop"><span class="n">4</span>Event loop e a thread única do JavaScript</a></li>
+      <li><a href="#armazenamento"><span class="n">5</span>Armazenamento no navegador e same-origin policy</a></li>
+      <li><a href="#modelos"><span class="n">6</span>Modelos de renderização: MPA, SPA, SSR, SSG e híbridos</a></li>
+      <li><a href="#frameworks"><span class="n">7</span>Frameworks: como decidir</a></li>
+      <li><a href="#acessibilidade"><span class="n">8</span>Acessibilidade</a></li>
+      <li><a href="#desempenho"><span class="n">9</span>Desempenho e Core Web Vitals</a></li>
+      <li><a href="#build-pwa"><span class="n">10</span>Build moderno, PWA e ferramentas</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos e troubleshooting</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 05 · <span class="lvl l2">Intermediário</span></div>
+  <h1>Navegador e front-end</h1>
+  <p class="lede">O que acontece entre a chegada do HTML e os pixels na tela, por que o JavaScript roda numa única thread, onde guardar dados no cliente e como escolher modelo de renderização, framework e metas de desempenho e acessibilidade.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar o pipeline de renderização e o caminho crítico, e usar <code>async</code>/<code>defer</code> com critério.</li>
+    <li>Prever a ordem de execução de tarefas e microtarefas no event loop.</li>
+    <li>Escolher o armazenamento certo no navegador e saber o que nunca guardar ali.</li>
+    <li>Comparar MPA, SPA, SSR, SSG e ISR e defender uma escolha de framework para o contexto do time.</li>
+    <li>Ler Core Web Vitals, cobrar acessibilidade (WCAG e LBI) e entender o build moderno.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="papel">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O papel do navegador e de HTML, CSS e JS</h2>
+  <p>O navegador é um programa que busca recursos pela rede, interpreta esses recursos e desenha o resultado na tela. Ele também isola sites uns dos outros, guarda dados locais e executa código de terceiros com permissões limitadas. Na prática ele é quase um sistema operacional: tem processos separados por site, gerenciador de memória, rede, armazenamento e um motor de JavaScript.</p>
+  <p>A busca do HTML em si usa o que você viu nos módulos anteriores: resolução de nome (<a href="02-dns.html">módulo 2</a>), conexão TCP ou QUIC (<a href="01-internet.html">módulo 1</a>), TLS (<a href="04-tls.html">módulo 4</a>) e uma requisição HTTP (<a href="03-http.html">módulo 3</a>). Este módulo começa quando os bytes do HTML chegam.</p>
+
+  <h3>As três linguagens e o que cada uma faz</h3>
+  <div class="tbl"><table><thead><tr><th>Camada</th><th>Responsabilidade</th><th>Erro típico</th></tr></thead><tbody>
+    <tr><td>HTML</td><td>Estrutura e significado do conteúdo: títulos, listas, formulários, links, botões.</td><td>Usar <code>&lt;div&gt;</code> para tudo e perder semântica e acessibilidade.</td></tr>
+    <tr><td>CSS</td><td>Apresentação: layout, cores, tipografia, responsividade, animações.</td><td>CSS gigante e global que bloqueia a primeira pintura.</td></tr>
+    <tr><td>JavaScript</td><td>Comportamento: reagir a eventos, buscar dados, alterar o DOM.</td><td>Recriar em JS o que HTML já faz de graça (links, botões, formulários).</td></tr>
+  </tbody></table></div>
+  <p>Os motores de renderização mais comuns são o Blink (Chrome, Edge, Opera), o WebKit (Safari, e todos os navegadores no iOS por regra da Apple em boa parte do mundo) e o Gecko (Firefox). Os motores de JavaScript correspondentes são V8, JavaScriptCore e SpiderMonkey. O Node.js usa o V8 fora do navegador, sem DOM.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Use o elemento HTML que já faz o que você precisa. Um <code>&lt;button&gt;</code> já recebe foco, responde a Enter e Espaço e é anunciado por leitores de tela. Um <code>&lt;div onclick&gt;</code> não faz nada disso sem trabalho extra.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O HTML dá estrutura e significado, o CSS dá apresentação e o JS dá comportamento. O navegador baixa esses recursos, monta o DOM e o CSSOM, calcula layout, pinta e compõe a tela."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O front-end roda em aparelhos que você não controla, com redes ruins, e é onde o usuário percebe lentidão e erro. Num portal de paciente, boa parte dos acessos vem de celulares intermediários em rede móvel. Peça ao time que teste nesse cenário, não só no notebook de desenvolvimento.</p></div>
+</section>
+
+<section class="chap" id="pixels">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Do HTML aos pixels</h2>
+  <p>O navegador transforma texto em imagem por um pipeline de etapas. Entender essas etapas explica quase todo problema de desempenho visual.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 760 230" role="img" aria-label="Pipeline de renderização: HTML vira DOM, CSS vira CSSOM, JavaScript pode alterar os dois; DOM e CSSOM formam a render tree, que passa por layout, paint e composite">
+      <defs><marker id="ah-pipe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="10" y="20" width="90" height="36" rx="5"/><text x="55" y="43" text-anchor="middle">HTML</text>
+      <rect class="box-w" x="10" y="80" width="90" height="36" rx="5"/><text x="55" y="103" text-anchor="middle">JavaScript</text>
+      <rect class="box" x="10" y="140" width="90" height="36" rx="5"/><text x="55" y="163" text-anchor="middle">CSS</text>
+      <rect class="box" x="140" y="20" width="100" height="36" rx="5"/><text x="190" y="43" text-anchor="middle">DOM</text>
+      <rect class="box" x="140" y="140" width="100" height="36" rx="5"/><text x="190" y="163" text-anchor="middle">CSSOM</text>
+      <line class="ln" x1="100" y1="38" x2="140" y2="38" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="100" y1="158" x2="140" y2="158" marker-end="url(#ah-pipe)"/>
+      <line class="ln-b" x1="100" y1="92" x2="140" y2="56" stroke-dasharray="4 3" marker-end="url(#ah-pipe)"/>
+      <line class="ln-b" x1="100" y1="104" x2="140" y2="140" stroke-dasharray="4 3" marker-end="url(#ah-pipe)"/>
+      <rect class="box-a" x="280" y="80" width="110" height="36" rx="5"/><text x="335" y="103" text-anchor="middle">Render tree</text>
+      <line class="ln" x1="240" y1="38" x2="280" y2="90" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="240" y1="158" x2="280" y2="106" marker-end="url(#ah-pipe)"/>
+      <rect class="box-a" x="430" y="80" width="90" height="36" rx="5"/><text x="475" y="103" text-anchor="middle">Layout</text>
+      <rect class="box-a" x="550" y="80" width="80" height="36" rx="5"/><text x="590" y="103" text-anchor="middle">Paint</text>
+      <rect class="box-a" x="660" y="80" width="90" height="36" rx="5"/><text x="705" y="103" text-anchor="middle">Composite</text>
+      <line class="ln" x1="390" y1="98" x2="430" y2="98" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="520" y1="98" x2="550" y2="98" marker-end="url(#ah-pipe)"/>
+      <line class="ln" x1="630" y1="98" x2="660" y2="98" marker-end="url(#ah-pipe)"/>
+      <text class="lbl" x="335" y="135" text-anchor="middle">só o que é visível</text>
+      <text class="lbl" x="475" y="135" text-anchor="middle">posição e tamanho</text>
+      <text class="lbl" x="590" y="135" text-anchor="middle">pixels</text>
+      <text class="lbl" x="705" y="135" text-anchor="middle">camadas na GPU</text>
+      <text class="lbl" x="10" y="215">tracejado: o JS pode ler e alterar DOM e CSSOM, o que força refazer etapas seguintes</text>
+    </svg>
+    <figcaption>O pipeline de renderização. Uma mudança de geometria refaz layout, paint e composite; uma mudança só de cor refaz paint e composite; <code>transform</code> e <code>opacity</code> costumam ficar só no composite.</figcaption>
+  </figure>
+
+  <ol class="seq">
+    <li><div><strong>Parsing do HTML.</strong> O parser lê os bytes, decodifica os caracteres, gera tokens e monta o DOM (Document Object Model), uma árvore de nós. O parser é tolerante a erros: HTML malformado ainda vira uma árvore.</div></li>
+    <li><div><strong>CSSOM.</strong> Cada folha de estilo vira o CSSOM, a árvore de regras de estilo. O navegador precisa dele completo para saber como algo aparece, por isso CSS bloqueia a renderização.</div></li>
+    <li><div><strong>Render tree.</strong> DOM e CSSOM se combinam numa árvore só com o que será desenhado. Elementos com <code>display: none</code> ficam de fora; <code>&lt;head&gt;</code> também.</div></li>
+    <li><div><strong>Layout (ou reflow).</strong> O navegador calcula posição e tamanho de cada caixa a partir da largura da janela. Uma mudança no topo da árvore pode refazer o layout de tudo abaixo.</div></li>
+    <li><div><strong>Paint.</strong> Gera as instruções de desenho: texto, cores, bordas, sombras, imagens, separadas em camadas.</div></li>
+    <li><div><strong>Composite.</strong> Junta as camadas na ordem certa, em geral com ajuda da GPU, e manda o quadro para a tela.</div></li>
+  </ol>
+
+  <h3>Por que isso importa no dia a dia</h3>
+  <p>Ler uma propriedade de geometria (como <code>offsetHeight</code>) logo depois de alterar o estilo obriga o navegador a calcular layout na hora. Repetir isso num laço causa <em>layout thrashing</em> (layout forçado repetidas vezes) e trava a página.</p>
+  <pre><code class="js">// ruim: alterna escrita e leitura, força layout a cada volta
+for (const el of itens) {
+  el.style.width = (el.offsetWidth + 10) + 'px';
+}
+
+// melhor: lê tudo, depois escreve tudo
+const larguras = itens.map(el =&gt; el.offsetWidth);
+itens.forEach((el, i) =&gt; { el.style.width = (larguras[i] + 10) + 'px'; });</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Para animar, prefira <code>transform</code> e <code>opacity</code>. Animar <code>top</code>, <code>left</code>, <code>width</code> ou <code>height</code> refaz layout a cada quadro.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O navegador faz parsing do HTML para o DOM e do CSS para o CSSOM, combina os dois na render tree, calcula layout, pinta e compõe as camadas. Alterar geometria refaz layout; animar <code>transform</code> e <code>opacity</code> costuma ficar só no composite."</p></div>
+</section>
+
+<section class="chap" id="caminho-critico">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Caminho crítico e recursos que bloqueiam</h2>
+  <p>O <strong>caminho crítico de renderização</strong> (critical rendering path) é a sequência mínima de recursos e etapas até a primeira pintura útil. Quanto menos coisa estiver nesse caminho, mais cedo o usuário vê conteúdo.</p>
+  <h3>Quem bloqueia o quê</h3>
+  <div class="tbl"><table><thead><tr><th>Recurso</th><th>Bloqueia</th><th>Observação</th></tr></thead><tbody>
+    <tr><td>CSS em <code>&lt;link rel="stylesheet"&gt;</code></td><td>Renderização</td><td>Também atrasa scripts síncronos que vêm depois dele, porque o script pode consultar estilos.</td></tr>
+    <tr><td><code>&lt;script&gt;</code> sem atributo</td><td>Parsing do HTML</td><td>O parser para, baixa, executa e só então continua.</td></tr>
+    <tr><td><code>&lt;script async&gt;</code></td><td>Parsing só durante a execução</td><td>Baixa em paralelo e executa assim que chega. Sem ordem garantida entre scripts.</td></tr>
+    <tr><td><code>&lt;script defer&gt;</code></td><td>Nada durante o parsing</td><td>Baixa em paralelo e executa depois do parsing, antes do evento <code>DOMContentLoaded</code>, na ordem do documento.</td></tr>
+    <tr><td><code>&lt;script type="module"&gt;</code></td><td>Como <code>defer</code></td><td>Módulos são adiados por padrão; com <code>async</code> passam a executar quando prontos.</td></tr>
+    <tr><td>Imagens</td><td>Não bloqueiam</td><td>Mas sem dimensões declaradas causam deslocamento de layout ao chegar.</td></tr>
+    <tr><td>Fontes web</td><td>Texto, conforme <code>font-display</code></td><td>Podem esconder o texto por um tempo; <code>font-display: swap</code> mostra a fonte do sistema antes.</td></tr>
+  </tbody></table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 720 230" role="img" aria-label="Linha do tempo comparando script normal, async e defer em relação ao parsing do HTML">
+      <text class="ttl" x="10" y="44">normal</text>
+      <rect class="box-a" x="120" y="30" width="130" height="18"/>
+      <rect class="box" x="250" y="30" width="120" height="18"/>
+      <rect class="box-w" x="370" y="30" width="60" height="18"/>
+      <rect class="box-a" x="430" y="30" width="170" height="18"/>
+      <text class="lbl" x="255" y="64">parser parado esperando</text>
+      <text class="ttl" x="10" y="104">async</text>
+      <rect class="box-a" x="120" y="90" width="220" height="18"/>
+      <rect class="box-w" x="340" y="90" width="60" height="18"/>
+      <rect class="box-a" x="400" y="90" width="160" height="18"/>
+      <rect class="box" x="250" y="112" width="90" height="12"/>
+      <text class="ttl" x="10" y="164">defer</text>
+      <rect class="box-a" x="120" y="150" width="380" height="18"/>
+      <rect class="box-w" x="500" y="150" width="60" height="18"/>
+      <rect class="box" x="250" y="172" width="90" height="12"/>
+      <rect class="box-a" x="120" y="205" width="16" height="12"/><text class="lbl" x="142" y="215">parsing do HTML</text>
+      <rect class="box" x="260" y="205" width="16" height="12"/><text class="lbl" x="282" y="215">download do script</text>
+      <rect class="box-w" x="410" y="205" width="16" height="12"/><text class="lbl" x="432" y="215">execução do script</text>
+    </svg>
+    <figcaption>Script normal interrompe o parser durante download e execução. <code>async</code> baixa em paralelo e interrompe só para executar. <code>defer</code> baixa em paralelo e executa ao fim do parsing.</figcaption>
+  </figure>
+
+  <pre><code class="html">&lt;head&gt;
+  &lt;!-- CSS crítico pequeno, o resto carregado depois --&gt;
+  &lt;link rel="stylesheet" href="/css/base.css"&gt;
+  &lt;!-- avisa cedo sobre a imagem principal --&gt;
+  &lt;link rel="preload" as="image" href="/img/banner.avif" fetchpriority="high"&gt;
+  &lt;!-- código da aplicação: não bloqueia o parser --&gt;
+  &lt;script src="/js/app.js" defer&gt;&lt;/script&gt;
+  &lt;!-- analytics independente: ordem não importa --&gt;
+  &lt;script src="/js/analytics.js" async&gt;&lt;/script&gt;
+&lt;/head&gt;</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p><code>defer</code> para o código da aplicação, que depende do DOM e da ordem. <code>async</code> para scripts independentes, como analytics. Script síncrono no <code>&lt;head&gt;</code> só com justificativa.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Scripts de terceiros (chat, analytics, testes A/B, tag managers) entram sem revisão e viram os maiores bloqueadores da página. Eles também executam com o mesmo poder do seu código. O risco de segurança disso está no <a href="09-seguranca-web.html">módulo 9</a>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"CSS bloqueia a renderização e script síncrono bloqueia o parser. <code>async</code> executa quando chega, sem ordem; <code>defer</code> executa na ordem depois do parsing. Para encurtar o caminho crítico eu reduzo e adio o que não é necessário na primeira tela."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Crie uma regra de entrada para scripts de terceiros: quem pede, qual o ganho, qual o custo em desempenho e privacidade, quem revisa. Num contexto de saúde, um pixel de marketing numa página de resultado de exame pode expor dado sensível. Dono e revisão periódica evitam o acúmulo.</p></div>
+</section>
+
+<section class="chap" id="event-loop">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Event loop e a thread única do JavaScript</h2>
+  <p>O JavaScript de uma página roda na <strong>main thread</strong> (thread principal), a mesma que trata cliques, calcula estilo e layout e pinta. A linguagem foi desenhada para isso: um modelo de execução sem concorrência no acesso ao DOM evita locks e condições de corrida em toda manipulação de interface. O preço é que código demorado trava tudo: rolagem, cliques, animações.</p>
+  <p>A concorrência vem do <strong>event loop</strong>. Operações lentas (timers, rede, eventos do usuário) são tratadas pelo navegador fora da thread do JS. Quando terminam, o callback entra numa fila e espera a pilha de chamadas esvaziar.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 720 280" role="img" aria-label="Event loop: a pilha de chamadas agenda trabalho nas APIs do navegador, que devolvem callbacks para a fila de tarefas; promessas vão para a fila de microtarefas; o loop executa uma tarefa, esvazia as microtarefas e então pode renderizar">
+      <defs><marker id="ah-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="30" width="150" height="230" rx="6"/>
+      <text class="ttl" x="95" y="52" text-anchor="middle">Pilha de chamadas</text>
+      <rect class="box" x="40" y="200" width="110" height="28" rx="4"/><text x="95" y="219" text-anchor="middle">main()</text>
+      <rect class="box" x="40" y="168" width="110" height="28" rx="4"/><text x="95" y="187" text-anchor="middle">onClick()</text>
+      <rect class="box" x="260" y="30" width="200" height="70" rx="6"/>
+      <text class="ttl" x="360" y="54" text-anchor="middle">APIs do navegador</text>
+      <text class="lbl" x="360" y="76" text-anchor="middle">timers, rede, eventos do DOM</text>
+      <rect class="box-m" x="260" y="150" width="170" height="40" rx="6"/>
+      <text x="345" y="174" text-anchor="middle">microtarefas</text>
+      <rect class="box-w" x="260" y="220" width="170" height="40" rx="6"/>
+      <text x="345" y="244" text-anchor="middle">tarefas</text>
+      <line class="ln" x1="170" y1="60" x2="260" y2="60" marker-end="url(#ah-loop)"/>
+      <text class="lbl" x="215" y="52" text-anchor="middle">agenda</text>
+      <path class="ln" d="M445,100 L445,240 L430,240" marker-end="url(#ah-loop)"/>
+      <text class="lbl" x="452" y="126">callback pronto</text>
+      <line class="ln-a" x1="260" y1="170" x2="170" y2="170" marker-end="url(#ah-loop)"/>
+      <line class="ln-a" x1="260" y1="240" x2="170" y2="240" marker-end="url(#ah-loop)"/>
+      <text class="lbl" x="215" y="162" text-anchor="middle">todas</text>
+      <text class="lbl" x="215" y="232" text-anchor="middle">uma</text>
+      <rect class="box" x="530" y="30" width="170" height="70" rx="6"/>
+      <text class="ttl" x="615" y="54" text-anchor="middle">Renderização</text>
+      <text class="lbl" x="615" y="76" text-anchor="middle">rAF, estilo, layout, paint</text>
+      <rect class="box-a" x="530" y="140" width="170" height="120" rx="6"/>
+      <text class="ttl" x="615" y="162" text-anchor="middle">Uma volta do loop</text>
+      <text class="lbl" x="545" y="186">1. executa uma tarefa</text>
+      <text class="lbl" x="545" y="206">2. esvazia as microtarefas</text>
+      <text class="lbl" x="545" y="226">3. renderiza, se for hora</text>
+      <text class="lbl" x="545" y="246">4. volta ao passo 1</text>
+    </svg>
+    <figcaption>Tarefas (setTimeout, eventos, mensagens) saem uma por volta. Microtarefas (Promise.then, <code>await</code>, <code>queueMicrotask</code>, MutationObserver) são todas executadas assim que a pilha esvazia, antes da próxima tarefa e da renderização.</figcaption>
+  </figure>
+
+  <h3>Prevendo a ordem</h3>
+  <pre><code class="js">console.log('A');
+setTimeout(() =&gt; console.log('B'), 0);
+Promise.resolve().then(() =&gt; console.log('C'));
+console.log('D');
+// saída: A, D, C, B</code></pre>
+  <p>A e D rodam no código síncrono atual. C é microtarefa e roda assim que a pilha esvazia. B é uma nova tarefa e só roda numa volta seguinte do loop, mesmo com atraso zero.</p>
+
+  <h3>Como não travar a interface</h3>
+  <ul>
+    <li><strong>Quebrar trabalho longo</strong> em pedaços e devolver o controle ao navegador entre eles (por exemplo com <code>setTimeout</code> ou, onde houver suporte, <code>scheduler.yield()</code>). O navegador chama de <em>long task</em> qualquer tarefa acima de 50 ms.</li>
+    <li><strong>Web Workers</strong> rodam JS em outra thread, sem acesso ao DOM, conversando com a página por mensagens (<code>postMessage</code>). Servem para cálculo pesado, parsing de arquivos grandes, compressão.</li>
+    <li><strong>Evitar microtarefas infinitas</strong>: como a fila de microtarefas é esvaziada inteira antes de renderizar, um laço de promessas que sempre agenda outra trava a página do mesmo jeito.</li>
+  </ul>
+  <pre><code class="js">// página
+const w = new Worker('/js/processa-planilha.js');
+w.postMessage(arquivo);
+w.onmessage = (e) =&gt; mostrarResumo(e.data);</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p><code>async</code>/<code>await</code> não cria thread. Uma função <code>async</code> com um laço pesado continua travando a main thread. <code>await</code> só cede o controle quando espera algo que de fato é assíncrono.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"JS no navegador roda numa thread só, junto com a renderização. O event loop executa uma tarefa, esvazia todas as microtarefas e então pode renderizar. Por isso uma promessa resolvida roda antes de um <code>setTimeout</code> de zero. Para trabalho pesado uso Web Workers ou quebro o trabalho em pedaços."</p></div>
+</section>
+
+<section class="chap" id="armazenamento">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Armazenamento no navegador e same-origin policy</h2>
+  <div class="tbl"><table><thead><tr><th>Mecanismo</th><th>Capacidade</th><th>Vida útil</th><th>Vai ao servidor?</th><th>Acesso pelo JS</th><th>Bom para</th></tr></thead><tbody>
+    <tr><td>Cookie</td><td>Cerca de 4 KB por cookie</td><td>Sessão ou data de expiração</td><td>Sim, em toda requisição ao domínio</td><td>Sim, exceto se <code>HttpOnly</code></td><td>Identificador de sessão</td></tr>
+    <tr><td><code>localStorage</code></td><td>Alguns MB por origem (varia por navegador)</td><td>Até ser apagado</td><td>Não</td><td>Sim, API síncrona, só strings</td><td>Preferências de interface</td></tr>
+    <tr><td><code>sessionStorage</code></td><td>Parecida com localStorage</td><td>Enquanto a aba existir</td><td>Não</td><td>Sim, por aba</td><td>Estado temporário de um fluxo</td></tr>
+    <tr><td>IndexedDB</td><td>Bem maior, limitada por cota do disco</td><td>Até ser apagado ou despejado</td><td>Não</td><td>Sim, API assíncrona, objetos estruturados</td><td>Dados offline, cache de aplicação</td></tr>
+    <tr><td>Cache Storage</td><td>Cota compartilhada com IndexedDB</td><td>Até ser apagado</td><td>Não</td><td>Sim, usado por service workers</td><td>Respostas HTTP para uso offline</td></tr>
+  </tbody></table></div>
+  <h3>O que não guardar no navegador</h3>
+  <ul>
+    <li><strong>Tokens de acesso em <code>localStorage</code></strong>: qualquer script que rode na página, incluindo um injetado por XSS ou uma biblioteca comprometida, lê esse valor. Cookies <code>HttpOnly</code>, <code>Secure</code> e com <code>SameSite</code> adequado reduzem essa exposição. O desenho completo de sessões e tokens está no <a href="07-autenticacao.html">módulo 7</a>.</li>
+    <li><strong>Dados pessoais sensíveis</strong> (diagnósticos, resultados de exames, CPF) em armazenamento persistente: o computador pode ser compartilhado, como numa recepção de clínica, e o dado fica lá depois do logout.</li>
+    <li><strong>Segredos da aplicação</strong> (chaves de API privadas): tudo que vai para o navegador é público, inclusive variáveis "de ambiente" embutidas no bundle.</li>
+    <li><strong>Regras de autorização</strong>: esconder um botão no front não impede a chamada à API. A verificação real é sempre no servidor.</li>
+  </ul>
+
+  <h3>Same-origin policy</h3>
+  <p>A <strong>same-origin policy</strong> (política de mesma origem) é a regra que impede um site de ler dados de outro dentro do navegador. Uma <strong>origem</strong> é a combinação de esquema, host e porta.</p>
+  <div class="tbl"><table><thead><tr><th>Comparado com <code>https://app.clinica.com.br</code></th><th>Mesma origem?</th><th>Motivo</th></tr></thead><tbody>
+    <tr><td><code>https://app.clinica.com.br/exames</code></td><td>Sim</td><td>Só o caminho muda</td></tr>
+    <tr><td><code>http://app.clinica.com.br</code></td><td>Não</td><td>Esquema diferente</td></tr>
+    <tr><td><code>https://api.clinica.com.br</code></td><td>Não</td><td>Host diferente (subdomínio conta)</td></tr>
+    <tr><td><code>https://app.clinica.com.br:8443</code></td><td>Não</td><td>Porta diferente</td></tr>
+  </tbody></table></div>
+  <p>A política restringe principalmente a <strong>leitura</strong>: o script de uma origem não lê a resposta de um <code>fetch</code> para outra origem, não acessa o DOM de um iframe de outra origem e não lê o <code>localStorage</code> dela. Carregar imagens, scripts e folhas de estilo de outras origens continua permitido, e formulários podem enviar dados para outra origem. Essa última brecha é a base do CSRF. Como liberar leituras entre origens de forma controlada (CORS) e como se defender de CSRF e XSS fica no <a href="09-seguranca-web.html">módulo 9</a>.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Achar que CORS protege o servidor. CORS é o servidor dizendo ao navegador quem pode ler a resposta. Um <code>curl</code> ou um script fora do navegador ignora tudo isso.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Origem é esquema, host e porta. A same-origin policy impede que um site leia dados de outro no navegador. Para sessão eu prefiro cookie <code>HttpOnly</code> e <code>Secure</code>; <code>localStorage</code> fica exposto a qualquer script da página."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Inclua no checklist de revisão: nada de token ou dado de saúde em <code>localStorage</code>, logout limpa armazenamento local, nenhum segredo no bundle. Isso conversa com a LGPD, que trata dado de saúde como dado pessoal sensível (veja o <a href="10-ciberseguranca.html">módulo 10</a>).</p></div>
+</section>
+
+<section class="chap" id="modelos">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Modelos de renderização: MPA, SPA, SSR, SSG e híbridos</h2>
+  <p>A pergunta central é: <strong>onde e quando o HTML final é gerado?</strong> No servidor a cada requisição, no servidor no momento do build, ou no navegador pelo JavaScript.</p>
+  <div class="tbl"><table><thead><tr><th>Modelo</th><th>Onde o HTML nasce</th><th>Pontos fortes</th><th>Custos</th></tr></thead><tbody>
+    <tr><td><strong>MPA</strong> (multi-page application)</td><td>Servidor, a cada página</td><td>Simples, rápido no primeiro acesso, bom para SEO, pouco JS</td><td>Recarrega a página inteira na navegação; interatividade rica exige JS extra</td></tr>
+    <tr><td><strong>SPA</strong> (single-page application)</td><td>Navegador, a partir de um HTML quase vazio</td><td>Navegação fluida, sensação de aplicativo, front e back bem separados</td><td>Bundle grande, tela branca até o JS rodar, SEO e acessibilidade exigem cuidado, roteamento e foco feitos à mão</td></tr>
+    <tr><td><strong>SSR</strong> (server-side rendering)</td><td>Servidor, a cada requisição, com o mesmo framework do cliente</td><td>Conteúdo visível cedo, bom para SEO, dados sempre atuais</td><td>Servidor Node (ou similar) para manter, custo por requisição, hidratação</td></tr>
+    <tr><td><strong>SSG</strong> (static site generation)</td><td>Servidor, no build</td><td>Muito rápido, barato, servido direto da CDN</td><td>Conteúdo muda só no próximo build; ruim para dados por usuário</td></tr>
+    <tr><td><strong>ISR</strong> e híbridos</td><td>Build, com regeneração periódica ou sob demanda</td><td>Equilíbrio entre estático e atual; escolha por rota</td><td>Mais complexidade de cache e invalidação; depende do framework e da hospedagem</td></tr>
+  </tbody></table></div>
+  <h3>Hidratação</h3>
+  <p>No SSR e no SSG o usuário recebe HTML pronto, mas os botões ainda não respondem. <strong>Hidratação</strong> (hydration) é o passo em que o JS do framework roda no navegador, reconstrói a árvore de componentes e liga os eventos ao HTML existente. Até terminar, a página parece pronta e não reage, o que prejudica a métrica INP (seção 9). Abordagens recentes tentam reduzir isso: hidratação parcial ou em "ilhas" (só os componentes interativos recebem JS, como no Astro), streaming de HTML e componentes que rodam só no servidor (React Server Components).</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Site de conteúdo público (institucional, blog, páginas de serviço): SSG ou MPA. Sistema interno autenticado com muita interação (prontuário, agenda): SPA atende bem e simplifica a infraestrutura. Conteúdo público com dados que mudam e SEO importante: SSR ou híbrido.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A diferença é onde o HTML é gerado. SPA gera no navegador e paga com bundle e tela inicial vazia; SSR gera no servidor a cada requisição e paga com infraestrutura e hidratação; SSG gera no build e é o mais rápido, mas fica desatualizado até o próximo build. Escolho por rota, conforme SEO, frequência de mudança e interatividade."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>SSR significa um servidor a mais para operar, monitorar e escalar, com sua própria superfície de ataque. Antes de aprovar uma migração "para SSR", pergunte qual métrica vai melhorar, quanto e para qual público. Para um sistema interno usado em desktop por equipe treinada, o ganho costuma ser pequeno.</p></div>
+</section>
+
+<section class="chap" id="frameworks">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Frameworks: como decidir</h2>
+  <p>React, Angular e Vue resolvem o mesmo problema: manter a interface em sincronia com o estado da aplicação por meio de componentes. As diferenças relevantes para decisão estão em escopo, convenções e ecossistema, mais do que em desempenho bruto.</p>
+  <div class="tbl"><table><thead><tr><th>Critério</th><th>React</th><th>Angular</th><th>Vue</th></tr></thead><tbody>
+    <tr><td>Escopo</td><td>Biblioteca de interface; roteamento, formulários e dados vêm de outras bibliotecas</td><td>Framework completo: roteador, formulários, HTTP, injeção de dependência, testes</td><td>Núcleo progressivo, com roteador e gerenciador de estado oficiais</td></tr>
+    <tr><td>Linguagem</td><td>JS ou TypeScript, com JSX</td><td>TypeScript como padrão</td><td>JS ou TypeScript, templates em arquivos <code>.vue</code></td></tr>
+    <tr><td>Convenções</td><td>Poucas; cada projeto monta sua pilha</td><td>Fortes; projetos se parecem entre si</td><td>Intermediárias</td></tr>
+    <tr><td>Meta-framework comum para SSR</td><td>Next.js, React Router (antigo Remix)</td><td>SSR integrado ao próprio Angular</td><td>Nuxt</td></tr>
+    <tr><td>Mantenedor</td><td>Meta e comunidade</td><td>Google</td><td>Comunidade, liderada pelo criador</td></tr>
+    <tr><td>Quando brilha</td><td>Mercado de contratação amplo, ecossistema enorme</td><td>Times grandes, sistemas corporativos longos, padronização</td><td>Curva de entrada suave, adoção gradual em páginas existentes</td></tr>
+  </tbody></table></div>
+  <h3>Perguntas que decidem de verdade</h3>
+  <ul>
+    <li>O que o time já domina e o que o mercado local oferece para contratar?</li>
+    <li>Quanto de convenção você quer imposta pela ferramenta e quanto quer decidir e documentar?</li>
+    <li>Qual o horizonte de vida do sistema? Sistemas de saúde costumam viver uma década ou mais; peso de atualização entre versões importa.</li>
+    <li>Precisa de SSR? Então avalie o meta-framework junto, não só a biblioteca.</li>
+    <li>Precisa mesmo de framework? Formulários e páginas de conteúdo funcionam bem com HTML renderizado no servidor e um pouco de JS.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Trocar de framework para resolver problema de processo. Reescrever um front funcionando custa meses e devolve, no melhor caso, o mesmo produto. Migração incremental (rota por rota, ou micro-frontends quando há times independentes) reduz risco, mas também tem custo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Os três resolvem componentes e reatividade. Angular traz tudo e impõe convenções, bom para times grandes; React é uma biblioteca com ecossistema enorme e mais decisões a tomar; Vue tem entrada suave. Eu decido pelo time, pelo tempo de vida do sistema e pela necessidade de SSR."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Registre a escolha numa ADR (Architecture Decision Record, registro de decisão de arquitetura) com contexto, alternativas e consequências. Defina também política de atualização de dependências: um front parado três versões atrás vira dívida que bloqueia correções de segurança.</p></div>
+</section>
+
+<section class="chap" id="acessibilidade">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Acessibilidade</h2>
+  <p>Acessibilidade (a11y) é garantir que pessoas com deficiência visual, auditiva, motora ou cognitiva consigam usar o sistema, com ou sem tecnologia assistiva: leitores de tela, navegação só por teclado, ampliação, comando de voz. Num sistema de saúde, o público inclui idosos e pessoas em tratamento, que dependem disso com frequência.</p>
+  <h3>WCAG</h3>
+  <p>As <strong>WCAG</strong> (Web Content Accessibility Guidelines) do W3C são a referência internacional. A versão 2.2 é a recomendação mais recente. Os critérios se organizam em quatro princípios (perceptível, operável, compreensível e robusto) e três níveis de conformidade: A, AA e AAA. O nível AA é a meta usual de empresas e governos.</p>
+  <div class="tbl"><table><thead><tr><th>Prática</th><th>O que fazer</th></tr></thead><tbody>
+    <tr><td>Semântica</td><td>Usar <code>&lt;button&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;label&gt;</code>, títulos em ordem. ARIA só quando não existir elemento nativo.</td></tr>
+    <tr><td>Teclado</td><td>Tudo que se faz com mouse precisa ser possível com Tab, Enter, Espaço e setas. Foco sempre visível. Nada de armadilha de foco em modais.</td></tr>
+    <tr><td>Contraste</td><td>No nível AA, 4,5:1 para texto normal e 3:1 para texto grande.</td></tr>
+    <tr><td>Texto alternativo</td><td><code>alt</code> descritivo em imagens informativas; <code>alt=""</code> em imagens decorativas.</td></tr>
+    <tr><td>Formulários</td><td>Rótulo associado a cada campo; mensagens de erro em texto, perto do campo e anunciadas.</td></tr>
+    <tr><td>Cor</td><td>Não usar só cor para transmitir informação (por exemplo, resultado alterado só em vermelho).</td></tr>
+    <tr><td>SPA</td><td>Ao trocar de rota, mover o foco e atualizar o título da página; leitores de tela não percebem a troca sozinhos.</td></tr>
+  </tbody></table></div>
+  <pre><code class="html">&lt;!-- ruim --&gt;
+&lt;div class="btn" onclick="agendar()"&gt;Agendar&lt;/div&gt;
+
+&lt;!-- bom --&gt;
+&lt;label for="data"&gt;Data da consulta&lt;/label&gt;
+&lt;input id="data" type="date" required&gt;
+&lt;button type="submit"&gt;Agendar&lt;/button&gt;</code></pre>
+  <h3>Obrigação legal no Brasil</h3>
+  <p>A <strong>Lei Brasileira de Inclusão da Pessoa com Deficiência</strong> (Lei 13.146/2015, também chamada Estatuto da Pessoa com Deficiência) torna obrigatória a acessibilidade em sites mantidos por empresas com sede ou representação comercial no país e por órgãos de governo. Para o setor público existe ainda o eMAG (Modelo de Acessibilidade em Governo Eletrônico). Na prática, empresas usam as WCAG nível AA como forma de demonstrar conformidade. Para detalhes jurídicos, consulte o jurídico da empresa.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Confiar só em ferramenta automática. Lighthouse e axe encontram uma parte dos problemas (contraste, <code>alt</code> ausente, rótulos). Navegar o fluxo principal só com teclado e com um leitor de tela (NVDA no Windows, VoiceOver no macOS e iOS) encontra o resto.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Sigo WCAG nível AA: HTML semântico, tudo acessível por teclado com foco visível, contraste mínimo de 4,5:1, rótulos nos campos e texto alternativo. No Brasil a Lei Brasileira de Inclusão exige acessibilidade em sites, então trato como requisito desde o início."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Coloque acessibilidade na definição de pronto: componente novo só entra com teste de teclado e verificação automática no CI. Corrigir depois custa muito mais do que fazer certo no design system. Acompanhe o número de problemas por tela crítica e trate acessibilidade como risco legal e reputacional, além de qualidade.</p></div>
+</section>
+
+<section class="chap" id="desempenho">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Desempenho e Core Web Vitals</h2>
+  <p>Os <strong>Core Web Vitals</strong> são três métricas do Google para experiência real de carregamento, resposta e estabilidade visual. São medidas em usuários reais e avaliadas no percentil 75: a página passa se 75% das visitas ficam dentro do limite "bom".</p>
+  <div class="tbl"><table><thead><tr><th>Métrica</th><th>Mede</th><th>Bom</th><th>Causas comuns de nota ruim</th></tr></thead><tbody>
+    <tr><td><strong>LCP</strong> (Largest Contentful Paint)</td><td>Quando o maior elemento visível (imagem ou bloco de texto) aparece</td><td>≤ 2,5 s</td><td>Servidor lento, CSS e JS bloqueantes, imagem principal pesada ou descoberta tarde, SPA que renderiza tudo no cliente</td></tr>
+    <tr><td><strong>INP</strong> (Interaction to Next Paint)</td><td>Tempo entre uma interação (clique, toque, tecla) e o próximo quadro pintado, considerando as interações da visita</td><td>≤ 200 ms</td><td>Tarefas longas na main thread, hidratação pesada, handlers que fazem trabalho demais</td></tr>
+    <tr><td><strong>CLS</strong> (Cumulative Layout Shift)</td><td>Quanto o conteúdo pula de lugar sem o usuário pedir</td><td>≤ 0,1</td><td>Imagens e anúncios sem dimensão reservada, fontes trocando, banners inseridos no topo</td></tr>
+  </tbody></table></div>
+  <p>O INP substituiu o FID (First Input Delay) como Core Web Vital em 2024. Outras métricas úteis para diagnóstico: TTFB (Time to First Byte, tempo até o primeiro byte da resposta) e FCP (First Contentful Paint, primeira pintura com conteúdo).</p>
+  <h3>Dados de campo e de laboratório</h3>
+  <p><strong>Dados de campo</strong> (RUM, real user monitoring) vêm de usuários reais, em aparelhos e redes reais; o relatório CrUX do Chrome é um exemplo público. <strong>Dados de laboratório</strong> vêm de uma execução controlada, como o Lighthouse. O laboratório ajuda a reproduzir e comparar; o campo diz o que o usuário vive. Na auditoria padrão de carregamento, o Lighthouse não mede INP porque não há usuário interagindo; ele usa o TBT (Total Blocking Time) como indicador aproximado.</p>
+  <h3>Alavancas principais</h3>
+  <div class="tbl"><table><thead><tr><th>Alavanca</th><th>Como</th><th>Métrica afetada</th></tr></thead><tbody>
+    <tr><td>Imagens</td><td>Formatos modernos (AVIF, WebP), tamanhos responsivos com <code>srcset</code>, <code>width</code> e <code>height</code> declarados, compressão</td><td>LCP, CLS</td></tr>
+    <tr><td>Lazy loading</td><td><code>loading="lazy"</code> em imagens abaixo da dobra; nunca na imagem do LCP, que deve ter <code>fetchpriority="high"</code></td><td>LCP</td></tr>
+    <tr><td>Bundle menor</td><td>Remover dependências pesadas, tree shaking, analisar o bundle</td><td>LCP, INP</td></tr>
+    <tr><td>Code splitting</td><td>Separar o JS por rota ou funcionalidade e carregar com <code>import()</code> sob demanda</td><td>LCP, INP</td></tr>
+    <tr><td>CDN</td><td>Servir estáticos perto do usuário, com cache longo e nomes de arquivo com hash (ver <a href="06-backend-infra.html">módulo 6</a>)</td><td>TTFB, LCP</td></tr>
+    <tr><td>Cache HTTP</td><td>Cabeçalhos corretos para estáticos e HTML (ver <a href="03-http.html">módulo 3</a>)</td><td>Visitas repetidas</td></tr>
+    <tr><td>Main thread livre</td><td>Quebrar tarefas longas, adiar scripts de terceiros, Web Workers</td><td>INP</td></tr>
+  </tbody></table></div>
+  <pre><code class="js">// code splitting: o editor de laudos só é baixado quando o usuário abre
+botaoEditar.addEventListener('click', async () =&gt; {
+  const { abrirEditor } = await import('./editor-laudo.js');
+  abrirEditor(exameId);
+});</code></pre>
+  <pre><code class="html">&lt;img src="/img/equipe-800.avif"
+     srcset="/img/equipe-400.avif 400w, /img/equipe-800.avif 800w"
+     sizes="(max-width: 600px) 400px, 800px"
+     width="800" height="450" alt="Equipe de enfermagem da unidade"
+     loading="lazy"&gt;</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Otimizar pela nota do Lighthouse no notebook do desenvolvedor. O Google e o paciente usam a experiência real, medida em campo. Olhe os dados de campo no percentil 75, separados por tipo de aparelho.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Core Web Vitals são LCP, INP e CLS, com limites bons de 2,5 s, 200 ms e 0,1 no percentil 75 de usuários reais. Para LCP ataco servidor, recursos bloqueantes e a imagem principal; para INP, tarefas longas na main thread; para CLS, espaço reservado para imagens e conteúdo dinâmico."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina um orçamento de desempenho (performance budget): limites de tamanho de bundle e de métricas que o CI verifica e que quebram o build quando estourados. Sem isso o desempenho degrada um pull request de cada vez. Acompanhe os Core Web Vitals de campo num painel e revise após cada release.</p></div>
+</section>
+
+<section class="chap" id="build-pwa">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Build moderno, PWA e ferramentas</h2>
+  <h3>O que acontece no build</h3>
+  <p>O código que o time escreve (TypeScript, JSX, módulos, CSS moderno) passa por um processo de build antes de ir para o navegador.</p>
+  <div class="tbl"><table><thead><tr><th>Etapa</th><th>O que faz</th><th>Ferramentas comuns</th></tr></thead><tbody>
+    <tr><td>Transpilação</td><td>Converte TypeScript, JSX e sintaxe nova em JS que os navegadores-alvo entendem</td><td>TypeScript, Babel, SWC, esbuild</td></tr>
+    <tr><td>Bundling</td><td>Junta módulos em poucos arquivos, resolve dependências, separa chunks</td><td>Vite, webpack, Rollup, esbuild</td></tr>
+    <tr><td>Tree shaking</td><td>Remove código importado mas nunca usado</td><td>Feito pelo bundler</td></tr>
+    <tr><td>Minificação</td><td>Remove espaços, encurta nomes, reduz bytes</td><td>Terser, esbuild</td></tr>
+    <tr><td>Hash no nome</td><td>Gera <code>app.3f9a1c.js</code>; o nome muda quando o conteúdo muda, o que permite cache longo</td><td>Feito pelo bundler</td></tr>
+    <tr><td>Source maps</td><td>Mapeiam o código minificado de volta ao original para depuração e rastreio de erros</td><td>Gerados pelo bundler</td></tr>
+  </tbody></table></div>
+  <p>O <strong>webpack</strong> dominou por anos e ainda está em muitos projetos legados. O <strong>Vite</strong> virou padrão em projetos novos: em desenvolvimento serve módulos ES nativos ao navegador, o que dá partida rápida, e em produção gera um bundle otimizado.</p>
+  <pre><code class="sh">npm create vite@latest portal -- --template react-ts
+npm run build      # gera dist/ com arquivos minificados e com hash
+npx vite preview   # serve o build localmente para conferir</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Publicar source maps abertos em produção expõe o código-fonte completo, incluindo comentários. A prática comum é gerar os mapas e enviá-los só para a ferramenta de monitoramento de erros, sem servir publicamente.</p></div>
+
+  <h3>Compatibilidade</h3>
+  <p>O time define quais navegadores suporta (por exemplo, com uma configuração <code>browserslist</code>) e o build usa isso para decidir quanto transpilar. Para saber se uma API existe em determinado navegador, consulte o MDN ou o caniuse.com. <strong>Polyfills</strong> implementam em JS uma API ausente; aumentam o bundle, então inclua só os necessários. Para recursos novos, prefira <strong>melhoria progressiva</strong> (progressive enhancement): a base funciona em todos, o recurso novo melhora onde existir.</p>
+
+  <h3>PWA e service workers</h3>
+  <p>Uma <strong>PWA</strong> (Progressive Web App) é um site que se comporta como aplicativo: pode ser instalado na tela inicial, abrir em janela própria e funcionar com rede ruim ou sem rede. As peças são um <strong>manifesto</strong> (JSON com nome, ícones, cores) e um <strong>service worker</strong>.</p>
+  <p>O service worker é um script que roda em segundo plano, separado da página, e intercepta as requisições de rede da origem dele. Com isso ele decide responder do cache, da rede ou de uma combinação, e pode receber notificações push. Ele só funciona em HTTPS (com exceção de <code>localhost</code>) porque um intermediário que injetasse um service worker controlaria o site de forma persistente.</p>
+  <pre><code class="js">if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Um service worker com cache mal planejado continua servindo a versão antiga do site depois do deploy. Defina desde o início a estratégia de atualização e de versão do cache, e como forçar a atualização em caso de bug.</p></div>
+
+  <h3>DevTools e Lighthouse</h3>
+  <ul>
+    <li><strong>Elements</strong>: DOM e estilos computados ao vivo.</li>
+    <li><strong>Console</strong>: erros e execução de JS.</li>
+    <li><strong>Network</strong>: cada requisição, cabeçalhos, tempos, tamanho, cache; simula rede lenta.</li>
+    <li><strong>Performance</strong>: grava a linha do tempo da main thread e mostra tarefas longas, layout e paint.</li>
+    <li><strong>Application</strong>: cookies, localStorage, IndexedDB, service workers, cache.</li>
+    <li><strong>Lighthouse</strong>: auditoria de laboratório de desempenho, acessibilidade, boas práticas e SEO. Pode rodar no CI.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"O build transpila, junta módulos, remove código morto, minifica e coloca hash no nome para permitir cache longo. Source maps servem para depurar, mas eu não os sirvo publicamente. Service worker é um proxy no navegador que permite offline e exige HTTPS."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça visibilidade do build: tamanho do bundle por release, versão de dependências, vulnerabilidades conhecidas (<code>npm audit</code> ou ferramenta equivalente no CI) e tempo de build. Antes de aprovar uma PWA com modo offline, pergunte como fica a consistência de dados clínicos editados sem conexão. Offline para leitura é simples; offline para escrita exige resolver conflitos.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>DOM</dt><dd>Árvore de objetos que representa o documento HTML e que o JS pode ler e alterar.</dd></div>
+    <div><dt>CSSOM</dt><dd>Árvore de regras de estilo construída a partir do CSS.</dd></div>
+    <div><dt>Render tree</dt><dd>Combinação de DOM e CSSOM só com o que será desenhado.</dd></div>
+    <div><dt>Layout / reflow</dt><dd>Cálculo de posição e tamanho de cada elemento.</dd></div>
+    <div><dt>Paint e composite</dt><dd>Desenho dos pixels em camadas e junção das camadas na tela.</dd></div>
+    <div><dt>Caminho crítico</dt><dd>Recursos e etapas necessários para a primeira pintura útil.</dd></div>
+    <div><dt>async / defer</dt><dd>Atributos que evitam que um script bloqueie o parser; diferem em ordem e momento de execução.</dd></div>
+    <div><dt>Event loop</dt><dd>Mecanismo que tira trabalho das filas e o executa na thread principal, uma tarefa por vez.</dd></div>
+    <div><dt>Microtarefa</dt><dd>Callback de alta prioridade (Promise, <code>queueMicrotask</code>) executado antes da próxima tarefa.</dd></div>
+    <div><dt>Long task</dt><dd>Tarefa na main thread acima de 50 ms.</dd></div>
+    <div><dt>Web Worker</dt><dd>JS em outra thread, sem acesso ao DOM, que conversa por mensagens.</dd></div>
+    <div><dt>Origem</dt><dd>Esquema, host e porta de uma URL.</dd></div>
+    <div><dt>Same-origin policy</dt><dd>Regra do navegador que impede uma origem de ler dados de outra.</dd></div>
+    <div><dt>SPA / MPA</dt><dd>Aplicação de página única renderizada no cliente / aplicação de várias páginas renderizadas no servidor.</dd></div>
+    <div><dt>SSR / SSG / ISR</dt><dd>Renderização no servidor por requisição / no build / no build com regeneração.</dd></div>
+    <div><dt>Hidratação</dt><dd>Execução do JS no cliente para tornar interativo um HTML gerado no servidor.</dd></div>
+    <div><dt>LCP, INP, CLS</dt><dd>Core Web Vitals de carregamento, resposta e estabilidade visual.</dd></div>
+    <div><dt>RUM</dt><dd>Real user monitoring: métricas coletadas de usuários reais.</dd></div>
+    <div><dt>Code splitting</dt><dd>Divisão do JS em partes carregadas sob demanda.</dd></div>
+    <div><dt>Tree shaking</dt><dd>Remoção no build de código importado e não usado.</dd></div>
+    <div><dt>Source map</dt><dd>Arquivo que liga o código minificado ao código-fonte original.</dd></div>
+    <div><dt>Service worker</dt><dd>Script em segundo plano que intercepta requisições da origem; base de PWA e offline.</dd></div>
+    <div><dt>WCAG</dt><dd>Diretrizes de acessibilidade do W3C, com níveis A, AA e AAA.</dd></div>
+    <div><dt>LBI</dt><dd>Lei Brasileira de Inclusão (Lei 13.146/2015), que exige acessibilidade em sites.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e troubleshooting</h2>
+  <h3>"O portal ficou lento depois do deploy"</h3>
+  <ol class="seq">
+    <li><div><strong>Confirme com dados.</strong> Compare LCP e INP de campo antes e depois, por tipo de aparelho. Reclamação isolada pode ser rede do usuário.</div></li>
+    <li><div><strong>Compare os builds.</strong> O bundle cresceu? Uma dependência nova entrou? Um analisador de bundle mostra o que pesa.</div></li>
+    <li><div><strong>Reproduza no DevTools.</strong> Network com rede lenta e CPU reduzida; Performance para achar tarefas longas.</div></li>
+    <li><div><strong>Olhe o servidor.</strong> TTFB subiu? Então o problema pode estar na API ou no SSR, não no front.</div></li>
+    <li><div><strong>Decida.</strong> Se o impacto é grande, reverta primeiro e investigue depois.</div></li>
+  </ol>
+  <h3>"Usuários veem a versão antiga mesmo depois do deploy"</h3>
+  <p>Suspeitos, em ordem: HTML com cache longo na CDN ou no navegador (o HTML deve ter cache curto ou revalidação; os assets com hash podem ter cache longo), service worker servindo cache antigo, e CDN sem invalidação. A correção estrutural é HTML sempre revalidado e assets imutáveis com hash.</p>
+  <h3>"A tela pula quando a página carrega"</h3>
+  <p>CLS alto. Procure imagens sem <code>width</code>/<code>height</code>, banners de aviso inseridos no topo depois da carga, fontes que mudam de tamanho ao trocar. Reserve espaço com dimensões ou <code>aspect-ratio</code>.</p>
+  <h3>"O botão de salvar demora a responder"</h3>
+  <p>INP alto. Grave no painel Performance e procure tarefas longas no handler do clique: validação pesada, re-renderização de uma lista enorme, chamada síncrona. Mostre o retorno visual primeiro (botão desabilitado, indicador) e faça o resto depois ou em Worker.</p>
+  <h3>"O time quer reescrever o front em outro framework"</h3>
+  <p>Peça o problema concreto e a métrica: lentidão, dificuldade de contratar, versão sem suporte, produtividade. Muitos desses problemas se resolvem com atualização de versão, limpeza de dependências ou refatoração por partes. Se a migração for justificada, prefira incremental, por rota, com critério de saída e prazo.</p>
+  <h3>"Auditoria apontou que o sistema não é acessível"</h3>
+  <p>Priorize os fluxos críticos (login, agendamento, resultado de exame). Corrija primeiro o que bloqueia uso: teclado, rótulos, contraste. Leve as correções para os componentes do design system, para que a correção se propague. Inclua verificação automática no CI para não regredir.</p>
+  <div class="note mgr"><b>Para gestores</b><p>Em todos esses cenários a pergunta de gestão é a mesma: temos medição para saber se piorou e um caminho rápido para voltar atrás? Painel de Core Web Vitals de campo, monitoramento de erros de front-end com source maps privados e rollback simples respondem às duas.</p></div>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que acontece entre o navegador receber o HTML e mostrar a página?</span></summary><div class="ans"><p>O parser monta o DOM a partir do HTML e o CSSOM a partir do CSS. Os dois formam a render tree, que passa por layout (geometria), paint (pixels em camadas) e composite (junção das camadas). Scripts síncronos pausam o parser e CSS bloqueia a renderização.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre async e defer?</span></summary><div class="ans"><p>Os dois baixam o script sem parar o parser. <code>async</code> executa assim que o download termina, pausando o parser naquele momento e sem ordem garantida. <code>defer</code> executa depois do parsing, antes do <code>DOMContentLoaded</code>, na ordem em que aparecem.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>O que é reflow e como evitá-lo?</span></summary><div class="ans"><p>É o recálculo de layout. Acontece ao mudar geometria ou conteúdo. Evito alternar leituras e escritas de geometria em laço, agrupo alterações e animo com <code>transform</code> e <code>opacity</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Explique o event loop. Em que ordem saem A, D, C, B no exemplo com setTimeout e Promise?</span></summary><div class="ans"><p>O código síncrono roda primeiro (A, D). Ao esvaziar a pilha, todas as microtarefas rodam (C, da Promise). Só então o loop pega a próxima tarefa (B, do setTimeout). A ordem é sempre: uma tarefa, todas as microtarefas, renderização se for a hora.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Se o JavaScript é single-thread, como fazer cálculo pesado sem travar a tela?</span></summary><div class="ans"><p>Movendo o cálculo para um Web Worker, que roda em outra thread e troca mensagens com a página, ou quebrando o trabalho em pedaços que devolvem o controle ao navegador entre si. <code>async</code>/<code>await</code> sozinho não resolve.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Onde guardar o token de sessão no navegador?</span></summary><div class="ans"><p>De preferência num cookie <code>HttpOnly</code>, <code>Secure</code> e com <code>SameSite</code>, que o JS não consegue ler. <code>localStorage</code> fica exposto a qualquer script da página, incluindo um injetado por XSS. A escolha final depende do desenho de autenticação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>O que é a same-origin policy?</span></summary><div class="ans"><p>É a regra que impede uma origem (esquema, host e porta) de ler dados de outra no navegador: respostas de <code>fetch</code>, DOM de iframes, armazenamento. Carregar recursos e enviar formulários entre origens continua permitido. CORS é o mecanismo para o servidor liberar leituras específicas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>SPA, SSR ou SSG: como você escolhe?</span></summary><div class="ans"><p>Pelo tipo de conteúdo. Público e pouco mutável: SSG. Público, dinâmico e com SEO: SSR ou híbrido. Sistema autenticado e muito interativo: SPA. Considero também custo de operar servidor de SSR e o efeito da hidratação na interatividade.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é hidratação e qual o problema dela?</span></summary><div class="ans"><p>É o JS do framework rodando no cliente para ligar eventos ao HTML que veio do servidor. Enquanto não termina, a página parece pronta e não responde, o que prejudica o INP. Ilhas, hidratação parcial e componentes só de servidor reduzem esse custo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Quais são os Core Web Vitals e os limites bons?</span></summary><div class="ans"><p>LCP ≤ 2,5 s (carregamento do maior elemento), INP ≤ 200 ms (resposta a interações) e CLS ≤ 0,1 (estabilidade visual), avaliados no percentil 75 de usuários reais.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como você melhoraria um LCP ruim?</span></summary><div class="ans"><p>Identifico o elemento de LCP e o que o atrasa. Reduzo TTFB (servidor, CDN), removo CSS e JS bloqueantes, faço a imagem principal ser descoberta cedo com <code>fetchpriority="high"</code> ou preload, uso formato e tamanho adequados e não aplico lazy loading nela.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O que é code splitting?</span></summary><div class="ans"><p>Dividir o bundle em partes carregadas sob demanda, por rota ou funcionalidade, com <code>import()</code> dinâmico. A primeira tela baixa e executa menos JS.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Para que servem source maps e qual o cuidado em produção?</span></summary><div class="ans"><p>Ligam o código minificado ao original, para depuração e para stack traces legíveis. Em produção eu os envio para a ferramenta de monitoramento de erros sem servi-los publicamente, para não expor o código-fonte.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O que é um service worker e por que exige HTTPS?</span></summary><div class="ans"><p>É um script em segundo plano que intercepta requisições da origem e permite cache offline e push. Exige HTTPS porque controla a origem de forma persistente; um atacante na rede que injetasse um service worker manteria o controle mesmo depois.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Como garantir acessibilidade num time que nunca se preocupou com isso?</span></summary><div class="ans"><p>Adoto WCAG nível AA como meta, começo pelos fluxos críticos, corrijo no design system, coloco verificação automática no CI e teste manual de teclado na definição de pronto. Explico que no Brasil a Lei Brasileira de Inclusão torna isso obrigação, além de qualidade.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como gestor, como você evitaria que o desempenho do front piore com o tempo?</span></summary><div class="ans"><p>Com orçamento de desempenho verificado no CI (tamanho de bundle e métricas de laboratório), painel de Core Web Vitals de campo revisado após cada release, regra de entrada para scripts de terceiros e responsável definido para cada métrica.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>O time quer trocar Angular por React. O que você pergunta antes de aprovar?</span></summary><div class="ans"><p>Qual problema concreto a troca resolve e como vamos medir. Quanto custa, quanto tempo o produto fica sem evolução, se uma atualização ou refatoração resolveria, como fica a contratação e qual o plano incremental com critério de saída. Registro a decisão numa ADR.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

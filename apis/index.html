@@ -1,0 +1,140 @@
+<title>Trilha APIs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cabeçalho + rota vertical dos 10 módulos em três etapas (desenho, integração, operação e liderança). Mesmos tokens dos módulos. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638; --mgr:#d7a2ea; --mgr-soft:#2a1a30; --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638; --mgr:#d7a2ea; --mgr-soft:#2a1a30; --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.wrap{max-width:960px;margin:0 auto;padding-block:36px 80px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:8px;margin-bottom:36px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.04;letter-spacing:-.03em;margin:0 0 16px;max-width:18ch;text-wrap:balance}
+.lede{font-size:1.18rem;color:var(--muted);max-width:60ch;margin:0 0 26px}
+.prereq{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 18px;margin:0 0 14px;font-size:.95rem}
+.lenses{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:48px}
+.lens{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px 18px}
+.lens b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.lens.iv b{color:var(--iv)} .lens.mgr b{color:var(--mgr)}
+.lens p{margin:0;font-size:.95rem}
+
+.stage{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;padding-top:28px;border-top:1px solid var(--line);margin-top:28px}
+.stage h2{font-family:var(--f-display);font-size:1.25rem;margin:0 0 4px;letter-spacing:-.01em}
+.stage .stage-meta{font-size:.88rem;color:var(--muted)}
+.mods{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.mod a{display:grid;grid-template-columns:3.2em minmax(0,1fr) auto;gap:4px 14px;align-items:start;text-decoration:none;color:var(--ink);
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px 18px}
+.mod a:hover{border-color:var(--accent)}
+.mod .num{font:700 1.5rem/1 var(--f-display);color:var(--accent);padding-top:2px}
+.mod h3{font-family:var(--f-display);font-weight:500;font-size:1.18rem;margin:0 0 2px;letter-spacing:-.01em}
+.mod p{margin:0;color:var(--muted);font-size:.95rem}
+.mod .st{font:600 .72rem var(--f-body);color:var(--muted);white-space:nowrap;padding-top:6px}
+.mod .st.on{color:var(--good)}
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .68rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:1px 8px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.l1{color:var(--good);background:var(--good-soft)} .l2{color:var(--warn);background:var(--warn-soft)} .l3{color:var(--bad);background:var(--bad-soft)}
+
+.how{margin-top:56px;border-top:1px solid var(--line);padding-top:28px}
+.how h2{font-family:var(--f-display);font-size:1.4rem;margin:0 0 12px}
+.how ol{padding-left:1.3em} .how li{margin-bottom:6px}
+footer{margin-top:48px;font-size:.85rem;color:var(--muted)}
+@media (max-width:700px){
+  .stage{grid-template-columns:minmax(0,1fr);gap:12px}
+  .mod a{grid-template-columns:2.6em minmax(0,1fr)}
+  .mod .st{grid-column:2}
+}
+</style>
+
+<div class="wrap">
+  <div class="brand"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></div>
+  <h1>APIs a fundo, do contrato à operação</h1>
+  <p class="lede">Dez módulos em ordem: desenho de APIs REST e contratos, outros estilos e comunicação assíncrona, segurança, confiabilidade, evolução, testes e observabilidade, interoperabilidade em saúde e, por fim, arquitetura e liderança.</p>
+  <p class="prereq"><b>Antes de começar:</b> esta trilha parte do módulo 08 (APIs: fundamentos) da trilha web, que cobre REST básico, paginação, idempotência e versionamento. Os módulos 07 (autenticação) e 09 (segurança de aplicações) daquela trilha também ajudam.</p>
+  <div class="lenses">
+    <div class="lens iv"><b>Na entrevista</b><p>Quadros laranja resumem como responder em uma ou duas frases. Cada módulo termina com perguntas de entrevista com resposta.</p></div>
+    <div class="lens mgr"><b>Para gestores</b><p>Quadros roxos trazem a visão de quem lidera o time: decisões, riscos, custos, o que cobrar e o que perguntar numa revisão de design.</p></div>
+  </div>
+
+  <section class="stage">
+    <div><h2>Desenho</h2><div class="stage-meta">Como uma API boa é pensada e descrita</div></div>
+    <ol class="mods">
+      <li class="mod"><a href="01-design-rest.html"><span class="num">01</span><div><h3>Design de APIs REST<span class="lvl l2">Intermediário</span></h3><p>Recursos, métodos, status, paginação por cursor, operações longas, uploads, convenções e erros com Problem Details.</p></div><span class="st" data-mod="01-design-rest.html"></span></a></li>
+      <li class="mod"><a href="02-contratos-openapi.html"><span class="num">02</span><div><h3>Contratos e OpenAPI<span class="lvl l2">Intermediário</span></h3><p>Design-first, OpenAPI 3.1 e JSON Schema, lint, mocks, geração de SDKs, documentação e detecção de quebras no CI.</p></div><span class="st" data-mod="02-contratos-openapi.html"></span></a></li>
+      <li class="mod"><a href="03-estilos.html"><span class="num">03</span><div><h3>GraphQL, gRPC e outros estilos<span class="lvl l2">Intermediário</span></h3><p>GraphQL, gRPC e Protobuf, SOAP legado, JSON-RPC, tRPC, BFF e como escolher sem modismo.</p></div><span class="st" data-mod="03-estilos.html"></span></a></li>
+    </ol>
+  </section>
+
+  <section class="stage">
+    <div><h2>Integração</h2><div class="stage-meta">Como as APIs conversam com segurança e sem cair</div></div>
+    <ol class="mods">
+      <li class="mod"><a href="04-assincrono.html"><span class="num">04</span><div><h3>Webhooks, eventos e tempo real<span class="lvl l3">Avançado</span></h3><p>Webhooks assinados, filas e Kafka, garantias de entrega, outbox, sagas, SSE e WebSocket.</p></div><span class="st" data-mod="04-assincrono.html"></span></a></li>
+      <li class="mod"><a href="05-seguranca-api.html"><span class="num">05</span><div><h3>Segurança de APIs<span class="lvl l3">Avançado</span></h3><p>OWASP API Security Top 10, autenticação de máquinas, JWT bem validado, autorização por objeto, SSRF e LGPD.</p></div><span class="st" data-mod="05-seguranca-api.html"></span></a></li>
+      <li class="mod"><a href="06-confiabilidade.html"><span class="num">06</span><div><h3>Confiabilidade e performance<span class="lvl l3">Avançado</span></h3><p>Timeouts, retries com jitter, idempotência, circuit breaker, rate limiting, cache, concorrência otimista e latência.</p></div><span class="st" data-mod="06-confiabilidade.html"></span></a></li>
+    </ol>
+  </section>
+
+  <section class="stage">
+    <div><h2>Operação e liderança</h2><div class="stage-meta">Como manter, evoluir e governar um portfólio de APIs</div></div>
+    <ol class="mods">
+      <li class="mod"><a href="07-evolucao-governanca.html"><span class="num">07</span><div><h3>Versionamento e governança<span class="lvl l3">Avançado</span></h3><p>Breaking changes, estratégias de versão, depreciação, gateways, catálogo, style guide e API como produto.</p></div><span class="st" data-mod="07-evolucao-governanca.html"></span></a></li>
+      <li class="mod"><a href="08-testes-observabilidade.html"><span class="num">08</span><div><h3>Testes e observabilidade<span class="lvl l3">Avançado</span></h3><p>Testes de contrato, Testcontainers, carga com k6, OpenTelemetry, SLOs e como investigar uma API lenta.</p></div><span class="st" data-mod="08-testes-observabilidade.html"></span></a></li>
+      <li class="mod"><a href="09-saude-interoperabilidade.html"><span class="num">09</span><div><h3>Interoperabilidade em saúde<span class="lvl l3">Avançado</span></h3><p>HL7 v2, FHIR, terminologias, RNDS, TISS, motores de integração, identidade do paciente e LGPD.</p></div><span class="st" data-mod="09-saude-interoperabilidade.html"></span></a></li>
+      <li class="mod"><a href="10-arquitetura-gestao.html"><span class="num">10</span><div><h3>Arquitetura e gestão de APIs<span class="lvl l3">Avançado</span></h3><p>Microsserviços, gateway e BFF, legado, custos, entrevista de system design, times, checklist de produção e plano de 90 dias.</p></div><span class="st" data-mod="10-arquitetura-gestao.html"></span></a></li>
+    </ol>
+  </section>
+
+  <div class="how">
+    <h2>Como usar</h2>
+    <ol>
+      <li>Siga a ordem: cada módulo usa conceitos dos anteriores.</li>
+      <li>Ao terminar uma seção, marque como estudada. O progresso aparece aqui e fica salvo neste navegador.</li>
+      <li>Antes de uma entrevista, revise só os quadros <b style="color:var(--iv)">Na entrevista</b> e as perguntas do fim de cada módulo. O módulo 10 traz um roteiro de system design.</li>
+      <li>Para a visão de liderança, leia os quadros <b style="color:var(--mgr)">Para gestores</b> e os cenários práticos de cada módulo.</li>
+    </ol>
+  </div>
+  <footer>Trilha APIs · estudo pessoal</footer>
+</div>
+
+<script>
+(function(){
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem('trilha-apis-done') || '{}') || {}; } catch(e){ done = {}; }
+  document.querySelectorAll('.st[data-mod]').forEach(function(el){
+    var f = el.dataset.mod, n = 0;
+    Object.keys(done).forEach(function(k){ if (k.indexOf(f + '#') === 0) n++; });
+    el.textContent = n ? n + (n === 1 ? ' seção estudada' : ' seções estudadas') : 'Não iniciado';
+    el.classList.toggle('on', n > 0);
+  });
+})();
+</script>

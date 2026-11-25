@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 09: Segurança de aplicações</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 09 de 10 · Segurança de aplicações</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html" aria-current="page"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li class="sub"><ol>
+      <li><a href="#mentalidade"><span class="n">1</span>Mentalidade de segurança</a></li>
+      <li><a href="#owasp"><span class="n">2</span>OWASP Top 10: o vocabulário comum</a></li>
+      <li><a href="#acesso"><span class="n">3</span>Controle de acesso quebrado e IDOR</a></li>
+      <li><a href="#injecao"><span class="n">4</span>Injeção: SQL, comando de SO e NoSQL</a></li>
+      <li><a href="#xss"><span class="n">5</span>XSS: cross-site scripting</a></li>
+      <li><a href="#csrf"><span class="n">6</span>CSRF: cross-site request forgery</a></li>
+      <li><a href="#ssrf"><span class="n">7</span>SSRF: server-side request forgery</a></li>
+      <li><a href="#cors-headers"><span class="n">8</span>CORS e cabeçalhos de segurança</a></li>
+      <li><a href="#arquivos"><span class="n">9</span>Upload, path traversal e desserialização</a></li>
+      <li><a href="#supply"><span class="n">10</span>Segredos, dependências e cadeia de suprimentos</a></li>
+      <li><a href="#logs-abuso"><span class="n">11</span>Logging seguro e proteção contra abuso</a></li>
+      <li><a href="#glossario"><span class="n">12</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">13</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">14</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 09 · <span class="lvl l3">Avançado</span></div>
+  <h1>Segurança de aplicações (AppSec)</h1>
+  <p class="lede">As vulnerabilidades que mais derrubam sistemas web, como elas funcionam por dentro e como corrigir no código. Com o olhar de quem escreve o código e de quem cobra o time por ele.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar o OWASP Top 10 e usar a lista como vocabulário comum com o time.</li>
+    <li>Reconhecer e corrigir controle de acesso quebrado, injeção, XSS, CSRF e SSRF em código real.</li>
+    <li>Configurar CORS e cabeçalhos de segurança sem abrir brechas.</li>
+    <li>Tratar segredos, dependências e logs como parte da superfície de ataque.</li>
+    <li>Definir o que cobrar do time e como medir, em vez de depender de heróis.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="mentalidade">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Mentalidade de segurança</h2>
+  <p>Quase toda vulnerabilidade deste módulo nasce de uma suposição errada: "o usuário só vai mandar o que a tela permite", "só o nosso front-end chama essa API", "esse campo sempre é um número". O atacante não usa a sua tela. Ele fala HTTP direto com o servidor (veja o <a href="03-http.html">módulo 3</a>) e manda o que quiser.</p>
+
+  <h3>Quatro princípios</h3>
+  <div class="tbl"><table><thead><tr><th>Princípio</th><th>O que significa</th><th>Exemplo no dia a dia</th></tr></thead><tbody>
+    <tr><td><strong>Nunca confiar na entrada</strong></td><td>Tudo que vem de fora é hostil até prova em contrário: corpo, query string, cabeçalhos, cookies, nome de arquivo, resposta de API de terceiro.</td><td>Validar no servidor mesmo que o front-end já valide.</td></tr>
+    <tr><td><strong>Defesa em profundidade</strong></td><td>Várias camadas independentes. Quando uma falha, outra segura.</td><td>Consulta parametrizada + usuário de banco sem permissão de <code>DROP</code> + WAF + alerta.</td></tr>
+    <tr><td><strong>Menor privilégio</strong></td><td>Cada usuário, serviço e credencial recebe só o acesso que precisa, pelo tempo que precisa.</td><td>A API de agendamento não lê a tabela de prontuários.</td></tr>
+    <tr><td><strong>Falhar de forma segura</strong></td><td>Em caso de erro, negar acesso e não vazar detalhes.</td><td>Se o serviço de autorização cair, a requisição é negada. Stack trace nunca vai para o cliente.</td></tr>
+  </tbody></table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 640 210" role="img" aria-label="Camadas de defesa em profundidade entre o atacante e os dados">
+      <defs><marker id="ah-dp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-b" x="10" y="80" width="80" height="40" rx="5"/><text x="50" y="104" text-anchor="middle">Atacante</text>
+      <line class="ln-b" x1="90" y1="100" x2="118" y2="100" marker-end="url(#ah-dp)"/>
+      <rect class="box" x="120" y="30" width="80" height="140" rx="5"/><text x="160" y="95" text-anchor="middle">WAF e</text><text x="160" y="111" text-anchor="middle">rate limit</text>
+      <rect class="box" x="210" y="30" width="80" height="140" rx="5"/><text x="250" y="95" text-anchor="middle">Validação</text><text x="250" y="111" text-anchor="middle">de entrada</text>
+      <rect class="box" x="300" y="30" width="80" height="140" rx="5"/><text x="340" y="95" text-anchor="middle">Autorização</text><text x="340" y="111" text-anchor="middle">por objeto</text>
+      <rect class="box" x="390" y="30" width="80" height="140" rx="5"/><text x="430" y="95" text-anchor="middle">Consulta</text><text x="430" y="111" text-anchor="middle">parametrizada</text>
+      <rect class="box" x="480" y="30" width="70" height="140" rx="5"/><text x="515" y="95" text-anchor="middle">Usuário</text><text x="515" y="111" text-anchor="middle">de BD restrito</text>
+      <rect class="box-a" x="560" y="80" width="70" height="40" rx="5"/><text x="595" y="104" text-anchor="middle">Dados</text>
+      <text class="lbl" x="120" y="195">Logs e alertas atravessam todas as camadas: se uma falhar, alguém precisa ficar sabendo.</text>
+    </svg>
+    <figcaption>Defesa em profundidade: cada camada é independente. Nenhuma sozinha é suficiente.</figcaption>
+  </figure>
+
+  <h3>Validação de entrada x codificação de saída</h3>
+  <p>São duas defesas diferentes que muita gente confunde.</p>
+  <ul>
+    <li><strong>Validação de entrada</strong> acontece quando o dado chega. Confere tipo, formato, tamanho e faixa. Prefira lista de permitidos (allowlist): "CPF tem 11 dígitos" é melhor que "CPF não pode ter aspas". Validação reduz superfície, mas não sabe onde o dado vai ser usado depois.</li>
+    <li><strong>Codificação de saída</strong> (output encoding) acontece quando o dado sai para um interpretador: HTML, SQL, shell, URL. Ela transforma caracteres especiais para que o interpretador os trate como texto. Depende do contexto de destino.</li>
+  </ul>
+  <p>Um nome como <code>O'Brien</code> é válido e precisa ser aceito. Quem impede que ele quebre a SQL é a consulta parametrizada, e quem impede que ele quebre o HTML é o escape na hora de renderizar. Por isso a regra é: valide na entrada, codifique na saída, e use as duas.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Toda vez que um dado cruza uma fronteira de confiança (rede, processo, interpretador), pergunte: quem controla esse dado e o que o próximo componente faz com ele?</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Se perguntarem "como você evita injeção?", diga que valida a entrada por allowlist e, separadamente, usa APIs que separam código de dados na saída: consulta parametrizada, escape por contexto, execução sem shell.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Segurança que depende de cada dev lembrar de tudo falha. Cobre padrões do time: bibliotecas aprovadas para acesso a banco, templates com escape automático, middleware de autorização comum. O custo de padronizar uma vez é menor que o de revisar a mesma falha em cada PR.</p></div>
+</section>
+
+<section class="chap" id="owasp">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>OWASP Top 10: o vocabulário comum</h2>
+  <p>A OWASP (Open Worldwide Application Security Project) é uma fundação aberta que publica guias de segurança de aplicações. O Top 10 é uma lista de conscientização das categorias de risco mais relevantes em aplicações web, montada a partir de dados de testes e de pesquisa com a comunidade. A edição 2021 é a mais citada em entrevistas e materiais de treinamento.</p>
+
+  <div class="tbl"><table><thead><tr><th>Código</th><th>Categoria (2021)</th><th>Resumo</th></tr></thead><tbody>
+    <tr><td>A01</td><td>Broken Access Control</td><td>Usuário faz o que não deveria: ver dados de outro, chamar função de admin. Ficou em primeiro lugar.</td></tr>
+    <tr><td>A02</td><td>Cryptographic Failures</td><td>Dado sensível sem criptografia ou com criptografia fraca, em trânsito ou em repouso. Veja o <a href="04-tls.html">módulo 4</a>.</td></tr>
+    <tr><td>A03</td><td>Injection</td><td>SQL, comando de SO, NoSQL, LDAP. Na edição 2021, XSS passou a fazer parte desta categoria.</td></tr>
+    <tr><td>A04</td><td>Insecure Design</td><td>Falha que nasce no projeto, antes de qualquer linha de código: fluxo de recuperação de senha fraco, ausência de limite de tentativas.</td></tr>
+    <tr><td>A05</td><td>Security Misconfiguration</td><td>Configuração padrão, debug ligado em produção, bucket público, cabeçalhos ausentes.</td></tr>
+    <tr><td>A06</td><td>Vulnerable and Outdated Components</td><td>Bibliotecas, frameworks e imagens com vulnerabilidades conhecidas.</td></tr>
+    <tr><td>A07</td><td>Identification and Authentication Failures</td><td>Senha fraca aceita, sessão que não expira, sem proteção contra credential stuffing. Veja o <a href="07-autenticacao.html">módulo 7</a>.</td></tr>
+    <tr><td>A08</td><td>Software and Data Integrity Failures</td><td>Atualização sem verificação de assinatura, pipeline de CI comprometido, desserialização insegura.</td></tr>
+    <tr><td>A09</td><td>Security Logging and Monitoring Failures</td><td>Ataque acontece e ninguém vê, ou não há registro para investigar depois.</td></tr>
+    <tr><td>A10</td><td>Server-Side Request Forgery (SSRF)</td><td>O servidor é induzido a fazer requisições para destinos que o atacante escolhe.</td></tr>
+  </tbody></table></div>
+
+  <div class="note"><b>Saiba mais: edição 2025</b><p>A OWASP publicou uma edição 2025 do Top 10. Entre outras mudanças, ela deu destaque próprio às falhas na cadeia de suprimentos de software e incorporou SSRF à categoria de controle de acesso quebrado. Confira a lista atual no site da OWASP antes de usá-la em material oficial do time. Em entrevistas, saber a de 2021 e mencionar que existe a de 2025 costuma bastar.</p></div>
+
+  <h3>Outras referências da OWASP</h3>
+  <ul>
+    <li><strong>ASVS</strong> (Application Security Verification Standard): uma lista de requisitos verificáveis, organizada em níveis. O nível 1 é o mínimo para qualquer aplicação. O nível 2 é o recomendado para aplicações que tratam dados sensíveis, como dados de saúde. O nível 3 é para aplicações críticas. Serve como checklist de requisitos e de revisão.</li>
+    <li><strong>Cheat Sheet Series</strong>: guias curtos e práticos por tema (SQL Injection Prevention, XSS Prevention, CSRF Prevention, Logging, Password Storage). É o primeiro lugar para consultar ao corrigir uma falha.</li>
+    <li><strong>API Security Top 10</strong>: lista específica para APIs, com destaque para autorização por objeto. Veja o <a href="08-apis.html">módulo 8</a>.</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Tratar o Top 10 como checklist de conformidade. Ele é uma lista de conscientização. "Passamos no Top 10" não quer dizer nada. Para requisitos verificáveis, use o ASVS.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Cite as categorias pelo nome e dê um exemplo concreto de duas ou três. Mostrar que sabe que controle de acesso quebrado é o primeiro da lista, e por quê, vale mais que recitar os dez.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Escolha um nível do ASVS como meta (para dados de saúde, o nível 2 é a referência natural) e transforme os requisitos relevantes em critérios de aceite e itens do checklist de revisão. Assim "seguro" vira algo que dá para verificar.</p></div>
+</section>
+
+<section class="chap" id="acesso">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Controle de acesso quebrado e IDOR</h2>
+  <p>Autenticação responde "quem é você". Autorização responde "você pode fazer isto, com este objeto". O <a href="07-autenticacao.html">módulo 7</a> trata dos mecanismos. Aqui o foco é a falha mais comum na prática: o código checa se o usuário está logado e esquece de checar se o recurso pertence a ele.</p>
+
+  <h3>IDOR: referência direta insegura a objeto</h3>
+  <p>IDOR (Insecure Direct Object Reference) acontece quando a aplicação usa um identificador vindo do cliente para buscar um objeto, sem conferir a permissão. Basta trocar <code>/api/exames/1001</code> por <code>/api/exames/1002</code> para ler o exame de outro paciente.</p>
+
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// GET /api/exames/:id
+app.get('/api/exames/:id', autenticado, async (req, res) =&gt; {
+  const exame = await db.exames.findById(req.params.id);
+  if (!exame) return res.status(404).end();
+  res.json(exame); // qualquer usuário logado lê o exame de qualquer paciente
+});</code></pre>
+    <pre data-label="Corrigido"><code class="js">// a busca já filtra pelo dono; o id do paciente vem da sessão, nunca do cliente
+app.get('/api/exames/:id', autenticado, async (req, res) =&gt; {
+  const exame = await db.exames.findOne({
+    id: req.params.id,
+    pacienteId: req.user.pacienteId
+  });
+  // 404 também quando o exame existe mas é de outro paciente: não confirma a existência
+  if (!exame) return res.status(404).end();
+  res.json(exame);
+});</code></pre>
+  </div>
+
+  <h3>Outras formas da mesma falha</h3>
+  <ul>
+    <li><strong>Escalada vertical</strong>: usuário comum chama <code>POST /api/admin/usuarios</code> porque a rota só esconde o botão no front-end.</li>
+    <li><strong>Mass assignment</strong>: o endpoint grava o corpo inteiro e o usuário envia <code>"perfil": "admin"</code> junto com o nome. Corrija com lista explícita de campos aceitos.</li>
+    <li><strong>Métodos esquecidos</strong>: <code>GET</code> checa permissão, <code>PUT</code> e <code>DELETE</code> na mesma rota não.</li>
+    <li><strong>Confiança em campo do cliente</strong>: <code>{"pacienteId": 77}</code> no corpo em vez de pegar da sessão.</li>
+  </ul>
+  <p>IDs aleatórios (UUID) dificultam adivinhar, mas não corrigem nada. O ID vaza em logs, links compartilhados e e-mails. A correção é sempre a checagem de autorização no servidor.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Negar por padrão. Centralize a autorização num middleware ou camada de serviço e escreva testes que tentam acessar o recurso de outro usuário. Esses testes pegam regressão que revisão humana deixa passar.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>IDOR é a pergunta clássica. Explique que a correção é verificar, a cada requisição, se o objeto pertence ao usuário ou se ele tem papel para acessá-lo, e que UUID sozinho só dificulta adivinhar o ID.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em sistemas de saúde, IDOR expõe dados sensíveis de pacientes e é incidente comunicável pela LGPD (veja o <a href="10-ciberseguranca.html">módulo 10</a>). Cobre testes automatizados de autorização para cada endpoint novo e inclua "quem pode acessar este recurso?" no template de PR.</p></div>
+</section>
+
+<section class="chap" id="injecao">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Injeção: SQL, comando de SO e NoSQL</h2>
+  <p>Injeção acontece quando dados do usuário são concatenados num texto que outro interpretador executa. O interpretador não sabe distinguir o que era código do que era dado. A correção, em todos os casos, é usar uma API que mantém os dois separados.</p>
+
+  <h3>SQL injection</h3>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// busca de paciente por CPF
+const sql = "SELECT id, nome FROM pacientes WHERE cpf = '" + req.query.cpf + "'";
+const { rows } = await db.query(sql);</code></pre>
+    <pre data-label="Corrigido"><code class="js">// consulta parametrizada: o valor vai separado do texto da SQL
+const { rows } = await db.query(
+  'SELECT id, nome FROM pacientes WHERE cpf = $1',
+  [req.query.cpf]
+);</code></pre>
+  </div>
+  <p>Com a entrada clássica <code>' OR '1'='1</code>, a versão vulnerável monta isto:</p>
+  <pre><code class="text">SELECT id, nome FROM pacientes WHERE cpf = '' OR '1'='1'</code></pre>
+  <p>A condição é sempre verdadeira e a consulta devolve todos os pacientes. Na versão parametrizada, o banco recebe a SQL já compilada e trata o valor inteiro como um CPF literal, que não existe.</p>
+  <ul>
+    <li>ORMs e query builders parametrizam por padrão, mas quase todos têm uma porta de saída para SQL crua. Revise esses pontos.</li>
+    <li>Nomes de tabela, colunas e direção de <code>ORDER BY</code> não podem ser parâmetros. Use allowlist: mapeie <code>"data"</code> para <code>data_consulta</code> e rejeite o resto.</li>
+    <li>Escapar aspas manualmente não é correção. Há casos de codificação e de contexto que escapam do escape.</li>
+    <li>Defesa em profundidade: o usuário de banco da aplicação não precisa de permissão para alterar esquema.</li>
+  </ul>
+
+  <h3>Injeção de comando de SO</h3>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">const { exec } = require('child_process');
+// exec passa a string inteira para o shell
+exec('pdftotext ' + req.body.arquivo + ' saida.txt', callback);
+// arquivo = "laudo.pdf; cat /etc/passwd"  -&gt; o shell executa os dois comandos</code></pre>
+    <pre data-label="Corrigido"><code class="js">const { execFile } = require('child_process');
+// 1. o nome vem de uma allowlist de formato
+if (!/^[a-z0-9_-]{1,64}\.pdf$/i.test(req.body.arquivo)) return res.status(400).end();
+// 2. execFile não usa shell: cada argumento chega ao programa como um valor só
+execFile('pdftotext', [path.join(DIR_LAUDOS, req.body.arquivo), 'saida.txt'], callback);
+// melhor ainda: usar uma biblioteca no lugar de chamar um programa externo</code></pre>
+  </div>
+
+  <h3>NoSQL injection</h3>
+  <p>Bancos como o MongoDB recebem consultas como objetos. Se a API aceita JSON e repassa o valor sem checar o tipo, o atacante envia um operador no lugar de um texto.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// POST /recuperar-senha/confirmar
+// corpo enviado: { "email": "vitima@exemplo.com", "codigo": { "$ne": null } }
+const pedido = await db.collection('recuperacoes').findOne({
+  email: req.body.email,
+  codigo: req.body.codigo   // vira "codigo diferente de null": casa com qualquer código
+});</code></pre>
+    <pre data-label="Corrigido"><code class="js">const { email, codigo } = req.body;
+// valida tipo e formato antes de montar a consulta
+if (typeof email !== 'string' || typeof codigo !== 'string' || !/^\d{6}$/.test(codigo)) {
+  return res.status(400).end();
+}
+const pedido = await db.collection('recuperacoes').findOne({ email, codigo });</code></pre>
+  </div>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Achar que "usamos ORM, então estamos protegidos". A falha aparece justamente na consulta de relatório escrita à mão, no filtro dinâmico e na ordenação vinda da URL.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diga que a defesa primária é consulta parametrizada (prepared statement), que identificadores dinâmicos exigem allowlist, e que validação de tipo resolve a variante NoSQL. Cite menor privilégio no banco como segunda camada.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>SAST (análise estática) pega bem a maioria dos casos de concatenação em SQL. Ligue no pipeline e trate esse tipo de achado como bloqueante. É uma das regras com melhor relação entre esforço e risco evitado.</p></div>
+</section>
+
+<section class="chap" id="xss">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>XSS: cross-site scripting</h2>
+  <p>XSS acontece quando a aplicação coloca dado não confiável numa página sem codificar, e o navegador o executa como script. O script roda com a origem do seu site: lê o que a página mostra, faz requisições autenticadas em nome da vítima e altera a tela. Cookies com <code>HttpOnly</code> não podem ser lidos pelo script, mas o atacante ainda age como o usuário enquanto a página está aberta.</p>
+
+  <div class="tbl"><table><thead><tr><th>Tipo</th><th>Onde o payload fica</th><th>Exemplo</th></tr></thead><tbody>
+    <tr><td><strong>Refletido</strong></td><td>Na própria requisição (URL, formulário). O servidor devolve na resposta.</td><td>Página de busca que exibe "Resultados para X" sem escape. A vítima precisa clicar num link preparado.</td></tr>
+    <tr><td><strong>Armazenado</strong></td><td>No banco. Todo mundo que abre a página executa.</td><td>Campo "observações" do agendamento, exibido no painel da recepção.</td></tr>
+    <tr><td><strong>Baseado em DOM</strong></td><td>Só no navegador. O JavaScript da página lê uma fonte (URL, <code>location.hash</code>, <code>postMessage</code>) e escreve num ponto perigoso (<code>innerHTML</code>, <code>eval</code>).</td><td>O servidor nunca vê o payload, então filtros no back-end não ajudam.</td></tr>
+  </tbody></table></div>
+
+  <h3>Refletido e armazenado</h3>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">app.get('/busca', (req, res) =&gt; {
+  res.send('&lt;p&gt;Resultados para ' + req.query.q + '&lt;/p&gt;');
+});
+// /busca?q=&lt;script&gt;alert(1)&lt;/script&gt;  -&gt; o navegador executa o script</code></pre>
+    <pre data-label="Corrigido"><code class="js">// use um template engine com escape automático ligado (EJS com &lt;%= %&gt;, Handlebars com {{ }}, JSX)
+app.get('/busca', (req, res) =&gt; {
+  res.render('busca', { termo: req.query.q }); // o template escapa &lt; &gt; &amp; " '
+});
+// se precisar montar à mão, codifique para o contexto HTML:
+function escHtml(s) {
+  return String(s).replace(/&amp;/g, '&amp;amp;').replace(/&lt;/g, '&amp;lt;').replace(/&gt;/g, '&amp;gt;')
+                  .replace(/"/g, '&amp;quot;').replace(/'/g, '&amp;#39;');
+}</code></pre>
+  </div>
+
+  <h3>Baseado em DOM</h3>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// https://portal.clinica.com.br/#Maria
+const nome = decodeURIComponent(location.hash.slice(1));
+document.getElementById('ola').innerHTML = 'Olá, ' + nome;
+// #&lt;img src=x onerror=alert(1)&gt;  -&gt; executa</code></pre>
+    <pre data-label="Corrigido"><code class="js">const nome = decodeURIComponent(location.hash.slice(1));
+document.getElementById('ola').textContent = 'Olá, ' + nome; // texto puro, nunca HTML
+// se precisar aceitar HTML de verdade (ex.: editor rico), passe por um sanitizador
+// mantido pela comunidade, como o DOMPurify, antes de inserir</code></pre>
+  </div>
+
+  <h3>Escape por contexto</h3>
+  <p>O mesmo dado precisa de codificação diferente conforme o lugar onde entra na página.</p>
+  <div class="tbl"><table><thead><tr><th>Contexto</th><th>Como tratar</th></tr></thead><tbody>
+    <tr><td>Corpo HTML</td><td>Escape de entidades HTML (<code>&amp;lt;</code>, <code>&amp;gt;</code>, <code>&amp;amp;</code>). É o que o template faz por padrão.</td></tr>
+    <tr><td>Atributo HTML</td><td>Sempre entre aspas e com escape de atributo. Nunca em atributos de evento (<code>onclick</code>).</td></tr>
+    <tr><td>URL em <code>href</code> ou <code>src</code></td><td>Valide o esquema (só <code>https:</code> ou caminho relativo; bloqueie <code>javascript:</code>) e use <code>encodeURIComponent</code> nos parâmetros.</td></tr>
+    <tr><td>Dentro de <code>&lt;script&gt;</code></td><td>Evite. Passe dados via atributo <code>data-*</code> ou JSON num elemento e leia com JavaScript.</td></tr>
+    <tr><td>CSS</td><td>Evite dado do usuário em estilos. Se for inevitável, allowlist de valores.</td></tr>
+  </tbody></table></div>
+  <p>Frameworks como React e Angular escapam por padrão. As portas de saída têm nomes que avisam: <code>dangerouslySetInnerHTML</code>, <code>bypassSecurityTrustHtml</code>, <code>v-html</code>. Procure esses nomes no código.</p>
+
+  <h3>CSP: a segunda camada</h3>
+  <p>A Content Security Policy é um cabeçalho que diz ao navegador de onde scripts e outros recursos podem vir. Com uma CSP estrita, um script injetado sem o nonce correto não executa, mesmo que o escape tenha falhado.</p>
+  <pre><code class="http">Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-R4nd0mPorResposta'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'</code></pre>
+  <ul>
+    <li>O nonce é um valor aleatório gerado a cada resposta e repetido em cada <code>&lt;script nonce="..."&gt;</code> legítimo.</li>
+    <li><code>'unsafe-inline'</code> em <code>script-src</code> anula boa parte da proteção contra XSS.</li>
+    <li>Comece com <code>Content-Security-Policy-Report-Only</code> para ver o que quebraria sem bloquear nada, ajuste e depois ative.</li>
+  </ul>
+
+  <div class="note trap"><b>Armadilha comum</b><p>"É só um <code>alert</code>." O <code>alert(1)</code> é a prova de conceito. Um XSS armazenado no painel da recepção roda com a sessão de cada atendente que abre a tela, com acesso a todos os dados que ela mostra.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diferencie os três tipos, diga que a defesa principal é codificação de saída por contexto (de preferência automática pelo framework) e que CSP é a segunda camada. Mencione que <code>HttpOnly</code> protege o cookie, mas não impede o script de agir em nome do usuário.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cobre uma regra de lint ou SAST que sinalize <code>innerHTML</code>, <code>dangerouslySetInnerHTML</code> e similares, exigindo justificativa no PR. Planeje a CSP como projeto: modo report-only, coleta de relatórios, ajuste, ativação. Em sistema legado, isso costuma levar semanas.</p></div>
+</section>
+
+<section class="chap" id="csrf">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>CSRF: cross-site request forgery</h2>
+  <p>O navegador anexa cookies às requisições para um site conforme as regras do cookie, inclusive quando a requisição parte de outro site. CSRF explora isso: uma página do atacante faz o navegador da vítima enviar uma requisição que altera estado no seu sistema, e o cookie de sessão vai junto. O atacante não lê a resposta. Ele só precisa que a ação aconteça.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 640 250" role="img" aria-label="Fluxo de um ataque CSRF: a vítima logada visita a página do atacante, que dispara um POST para o portal com o cookie da vítima">
+      <defs><marker id="ah-csrf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="240" y="20" width="160" height="50" rx="5"/><text class="ttl" x="320" y="42" text-anchor="middle">Navegador da vítima</text><text x="320" y="60" text-anchor="middle">logada no portal</text>
+      <rect class="box-b" x="20" y="160" width="190" height="50" rx="5"/><text class="ttl" x="115" y="182" text-anchor="middle">site-do-atacante</text><text x="115" y="200" text-anchor="middle">formulário oculto</text>
+      <rect class="box" x="430" y="160" width="190" height="50" rx="5"/><text class="ttl" x="525" y="182" text-anchor="middle">portal.clinica.com.br</text><text x="525" y="200" text-anchor="middle">POST /conta/email</text>
+      <line class="ln" x1="250" y1="70" x2="150" y2="158" marker-end="url(#ah-csrf)"/>
+      <text class="lbl" x="105" y="108">1. abre link ou anúncio</text>
+      <line class="ln-b" x1="190" y1="158" x2="290" y2="72" marker-end="url(#ah-csrf)"/>
+      <text class="lbl" x="200" y="140">2. página envia o form</text>
+      <line class="ln-b" x1="380" y1="70" x2="500" y2="158" marker-end="url(#ah-csrf)"/>
+      <text class="lbl" x="450" y="100">3. POST + cookie de sessão</text>
+      <text class="lbl" x="20" y="240">Sem token e sem SameSite, o portal vê uma requisição autenticada e troca o e-mail da conta.</text>
+    </svg>
+    <figcaption>CSRF: o atacante usa o navegador da vítima como intermediário. O cookie é anexado automaticamente.</figcaption>
+  </figure>
+
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// aceita qualquer POST que traga o cookie de sessão
+app.post('/conta/email', autenticado, async (req, res) =&gt; {
+  await db.usuarios.update(req.user.id, { email: req.body.email });
+  res.redirect('/conta');
+});
+
+// página no site do atacante:
+// &lt;form action="https://portal.clinica.com.br/conta/email" method="POST"&gt;
+//   &lt;input type="hidden" name="email" value="atacante@exemplo.com"&gt;
+// &lt;/form&gt;
+// &lt;script&gt;document.forms[0].submit()&lt;/script&gt;</code></pre>
+    <pre data-label="Corrigido"><code class="js">// 1. cookie de sessão com SameSite
+res.cookie('sessao', id, { httpOnly: true, secure: true, sameSite: 'lax' });
+
+// 2. token anti-CSRF ligado à sessão, enviado num campo oculto ou cabeçalho
+app.post('/conta/email', autenticado, async (req, res) =&gt; {
+  if (!tokenCsrfValido(req.session, req.body._csrf)) return res.status(403).end();
+  // 3. ação sensível pede reautenticação (senha ou MFA) antes de trocar o e-mail
+  await db.usuarios.update(req.user.id, { email: req.body.email });
+  res.redirect('/conta');
+});</code></pre>
+  </div>
+
+  <h3>As defesas</h3>
+  <ul>
+    <li><strong>Token anti-CSRF</strong> (synchronizer token): valor imprevisível gerado pelo servidor, ligado à sessão, que precisa voltar em cada requisição que altera estado. A página do atacante não consegue ler esse valor por causa da política de mesma origem.</li>
+    <li><strong>Atributo <code>SameSite</code></strong> no cookie: <code>Strict</code> não envia o cookie em nenhuma requisição vinda de outro site. <code>Lax</code> envia só em navegação de nível superior com método seguro (clicar num link, <code>GET</code>), não em <code>POST</code> de formulário cruzado. <code>None</code> envia sempre e exige <code>Secure</code>. O Chrome trata cookies sem o atributo como <code>Lax</code>, mas não conte com o comportamento padrão de todos os navegadores: declare explicitamente.</li>
+    <li><strong>Métodos seguros sem efeito colateral</strong>: <code>GET</code> nunca altera estado. Com <code>Lax</code>, um <code>GET</code> que apaga registro continua vulnerável.</li>
+    <li><strong>Checar <code>Origin</code></strong>: rejeitar requisições que alteram estado com origem desconhecida é uma camada extra barata.</li>
+  </ul>
+  <p>APIs que autenticam por cabeçalho <code>Authorization: Bearer</code> (token guardado pelo JavaScript, não em cookie) não sofrem CSRF clássico, porque o navegador não anexa esse cabeçalho sozinho. Em troca, ficam mais expostas a XSS, que pode ler o token. Essa troca é discutida no <a href="07-autenticacao.html">módulo 7</a>.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>Explique que CSRF abusa do envio automático de cookies, que a defesa é token anti-CSRF mais <code>SameSite</code>, e que CORS não protege contra CSRF porque um formulário simples não passa por preflight.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A maioria dos frameworks web tem proteção CSRF pronta. Cobre que ela esteja ligada e que exceções sejam documentadas. Padronize os atributos de cookie de sessão num só lugar do código.</p></div>
+</section>
+
+<section class="chap" id="ssrf">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>SSRF: server-side request forgery</h2>
+  <p>SSRF acontece quando o servidor faz uma requisição para uma URL que o usuário controla. Funções comuns que abrem essa porta: "importar foto a partir de URL", webhooks configuráveis, gerador de PDF que busca imagens, pré-visualização de links. O servidor está dentro da rede. Ele alcança o que o atacante não alcança.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 640 250" role="img" aria-label="Fluxo de SSRF: o atacante envia uma URL interna para a aplicação, que busca o serviço de metadados da nuvem e devolve credenciais">
+      <defs><marker id="ah-ssrf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-b" x="10" y="95" width="120" height="50" rx="5"/><text class="ttl" x="70" y="117" text-anchor="middle">Atacante</text><text x="70" y="135" text-anchor="middle">internet</text>
+      <rect class="box" x="190" y="20" width="430" height="210" rx="8"/><text class="lbl" x="200" y="38">Rede interna / VPC</text>
+      <rect class="box-a" x="210" y="95" width="150" height="50" rx="5"/><text class="ttl" x="285" y="117" text-anchor="middle">Aplicação</text><text x="285" y="135" text-anchor="middle">fetch(url)</text>
+      <rect class="box-w" x="430" y="50" width="175" height="50" rx="5"/><text class="ttl" x="517" y="72" text-anchor="middle">Metadados da nuvem</text><text x="517" y="90" text-anchor="middle">169.254.169.254</text>
+      <rect class="box-w" x="430" y="150" width="175" height="50" rx="5"/><text class="ttl" x="517" y="172" text-anchor="middle">Serviço interno</text><text x="517" y="190" text-anchor="middle">admin sem autenticação</text>
+      <line class="ln-b" x1="130" y1="112" x2="208" y2="112" marker-end="url(#ah-ssrf)"/>
+      <text class="lbl" x="134" y="104">1. url=</text>
+      <line class="ln-b" x1="360" y1="110" x2="428" y2="80" marker-end="url(#ah-ssrf)"/>
+      <line class="ln-b" x1="360" y1="130" x2="428" y2="170" marker-end="url(#ah-ssrf)"/>
+      <text class="lbl" x="366" y="150">2. busca</text>
+      <line class="ln" x1="208" y1="135" x2="130" y2="135" marker-end="url(#ah-ssrf)"/>
+      <text class="lbl" x="134" y="160">3. resposta</text>
+    </svg>
+    <figcaption>SSRF: a aplicação vira um proxy para dentro da rede. O alvo clássico em nuvem é o serviço de metadados, que pode entregar credenciais temporárias.</figcaption>
+  </figure>
+
+  <h3>Por que os metadados de nuvem são o alvo</h3>
+  <p>Provedores de nuvem expõem, num endereço link-local (<code>169.254.169.254</code> na AWS, por exemplo), um serviço que informa à máquina dados sobre ela mesma, inclusive credenciais temporárias do papel (role) associado. Se a aplicação busca essa URL a pedido do atacante e devolve o conteúdo, o atacante recebe chaves com as permissões da máquina. O vazamento da Capital One em 2019 é o caso mais citado envolvendo SSRF e metadados.</p>
+  <p>Na AWS, o IMDSv2 exige um token de sessão obtido por <code>PUT</code> antes de consultar os metadados. Isso dificulta muito a exploração via SSRF simples. Exija IMDSv2 nas instâncias.</p>
+
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// importar foto do perfil a partir de uma URL
+app.post('/perfil/foto-url', autenticado, async (req, res) =&gt; {
+  const resp = await fetch(req.body.url);   // busca qualquer destino
+  const img = await resp.arrayBuffer();
+  await salvarFoto(req.user.id, img);
+  res.status(204).end();
+});
+// url = http://169.254.169.254/latest/meta-data/iam/security-credentials/</code></pre>
+    <pre data-label="Corrigido"><code class="js">const PERMITIDOS = new Set(['imagens.parceiro.com.br']);
+
+app.post('/perfil/foto-url', autenticado, async (req, res) =&gt; {
+  let u;
+  try { u = new URL(req.body.url); } catch { return res.status(400).end(); }
+  // allowlist de esquema e de host, em vez de tentar bloquear endereços ruins
+  if (u.protocol !== 'https:' || !PERMITIDOS.has(u.hostname)) return res.status(400).end();
+  const resp = await fetch(u, {
+    redirect: 'error',                 // um redirecionamento poderia levar para dentro da rede
+    signal: AbortSignal.timeout(5000)  // não deixa a conexão pendurada
+  });
+  // conferir Content-Type e limitar tamanho antes de salvar
+  ...
+});</code></pre>
+  </div>
+
+  <h3>Defesas em camadas</h3>
+  <ul>
+    <li><strong>Allowlist</strong> de destinos sempre que possível. Bloquear "IPs internos" por lista de negados é frágil: há muitas formas de escrever um endereço, e o DNS pode resolver para um IP interno depois da checagem (DNS rebinding).</li>
+    <li>Se precisar aceitar URLs arbitrárias, resolva o nome, rejeite faixas privadas, loopback e link-local, e conecte no IP que você validou.</li>
+    <li><strong>Não devolva a resposta crua</strong> ao usuário. Processe (ex.: valide que é imagem) e devolva só o resultado.</li>
+    <li><strong>Rede</strong>: o servidor que busca URLs externas fica num segmento que não alcança serviços internos, com saída controlada por proxy ou regras de egress.</li>
+    <li><strong>Nuvem</strong>: IMDSv2 obrigatório e papel da máquina com o mínimo de permissões.</li>
+  </ul>
+
+  <div class="note iv"><b>Na entrevista</b><p>Defina SSRF, cite o serviço de metadados como alvo clássico e liste as defesas: allowlist, bloquear redirecionamentos, segmentação de rede e IMDSv2. Isso mostra que você pensa em código e em infraestrutura.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Mantenha um inventário das funcionalidades que buscam URLs informadas pelo usuário ou por parceiros. Cada uma deve ter dono e revisão de segurança. Peça ao time de infraestrutura a política de IMDSv2 e de egress como padrão da conta de nuvem.</p></div>
+</section>
+
+<section class="chap" id="cors-headers">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>CORS e cabeçalhos de segurança</h2>
+
+  <h3>O que CORS é e o que não é</h3>
+  <p>A política de mesma origem (same-origin policy) impede que o JavaScript de uma origem leia respostas de outra. CORS (Cross-Origin Resource Sharing) é o mecanismo pelo qual o servidor <em>relaxa</em> essa restrição, dizendo quais origens podem ler as respostas. O <a href="05-navegador.html">módulo 5</a> mostra o preflight em detalhe.</p>
+  <ul>
+    <li>CORS é aplicado pelo navegador. <code>curl</code>, Postman e scripts no servidor ignoram CORS completamente.</li>
+    <li>CORS não autentica nem autoriza ninguém. A API precisa de autenticação e autorização próprias.</li>
+    <li>CORS não impede que a requisição chegue ao servidor. Requisições "simples" (como um <code>POST</code> de formulário) são enviadas sem preflight; o navegador só bloqueia a leitura da resposta. Por isso CORS não protege contra CSRF.</li>
+  </ul>
+
+  <h3>O erro que vira vulnerabilidade</h3>
+  <p>O navegador proíbe <code>Access-Control-Allow-Origin: *</code> junto com credenciais. Para "fazer funcionar", alguém reflete a origem recebida. Resultado: qualquer site lê respostas autenticadas da sua API usando o cookie da vítima.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">app.use((req, res, next) =&gt; {
+  res.set('Access-Control-Allow-Origin', req.headers.origin); // aceita qualquer origem
+  res.set('Access-Control-Allow-Credentials', 'true');        // e com cookies
+  next();
+});</code></pre>
+    <pre data-label="Corrigido"><code class="js">const ORIGENS = new Set([
+  'https://portal.clinica.com.br',
+  'https://app.clinica.com.br'
+]);
+
+app.use((req, res, next) =&gt; {
+  const origem = req.headers.origin;
+  if (origem &amp;&amp; ORIGENS.has(origem)) {          // comparação exata, sem regex frouxa
+    res.set('Access-Control-Allow-Origin', origem);
+    res.set('Access-Control-Allow-Credentials', 'true');
+  }
+  res.set('Vary', 'Origin'); // caches não misturam respostas de origens diferentes
+  next();
+});</code></pre>
+  </div>
+  <p>Outros erros frequentes: regex que aceita <code>clinica.com.br.atacante.com</code> ou <code>atacanteclinica.com.br</code>; aceitar a origem <code>null</code> (enviada por iframes em sandbox e arquivos locais); liberar CORS em toda a API quando só um endpoint precisava.</p>
+
+  <h3>Cabeçalhos de segurança</h3>
+  <div class="tbl"><table><thead><tr><th>Cabeçalho</th><th>O que faz</th><th>Valor típico</th></tr></thead><tbody>
+    <tr><td><code>Content-Security-Policy</code></td><td>Restringe origens de scripts, estilos, frames e outros recursos. Segunda camada contra XSS.</td><td>Ver a seção de XSS.</td></tr>
+    <tr><td><code>Strict-Transport-Security</code> (HSTS)</td><td>Obriga o navegador a usar só HTTPS com o domínio pelo tempo indicado. Detalhes no <a href="04-tls.html">módulo 4</a>.</td><td><code>max-age=31536000; includeSubDomains</code></td></tr>
+    <tr><td><code>X-Content-Type-Options</code></td><td>Impede o navegador de "adivinhar" o tipo do conteúdo (MIME sniffing) e executar como script algo servido como texto.</td><td><code>nosniff</code></td></tr>
+    <tr><td><code>frame-ancestors</code> (CSP) e <code>X-Frame-Options</code></td><td>Controlam quem pode exibir sua página num iframe. Protegem contra clickjacking. <code>frame-ancestors</code> é o mecanismo moderno; <code>X-Frame-Options</code> cobre navegadores antigos.</td><td><code>frame-ancestors 'none'</code> e <code>X-Frame-Options: DENY</code></td></tr>
+    <tr><td><code>Referrer-Policy</code></td><td>Controla quanto da URL atual vai no cabeçalho <code>Referer</code> para outros sites. Evita vazar IDs e tokens que estejam na URL.</td><td><code>strict-origin-when-cross-origin</code> ou <code>no-referrer</code></td></tr>
+    <tr><td><code>Permissions-Policy</code></td><td>Desliga APIs do navegador que a página não usa (câmera, microfone, geolocalização), inclusive para iframes.</td><td><code>camera=(), microphone=(), geolocation=()</code></td></tr>
+  </tbody></table></div>
+  <pre data-file="exemplo de resposta"><code class="http">HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()</code></pre>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Ativar HSTS com <code>includeSubDomains</code> e <code>max-age</code> longo sem conferir se todos os subdomínios têm HTTPS. Os navegadores vão recusar os que não têm, e não há como "desligar" remotamente antes do prazo. Comece com <code>max-age</code> curto e aumente.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Diga que CORS relaxa a política de mesma origem e não protege o servidor, e que refletir <code>Origin</code> com <code>Allow-Credentials: true</code> é o erro clássico. Cite três ou quatro cabeçalhos com a função de cada um.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cabeçalhos de segurança são baratos e fáceis de verificar automaticamente. Configure-os num ponto central (proxy reverso, gateway ou middleware comum) e inclua um teste no pipeline que falha se algum sumir. Configuração de CORS deve passar por revisão, com lista de origens versionada.</p></div>
+</section>
+
+<section class="chap" id="arquivos">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Upload, path traversal e desserialização</h2>
+
+  <h3>Upload de arquivos</h3>
+  <p>Sistemas de saúde recebem muitos arquivos: exames, laudos, documentos de identidade. Cada upload é uma entrada não confiável grande e complexa. Riscos: arquivo executável colocado em pasta servida pela web, HTML ou SVG com script servido do seu domínio (XSS armazenado), arquivo gigante que esgota disco, nome de arquivo com <code>../</code>, malware repassado a outros usuários.</p>
+  <ul>
+    <li>Limite tamanho no proxy e na aplicação.</li>
+    <li>Valide o tipo pelo conteúdo (assinatura do arquivo), não só pela extensão ou pelo <code>Content-Type</code> enviado pelo cliente. Aceite uma allowlist curta (PDF, JPEG, PNG).</li>
+    <li>Gere um nome novo no servidor (ex.: UUID). Guarde o nome original só como metadado.</li>
+    <li>Armazene fora da pasta pública, de preferência num storage de objetos privado, e sirva por um endpoint que checa autorização.</li>
+    <li>Sirva com <code>Content-Disposition: attachment</code>, <code>Content-Type</code> correto e <code>X-Content-Type-Options: nosniff</code>. Se precisar exibir no navegador, considere um domínio separado só para arquivos de usuários.</li>
+    <li>Faça varredura de malware quando os arquivos forem compartilhados entre usuários.</li>
+  </ul>
+
+  <h3>Path traversal</h3>
+  <p>Acontece quando um nome de arquivo vindo do usuário entra num caminho do sistema de arquivos. Com <code>../</code>, o atacante sai da pasta prevista.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// GET /laudos?arquivo=12345.pdf
+app.get('/laudos', autenticado, (req, res) =&gt; {
+  const caminho = path.join('/srv/laudos', req.query.arquivo);
+  fs.createReadStream(caminho).pipe(res);
+});
+// arquivo=../../etc/passwd  -&gt; /etc/passwd</code></pre>
+    <pre data-label="Corrigido"><code class="js">const BASE = path.resolve('/srv/laudos');
+
+app.get('/laudos/:id', autenticado, async (req, res) =&gt; {
+  // melhor: o cliente manda um ID; o nome do arquivo vem do banco, após checar autorização
+  const laudo = await db.laudos.findOne({ id: req.params.id, pacienteId: req.user.pacienteId });
+  if (!laudo) return res.status(404).end();
+  // defesa extra: confirmar que o caminho final continua dentro da pasta base
+  const caminho = path.resolve(BASE, laudo.arquivo);
+  if (!caminho.startsWith(BASE + path.sep)) return res.status(400).end();
+  res.sendFile(caminho);
+});</code></pre>
+  </div>
+
+  <h3>Desserialização insegura</h3>
+  <p>Alguns formatos de serialização nativos (o <code>pickle</code> do Python, a serialização de objetos do Java, certos formatos de .NET e PHP) reconstroem objetos arbitrários e podem executar código durante a desserialização. Se o atacante controla os bytes, pode conseguir execução remota de código.</p>
+  <ul>
+    <li>Não desserialize dados não confiáveis com formatos nativos de objetos. Prefira JSON com validação de esquema.</li>
+    <li>Se não houver alternativa, assine os dados (HMAC) e verifique a assinatura antes de desserializar, e restrinja as classes permitidas.</li>
+    <li>Fique atento a bibliotecas que desserializam por baixo dos panos: alguns parsers de YAML e XML têm modos inseguros. Em XML, desative entidades externas (XXE).</li>
+  </ul>
+
+  <div class="note iv"><b>Na entrevista</b><p>Para upload, cite: allowlist de tipo pelo conteúdo, renomear, guardar fora do webroot, servir com cabeçalhos corretos. Para path traversal, diga que o ideal é não usar nome vindo do cliente; senão, normalizar e confirmar que o caminho fica dentro da base.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Crie um componente de upload comum para o time, revisado uma vez, em vez de cada sistema implementar o seu. Arquivos de pacientes têm dados sensíveis: defina retenção, criptografia em repouso e quem pode baixar.</p></div>
+</section>
+
+<section class="chap" id="supply">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Segredos, dependências e cadeia de suprimentos</h2>
+
+  <h3>Segredos no código e no git</h3>
+  <p>Senha de banco, chave de API e chave de nuvem no código-fonte acabam em todo clone, em todo fork, nos logs de CI e no histórico do git. Apagar o arquivo num commit novo não apaga o histórico. Repositórios públicos são varridos por robôs em busca de chaves continuamente.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">// config.js, versionado
+const s3 = new S3Client({
+  region: 'sa-east-1',
+  credentials: { accessKeyId: 'AKIA...', secretAccessKey: 'wJalr...' }
+});</code></pre>
+    <pre data-label="Corrigido"><code class="js">// sem credencial no código: o SDK usa o papel (role) da máquina ou do container,
+// ou variáveis de ambiente injetadas pelo cofre de segredos no deploy
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+
+// .gitignore inclui .env; o repositório tem apenas .env.example com nomes, sem valores</code></pre>
+  </div>
+  <ul>
+    <li>Use um cofre de segredos (secrets manager do provedor, Vault) e credenciais de curta duração quando possível.</li>
+    <li>Ligue secret scanning no repositório e, se a plataforma oferecer, bloqueio no push.</li>
+    <li>Vazou? A ordem é: <strong>revogar e rotacionar</strong> o segredo primeiro, depois investigar uso indevido nos logs do provedor, depois limpar o histórico. Limpar o histórico sem rotacionar não resolve, porque a chave pode já ter sido copiada.</li>
+  </ul>
+
+  <h3>Dependências vulneráveis</h3>
+  <p>A maior parte do código de uma aplicação moderna vem de bibliotecas de terceiros, e cada uma traz as suas próprias dependências (transitivas). SCA (Software Composition Analysis, análise de composição de software) cruza a lista de dependências com bases de vulnerabilidades conhecidas.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="sh"># pipeline de build
+npm install            # pode resolver versões diferentes a cada build
+npm run build</code></pre>
+    <pre data-label="Corrigido"><code class="sh"># pipeline de build
+npm ci                 # instala exatamente o que está no package-lock.json
+npm audit --audit-level=high   # falha o build se houver vulnerabilidade alta ou crítica
+npm run build</code></pre>
+  </div>
+  <ul>
+    <li><strong>Lockfile</strong> (<code>package-lock.json</code>, <code>poetry.lock</code>, <code>go.sum</code>) versionado garante builds reproduzíveis e que uma versão nova maliciosa não entre sem ninguém ver.</li>
+    <li><strong>Atualização contínua</strong> com bots que abrem PRs de atualização. Atualizar um pouco toda semana é muito mais barato que pular três versões maiores de uma vez.</li>
+    <li><strong>SBOM</strong> (Software Bill of Materials): inventário em formato padrão (SPDX ou CycloneDX) de tudo que compõe o software. Quando sai uma vulnerabilidade nova, o SBOM responde em minutos "onde usamos isso?".</li>
+  </ul>
+
+  <h3>Ataques à cadeia de suprimentos</h3>
+  <ul>
+    <li><strong>Typosquatting</strong>: pacote malicioso com nome parecido com um popular, esperando um erro de digitação.</li>
+    <li><strong>Dependency confusion</strong>: pacote público com o mesmo nome de um pacote interno, que o gerenciador acaba preferindo. Configure escopos e registros privados corretamente.</li>
+    <li><strong>Conta de mantenedor comprometida</strong>: versão nova e legítima na aparência, publicada com código malicioso. Scripts de instalação (<code>postinstall</code>) rodam na máquina do dev e no CI.</li>
+    <li><strong>Mantenedor infiltrado</strong>: o caso do xz-utils (CVE-2024-3094), descoberto em março de 2024. Ao longo de anos, alguém ganhou a confiança do projeto, virou co-mantenedor e inseriu um backdoor nas versões 5.6.0 e 5.6.1, escondido em arquivos de teste e no processo de build. O alvo era o acesso SSH em algumas distribuições Linux. Foi descoberto por acaso, por um engenheiro que investigava lentidão no login, antes de chegar à maioria das versões estáveis.</li>
+  </ul>
+  <p>Defesas: lockfile, revisão de dependências novas (popularidade, mantenedores, atividade), registro interno espelhado, pipeline de CI com permissões mínimas, assinatura e verificação de artefatos, e SBOM. O <a href="10-ciberseguranca.html">módulo 10</a> mostra onde cada verificação entra no pipeline.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>Sobre um segredo vazado, a resposta certa começa com "rotacionar imediatamente". Sobre dependências, cite SCA no pipeline, lockfile, SBOM e um exemplo de ataque à cadeia de suprimentos, como o xz.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina política para dependências: quem aprova uma biblioteca nova, prazo para atualizar vulnerabilidades por severidade, SBOM gerado em todo build. Meça a idade das vulnerabilidades abertas em dependências. Se o número só cresce, o problema costuma ser falta de tempo reservado no planejamento. Comprar outra ferramenta não resolve isso.</p></div>
+</section>
+
+<section class="chap" id="logs-abuso">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Logging seguro e proteção contra abuso</h2>
+
+  <h3>O que logar</h3>
+  <ul>
+    <li>Eventos de autenticação: login com sucesso e falha, logout, troca de senha, ativação e desativação de MFA.</li>
+    <li>Falhas de autorização (tentativa de acessar recurso de outro usuário é sinal forte de ataque).</li>
+    <li>Ações administrativas e mudanças de permissão.</li>
+    <li>Acesso a dados sensíveis: quem consultou o prontuário de qual paciente, quando. Em saúde, essa trilha de auditoria é requisito de negócio.</li>
+    <li>Erros de validação em volume anormal e eventos de rate limiting.</li>
+  </ul>
+  <p>Cada evento com: data e hora em UTC, identificador do usuário, IP, ação, recurso, resultado e um ID de correlação que liga os logs da mesma requisição entre serviços.</p>
+
+  <h3>O que nunca logar</h3>
+  <p>Senhas (mesmo as erradas, que muitas vezes são a senha certa com um erro de digitação), tokens de sessão e de acesso, chaves de API, cabeçalhos <code>Authorization</code> e <code>Cookie</code>, números completos de cartão, e dados de saúde ou dados pessoais além do mínimo necessário. Logs costumam ter controle de acesso mais fraco que o banco e são copiados para várias ferramentas.</p>
+  <div class="tabs">
+    <pre data-label="Vulnerável"><code class="js">logger.info('tentativa de login', { email: req.body.email, senha: req.body.senha });
+logger.debug('requisição recebida', { headers: req.headers, body: req.body });
+// headers inclui Authorization e Cookie; body pode ter diagnóstico e CPF</code></pre>
+    <pre data-label="Corrigido"><code class="js">logger.info('login_falhou', {
+  usuarioId: usuario?.id ?? null,  // ID interno, não e-mail nem CPF
+  ip: req.ip,
+  motivo: 'senha_invalida',
+  correlacao: req.id
+});
+// logger configurado para mascarar campos sensíveis por nome (senha, token, authorization, cpf)</code></pre>
+  </div>
+  <p>Cuidado também com <strong>injeção em log</strong>: um valor com quebra de linha pode forjar uma linha falsa no arquivo. Logs estruturados (JSON) resolvem isso. Proteja os logs contra alteração e defina retenção.</p>
+
+  <h3>Rate limiting e abuso</h3>
+  <p>Nem todo ataque explora um bug. Muitos abusam de funcionalidades legítimas em volume: tentativas de senha, enumeração de usuários no "esqueci minha senha", disparo de SMS que gera custo, raspagem de dados, reserva de todos os horários de agenda.</p>
+  <ul>
+    <li>Limite por usuário, por IP e por recurso, com limites mais estritos em login, recuperação de senha e envio de SMS.</li>
+    <li>Responda com <code>429 Too Many Requests</code> e, se fizer sentido, <code>Retry-After</code>.</li>
+    <li>Mensagens genéricas evitam enumeração: "se o e-mail existir, enviaremos instruções".</li>
+    <li>Limites de negócio também contam: no máximo N agendamentos futuros por paciente.</li>
+  </ul>
+  <pre><code class="http">HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+Content-Type: application/json</code></pre>
+
+  <div class="note iv"><b>Na entrevista</b><p>Liste o que logar e o que nunca logar, e mostre que você sabe que log é fonte de vazamento. Sobre abuso, cite rate limiting por usuário e por IP e mensagens que não revelam se a conta existe.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina um padrão de log de segurança para todos os serviços (campos, nomes de eventos, mascaramento) e centralize num SIEM ou ferramenta de logs. Pergunte ao time: "se alguém acessou o prontuário de um paciente indevidamente na semana passada, quanto tempo levamos para descobrir quem foi?".</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>AppSec</dt><dd>Segurança de aplicações: práticas para projetar, construir e testar software resistente a ataques.</dd></div>
+    <div><dt>OWASP</dt><dd>Fundação aberta que publica o Top 10, o ASVS e as Cheat Sheets.</dd></div>
+    <div><dt>ASVS</dt><dd>Padrão de requisitos verificáveis de segurança de aplicações, em três níveis.</dd></div>
+    <div><dt>IDOR</dt><dd>Acesso a um objeto pelo identificador sem checar se o usuário tem permissão sobre ele.</dd></div>
+    <div><dt>Consulta parametrizada</dt><dd>SQL com marcadores no lugar dos valores, enviados separadamente ao banco.</dd></div>
+    <div><dt>XSS</dt><dd>Script injetado numa página e executado no navegador da vítima com a origem do site.</dd></div>
+    <div><dt>CSP</dt><dd>Cabeçalho que restringe de onde a página pode carregar scripts e outros recursos.</dd></div>
+    <div><dt>CSRF</dt><dd>Requisição forjada a partir de outro site, que aproveita o cookie da vítima.</dd></div>
+    <div><dt>SameSite</dt><dd>Atributo de cookie que controla o envio em requisições vindas de outros sites.</dd></div>
+    <div><dt>SSRF</dt><dd>O servidor é induzido a requisitar um destino escolhido pelo atacante.</dd></div>
+    <div><dt>IMDSv2</dt><dd>Versão do serviço de metadados da AWS que exige token de sessão, dificultando SSRF.</dd></div>
+    <div><dt>CORS</dt><dd>Mecanismo pelo qual o servidor autoriza outras origens a ler suas respostas no navegador.</dd></div>
+    <div><dt>HSTS</dt><dd>Cabeçalho que obriga o navegador a usar só HTTPS com o domínio.</dd></div>
+    <div><dt>Clickjacking</dt><dd>Página exibida num iframe invisível para induzir cliques. Evitado com <code>frame-ancestors</code>.</dd></div>
+    <div><dt>Path traversal</dt><dd>Uso de <code>../</code> num nome de arquivo para sair da pasta prevista.</dd></div>
+    <div><dt>SCA</dt><dd>Análise de composição de software: busca vulnerabilidades conhecidas nas dependências.</dd></div>
+    <div><dt>SBOM</dt><dd>Inventário padronizado dos componentes de um software.</dd></div>
+    <div><dt>Typosquatting</dt><dd>Pacote malicioso com nome parecido com o de um pacote popular.</dd></div>
+    <div><dt>Rate limiting</dt><dd>Limite de requisições por período, por usuário, IP ou recurso.</dd></div>
+    <div><dt>Allowlist</dt><dd>Lista do que é permitido; todo o resto é negado.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+
+  <h3>1. Um pesquisador reportou por e-mail que consegue ver exames de outros pacientes</h3>
+  <p>Agradeça e confirme o recebimento no mesmo dia. Peça os detalhes técnicos sem exigir nada em troca. Reproduza num ambiente de teste com contas suas. Se confirmado, trate como incidente: corrija (checagem de dono no endpoint), procure o mesmo padrão nos outros endpoints, consulte os logs para saber se houve acesso indevido real e acione o DPO para avaliar a comunicação à ANPD. Depois, publique um canal oficial para relatos (o arquivo <code>security.txt</code>, definido na RFC 9116, indica o contato) e agradeça ao pesquisador.</p>
+  <div class="note mgr"><b>Para gestores</b><p>A pior reação é ameaçar o pesquisador. Ele é a alternativa barata a descobrir a falha pelo vazamento. Tenha uma política de divulgação de vulnerabilidades (VDP) antes de precisar dela.</p></div>
+
+  <h3>2. Encontramos uma chave da AWS num repositório público</h3>
+  <ol class="seq">
+    <li><div><strong>Revogar e rotacionar agora.</strong> Desative a chave no console antes de qualquer outra coisa. Robôs encontram chaves em repositórios públicos em pouco tempo.</div></li>
+    <li><div><strong>Investigar uso.</strong> Consulte os logs de auditoria do provedor (CloudTrail, na AWS) pelo período em que a chave esteve exposta: criação de usuários, instâncias novas, leitura de buckets.</div></li>
+    <li><div><strong>Conter o que for encontrado.</strong> Recursos criados pelo atacante, outras credenciais criadas com a chave.</div></li>
+    <li><div><strong>Limpar e prevenir.</strong> Remover do histórico, ligar secret scanning com bloqueio no push, trocar chaves fixas por papéis (roles).</div></li>
+  </ol>
+
+  <h3>3. O pentest achou XSS armazenado no campo de observações; o time diz que "é só um alert"</h3>
+  <p>Explique o impacto real: o campo aparece no painel da recepção, que mostra dados de todos os pacientes do dia. Um script ali age com a sessão de cada atendente. Corrija com escape no template, procure outros pontos de saída do mesmo dado (relatórios, exportações, e-mails) e planeje a CSP. Feche com um teste que injeta <code>&lt;script&gt;</code> no campo e verifica que sai escapado.</p>
+
+  <h3>4. Um parceiro pede para "liberar CORS" na API</h3>
+  <p>Pergunte primeiro se a chamada vem de um navegador. Integração servidor a servidor não precisa de CORS. Se vier de um front-end do parceiro, adicione a origem exata dele à allowlist, sem curinga e sem refletir a origem. Lembre que CORS não substitui autenticação do parceiro na API.</p>
+
+  <h3>5. O time diz que não dá para corrigir as 400 vulnerabilidades do relatório de dependências</h3>
+  <p>Não dá, e nem precisa de uma vez. Priorize: componentes expostos à internet, vulnerabilidades com exploração ativa conhecida, severidade crítica e alta. Muitas somem com uma única atualização de framework. Reserve uma fatia fixa de cada sprint e meça a tendência. O <a href="10-ciberseguranca.html#vulns">módulo 10</a> detalha a priorização.</p>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">14</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é o OWASP Top 10 e qual é o primeiro item?</span></summary><div class="ans"><p>É uma lista de conscientização das categorias de risco mais relevantes em aplicações web, publicada pela OWASP. Na edição 2021, o primeiro é Broken Access Control: falhas de autorização como IDOR e escalada de privilégio. A OWASP publicou uma edição 2025, que, entre outras mudanças, incorporou SSRF à categoria de controle de acesso e deu destaque à cadeia de suprimentos de software.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Como você previne SQL injection?</span></summary><div class="ans"><p>Com consultas parametrizadas em todo acesso ao banco, inclusive em SQL escrita à mão dentro do ORM. Identificadores dinâmicos, como coluna de ordenação, passam por allowlist. Como camada extra, o usuário de banco da aplicação tem só as permissões necessárias.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>O que é IDOR e como corrigir?</span></summary><div class="ans"><p>É acessar um objeto alterando o identificador na requisição, sem que o servidor confira se o usuário tem direito a ele. Corrige-se verificando a permissão em toda requisição, de preferência filtrando a consulta pelo dono, e cobrindo com testes que tentam acessar dados de outro usuário. ID aleatório não resolve.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Quais os tipos de XSS e qual a defesa principal?</span></summary><div class="ans"><p>Refletido, armazenado e baseado em DOM. A defesa principal é codificar a saída conforme o contexto (HTML, atributo, URL, JavaScript), de preferência deixando o framework fazer isso automaticamente, e evitar APIs como <code>innerHTML</code>. CSP é a segunda camada.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Cookie com HttpOnly resolve XSS?</span></summary><div class="ans"><p>Não. Impede que o script leia o cookie, mas o script continua executando na página e pode fazer requisições autenticadas, ler dados exibidos e alterar a tela. Reduz o impacto; a correção continua sendo codificar a saída.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Como funciona CSRF e como se defender?</span></summary><div class="ans"><p>Uma página de outro site faz o navegador da vítima enviar uma requisição que altera estado, e o cookie de sessão vai junto. Defesas: token anti-CSRF ligado à sessão, cookies com <code>SameSite=Lax</code> ou <code>Strict</code>, <code>GET</code> sem efeito colateral e reautenticação em ações sensíveis.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>CORS protege minha API?</span></summary><div class="ans"><p>Não. CORS é aplicado pelo navegador e serve para relaxar a política de mesma origem, permitindo que certas origens leiam as respostas. Clientes fora do navegador ignoram CORS, e requisições simples chegam ao servidor de qualquer forma. A API precisa de autenticação e autorização próprias.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Qual é o erro de configuração de CORS mais perigoso?</span></summary><div class="ans"><p>Refletir o cabeçalho <code>Origin</code> recebido em <code>Access-Control-Allow-Origin</code> junto com <code>Access-Control-Allow-Credentials: true</code>. Isso permite que qualquer site leia respostas autenticadas usando o cookie da vítima. O correto é comparar com uma lista exata de origens permitidas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é SSRF e por que é tão grave em nuvem?</span></summary><div class="ans"><p>É induzir o servidor a fazer requisições para destinos escolhidos pelo atacante. Em nuvem, o alvo clássico é o serviço de metadados da instância, que pode fornecer credenciais temporárias. Defesas: allowlist de destinos, bloquear redirecionamentos, segmentação de rede, IMDSv2 e papel com permissões mínimas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Cite cabeçalhos de segurança e o que cada um faz.</span></summary><div class="ans"><p>CSP restringe origens de scripts e recursos. HSTS força HTTPS. <code>X-Content-Type-Options: nosniff</code> impede MIME sniffing. <code>frame-ancestors</code> e <code>X-Frame-Options</code> evitam clickjacking. <code>Referrer-Policy</code> limita o que vaza no <code>Referer</code>. <code>Permissions-Policy</code> desliga APIs do navegador que a página não usa.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Qual a diferença entre validação de entrada e codificação de saída?</span></summary><div class="ans"><p>Validação confere se o dado tem o formato esperado quando chega, de preferência por allowlist. Codificação transforma o dado conforme o interpretador de destino quando ele sai, para que seja tratado como texto. São complementares: dados válidos como <code>O'Brien</code> ainda precisam de codificação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Um dev commitou uma senha de banco no repositório. O que fazer?</span></summary><div class="ans"><p>Rotacionar a senha imediatamente, verificar nos logs se houve acesso indevido no período, e só então remover do código e do histórico. Em seguida, mover o segredo para um cofre e ligar secret scanning com bloqueio no push para evitar repetição.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Como você lida com o risco de dependências de terceiros?</span></summary><div class="ans"><p>Lockfile versionado e instalação reprodutível no CI, SCA no pipeline com limite de severidade, atualização contínua com bots, SBOM gerado no build, critério para aprovar bibliotecas novas e atenção a ataques à cadeia de suprimentos como typosquatting e mantenedores comprometidos, como no caso do xz.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O que não deve ir para os logs?</span></summary><div class="ans"><p>Senhas, tokens, chaves, cabeçalhos de autorização e cookies, dados de cartão e dados pessoais sensíveis, como informações de saúde, além do mínimo necessário. Logs devem registrar quem fez o quê, quando e com que resultado, usando identificadores internos.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Como proteger um upload de arquivos?</span></summary><div class="ans"><p>Limitar tamanho, aceitar uma allowlist de tipos verificada pelo conteúdo, gerar nome novo no servidor, guardar fora da pasta pública, servir por endpoint com autorização e cabeçalhos corretos (<code>Content-Disposition</code>, <code>nosniff</code>) e fazer varredura de malware quando o arquivo é compartilhado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como gestor, como você colocaria AppSec no dia a dia do time sem travar entregas?</span></summary><div class="ans"><p>Com padrões e automação: bibliotecas e componentes seguros por padrão, SAST, SCA e secret scanning no pipeline bloqueando só o que é grave, checklist curto no PR baseado no ASVS, e uma fatia fixa do sprint para correções. Meço vulnerabilidades abertas por idade e tempo de correção, e, quando uma falha se repete, corrijo o padrão ou o componente comum em vez de culpar quem escreveu.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Um pesquisador externo reporta uma falha. Como você conduz?</span></summary><div class="ans"><p>Confirmo o recebimento rápido, agradeço, reproduzo em ambiente controlado, priorizo pela gravidade, corrijo e verifico se houve exploração. Mantenho o pesquisador informado e combino a divulgação. Se dados pessoais foram expostos, envolvo o DPO. Para o futuro, publico um canal oficial e uma política de divulgação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>O que é desserialização insegura?</span></summary><div class="ans"><p>É reconstruir objetos a partir de dados controlados pelo atacante com formatos que permitem instanciar classes arbitrárias, o que pode levar a execução remota de código. Evita-se usando formatos de dados simples, como JSON com validação de esquema, e nunca desserializando objetos nativos vindos de fora.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

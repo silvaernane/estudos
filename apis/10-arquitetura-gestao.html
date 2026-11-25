@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 10: Arquitetura e gestão de APIs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 10 de 10 · Arquitetura e gestão de APIs</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: marcar o módulo atual com aria-current
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html" aria-current="page"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+    <li class="sub"><ol>
+      <li><a href="#monolito-micro"><span class="n">1</span>Monólito modular ou microsserviços: onde a API traça a fronteira</a></li>
+      <li><a href="#gateway-mesh-bff"><span class="n">2</span>API gateway, service mesh e BFF: arquitetura de referência</a></li>
+      <li><a href="#comunicacao"><span class="n">3</span>Comunicação entre serviços: síncrono, assíncrono e acoplamento</a></li>
+      <li><a href="#legado"><span class="n">4</span>Sistemas legados e de terceiros: anticorruption layer e strangler fig</a></li>
+      <li><a href="#build-buy-custos"><span class="n">5</span>Build vs buy, iPaaS e custo de APIs (FinOps básico)</a></li>
+      <li><a href="#system-design"><span class="n">6</span>Entrevista de system design focada em API</a></li>
+      <li><a href="#times-processo"><span class="n">7</span>Times, ownership e processo: Conway, Team Topologies, ADRs e revisão de design</a></li>
+      <li><a href="#pronto-metricas"><span class="n">8</span>Definição de pronto para produção e métricas do gestor</a></li>
+      <li><a href="#contratar-90dias"><span class="n">9</span>Entrevistar devs de API e plano de 90 dias para assumir um portfólio</a></li>
+      <li><a href="#cenarios-proximos"><span class="n">10</span>Cenários práticos, próximos estudos e glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 10 · <span class="lvl l3">Avançado</span></div>
+  <h1>Arquitetura e gestão de APIs</h1>
+  <p class="lede">Fechamento da trilha: como as APIs se encaixam em uma arquitetura (fronteiras, gateway, eventos, legado, custo) e como liderar times, processo e portfólio para que elas durem.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Decidir entre monólito modular e microsserviços usando contextos delimitados e explicar gateway, service mesh e BFF</li>
+    <li>Escolher comunicação síncrona ou assíncrona e proteger a migração de legados com ACL e strangler fig</li>
+    <li>Conduzir uma entrevista de system design de API, com o exemplo de agendamento para uma rede de clínicas</li>
+    <li>Organizar times e processo (Conway, Team Topologies, ADRs, definição de pronto) e acompanhar métricas e custo</li>
+    <li>Montar o plano de 90 dias e o mapa de próximos estudos</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="monolito-micro">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Monólito modular ou microsserviços: onde a API traça a fronteira</h2>
+  <p>Este módulo fecha a trilha com duas lentes: a do <strong>arquiteto</strong> (como as APIs se encaixam em um sistema) e a do <strong>gestor</strong> (como organizar pessoas, processo e custo para que elas durem). Tudo o que você viu antes (design, contratos, segurança, confiabilidade, governança, observabilidade) vira decisão de portfólio aqui.</p>
+  <p>A pergunta que mais aparece em entrevistas e em revisões de arquitetura é "isso deve ser um serviço separado?". A resposta honesta depende de quem vai operar, de quem vai mudar o código e de quanto custa errar.</p>
+
+  <h3>As três formas</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Critério</th><th>Monólito</th><th>Monólito modular</th><th>Microsserviços</th></tr></thead>
+    <tbody>
+      <tr><td>Deploy</td><td>Um artefato</td><td>Um artefato</td><td>Vários, independentes</td></tr>
+      <tr><td>Fronteiras</td><td>Frouxas (qualquer classe acessa qualquer tabela)</td><td>Módulos com interface pública e dados próprios</td><td>Rede e contrato de API</td></tr>
+      <tr><td>Consistência</td><td>Transação ACID única</td><td>Transação única, com disciplina</td><td>Eventual; sagas e compensação</td></tr>
+      <tr><td>Complexidade operacional</td><td>Baixa</td><td>Baixa</td><td>Alta: descoberta, observabilidade distribuída, versões, falhas parciais</td></tr>
+      <tr><td>Escala independente</td><td>Não</td><td>Não (escala a unidade toda)</td><td>Sim, por serviço</td></tr>
+      <tr><td>Autonomia de times</td><td>Baixa</td><td>Média</td><td>Alta, se os contextos forem bem cortados</td></tr>
+    </tbody>
+  </table></div>
+  <p>O <strong>monólito modular</strong> é o ponto de partida mais sensato para a maioria dos produtos: um deploy só, mas com módulos que se falam apenas por interfaces públicas e que não compartilham tabelas. Ele dá 80% da clareza de fronteiras com 20% do custo operacional. Microsserviços resolvem um problema <em>organizacional e de escala</em>; se você não tem esse problema, só compra a complexidade.</p>
+
+  <h3>Contexto delimitado (DDD) em resumo</h3>
+  <p>No <strong>Domain-Driven Design</strong>, um <strong>contexto delimitado</strong> (<em>bounded context</em>) é uma fronteira dentro da qual os termos têm um significado único. "Paciente" no contexto de <em>agendamento</em> é alguém com telefone e preferência de horário; no de <em>faturamento</em> é um beneficiário com carteirinha e plano; no <em>clínico</em> é um histórico de atendimentos. Forçar um único modelo "Paciente" para os três cria uma tabela gigante e acoplamentos. Cortar por contexto e comunicar por <strong>API ou evento</strong> mantém cada modelo simples.</p>
+  <ul>
+    <li>A fronteira certa costuma seguir a <strong>linguagem do negócio</strong> e a <strong>propriedade dos dados</strong>, não a camada técnica ("serviço de banco de dados", "serviço de validação").</li>
+    <li>A API de um contexto expõe o que outros precisam (agendamento confirmado), não o modelo interno (as 12 tabelas).</li>
+    <li>Cada contexto tem <strong>um dono</strong> (um time) e <strong>seus dados</strong>: ninguém lê o banco de outro contexto diretamente.</li>
+  </ul>
+
+  <h3>Quando extrair um serviço</h3>
+  <ul>
+    <li>O módulo tem <strong>ritmo de mudança</strong> ou de deploy diferente (muda toda semana, enquanto o resto muda por trimestre).</li>
+    <li>Precisa de <strong>escala ou perfil de recurso</strong> próprio (processamento de imagem, geração de laudos em PDF).</li>
+    <li>Exige <strong>isolamento de falha ou de segurança</strong> (módulo que manipula dado muito sensível).</li>
+    <li>Um time inteiro vai ser dono dele e consegue operá-lo (plantão, monitoramento).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum: o monólito distribuído</b><p>Serviços que precisam ser implantados juntos, compartilham o mesmo banco ou se chamam em cadeia síncrona longa. Você ganha toda a complexidade de rede sem a independência. Se uma mudança de campo exige alterar e implantar cinco serviços no mesmo dia, as fronteiras estão erradas.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Comece modular, meça a dor, extraia o que doer. Corte por <strong>contexto de negócio</strong>, dê <strong>um banco por contexto</strong> e trate a interface pública do módulo como se já fosse uma API (contrato, testes, versionamento, módulo 07).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Eu começaria com um monólito modular, com módulos por contexto delimitado, interfaces públicas explícitas e dados separados. Extraio um serviço quando há razão concreta: ritmo de deploy, escala, isolamento ou autonomia de um time. Microsserviços resolvem problema organizacional; sem ele, só custam." Mostrar que você já viu o monólito distribuído dá pontos.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando o time pedir para "quebrar em microsserviços", pergunte: qual dor concreta isso resolve, quem vai operar (plantão), qual a métrica de sucesso e o custo (pessoas, nuvem, observabilidade)? Exija um ADR (seção 7). Um time de 6 pessoas com 15 microsserviços quase sempre está pagando um imposto que não precisa.</p></div>
+</section>
+
+<section class="chap" id="gateway-mesh-bff">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l3">Avançado</span></div>
+  <h2>API gateway, service mesh e BFF: arquitetura de referência</h2>
+  <p>Três componentes aparecem sempre nos desenhos de arquitetura e são frequentemente confundidos. Cada um resolve um problema em um lugar diferente do tráfego.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Componente</th><th>Onde atua</th><th>Resolve</th><th>Exemplos</th></tr></thead>
+    <tbody>
+      <tr><td><strong>API gateway</strong></td><td>Borda: tráfego de <em>fora para dentro</em> (norte-sul)</td><td>Entrada única: autenticação, limite de taxa, TLS, roteamento, cache, métricas, versionamento de rota, portal de desenvolvedores</td><td>Kong, Apigee, AWS API Gateway, Azure API Management, NGINX, Envoy como borda</td></tr>
+      <tr><td><strong>Service mesh</strong></td><td>Entre serviços internos (leste-oeste)</td><td>mTLS automático, retry, timeout, circuit breaker, telemetria, políticas de tráfego, sem mudar o código da aplicação (sidecar ou modo sem sidecar)</td><td>Istio, Linkerd</td></tr>
+      <tr><td><strong>BFF</strong> (Backend for Frontend)</td><td>Um backend por tipo de cliente</td><td>Agrega várias chamadas internas e devolve exatamente o que a tela precisa (app móvel, portal web), isolando clientes diferentes entre si</td><td>Serviço próprio por cliente; também GraphQL como camada de composição (módulo 03)</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 310" role="img" aria-label="Arquitetura de referência: clientes, API gateway na borda, BFFs por cliente e serviços dentro de um service mesh">
+      <defs><marker id="ah-ref" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="15" y="26">Clientes</text>
+      <rect class="box" x="15" y="50" width="120" height="34" rx="5"/><text x="75" y="72" text-anchor="middle">App paciente</text>
+      <rect class="box" x="15" y="120" width="120" height="34" rx="5"/><text x="75" y="142" text-anchor="middle">Portal clínica</text>
+      <rect class="box" x="15" y="190" width="120" height="34" rx="5"/><text x="75" y="212" text-anchor="middle">Parceiro / ERP</text>
+      <rect class="box-a" x="170" y="40" width="130" height="200" rx="6"/>
+      <text class="ttl" x="235" y="64" text-anchor="middle">API Gateway</text>
+      <text x="235" y="100" text-anchor="middle">auth, rate limit</text>
+      <text x="235" y="128" text-anchor="middle">TLS, WAF</text>
+      <text x="235" y="156" text-anchor="middle">roteamento</text>
+      <text x="235" y="184" text-anchor="middle">cache, logs</text>
+      <rect class="box-w" x="340" y="50" width="100" height="34" rx="5"/><text x="390" y="72" text-anchor="middle">BFF mobile</text>
+      <rect class="box-w" x="340" y="120" width="100" height="34" rx="5"/><text x="390" y="142" text-anchor="middle">BFF web</text>
+      <rect class="box-m" x="475" y="30" width="195" height="235" rx="6"/>
+      <text class="ttl" x="572" y="49" text-anchor="middle">Service mesh (mTLS)</text>
+      <rect class="box" x="495" y="62" width="155" height="34" rx="5"/><text x="572" y="84" text-anchor="middle">Agenda</text>
+      <rect class="box" x="495" y="110" width="155" height="34" rx="5"/><text x="572" y="132" text-anchor="middle">Pacientes</text>
+      <rect class="box" x="495" y="158" width="155" height="34" rx="5"/><text x="572" y="180" text-anchor="middle">Faturamento</text>
+      <rect class="box" x="495" y="206" width="155" height="34" rx="5"/><text x="572" y="228" text-anchor="middle">Notificação</text>
+      <line class="ln" x1="135" y1="67" x2="170" y2="67" marker-end="url(#ah-ref)"/>
+      <line class="ln" x1="135" y1="137" x2="170" y2="137" marker-end="url(#ah-ref)"/>
+      <line class="ln" x1="135" y1="207" x2="170" y2="207" marker-end="url(#ah-ref)"/>
+      <line class="ln-a" x1="300" y1="67" x2="340" y2="67" marker-end="url(#ah-ref)"/>
+      <line class="ln-a" x1="300" y1="137" x2="340" y2="137" marker-end="url(#ah-ref)"/>
+      <line class="ln-a" x1="300" y1="207" x2="475" y2="207" marker-end="url(#ah-ref)"/>
+      <text class="lbl" x="385" y="200" text-anchor="middle">API pública</text>
+      <line class="ln-a" x1="440" y1="67" x2="475" y2="67" marker-end="url(#ah-ref)"/>
+      <line class="ln-a" x1="440" y1="137" x2="475" y2="137" marker-end="url(#ah-ref)"/>
+      <text class="lbl" x="15" y="296">Norte-sul (de fora para dentro): gateway. Leste-oeste (entre serviços): mesh.</text>
+    </svg>
+    <figcaption>Clientes passam pelo gateway; app e portal usam BFFs próprios; parceiros chamam a API pública. Dentro do mesh, os serviços falam com mTLS e política de tráfego.</figcaption>
+  </figure>
+
+  <h3>O que colocar (e não colocar) no gateway</h3>
+  <ul>
+    <li><strong>Coloque:</strong> autenticação do token (validação), limite de taxa por cliente, TLS, roteamento por caminho e versão, CORS, cache de respostas públicas, correlação (<code>X-Request-Id</code>), logs de acesso, bloqueio de abuso. É a aplicação centralizada de políticas dos módulos 05, 06 e 07.</li>
+    <li><strong>Não coloque:</strong> regra de negócio, orquestração de fluxos longos, transformação complexa de payload. Isso vira um segundo monólito, sem testes e sem dono, e todo deploy do gateway passa a arriscar tudo.</li>
+    <li><strong>Autorização fina</strong> (este usuário pode ver <em>este</em> paciente?) pertence ao serviço dono do dado; o gateway só garante que o token é válido e tem o escopo geral.</li>
+  </ul>
+<pre data-file="gateway.yaml (exemplo ilustrativo, formato declarativo do Kong)"><code class="yaml">_format_version: "3.0"
+services:
+  - name: agenda
+    url: http://agenda.interno:8080
+    routes:
+      - name: agenda-v1
+        paths: ["/v1/agendamentos", "/v1/horarios"]
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 120
+          policy: local</code></pre>
+
+  <h3>BFF: quando vale</h3>
+  <p>Um BFF vale quando clientes diferentes precisam de formas diferentes de dado (o app quer uma tela com próximo agendamento, receitas e avisos em <em>uma</em> chamada; o portal da clínica quer listas paginadas e filtros). Sem ele, ou o cliente faz sete chamadas (lento em rede móvel), ou a API de domínio ganha campos para todos os clientes. A regra: o BFF pertence ao time do <strong>cliente</strong>, que sabe o que a tela precisa, e <strong>não</strong> contém regra de domínio, só composição e adaptação.</p>
+
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li><strong>Gateway como ponto único de falha</strong> sem redundância, sem limites de timeout, sem teste de carga.</li>
+    <li><strong>Mesh adotado cedo demais:</strong> custo operacional e de aprendizado altos. Com poucos serviços, uma biblioteca de retry e TLS no balanceador costuma bastar.</li>
+    <li><strong>Gateway, mesh e BFF todos fazendo retry:</strong> retentativas em camadas multiplicam carga (3 camadas com 3 tentativas = 27 chamadas ao backend em uma falha). Defina onde o retry mora (módulo 06).</li>
+    <li><strong>Um BFF "universal"</strong> que atende todos os clientes: volta ao problema original.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O gateway cuida do tráfego de entrada: autenticação, limite de taxa, roteamento e observabilidade. O service mesh cuida do tráfego entre serviços: mTLS, retry e telemetria. O BFF é um backend por tipo de cliente que agrega chamadas. Regra de negócio fica nos serviços de domínio, nunca no gateway."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Gateway e mesh são <strong>produto de plataforma</strong>: precisam de time dono, SLO, documentação e ciclo de atualização. Pergunte quanto custa operar (licença, nuvem, pessoas) e se o ganho (padronização, segurança, visibilidade) justifica no estágio atual. Defina a política de quem pode criar rotas e como (revisão, código versionado).</p></div>
+</section>
+
+<section class="chap" id="comunicacao">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Comunicação entre serviços: síncrono, assíncrono e acoplamento</h2>
+  <p>Escolher como dois serviços conversam é escolher o tipo de <strong>acoplamento</strong> entre eles. Em síncrono (REST, gRPC, módulos 01 e 03), o chamador espera a resposta: é simples de raciocinar, mas o chamador depende do chamado estar no ar <em>naquele instante</em>. Em assíncrono (filas e eventos, módulo 04), o produtor publica e segue; os consumidores reagem no seu tempo.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Aspecto</th><th>Síncrono (request/response)</th><th>Assíncrono (eventos/mensagens)</th></tr></thead>
+    <tbody>
+      <tr><td>Acoplamento temporal</td><td>Alto: ambos precisam estar no ar</td><td>Baixo: o broker absorve picos e quedas</td></tr>
+      <tr><td>Disponibilidade composta</td><td>Multiplicada: cada elo da cadeia reduz o total</td><td>Isolada: falha do consumidor não derruba o produtor</td></tr>
+      <tr><td>Resposta imediata ao usuário</td><td>Sim</td><td>Não direta; exige polling, webhook ou notificação</td></tr>
+      <tr><td>Consistência</td><td>Mais fácil de garantir (transação local ou chamada confirmada)</td><td>Eventual; exige idempotência e tratamento de ordem/duplicidade</td></tr>
+      <tr><td>Depuração</td><td>Trace direto</td><td>Mais difícil; precisa de correlação e rastreio entre mensagens</td></tr>
+      <tr><td>Bom para</td><td>Consultas, comandos que precisam de resposta, validações</td><td>Notificações, integração entre contextos, processamento em lote, reação a fatos</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>A conta que convence: disponibilidade composta</h3>
+  <p>Se um pedido atravessa 5 serviços em cadeia síncrona, cada um com 99,9% de disponibilidade, a disponibilidade do conjunto é aproximadamente 0,999<sup>5</sup> ≈ 99,5%. Isso é cerca de 3,6 horas de indisponibilidade por mês contra 43 minutos de um serviço isolado. Por isso: encurte cadeias, use timeouts e circuit breakers (módulo 06) e mova para assíncrono o que não precisa de resposta imediata.</p>
+
+  <h3>Comando, consulta e evento</h3>
+  <ul>
+    <li><strong>Comando:</strong> "faça isto" (<code>POST /agendamentos</code>); tem um destinatário, pode falhar e o chamador quer saber.</li>
+    <li><strong>Consulta:</strong> "me diga isto"; idealmente sem efeito colateral e cacheável.</li>
+    <li><strong>Evento:</strong> "isto aconteceu" (<code>agendamento.criado</code>); é um fato no passado, publicado a quem interessar. Quem publica não sabe quem consome, e é isso que reduz o acoplamento.</li>
+  </ul>
+<pre data-file="evento agendamento.criado"><code class="json">{
+  "id": "evt_01JF3X9Q7K",
+  "type": "agendamento.criado",
+  "occurredAt": "2026-11-25T13:02:11Z",
+  "version": 1,
+  "data": {
+    "agendamentoId": "ag_8841",
+    "unidadeId": "un_12",
+    "inicio": "2026-12-03T09:30:00-03:00"
+  }
+}</code></pre>
+  <p>Note o que <strong>não</strong> está no evento: nome, CPF e telefone do paciente. Um evento largamente consumido com dado sensível vira vazamento em potencial (LGPD, módulo 09). Publique ids e deixe quem tem permissão consultar a API para o detalhe, ou use eventos com campos mínimos.</p>
+
+  <h3>Padrões que sustentam o assíncrono</h3>
+  <ul>
+    <li><strong>Outbox transacional:</strong> grava o evento em uma tabela na <em>mesma transação</em> do dado de negócio, e um processo à parte publica na fila. Evita o "gravei no banco mas a publicação falhou" (dual write).</li>
+    <li><strong>Consumidor idempotente:</strong> a entrega é <em>pelo menos uma vez</em>; guarde o id do evento processado e ignore repetições (módulo 06).</li>
+    <li><strong>Saga:</strong> uma transação de negócio em vários serviços como sequência de passos locais com <strong>compensação</strong> (se o pagamento falha, cancela a reserva). Pode ser <em>coreografada</em> (cada serviço reage a eventos) ou <em>orquestrada</em> (um coordenador comanda). Coreografia é desacoplada, mas o fluxo fica difícil de enxergar; orquestração dá visibilidade a custo de um ponto central.</li>
+    <li><strong>Contrato de evento:</strong> esquemas versionados (AsyncAPI, registro de esquemas) e evolução compatível, como nas APIs (módulos 02 e 07).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Usar eventos como "chamada remota disfarçada": o serviço A publica "preciso do cadastro do paciente" e espera o B responder por outro evento. Você tem todo o custo do assíncrono e a falta de clareza de um fluxo escondido. Se precisa de resposta, use request/response.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Síncrono para <strong>perguntar</strong> e quando o usuário espera o resultado; assíncrono para <strong>avisar</strong> o que aconteceu e para tudo que pode ser feito depois (e-mail, lembrete, faturamento, integração com terceiros).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Escolho síncrono quando o usuário precisa da resposta e assíncrono para reagir a fatos. Cadeias síncronas longas multiplicam indisponibilidade; por isso uso outbox para publicar eventos de forma confiável, consumidores idempotentes e saga com compensação para fluxos entre serviços."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Assíncrono troca complexidade de código por complexidade operacional: filas, DLQ, reprocessamento, monitoramento de atraso. Cobre do time: métrica de <em>lag</em> por consumidor, alerta de DLQ, runbook de reprocesso e dono do contrato de cada evento. Pergunte "o que acontece se este evento chegar duas vezes ou fora de ordem?".</p></div>
+</section>
+<section class="chap" id="legado">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Sistemas legados e de terceiros: anticorruption layer e strangler fig</h2>
+  <p>Na prática, quase nenhum gestor de tecnologia em saúde começa do zero. Existe um sistema hospitalar antigo, com anos de regra de negócio, que "ninguém quer mexer, mas todo mundo depende". Reescrever tudo de uma vez (o <em>big bang</em>) costuma falhar: leva anos, o negócio não espera e o sistema novo nasce já defasado. As duas técnicas centrais para sair disso com segurança são a <strong>camada anticorrupção</strong> e o <strong>strangler fig</strong>.</p>
+
+  <h3>Cenário: um sistema hospitalar legado</h3>
+  <p>Imagine um HIS (sistema de gestão hospitalar) com banco Oracle, regras em PL/SQL e telas cliente-servidor. O modelo é cheio de convenções antigas: a situação do agendamento é <code>SIT_AGD = 'C'</code> (confirmado), <code>'X'</code> (cancelado), <code>'F'</code> (faltou); datas em <code>DATE</code> sem fuso; o paciente tem código numérico interno. Os novos produtos (app, portal, integrações com operadoras) precisam desses dados.</p>
+  <p>Formas de expor o legado, da pior para a melhor:</p>
+  <ol>
+    <li><strong>Ler e gravar direto nas tabelas do legado:</strong> rápido, mas acopla tudo ao esquema interno e ignora as regras que moram nas procedures. Gravar assim pode corromper dados. Evite escrita direta.</li>
+    <li><strong>Réplica ou captura de mudanças (CDC) para leitura:</strong> o novo sistema lê de uma cópia (por exemplo, para um PostgreSQL) sem sobrecarregar o legado. Bom para consultas; a escrita continua pelo legado.</li>
+    <li><strong>Integração por padrão da área</strong> (HL7 v2, arquivos), quando o legado já suporta (módulo 09).</li>
+    <li><strong>API de fachada sobre o legado:</strong> um serviço que traduz chamadas REST em procedimentos/transações do legado, respeitando suas regras. É o caminho recomendado para escrita.</li>
+  </ol>
+
+  <h3>Anticorruption layer (ACL)</h3>
+  <p>A <strong>camada anticorrupção</strong> é uma fronteira de tradução que impede o modelo do legado (ou de um terceiro) de "contaminar" o modelo novo. Seu código novo fala o <em>seu</em> vocabulário (<code>CONFIRMADO</code>, <code>CANCELADO</code>, datas ISO com fuso); a ACL converte de e para o dialeto externo.</p>
+<pre data-file="acl/agendamento.js"><code class="js">// Traduz o registro do legado para o modelo do domínio novo.
+const STATUS = { C: "CONFIRMADO", X: "CANCELADO", F: "FALTOU", P: "PENDENTE" };
+
+function paraDominio(linha, fusoDaUnidade) {
+  if (!(linha.SIT_AGD in STATUS)) {
+    // nunca deixe o valor estranho vazar silenciosamente
+    throw new Error("situação desconhecida no legado: " + linha.SIT_AGD);
+  }
+  return {
+    id: "ag_" + linha.COD_AGD,
+    status: STATUS[linha.SIT_AGD],
+    inicio: toIsoComFuso(linha.DT_HORA_AGD, fusoDaUnidade),
+    pacienteId: "pac_" + linha.COD_PAC,
+  };
+}</code></pre>
+  <p>Benefícios: o legado pode ser trocado depois sem tocar nos consumidores; o mapeamento fica em um lugar testável; e erros de dados sujos aparecem na borda, não espalhados. A mesma ideia vale para <strong>APIs de terceiros</strong> (laboratório, operadora, gateway de pagamento): você não deixa os nomes de campo e as regras deles invadirem seu domínio, e adiciona na ACL timeout, circuit breaker, cache e testes de contrato (módulo 08).</p>
+
+  <h3>Strangler fig: migrar sem big bang</h3>
+  <p>O nome vem da figueira que cresce em volta de uma árvore até substituí-la. Você coloca uma <strong>fachada</strong> (gateway ou proxy) na frente do legado e vai movendo <strong>uma fatia funcional por vez</strong> para um serviço novo. O tráfego dessa fatia passa a ser roteado para o novo; o resto continua no legado. Quando nada mais usa o legado, ele é desligado.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 260" role="img" aria-label="Strangler fig: a fachada roteia uma rota para o serviço novo e as demais para o legado por meio de uma camada anticorrupção">
+      <defs><marker id="ah-strg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="15" y="100" width="120" height="40" rx="5"/><text x="75" y="125" text-anchor="middle">Clientes</text>
+      <rect class="box-a" x="185" y="95" width="150" height="50" rx="5"/><text x="260" y="125" text-anchor="middle">Fachada / proxy</text>
+      <rect class="box-w" x="400" y="28" width="190" height="42" rx="5"/><text x="495" y="54" text-anchor="middle">Serviço novo: agenda</text>
+      <rect class="box-m" x="400" y="165" width="130" height="42" rx="5"/><text x="465" y="191" text-anchor="middle">ACL (tradutor)</text>
+      <rect class="box-b" x="565" y="165" width="100" height="42" rx="5"/><text x="615" y="191" text-anchor="middle">HIS legado</text>
+      <line class="ln" x1="135" y1="120" x2="185" y2="120" marker-end="url(#ah-strg)"/>
+      <line class="ln-a" x1="335" y1="108" x2="400" y2="52" marker-end="url(#ah-strg)"/>
+      <line class="ln" x1="335" y1="132" x2="400" y2="186" marker-end="url(#ah-strg)"/>
+      <line class="ln" x1="530" y1="186" x2="565" y2="186" marker-end="url(#ah-strg)"/>
+      <line class="ln-a" x1="480" y1="70" x2="480" y2="165" marker-end="url(#ah-strg)"/>
+      <text class="lbl" x="490" y="125">lê pela ACL</text>
+      <text class="lbl" x="15" y="246">Cada fatia migrada muda a rota na fachada; o legado encolhe até ser desligado.</text>
+    </svg>
+    <figcaption>Rotas já migradas vão ao serviço novo; as demais continuam no legado. Enquanto convivem, o serviço novo consulta o legado pela ACL.</figcaption>
+  </figure>
+
+  <ol class="seq">
+    <li><div><strong>Mapeie e escolha a primeira fatia.</strong> Prefira algo de valor claro, risco baixo e poucas dependências (por exemplo, consulta de horários disponíveis, somente leitura).</div></li>
+    <li><div><strong>Coloque a fachada na frente</strong> sem mudar nada: todo o tráfego ainda passa para o legado. Ganha-se logs e métricas do tráfego real.</div></li>
+    <li><div><strong>Construa o serviço novo</strong> com seu próprio modelo e dados, lendo o que precisar do legado pela ACL.</div></li>
+    <li><div><strong>Rode em paralelo (shadow ou comparação):</strong> envie cópia do tráfego ao novo e compare respostas, sem afetar o usuário.</div></li>
+    <li><div><strong>Troque a rota</strong> gradualmente (percentual de tráfego, por unidade ou por cliente), com <em>rollback</em> instantâneo na fachada.</div></li>
+    <li><div><strong>Defina a fonte da verdade</strong> do dado migrado, sincronize durante a transição e, por fim, desative a funcionalidade equivalente no legado.</div></li>
+  </ol>
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li><strong>Escrita dupla (dual write):</strong> gravar nos dois sistemas "ao mesmo tempo" sem garantia causa divergência. Escolha uma fonte da verdade por dado e sincronize por CDC ou eventos.</li>
+    <li><strong>Migrar a fatia mais difícil primeiro</strong> (o faturamento): o time fica meses sem entregar valor. Comece por uma fatia que prove o método.</li>
+    <li><strong>Esquecer os consumidores ocultos:</strong> relatórios e planilhas que leem direto o banco do legado. Inventarie os acessos antes de desligar algo.</li>
+    <li><strong>A migração "temporária" que nunca acaba:</strong> sem data e métrica de desligamento, o legado fica para sempre, e você paga os dois.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Não reescrevo tudo: ponho uma fachada na frente do legado e migro fatia por fatia com strangler fig. Uso uma camada anticorrupção para o modelo do legado não vazar para o novo, defino a fonte da verdade de cada dado, rodo em paralelo para comparar e mantenho rollback na rota."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Migração de legado é decisão de <strong>portfólio</strong>, não projeto de TI isolado: tem custo duplicado durante a convivência. Exija meta de desligamento (data e métrica, como "% do tráfego no novo"), entregas de valor a cada fatia e orçamento para o conhecimento que só quem mantém o legado tem. Cuidado com a dependência de uma ou duas pessoas que conhecem o sistema antigo.</p></div>
+</section>
+
+<section class="chap" id="build-buy-custos">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Build vs buy, iPaaS e custo de APIs (FinOps básico)</h2>
+
+  <h3>Construir ou comprar</h3>
+  <p>A pergunta não é "qual é mais barato", e sim "isto é o que nos diferencia?". Construa o que é <strong>vantagem competitiva</strong> (a experiência de agendamento da sua rede, regras clínicas próprias). Compre o que é <strong>commodity</strong> (e-mail transacional, autenticação, gateway, assinatura digital, monitoramento).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Critério</th><th>Tende a construir</th><th>Tende a comprar</th></tr></thead>
+    <tbody>
+      <tr><td>Diferenciação</td><td>Núcleo do negócio</td><td>Função genérica</td></tr>
+      <tr><td>Tempo até valor</td><td>Prazo folgado</td><td>Urgência</td></tr>
+      <tr><td>Custo total (TCO)</td><td>Time disponível e estável para evoluir e operar</td><td>Custo de pessoas e plantão supera a licença</td></tr>
+      <tr><td>Controle e lock-in</td><td>Precisa de controle fino, dado não pode sair</td><td>Há alternativa e saída viável (dados exportáveis)</td></tr>
+      <tr><td>Conformidade</td><td>Regras regulatórias muito específicas</td><td>O fornecedor já tem certificações e atende à LGPD por contrato</td></tr>
+      <tr><td>Risco</td><td>Você domina a tecnologia</td><td>Você não tem experiência (criptografia, pagamento)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ao calcular, inclua o que costuma ser esquecido em "construir": manutenção (em geral 15% a 20% do custo inicial por ano é uma estimativa comum, não uma lei), plantão, segurança, atualização de dependências e o custo de oportunidade. Em "comprar": integração, customização, treinamento, limite de uso, aumentos de preço e custo de saída.</p>
+
+  <h3>iPaaS</h3>
+  <p><strong>iPaaS</strong> (Integration Platform as a Service) são plataformas de integração em nuvem com conectores prontos, fluxos visuais e monitoramento (por exemplo MuleSoft, Boomi, Workato, Azure Logic Apps; existem opções de código aberto como n8n). Vantagens: velocidade para integrar sistemas comuns (ERP, CRM, e-mail), menos código. Riscos: o preço escala com volume e conectores; lógica "escondida" em fluxos visuais difíceis de versionar e testar; lock-in; e controle limitado para padrões de saúde exigentes (HL7 v2 com dialetos, TISS). Para integrações específicas de saúde, um motor de integração especializado (módulo 09) costuma encaixar melhor; um iPaaS serve bem para o entorno corporativo.</p>
+
+  <h3>De onde vem o custo de uma API</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Como cobra</th><th>Como reduzir</th></tr></thead>
+    <tbody>
+      <tr><td>Computação</td><td>Instâncias, contêineres ou execuções</td><td>Dimensionar pelo uso real, autoscaling, desligar ambientes de teste fora do horário</td></tr>
+      <tr><td>API gateway gerenciado</td><td>Por milhão de requisições e por dados transferidos</td><td>Cache, compressão, evitar chamadas desnecessárias (polling), batch</td></tr>
+      <tr><td><strong>Egress</strong> (tráfego de saída)</td><td>Por GB que sai da nuvem ou entre zonas/regiões</td><td>Manter comunicação intensa na mesma zona/região, comprimir, paginar e limitar campos (<code>fields</code>), CDN</td></tr>
+      <tr><td>Observabilidade</td><td>Por volume de logs, métricas de alta cardinalidade e traces</td><td>Amostragem de traces, nível de log adequado, retenção por tier, evitar rótulos de métrica com id de usuário</td></tr>
+      <tr><td>Banco e armazenamento</td><td>Capacidade, IOPS, backups, retenção</td><td>Índices e consultas melhores (trilha de SQL), arquivamento, políticas de retenção</td></tr>
+      <tr><td>APIs de terceiros</td><td>Por chamada ou por franquia</td><td>Cache, deduplicação, circuit breaker para não pagar por retry desnecessário</td></tr>
+      <tr><td>Pessoas e plantão</td><td>Horas de time</td><td>Automação, runbooks, padronização (plataforma)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Um exemplo de ordem de grandeza: se cada requisição gera 2 KB de log e a API recebe 100 milhões de requisições por mês, são cerca de 200 GB de log por mês só dessa API, antes de indexar e reter. Um aumento de nível de log para <code>debug</code> "só por um tempo" pode dobrar a conta sem ninguém perceber.</p>
+
+  <h3>FinOps básico</h3>
+  <ul>
+    <li><strong>Visibilidade:</strong> etiquete (tags) todo recurso por serviço, time e ambiente; sem isso ninguém sabe quem gastou.</li>
+    <li><strong>Custo unitário:</strong> meça <em>custo por 1.000 requisições</em> ou <em>custo por agendamento concluído</em>. O total sobe com o negócio; o custo unitário diz se você está ficando eficiente.</li>
+    <li><strong>Showback/chargeback:</strong> mostre aos times o custo do que operam (showback) e, se fizer sentido, cobre internamente (chargeback).</li>
+    <li><strong>Orçamentos e alertas:</strong> alarme quando o gasto diário fugir da tendência, para pegar o laço infinito de retry ou o log em <code>debug</code> no dia.</li>
+    <li><strong>Revisão periódica:</strong> recursos ociosos, ambientes esquecidos, compromissos de uso (reservas) quando a carga é estável.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Otimizar centavos de computação enquanto o custo real está em <strong>egress</strong> e em <strong>logs</strong>, ou comprar um iPaaS "barato" que cresce com cada conector e cada milhão de execuções. Olhe a fatura por categoria antes de decidir onde agir.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Construo o que diferencia o negócio e compro commodity, comparando o TCO completo: licença, integração, operação, plantão e custo de saída. Para custo de API, olho gateway, egress, observabilidade e terceiros, e acompanho o custo unitário, como custo por agendamento, com tags e alertas de anomalia."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça a cada serviço crítico uma linha no orçamento com custo unitário e tendência, e revise com o time trimestralmente. Em decisões de compra, exija plano de saída (como exportar dados e quanto tempo leva) e cláusulas de proteção de dados. Contratos de nuvem e de licença têm renovação automática: coloque a data em calendário.</p></div>
+</section>
+
+<section class="chap" id="system-design">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Entrevista de system design focada em API</h2>
+  <p>Na entrevista de system design não se avalia a "arquitetura perfeita", mas <strong>como você pensa</strong>: faz perguntas, estima, escolhe com critério e expõe trade-offs. Para posições de API e de liderança, o entrevistador espera ver a <strong>API</strong> (recursos, contratos, erros) no centro do desenho, não só caixas e setas. O roteiro abaixo funciona tanto para responder quanto para <em>conduzir</em> a entrevista de outra pessoa.</p>
+
+  <h3>Roteiro em 7 passos (cerca de 45 minutos)</h3>
+  <ol class="seq">
+    <li><div><strong>Requisitos (5 a 8 min).</strong> Pergunte antes de desenhar. Funcionais: quem usa, o que faz. Não funcionais: volume, latência, disponibilidade, consistência, conformidade (LGPD). Defina o que está <em>fora</em> do escopo.</div></li>
+    <li><div><strong>Estimativas (3 a 5 min).</strong> Usuários, requisições por segundo na média e no pico, tamanho dos dados. Serve para decidir se precisa de cache, fila ou sharding, ou se um banco único resolve.</div></li>
+    <li><div><strong>Entidades e dados (5 min).</strong> Substantivos do domínio, relações e quem é dono de quê. Esboce o modelo de dados.</div></li>
+    <li><div><strong>API (8 a 10 min).</strong> Recursos, verbos, paginação, idempotência, erros, autenticação. Mostre 3 a 5 endpoints reais.</div></li>
+    <li><div><strong>Arquitetura de alto nível (5 min).</strong> Componentes e fluxo de uma requisição típica.</div></li>
+    <li><div><strong>Aprofundar (10 min).</strong> Os pontos difíceis: consistência (corrida por recurso escasso), escala, falhas, segurança. Deixe o entrevistador escolher onde aprofundar.</div></li>
+    <li><div><strong>Trade-offs e evolução (3 a 5 min).</strong> O que você decidiu não fazer agora, o que mudaria se o volume crescesse 10x, como monitorar.</div></li>
+  </ol>
+
+  <h3>Exemplo: agendamento de consultas para uma rede de clínicas</h3>
+  <p><strong>1. Requisitos.</strong> Funcionais: buscar horários por especialidade, unidade e período; agendar, remarcar e cancelar; lembretes ao paciente; lista de espera; integração com a cobertura do convênio. Não funcionais: rede com ~150 unidades e ~3.000 profissionais; a experiência do paciente exige resposta de busca em menos de 500 ms; <strong>nunca</strong> agendar duas pessoas no mesmo horário; dados de saúde sob a LGPD; disponibilidade alta no horário comercial.</p>
+  <p><strong>2. Estimativas (hipóteses declaradas).</strong> 60.000 agendamentos por dia ≈ 0,7 gravação/s na média; com pico 10x (segunda de manhã), cerca de 7 gravações/s. Se a leitura de horários é 50x a gravação, algo como 350 leituras/s no pico. Conclusão: <strong>um PostgreSQL bem indexado com cache de leitura</strong> resolve; sharding e microsserviços não se justificam pelo volume. O argumento forte da entrevista é saber dizer isso.</p>
+  <p><strong>3. Entidades.</strong> <code>Unidade</code>, <code>Profissional</code>, <code>Especialidade</code>, <code>Horario</code> (slot de agenda, com início/fim e unidade), <code>Agendamento</code> (liga paciente e horário, com status), <code>Paciente</code>, <code>Cobertura</code>. Guarde tempos em UTC e o fuso (IANA) da unidade: o Brasil tem vários fusos e o horário do paciente é o <em>local da unidade</em>.</p>
+  <p><strong>4. API.</strong></p>
+<pre data-file="API de agendamento (resumo)"><code class="http">GET  /v1/horarios?especialidade=cardiologia&amp;unidade=un_12&amp;de=2026-12-01&amp;ate=2026-12-07&amp;limit=50
+POST /v1/agendamentos
+GET  /v1/agendamentos/{id}
+POST /v1/agendamentos/{id}/remarcacao
+POST /v1/agendamentos/{id}/cancelamento
+POST /v1/lista-espera</code></pre>
+<pre><code class="http">POST /v1/agendamentos HTTP/1.1
+Authorization: Bearer eyJhbGciOi...
+Idempotency-Key: 6c1f3b0e-7d52-4a39-9d58-3c1c1b6a0a10
+Content-Type: application/json
+
+{ "horarioId": "hr_55012", "pacienteId": "pac_9031" }
+
+HTTP/1.1 201 Created
+Location: /v1/agendamentos/ag_8841
+
+{ "id": "ag_8841", "status": "CONFIRMADO", "inicio": "2026-12-03T09:30:00-03:00" }
+
+HTTP/1.1 409 Conflict
+Content-Type: application/problem+json
+
+{ "type": "https://api.clinicas.exemplo/erros/horario-indisponivel",
+  "title": "Horário indisponível", "status": 409,
+  "detail": "O horário foi reservado por outra pessoa. Busque novas opções." }</code></pre>
+  <p>Pontos que mostram senioridade: <strong>remarcar e cancelar como sub-recursos de ação</strong> (não <code>PUT</code> de status); <code>Idempotency-Key</code> para a nova tentativa do app em rede ruim não duplicar; erro <code>409</code> em formato padronizado (módulo 01); paginação por cursor; autorização no objeto (paciente só vê os próprios agendamentos, módulo 05).</p>
+  <p><strong>5. Arquitetura.</strong></p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Arquitetura do agendamento: app, gateway, monólito modular com PostgreSQL, cache e fila de eventos para notificações">
+      <defs><marker id="ah-agd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="15" y="120" width="110" height="40" rx="5"/><text x="70" y="145" text-anchor="middle">App / Portal</text>
+      <rect class="box-a" x="165" y="120" width="120" height="40" rx="5"/><text x="225" y="145" text-anchor="middle">API Gateway</text>
+      <rect class="box-m" x="325" y="40" width="200" height="200" rx="6"/>
+      <text class="ttl" x="425" y="62" text-anchor="middle">Monólito modular</text>
+      <rect class="box" x="345" y="78" width="160" height="32" rx="5"/><text x="425" y="99" text-anchor="middle">Agenda / Horários</text>
+      <rect class="box" x="345" y="124" width="160" height="32" rx="5"/><text x="425" y="145" text-anchor="middle">Agendamentos</text>
+      <rect class="box" x="345" y="170" width="160" height="32" rx="5"/><text x="425" y="191" text-anchor="middle">Pacientes</text>
+      <rect class="box-w" x="560" y="60" width="110" height="40" rx="5"/><text x="615" y="85" text-anchor="middle">PostgreSQL</text>
+      <rect class="box-w" x="560" y="120" width="110" height="40" rx="5"/><text x="615" y="145" text-anchor="middle">Redis (cache)</text>
+      <rect class="box-w" x="560" y="180" width="110" height="40" rx="5"/><text x="615" y="205" text-anchor="middle">Fila eventos</text>
+      <rect class="box" x="560" y="245" width="110" height="34" rx="5"/><text x="615" y="267" text-anchor="middle">Notificações</text>
+      <line class="ln" x1="125" y1="140" x2="165" y2="140" marker-end="url(#ah-agd)"/>
+      <line class="ln" x1="285" y1="140" x2="325" y2="140" marker-end="url(#ah-agd)"/>
+      <line class="ln-a" x1="525" y1="80" x2="560" y2="80" marker-end="url(#ah-agd)"/>
+      <line class="ln" x1="525" y1="140" x2="560" y2="140" marker-end="url(#ah-agd)"/>
+      <line class="ln-a" x1="525" y1="200" x2="560" y2="200" marker-end="url(#ah-agd)"/>
+      <line class="ln" x1="615" y1="220" x2="615" y2="245" marker-end="url(#ah-agd)"/>
+      <text class="lbl" x="15" y="290">Outbox na mesma transação do agendamento publica eventos na fila.</text>
+    </svg>
+    <figcaption>Um monólito modular com banco relacional, cache de leitura de horários e fila para efeitos colaterais (lembretes, faturamento).</figcaption>
+  </figure>
+
+  <p><strong>6. Aprofundando: consistência.</strong> O requisito crítico é não ter reserva dupla. A garantia vem do <strong>banco</strong>, não do código da aplicação:</p>
+<pre data-file="schema (PostgreSQL, trecho)"><code class="text">CREATE TABLE agendamento (
+  id          text PRIMARY KEY,
+  horario_id  text NOT NULL REFERENCES horario(id),
+  paciente_id text NOT NULL,
+  status      text NOT NULL,          -- CONFIRMADO, CANCELADO, FALTOU
+  criado_em   timestamptz NOT NULL DEFAULT now()
+);
+-- no máximo um agendamento ativo por horário
+CREATE UNIQUE INDEX ux_horario_ativo
+  ON agendamento (horario_id) WHERE status = 'CONFIRMADO';</code></pre>
+  <p>Duas requisições simultâneas pelo mesmo horário: uma insere, a outra recebe violação de unicidade e a API traduz em <code>409</code>. Alternativas para evitar corrida: <code>SELECT ... FOR UPDATE</code> no horário, ou controle otimista com versão. Para a experiência do paciente, uma <strong>reserva temporária</strong> (<em>hold</em>) de poucos minutos enquanto ele confirma evita o "horário sumiu".</p>
+  <ul>
+    <li><strong>Leitura vs escrita:</strong> a lista de horários pode vir de cache com <em>consistência eventual</em> (alguns segundos de defasagem), mas a <strong>escrita</strong> sempre valida no banco. Mostrar um horário já tomado é aceitável; confirmá-lo duas vezes, não.</li>
+    <li><strong>Efeitos colaterais:</strong> lembrete por mensagem, atualização do faturamento e aviso à operadora saem por <strong>outbox</strong> e fila (assíncrono), não dentro da requisição.</li>
+    <li><strong>Escala:</strong> réplicas de leitura e cache por unidade/dia atendem o pico; particionar a tabela de horários por mês ajuda na manutenção. Só considere separar o módulo de agenda em serviço se um time próprio e uma razão concreta aparecerem.</li>
+    <li><strong>Falhas:</strong> timeouts e retry com <em>backoff</em> para o convênio; se a validação de cobertura estiver fora do ar, agende com status "pendente de elegibilidade" em vez de bloquear tudo.</li>
+    <li><strong>Segurança e LGPD:</strong> dado do paciente criptografado em repouso, acesso auditado, mínimo de dados nos eventos (módulo 09).</li>
+  </ul>
+  <p><strong>7. Trade-offs.</strong> Monólito modular em vez de microsserviços (volume pequeno, time pequeno), consistência forte na escrita e eventual na leitura, idempotência no cliente, e uma trilha de evolução: extrair notificações e depois a agenda se o ritmo de mudança divergir.</p>
+
+  <div class="note trap"><b>Erros comuns do candidato</b><ul>
+    <li>Desenhar Kafka, Kubernetes e dez microsserviços <strong>antes</strong> de perguntar o volume.</li>
+    <li>Esquecer a API: caixas sem contratos, erros e idempotência.</li>
+    <li>Não tratar o problema central (a corrida pelo mesmo horário) e jogar para "o banco resolve" sem dizer como.</li>
+    <li>Não falar de fuso, de dado pessoal e de observabilidade.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>Narre o raciocínio: "Vou assumir 60 mil agendamentos por dia; isso dá poucas gravações por segundo, então um Postgres resolve. O ponto difícil é não duplicar reserva, que garanto com índice único parcial e devolvo 409." Pedir confirmação das hipóteses é sinal de maturidade, não de fraqueza.</p></div>
+  <div class="note mgr"><b>Para gestores (quando você é a entrevistadora)</b><p>Avalie: fez perguntas antes de desenhar? Estimou? Desenhou a API com cuidado (erros, idempotência, paginação)? Tratou consistência e falhas? Admitiu trade-offs e o que não sabe? Um candidato que reconhece "não precisa de microsserviços aqui" e explica por quê costuma ser melhor que o que desenha a arquitetura mais sofisticada. Use uma rubrica fixa (seção 9) para comparar candidatos com justiça.</p></div>
+</section>
+<section class="chap" id="times-processo">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Times, ownership e processo: Conway, Team Topologies, ADRs e revisão de design</h2>
+
+  <h3>Lei de Conway</h3>
+  <p>"Organizações projetam sistemas que copiam sua própria estrutura de comunicação" (Melvin Conway, 1968). Se há um time de "front", um de "back" e um de "banco", você terá camadas com filas de pedidos entre elas. Se há um time dono de agendamento ponta a ponta, tende a haver um serviço de agendamento com fronteira clara. Para o gestor, a consequência prática é a <strong>manobra inversa de Conway</strong>: desenhe os times primeiro, na forma da arquitetura que você quer, e a arquitetura segue.</p>
+
+  <h3>Team Topologies em resumo</h3>
+  <p>O livro <em>Team Topologies</em> (Skelton e Pais) propõe quatro tipos de time e três modos de interação:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo de time</th><th>Função</th><th>Exemplo na empresa de saúde</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Stream-aligned</strong></td><td>Entrega valor em um fluxo de negócio, de ponta a ponta</td><td>Time de agendamento; time de resultados de exames</td></tr>
+      <tr><td><strong>Platform</strong></td><td>Oferece capacidades internas como produto para reduzir a carga dos demais</td><td>Plataforma de APIs: gateway, CI/CD, observabilidade, templates, motor de integração</td></tr>
+      <tr><td>Enabling</td><td>Ajuda outros times a adquirir uma capacidade e depois sai</td><td>Especialistas em segurança ou em FHIR que apoiam por um período</td></tr>
+      <tr><td>Complicated-subsystem</td><td>Cuida de uma parte que exige especialização rara</td><td>Motor de regras de faturamento TISS; processamento de imagens</td></tr>
+    </tbody>
+  </table></div>
+  <p>Modos de interação: <strong>colaboração</strong> (trabalho conjunto, intenso e temporário), <strong>X-as-a-Service</strong> (um time consome o que outro oferece com contrato claro, como uma API) e <strong>facilitação</strong> (um time ajuda outro a evoluir). Uma API interna bem feita é o que permite o modo "as a Service": reduz a necessidade de reuniões.</p>
+  <ul>
+    <li>Cuidado com a <strong>carga cognitiva</strong>: um time não consegue dominar tudo. Limite o número de serviços, tecnologias e domínios por time.</li>
+    <li>A <strong>plataforma é um produto</strong> com clientes internos: tem roadmap, documentação, "caminho dourado" (golden path) e métricas de adoção. Plataforma imposta sem ouvir os times vira burocracia.</li>
+  </ul>
+
+  <h3>Ownership de APIs</h3>
+  <p>Toda API de produção tem <strong>um time dono</strong> (nome, canal de contato e plantão), registrado em um <strong>catálogo</strong> (módulo 07). O dono responde por contrato, versionamento, SLO, incidentes, custo e pela comunicação de mudanças aos consumidores. API sem dono é a principal fonte de dívida: ninguém corrige, ninguém desliga, ninguém sabe quem usa.</p>
+<pre data-file="catalogo/agendamento-api.yaml (exemplo)"><code class="yaml">name: agendamento-api
+owner: time-agendamento
+contact: "#agendamento-api"
+oncall: escala-agendamento
+tier: 1                # criticidade: 1 = afeta atendimento ao paciente
+slo:
+  disponibilidade: "99.9% / 30 dias"
+  latencia_p95_ms: 400
+contrato: https://git.exemplo/agendamento/openapi.yaml
+dados_pessoais: true   # exige revisão LGPD
+runbook: https://wiki.exemplo/runbooks/agendamento-api</code></pre>
+
+  <h3>ADR: registro de decisão de arquitetura</h3>
+  <p>O <strong>ADR</strong> (Architecture Decision Record) é um documento curto, versionado junto ao código, que registra <em>uma decisão</em>, o contexto, as alternativas e as consequências. Evita o "por que fizemos assim?" dois anos depois e a mesma discussão reaberta a cada troca de pessoas.</p>
+<pre data-file="adr/0007-agenda-como-modulo.md"><code class="text"># ADR 0007: Agenda permanece como módulo do monólito
+
+Status: aceito (2026-11-10)
+Contexto: pedido para extrair a agenda como microsserviço. Volume atual
+  de ~7 gravações/s no pico; um time de 6 pessoas.
+Decisão: manter a agenda como módulo com interface pública e dados próprios.
+Alternativas: (a) microsserviço agora; (b) status quo sem fronteira.
+Consequências: + menos operação; + transação única. - escala em conjunto.
+Gatilhos para revisar: segundo time dono da agenda; pico acima de 10x.</code></pre>
+  <p>Boas práticas: um ADR por decisão, numerado, curto (uma página), com <strong>status</strong> (proposto, aceito, substituído) e <strong>gatilhos de revisão</strong>. ADRs substituídos não são apagados.</p>
+
+  <h3>Revisão de design de API</h3>
+  <p>Antes de implementar uma API nova ou uma mudança relevante, o dono apresenta um <em>design doc</em> curto e o contrato (OpenAPI, módulo 02) a revisores de outros times. Perguntas de checklist:</p>
+  <ul>
+    <li>Quem são os consumidores e qual problema resolve? Existe API parecida?</li>
+    <li>Os recursos e nomes seguem o guia de estilo (módulo 01)? Erros padronizados, paginação, idempotência?</li>
+    <li>Como se autentica e autoriza no nível do objeto? Que dados pessoais trafegam e por quê (módulos 05 e 09)?</li>
+    <li>O que acontece em falha, retry, timeout e carga alta (módulo 06)?</li>
+    <li>Como será versionada e depreciada (módulo 07)? Como será observada e testada (módulo 08)?</li>
+    <li>Qual o custo esperado e o plano de rollout (feature flag, canário)?</li>
+  </ul>
+  <p>O objetivo é <strong>pegar erros baratos</strong> no papel, não criar um comitê que trava entregas. Revise em dias, não em semanas; para mudanças pequenas, basta a verificação automática do contrato (lint de OpenAPI e checagem de quebra de compatibilidade no CI).</p>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Governança como portão manual central: o time de arquitetura vira gargalo e os times passam a contornar. Prefira <strong>guardrails automáticos</strong> (lint, testes de contrato, templates) e revisão humana só para decisões de alto impacto.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Pela lei de Conway, estruturo os times em torno de fluxos de negócio (stream-aligned) com uma plataforma interna que os apoia. Cada API tem dono, SLO e plantão; decisões relevantes vão para ADRs; e a revisão de design é leve, apoiada em lint e testes de contrato."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Procure três sinais de problema: APIs sem dono no catálogo, decisões sem registro e times esperando outro time para entregar. Os dois primeiros se resolvem com processo; o terceiro é de <strong>estrutura</strong>, e talvez peça reorganizar times ou fronteiras. Cobre, também, tempo reservado para dívida técnica e plataforma, que não aparece no roadmap de produto sozinho.</p></div>
+</section>
+
+<section class="chap" id="pronto-metricas">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Definição de pronto para produção e métricas do gestor</h2>
+
+  <h3>Checklist: uma API está pronta para produção quando...</h3>
+  <p>Use como <em>definition of done</em> de lançamento, adaptado por criticidade. Uma API de agendamento (que afeta o atendimento) precisa de tudo; uma interna de baixo risco, de um subconjunto.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Área</th><th>Item</th><th>Evidência</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Contrato</strong></td><td>OpenAPI publicado e revisado; erros padronizados; exemplos; compatibilidade verificada no CI</td><td>Arquivo no repositório e pipeline</td></tr>
+      <tr><td><strong>Auth</strong></td><td>Autenticação (OAuth/OIDC ou mTLS); escopos mínimos; autorização no nível do objeto testada (BOLA)</td><td>Testes de autorização; revisão de segurança</td></tr>
+      <tr><td><strong>Proteção</strong></td><td>Rate limit e quotas por cliente; validação de entrada; limite de tamanho; CORS correto</td><td>Config do gateway; testes</td></tr>
+      <tr><td><strong>Dados e LGPD</strong></td><td>Dados pessoais mapeados; criptografia em trânsito e em repouso; logs sem dado sensível; retenção definida</td><td>Mapa de dados; revisão do encarregado</td></tr>
+      <tr><td><strong>Confiabilidade</strong></td><td>Timeouts, retry com backoff, circuit breaker; idempotência nas escritas; paginação</td><td>Testes de falha; revisão de design</td></tr>
+      <tr><td><strong>Observabilidade</strong></td><td>Logs estruturados com id de correlação; métricas RED (taxa, erros, duração); traces; dashboards</td><td>Painel no ar e verificado</td></tr>
+      <tr><td><strong>SLO e alertas</strong></td><td>SLOs definidos (disponibilidade, latência); alertas baseados em orçamento de erro, com dono</td><td>Documento de SLO; alertas testados</td></tr>
+      <tr><td><strong>Operação</strong></td><td>Runbook (o que fazer em cada alerta); plantão definido; plano de rollback; backup e restauração testados</td><td>Runbook revisado; simulação</td></tr>
+      <tr><td><strong>Testes</strong></td><td>Unitários, integração, contrato com consumidores, carga no pico estimado</td><td>Relatórios no CI</td></tr>
+      <tr><td><strong>Lançamento</strong></td><td>Feature flag ou canário; plano de comunicação aos consumidores; estratégia de versionamento e depreciação</td><td>Plano de rollout</td></tr>
+      <tr><td><strong>Docs</strong></td><td>Referência, guia de início rápido, exemplos de código, changelog, contato do time</td><td>Portal publicado</td></tr>
+      <tr><td><strong>Custo e dono</strong></td><td>Estimativa de custo e tags; registro no catálogo com time dono</td><td>Entrada no catálogo</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Se ninguém consegue responder "quem é acordado às 3h quando isto cair e o que essa pessoa faz primeiro?", a API <strong>não está pronta</strong>, por mais bonito que seja o código.</p></div>
+
+  <h3>Métricas para o gestor</h3>
+  <p>Escolha poucas métricas e olhe a <strong>tendência</strong>. Métricas servem para conversar sobre melhorias, não para ranquear pessoas (a lei de Goodhart: quando uma medida vira meta, deixa de ser boa medida).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Grupo</th><th>Métrica</th><th>O que revela</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="5"><strong>Entrega (DORA)</strong></td><td>Frequência de deploy</td><td>Quão pequeno e seguro é o ciclo de mudança</td></tr>
+      <tr><td>Lead time de mudança</td><td>Tempo do commit à produção</td></tr>
+      <tr><td>Taxa de falha de mudança</td><td>Percentual de deploys que causam degradação</td></tr>
+      <tr><td>Tempo de recuperação de deploy com falha</td><td>Rapidez para restabelecer (o antigo MTTR, hoje restrito a falhas causadas por deploy)</td></tr>
+      <tr><td>Taxa de retrabalho</td><td>Deploys não planejados por causa de incidente (introduzida pelo DORA em 2024 como quinta métrica)</td></tr>
+      <tr><td rowspan="3"><strong>Confiabilidade</strong></td><td>Disponibilidade e consumo do orçamento de erro, por SLO</td><td>Se a API cumpre o que prometeu</td></tr>
+      <tr><td>Latência p95 e p99</td><td>Experiência real, incluindo a cauda lenta</td></tr>
+      <tr><td>Incidentes por severidade; tempo de detecção e de resolução</td><td>Maturidade de operação e aprendizado (post-mortems sem culpados)</td></tr>
+      <tr><td rowspan="3"><strong>Adoção e consumo</strong></td><td>Consumidores ativos; chamadas por consumidor</td><td>Se a API é usada e por quem</td></tr>
+      <tr><td>Tempo até a primeira chamada de um novo consumidor</td><td>Qualidade da documentação e do onboarding</td></tr>
+      <tr><td>Uso de versões depreciadas</td><td>Dívida de migração dos consumidores</td></tr>
+      <tr><td rowspan="2"><strong>Custo</strong></td><td>Custo por 1.000 requisições ou por transação de negócio</td><td>Eficiência (seção 5)</td></tr>
+      <tr><td>Custo total por API e tendência</td><td>Onde o gasto cresce</td></tr>
+      <tr><td rowspan="2"><strong>Saúde do portfólio</strong></td><td>APIs sem dono, sem documentação ou sem SLO</td><td>Dívida de governança</td></tr>
+      <tr><td>Percentual de APIs com contrato válido e testes de contrato</td><td>Aderência ao processo</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Para negócio:</strong> traduza em impacto (agendamentos concluídos, tempo de espera, glosas evitadas), não só em milissegundos.</li>
+    <li><strong>Segurança e conformidade:</strong> acompanhe vulnerabilidades abertas por severidade, tempo de correção, rotação de segredos e certificados a vencer (ex.: certificados ICP-Brasil, módulo 09).</li>
+    <li><strong>Experiência da equipe:</strong> carga de plantão, número de acionamentos fora do horário e satisfação. Equipe esgotada é risco operacional.</li>
+  </ul>
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li>Medir "número de endpoints" ou "linhas de código" como produtividade.</li>
+    <li>Usar DORA para comparar times de contextos muito diferentes ou como meta individual.</li>
+    <li>Painel com 40 indicadores que ninguém lê. Poucos, acionáveis, com dono e limite combinado.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uma API só vai para produção com contrato, autenticação, rate limit, observabilidade, SLO, runbook, plantão e plano de rollout. Para gerir, uso DORA para entrega, SLO e orçamento de erro para confiabilidade, adoção de consumidores e custo unitário, olhando a tendência e não comparando pessoas."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Transforme o checklist em um <strong>gate leve</strong>: itens obrigatórios por criticidade, verificados em parte por automação. Revise o portfólio a cada trimestre com 4 perguntas: quais APIs são críticas e estão sem SLO? quais não têm dono? quais versões antigas ainda têm tráfego? onde o custo cresce mais rápido que o uso?</p></div>
+</section>
+
+<section class="chap" id="contratar-90dias">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Entrevistar devs de API e plano de 90 dias para assumir um portfólio</h2>
+
+  <h3>Como entrevistar e avaliar devs de API</h3>
+  <p>Você agora está dos dois lados da mesa. Como entrevistadora, o objetivo é prever <strong>desempenho no trabalho</strong>, não premiar quem decorou termos. Use um processo estruturado e a mesma rubrica para todos os candidatos, para reduzir viés e ruído.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Etapa</th><th>O que avalia</th><th>Formato</th></tr></thead>
+    <tbody>
+      <tr><td>Conversa de contexto</td><td>Experiência real, escolhas passadas, aprendizado com falhas</td><td>"Conte de uma API que você desenhou. O que mudaria hoje?"</td></tr>
+      <tr><td>Exercício prático</td><td>Escrita de código, tratamento de erro, testes</td><td>Pair programming de 60 a 90 minutos ou tarefa curta (até 2 horas) com discussão depois</td></tr>
+      <tr><td>Revisão de design</td><td>Olho crítico para contrato e segurança</td><td>Mostre um endpoint com problemas (verbo errado, sem paginação, sem idempotência, vazando dado) e peça melhorias</td></tr>
+      <tr><td>System design</td><td>Visão sistêmica e trade-offs (seção 6)</td><td>45 minutos, nível adequado à senioridade</td></tr>
+      <tr><td>Colaboração e comunicação</td><td>Trabalho em time, feedback, clareza</td><td>Perguntas de comportamento, simulação de revisão de código</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>O que esperar por nível</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Nível</th><th>Sinais fortes</th></tr></thead>
+    <tbody>
+      <tr><td>Júnior</td><td>Entende HTTP, verbos e status; consome e implementa um CRUD com validação; aceita feedback e aprende rápido</td></tr>
+      <tr><td>Pleno</td><td>Desenha endpoints consistentes, paginação, erros, autenticação; escreve testes; depura com logs e traces; entende idempotência e concorrência básica</td></tr>
+      <tr><td>Sênior</td><td>Pensa em contratos e evolução (versionamento), segurança (autorização por objeto), falhas e carga; explica trade-offs; reduz complexidade; mentora</td></tr>
+      <tr><td>Staff / líder técnico</td><td>Influencia entre times, define padrões e fronteiras, equilibra técnica e negócio, escolhe o que <em>não</em> fazer</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Perguntas que revelam profundidade</h3>
+  <ul>
+    <li>"Como você garante que dois pedidos simultâneos não reservem o mesmo recurso?" (concorrência, constraints, idempotência).</li>
+    <li>"Um cliente precisa que um campo mude de tipo. Como você faz sem quebrar os consumidores?" (compatibilidade, depreciação).</li>
+    <li>"A API está lenta em produção. Por onde começa?" (métricas, traces, cauda, banco, N+1).</li>
+    <li>"Como protege uma API que expõe dados de pacientes?" (autorização no objeto, mínimo necessário, logs, LGPD).</li>
+    <li>"Conte de um erro seu em produção." (responsabilidade, aprendizado, ausência de culpa).</li>
+  </ul>
+  <div class="note trap"><b>Armadilhas comuns na entrevista</b><ul>
+    <li>Perguntas de trivia ("qual a diferença entre PUT e PATCH") sem pedir aplicação. Peça um caso.</li>
+    <li>Avaliar "carisma" em vez de evidência. Anote fatos e compare com a rubrica antes de discutir com os outros entrevistadores.</li>
+    <li>Exercícios de horas não remunerados: afastam bons candidatos e testam disponibilidade, não competência.</li>
+    <li><strong>Sinais de alerta:</strong> culpa sempre os outros, não admite incerteza, desenha complexidade sem justificar, ignora segurança e dados pessoais.</li>
+  </ul></div>
+
+  <h3>Plano de 90 dias para assumir um portfólio de APIs</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Período</th><th>Foco</th><th>Entregáveis</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Dias 1 a 30</strong></td><td>Escutar e mapear</td><td>1:1 com cada pessoa do time e com os principais consumidores (produto, operações, parceiros); inventário de APIs (dono, consumidores, criticidade, tecnologia); lista de incidentes dos últimos 6 meses; custos atuais; mapa de integrações externas (RNDS, operadoras, laboratórios); riscos de segurança e LGPD conhecidos; entender o processo de deploy e o plantão</td></tr>
+      <tr><td><strong>Dias 31 a 60</strong></td><td>Estabilizar e ganhar confiança</td><td>2 a 3 ganhos rápidos (alertas que faltam, runbook das APIs críticas, certificado a vencer, log com dado sensível); catálogo mínimo com donos; SLO para as 3 APIs mais críticas; ritual de revisão de incidentes sem culpados; ADRs retroativos das decisões grandes; definição inicial do checklist de produção</td></tr>
+      <tr><td><strong>Dias 61 a 90</strong></td><td>Direcionar e institucionalizar</td><td>Roadmap trimestral (dívida técnica, legado, plataforma) alinhado ao negócio; painel de poucas métricas (DORA, SLO, custo); plano de capacitação e de contratação; padrão de revisão de design e de guardrails no CI; plano para o sistema legado e para integrações regulatórias (calendário de TISS/RNDS)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Princípios do plano: <strong>ouça antes de mudar</strong>; entenda por que as coisas são como são (a "cerca de Chesterton": não derrube uma cerca sem saber para que foi construída); escolha batalhas pequenas que construam credibilidade; deixe claro o que é decisão sua e o que é do time; e documente o que aprende.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Nos primeiros 90 dias, entregue clareza (o que existe, quem é dono, onde dói), segurança de operação (alertas, runbook, plantão) e <strong>um</strong> caminho acordado para o resto. Reorganização grande só depois de entender a história.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Pergunta provável: "Como você assumiria um portfólio de APIs que não conhece?" Resposta: 30 dias ouvindo e inventariando (donos, consumidores, incidentes, custo), 60 dias estabilizando com ganhos rápidos e SLO nas críticas, 90 dias com roadmap, métricas e padrões acordados com o time e o negócio.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Registre expectativas com sua chefia no dia 1 (o que é sucesso em 90 dias) e alinhe cedo com produto e segurança. Em equipes que já têm dívida, proteja o time de demandas conflitantes com um critério claro de priorização (risco, valor, custo de adiar).</p></div>
+</section>
+<section class="chap" id="cenarios-proximos">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos, próximos estudos e glossário</h2>
+
+  <h3>Cenário 1: "Vamos quebrar o sistema em microsserviços"</h3>
+  <p>O time de 7 pessoas propõe migrar o monólito de agendamento para 12 microsserviços, "para escalar".</p>
+  <p><strong>O que fazer:</strong> pergunte pela dor concreta (deploy lento? picos? times se atrapalhando?) e meça o volume real. Se o gargalo é organizacional ou de deploy, proponha primeiro um <strong>monólito modular</strong> com fronteiras explícitas e dados separados por módulo. Registre em ADR com gatilhos de revisão. Se um módulo tiver razão concreta (ritmo, escala, isolamento) e dono, extraia só ele, com observabilidade e plantão prontos antes.</p>
+
+  <h3>Cenário 2: o sistema hospitalar legado precisa de um app para pacientes</h3>
+  <p>O HIS não tem API. O produto quer o app em 4 meses.</p>
+  <p><strong>O que fazer:</strong> comece pela leitura (horários e resultados) usando réplica ou CDC para uma base própria, sem tocar na produção do legado. Crie uma API de fachada com ACL; para escrita (agendar), passe pelas regras do legado via procedimento ou integração suportada, nunca por INSERT direto. Coloque um gateway na frente (porta de entrada do strangler), defina a fonte da verdade de cada dado e uma meta de redução do legado. Combine com o produto o que entra na primeira versão (somente leitura de agenda e resultados é um bom primeiro marco).</p>
+
+  <h3>Cenário 3: a fatura de nuvem dobrou</h3>
+  <p>Em um mês, o custo da plataforma de APIs subiu 90% sem aumento de tráfego.</p>
+  <p><strong>O que fazer:</strong> abra a fatura por categoria e por tag. Suspeitos clássicos: volume de logs (algum serviço em <code>debug</code>), tráfego entre zonas ou saída para a internet (egress), retry em laço contra um terceiro instável, ambiente de teste ligado, traces sem amostragem. Corrija a causa, crie alerta de anomalia de custo e passe a acompanhar custo por 1.000 requisições. Registre o aprendizado no post-mortem.</p>
+
+  <h3>Cenário 4: a API crítica não tem dono nem SLO</h3>
+  <p>A API de resultados de exames, usada pelo app e por parceiros, foi escrita por alguém que saiu. Quando cai, todos improvisam.</p>
+  <p><strong>O que fazer:</strong> atribua um time dono formalmente e registre no catálogo; defina SLO inicial com base no histórico (disponibilidade e latência), monte dashboards e alertas, escreva um runbook com o que já se sabe de incidentes passados, coloque a API na escala de plantão e inclua testes de contrato com os consumidores principais. Depois, priorize dívida: autorização por objeto, rate limit e versionamento. Comunique aos consumidores quem é o contato.</p>
+
+  <h3>Cenário 5: pedido de um parceiro para "dar acesso ao banco"</h3>
+  <p>Um parceiro (por exemplo, um laboratório de análise de dados) quer acesso de leitura direto ao banco de agendamentos para "ser mais rápido".</p>
+  <p><strong>O que fazer:</strong> recuse acesso direto: ele acopla o parceiro ao seu esquema, impede evoluir o modelo, ignora autorização por objeto e amplia a superfície de risco da LGPD. Ofereça uma <strong>API de leitura</strong> com os campos necessários, escopo mínimo, rate limit e log de acesso; para volume, um <strong>export</strong> (arquivo periódico) ou evento, com dados minimizados ou pseudonimizados. Leve ao encarregado de dados (DPO) para a base legal e o contrato.</p>
+
+  <h3>Mapa de próximos estudos</h3>
+  <p>A trilha terminou, mas o assunto não. Sugestão de caminhos, do mais prático ao mais conceitual:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Caminho</th><th>O que fazer</th><th>Referências</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Mão na massa em FHIR</strong></td><td>Subir um servidor FHIR local (por exemplo, HAPI FHIR em contêiner), criar Patient e Observation, testar busca, <code>_include</code> e transações; simular um canal HL7 v2 para FHIR</td><td>Especificação em hl7.org/fhir; guias da RNDS e do BR Core; documentação do HAPI FHIR</td></tr>
+      <tr><td><strong>Mensageria e eventos</strong></td><td>Kafka ou RabbitMQ com outbox, consumidor idempotente e DLQ; AsyncAPI</td><td><em>Designing Data-Intensive Applications</em> (Kleppmann)</td></tr>
+      <tr><td><strong>Plataforma e operação</strong></td><td>Contêineres e Kubernetes, gateway (Kong ou Envoy), OpenTelemetry, SLO e orçamento de erro</td><td>Livros de SRE do Google; documentação da CNCF</td></tr>
+      <tr><td><strong>Arquitetura e domínio</strong></td><td>DDD estratégico, contextos delimitados, evolução de monólito</td><td><em>Domain-Driven Design</em> (Evans); <em>Building Microservices</em> (Newman); <em>Fundamentals of Software Architecture</em> (Richards e Ford)</td></tr>
+      <tr><td><strong>Gestão de times técnicos</strong></td><td>Estrutura de times, métricas de entrega, feedback e carreira</td><td><em>Team Topologies</em> (Skelton e Pais); <em>Accelerate</em> (Forsgren, Humble, Kim); <em>An Elegant Puzzle</em> (Larson)</td></tr>
+      <tr><td><strong>Segurança e privacidade</strong></td><td>OWASP API Security Top 10, modelagem de ameaças, LGPD aplicada a engenharia</td><td>OWASP; guias da ANPD</td></tr>
+      <tr><td><strong>Prática de entrevista</strong></td><td>Refazer as perguntas de cada módulo em voz alta; praticar o system design do agendamento e de outro domínio (resultados de exames, fila de atendimento)</td><td>As seções de perguntas desta trilha</td></tr>
+    </tbody>
+  </table></div>
+  <p>Para revisitar a trilha: contratos e estilo (módulos 01 a 03), assíncrono (04), segurança e confiabilidade (05 e 06), governança e testes (07 e 08), saúde (09) e este fechamento. A trilha web (módulos 06 a 09) e a de SQL (índices e paginação keyset) sustentam a base.</p>
+
+  <div class="note mgr"><b>Para gestores</b><p>Transforme esta trilha em prática de equipe: escolha um módulo por mês para discutir com o time em 30 minutos, usando um sistema real da empresa como estudo de caso. Ensinar consolida o aprendizado e alinha vocabulário.</p></div>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>Monólito modular</dt><dd>Aplicação de um só deploy, organizada em módulos com interfaces públicas e dados próprios.</dd></div>
+    <div><dt>Contexto delimitado</dt><dd>Fronteira do DDD em que os termos do domínio têm significado único.</dd></div>
+    <div><dt>API gateway</dt><dd>Entrada única do tráfego externo: autenticação, limite de taxa, roteamento e métricas.</dd></div>
+    <div><dt>Service mesh</dt><dd>Camada de infraestrutura para o tráfego entre serviços: mTLS, retry e telemetria.</dd></div>
+    <div><dt>BFF</dt><dd>Backend for Frontend: backend específico por tipo de cliente.</dd></div>
+    <div><dt>Outbox</dt><dd>Tabela que guarda eventos na mesma transação do dado, para publicação confiável.</dd></div>
+    <div><dt>Saga</dt><dd>Transação distribuída como passos locais com compensação em caso de falha.</dd></div>
+    <div><dt>Anticorruption layer</dt><dd>Camada que traduz o modelo de um sistema externo ou legado para o modelo do domínio.</dd></div>
+    <div><dt>Strangler fig</dt><dd>Migração gradual de um legado, rota a rota, por trás de uma fachada.</dd></div>
+    <div><dt>iPaaS</dt><dd>Plataforma de integração em nuvem com conectores e fluxos prontos.</dd></div>
+    <div><dt>Egress</dt><dd>Tráfego de saída da nuvem ou entre zonas, normalmente cobrado por GB.</dd></div>
+    <div><dt>FinOps</dt><dd>Prática de gerir custos de nuvem com visibilidade, custo unitário e responsabilidade dos times.</dd></div>
+    <div><dt>Lei de Conway</dt><dd>A arquitetura do sistema tende a espelhar a estrutura de comunicação da organização.</dd></div>
+    <div><dt>Stream-aligned / Platform</dt><dd>Tipos de time do Team Topologies: fluxo de negócio e plataforma interna.</dd></div>
+    <div><dt>ADR</dt><dd>Registro curto de uma decisão de arquitetura, com contexto e consequências.</dd></div>
+    <div><dt>DORA</dt><dd>Métricas de entrega de software: frequência de deploy, lead time, taxa de falha, recuperação e retrabalho.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre monólito, monólito modular e microsserviços?</span></summary><div class="ans"><p>Monólito é um deploy só com fronteiras frouxas. O monólito modular mantém um deploy só, mas com módulos de interface pública e dados próprios. Microsserviços são deploys independentes que se falam por rede. O modular entrega boa parte da clareza com muito menos custo operacional; microsserviços resolvem problemas de escala e de autonomia de times.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>O que é um contexto delimitado e por que ele importa para APIs?</span></summary><div class="ans"><p>É uma fronteira de domínio em que cada termo tem um significado único; "paciente" em agendamento não é o mesmo que em faturamento. Ele define onde cortar serviços e módulos, e a API de cada contexto expõe o que os outros precisam, sem vazar o modelo interno.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Quando você extrairia um serviço de um monólito?</span></summary><div class="ans"><p>Quando há razão concreta: ritmo de mudança ou de deploy diferente, necessidade de escala própria, isolamento de falha ou de segurança, ou um time dono capaz de operá-lo. Sem isso, mantenho o módulo, e registro a decisão com gatilhos de revisão.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Diferencie API gateway, service mesh e BFF.</span></summary><div class="ans"><p>O gateway fica na borda e trata o tráfego de fora para dentro: autenticação, limite de taxa, roteamento e métricas. O mesh trata o tráfego entre serviços: mTLS, retry, telemetria. O BFF é um backend por tipo de cliente, que agrega chamadas e adapta respostas. Regra de negócio fica nos serviços de domínio.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Quais os riscos de colocar lógica de negócio no gateway?</span></summary><div class="ans"><p>Vira um segundo monólito sem dono e sem testes, todo deploy do gateway arrisca todos os serviços, e o time central vira gargalo. O gateway deve ficar com políticas transversais; autorização fina e regras ficam no serviço dono do dado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Quando usar comunicação síncrona e quando assíncrona?</span></summary><div class="ans"><p>Síncrona para consultas e comandos cujo resultado o usuário precisa na hora. Assíncrona para avisar fatos e para efeitos que podem acontecer depois (lembretes, faturamento, integrações). Cadeias síncronas longas multiplicam indisponibilidade; cinco serviços de 99,9% em série dão cerca de 99,5%.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>O que é o padrão outbox e que problema ele resolve?</span></summary><div class="ans"><p>Gravar o evento em uma tabela na mesma transação do dado de negócio e publicá-lo na fila por um processo à parte. Resolve o dual write: salvar no banco e falhar ao publicar (ou o contrário). Combina com consumidores idempotentes, porque a entrega é pelo menos uma vez.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Como funciona uma saga e quais as formas de coordená-la?</span></summary><div class="ans"><p>É uma transação de negócio dividida em passos locais em vários serviços, com ações de compensação se algum passo falhar. Pode ser coreografada (cada serviço reage a eventos, mais desacoplada e mais difícil de enxergar) ou orquestrada (um coordenador comanda, com visibilidade e um ponto central).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é uma camada anticorrupção e quando usá-la?</span></summary><div class="ans"><p>Uma fronteira de tradução que impede o modelo de um legado ou de um terceiro de contaminar o domínio novo. Uso com sistemas legados e APIs externas (laboratório, operadora), concentrando o mapeamento, o tratamento de erro, o timeout e os testes de contrato em um lugar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Como você migraria um sistema hospitalar legado sem big bang?</span></summary><div class="ans"><p>Strangler fig: fachada na frente do legado, migração fatia por fatia começando por uma de baixo risco (leitura), ACL para traduzir o modelo, execução em paralelo para comparar respostas, troca gradual da rota com rollback, fonte da verdade definida por dado e meta de desligamento do legado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como decidir entre construir e comprar?</span></summary><div class="ans"><p>Construo o que diferencia o negócio; compro commodities. Comparo o custo total (licença, integração, operação, plantão, custo de saída), o risco de lock-in, a conformidade (LGPD) e o tempo até o valor. Exijo plano de saída para o que comprar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Onde está o custo escondido de uma plataforma de APIs na nuvem?</span></summary><div class="ans"><p>Com frequência em egress (tráfego de saída e entre zonas), em volume de logs e traces, no gateway gerenciado cobrado por milhão de requisições e em APIs de terceiros cobradas por chamada. Controlo com tags, custo por 1.000 requisições, amostragem, retenção por camada, cache e alertas de anomalia.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Desenhe, em alto nível, um sistema de agendamento de consultas para uma rede de clínicas.</span></summary><div class="ans"><p>Pergunto requisitos e volume; estimo (por exemplo, 60 mil agendamentos/dia são poucas gravações por segundo). Entidades: unidade, profissional, horário, agendamento, paciente. API com busca de horários, <code>POST /agendamentos</code> idempotente, remarcação e cancelamento. Monólito modular com PostgreSQL, cache de leitura, fila para lembretes via outbox. A garantia de não haver reserva dupla vem de índice único parcial no banco, com <code>409</code> em conflito.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Como evitar que duas pessoas reservem o mesmo horário?</span></summary><div class="ans"><p>Com garantia no banco: índice único parcial no horário para agendamentos ativos, ou <code>SELECT ... FOR UPDATE</code> / controle otimista por versão. A API traduz a violação em <code>409 Conflict</code> e o cliente reexibe opções. Uma reserva temporária (hold) melhora a experiência. O cache de leitura pode ser eventual; a escrita nunca.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>O que diz a lei de Conway e como você a usa como gestor?</span></summary><div class="ans"><p>Sistemas tendem a espelhar a estrutura de comunicação da organização. Uso a manobra inversa: desenho times em torno de fluxos de negócio (stream-aligned), com uma plataforma interna de apoio, para que a arquitetura desejada surja das fronteiras dos times, e reduzo a carga cognitiva de cada um.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>O que você exige para uma API entrar em produção?</span></summary><div class="ans"><p>Contrato (OpenAPI) com compatibilidade verificada, autenticação e autorização por objeto, rate limit, dados pessoais mapeados, timeouts e idempotência, observabilidade (logs, métricas, traces), SLO e alertas, runbook, plantão, testes (inclusive de carga e de contrato), plano de rollout e rollback, documentação, custo estimado e dono registrado no catálogo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Quais métricas você acompanha para gerir um portfólio de APIs?</span></summary><div class="ans"><p>DORA para entrega (frequência de deploy, lead time, taxa de falha, tempo de recuperação e retrabalho); SLO, orçamento de erro, latência p95/p99 e incidentes para confiabilidade; consumidores ativos e tempo até a primeira chamada para adoção; custo por 1.000 requisições; e saúde do portfólio (APIs sem dono, sem SLO ou com versões depreciadas em uso). Olho tendências e evito usar as métricas para ranquear pessoas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como você assumiria um portfólio de APIs que não conhece, nos primeiros 90 dias?</span></summary><div class="ans"><p>Dias 1 a 30: ouvir o time e os consumidores, inventariar APIs, donos, incidentes e custos. Dias 31 a 60: estabilizar, com ganhos rápidos (alertas, runbooks), catálogo e SLO nas APIs críticas. Dias 61 a 90: roadmap alinhado ao negócio, poucas métricas, padrões de revisão e guardrails, plano para o legado e para a capacitação do time. Antes de reorganizar, entender a história.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

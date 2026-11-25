@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 01: Design de APIs REST</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 01 de 10 · Design de APIs REST</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html" aria-current="page"><span class="n">01</span>Design de APIs REST</a></li>
+    <li class="sub"><ol>
+      <li><a href="#recursos"><span class="n">1</span>Modelagem de recursos</a></li>
+      <li><a href="#metodos"><span class="n">2</span>Semântica dos métodos: seguro, idempotente, cacheável; PUT vs PATCH</a></li>
+      <li><a href="#status-erros"><span class="n">3</span>Códigos de status com precisão e erros padronizados</a></li>
+      <li><a href="#maturidade"><span class="n">4</span>Maturidade de Richardson e HATEOAS (com visão crítica)</a></li>
+      <li><a href="#consulta"><span class="n">5</span>Filtros, ordenação, busca, campos parciais e expansão</a></li>
+      <li><a href="#paginacao"><span class="n">6</span>Paginação em profundidade: offset vs cursor (keyset)</a></li>
+      <li><a href="#lote-longas"><span class="n">7</span>Operações em lote, operações longas e upload de arquivos</a></li>
+      <li><a href="#convencoes"><span class="n">8</span>Convenções: nomes, datas, dinheiro, IDs, nulos e envelopes</a></li>
+      <li><a href="#exemplo"><span class="n">9</span>Exemplo completo: API de agendamento de consultas</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos e glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 01 · <span class="lvl l2">Intermediário</span></div>
+  <h1>Design de APIs REST</h1>
+  <p class="lede">Como desenhar recursos, métodos, status, erros, paginação e convenções para que uma API seja previsível, evolua sem quebrar clientes e sobreviva a uma revisão de design.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Modelar recursos e sub-recursos, inclusive ações que não são CRUD</li>
+    <li>Aplicar a semântica correta de métodos e códigos de status, com PUT vs PATCH e ETag</li>
+    <li>Padronizar erros com Problem Details (RFC 9457)</li>
+    <li>Escolher entre paginação offset e cursor justificando pelo banco</li>
+    <li>Desenhar lotes, operações longas e uploads grandes</li>
+    <li>Fixar convenções de datas, dinheiro, IDs e envelopes e conduzir uma revisão de design</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="recursos">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Modelagem de recursos</h2>
+  <p>Uma API REST bem desenhada começa pelo <strong>vocabulário</strong>, não pelos endpoints. Antes de escrever uma URL, liste os substantivos do domínio que o cliente precisa enxergar: <em>paciente</em>, <em>profissional</em>, <em>unidade</em>, <em>horário disponível</em>, <em>agendamento</em>. Cada um vira um <strong>recurso</strong>: algo com identidade, que tem uma ou mais representações (JSON, por exemplo) e que se manipula com os métodos HTTP. A URL identifica o recurso; o método diz o que fazer com ele. O módulo 08 da trilha web já apresentou esses fundamentos; aqui o foco é a <strong>decisão de projeto</strong>, que é o que se discute numa revisão de design e numa entrevista.</p>
+
+  <h3>Substantivos no plural, coleção e item</h3>
+  <p>O padrão mais difundido: a coleção no plural (<code>/agendamentos</code>) e o item pelo identificador (<code>/agendamentos/9f2c…</code>). O verbo está no método HTTP, nunca no caminho.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Intenção</th><th>Ruim (RPC disfarçado)</th><th>Bom (recurso + método)</th></tr></thead>
+    <tbody>
+      <tr><td>Listar</td><td><code>GET /listarAgendamentos</code></td><td><code>GET /agendamentos</code></td></tr>
+      <tr><td>Criar</td><td><code>POST /criarAgendamento</code></td><td><code>POST /agendamentos</code></td></tr>
+      <tr><td>Ler um</td><td><code>GET /agendamento?id=9</code></td><td><code>GET /agendamentos/{id}</code></td></tr>
+      <tr><td>Remover</td><td><code>POST /excluirAgendamento</code></td><td><code>DELETE /agendamentos/{id}</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Hierarquia e sub-recursos</h3>
+  <p>Aninhar na URL expressa <strong>pertencimento</strong>: o recurso filho não faz sentido sem o pai. Um exame solicitado dentro de um atendimento é bom candidato: <code>/atendimentos/{id}/exames</code>. A URL fica autoexplicativa e a autorização pode ser verificada pelo pai.</p>
+  <h3>Quando NÃO aninhar</h3>
+  <p>Aninhar demais é um dos erros de design mais comuns. Evite quando:</p>
+  <ul>
+    <li><strong>O filho tem identidade própria e vida independente.</strong> Um agendamento pertence a um paciente <em>e</em> a um profissional <em>e</em> a uma unidade. Em qual dos três ele fica aninhado? Em nenhum: <code>/agendamentos/{id}</code> e filtros (<code>?pacienteId=</code>).</li>
+    <li><strong>O identificador do filho já é globalmente único.</strong> Se <code>{id}</code> basta, <code>/pacientes/1/agendamentos/9</code> só adiciona uma segunda forma de errar (e se o 9 não for do paciente 1?).</li>
+    <li><strong>A profundidade passa de dois níveis.</strong> <code>/unidades/1/profissionais/2/agendas/3/horarios/4</code> acopla o cliente a toda a hierarquia.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Aninhe no máximo dois níveis e só para relações de composição (o filho morre com o pai). Para relações de associação, use recurso de primeiro nível com filtro. Oferecer os dois acessos é aceitável: <code>/pacientes/{id}/agendamentos</code> como atalho de leitura (equivale a <code>/agendamentos?pacienteId={id}</code>), mas a escrita e o item ficam em <code>/agendamentos</code>.</p></div>
+
+  <h3>Ações que não são CRUD</h3>
+  <p>Cancelar uma consulta não é "atualizar um campo": tem regras (prazo mínimo, taxa, notificação ao paciente), pode ser rejeitada e gera um fato histórico. Há quatro saídas, em ordem de preferência:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Estratégia</th><th>Exemplo</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td>Criar um <strong>sub-recurso substantivo</strong> que representa o evento</td><td><code>POST /agendamentos/{id}/cancelamento</code></td><td>A ação é um fato com dados próprios (motivo, quem cancelou, data). Preferida: é REST puro e o cancelamento pode ser consultado depois.</td></tr>
+      <tr><td>Coleção de eventos</td><td><code>POST /agendamentos/{id}/reagendamentos</code></td><td>A ação pode ocorrer várias vezes e você quer histórico.</td></tr>
+      <tr><td>Mudar o estado com PATCH</td><td><code>PATCH /agendamentos/{id}</code> com <code>{"status":"cancelado"}</code></td><td>Só se a transição for trivial e sem efeitos colaterais. Perigoso: abre a porta para transições inválidas (cancelado para confirmado).</td></tr>
+      <tr><td>Verbo explícito (estilo RPC)</td><td><code>POST /agendamentos/{id}:cancelar</code></td><td>Aceitável, pragmático e usado por grandes provedores, desde que seja consistente em toda a API e o método seja POST.</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="http">POST /v1/agendamentos/9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33/cancelamento HTTP/1.1
+Content-Type: application/json
+
+{ "motivo": "paciente_desistiu", "observacao": "Remarcará pelo app" }</code></pre>
+  <pre><code class="http">HTTP/1.1 201 Created
+Location: /v1/agendamentos/9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33/cancelamento
+Content-Type: application/json
+
+{ "canceladoEm": "2026-03-10T14:02:11Z", "motivo": "paciente_desistiu", "taxa": null }</code></pre>
+
+  <div class="note trap"><b>Armadilha comum</b><p>Deixar o cliente enviar o novo <code>status</code> livremente e o servidor aceitar qualquer valor. O estado é do servidor: transições válidas são regra de negócio e precisam ser validadas (409 ou 422 se a transição for inválida).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como modelar cancelar um agendamento?" Resposta sênior: <em>"Trato o cancelamento como um recurso: POST em /agendamentos/{id}/cancelamento. Assim ele carrega motivo e data, a regra de prazo fica num lugar só, e eu consigo consultar e auditar o fato depois. PATCH de status só para transições triviais."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A modelagem de recursos é a decisão mais cara de reverter: URL e vocabulário viram contrato com clientes. Faça uma <strong>revisão de design antes do código</strong>, com o vocabulário do negócio (o time de produto e a área clínica reconhecem "cancelamento"?). Pergunta de revisão: "esse nome sobrevive a uma mudança de regra de negócio?"</p></div>
+</section>
+
+<section class="chap" id="metodos">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Semântica dos métodos: seguro, idempotente, cacheável; PUT vs PATCH</h2>
+  <p>A semântica dos métodos está definida na especificação HTTP (RFC 9110). Ela importa porque <strong>intermediários e clientes tomam decisões com base nela</strong>: um proxy pode fazer cache de um GET; uma biblioteca de HTTP pode reenviar automaticamente uma requisição idempotente após uma falha de rede; um crawler nunca deveria disparar um POST. Se sua API viola a semântica, esses mecanismos viram bugs.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Método</th><th>Seguro</th><th>Idempotente</th><th>Cacheável</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET</code></td><td>sim</td><td>sim</td><td>sim</td><td>Ler recurso ou coleção</td></tr>
+      <tr><td><code>HEAD</code></td><td>sim</td><td>sim</td><td>sim</td><td>Só cabeçalhos (existe? tamanho? ETag?)</td></tr>
+      <tr><td><code>OPTIONS</code></td><td>sim</td><td>sim</td><td>não</td><td>Capacidades; pré-voo de CORS</td></tr>
+      <tr><td><code>PUT</code></td><td>não</td><td>sim</td><td>não</td><td>Substituir a representação inteira</td></tr>
+      <tr><td><code>DELETE</code></td><td>não</td><td>sim</td><td>não</td><td>Remover</td></tr>
+      <tr><td><code>POST</code></td><td>não</td><td>não</td><td>só em casos raros</td><td>Criar em coleção; ações; processamento</td></tr>
+      <tr><td><code>PATCH</code></td><td>não</td><td>não (em geral)</td><td>não</td><td>Alteração parcial</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Seguro</strong>: não deve causar mudança de estado observável pelo cliente. Não significa "sem efeito algum" (logs e métricas podem mudar), significa que o cliente não pediu nem é responsável por mudança.</li>
+    <li><strong>Idempotente</strong>: aplicar N vezes tem o mesmo <em>efeito no servidor</em> que aplicar uma. A <em>resposta</em> pode diferir: o segundo <code>DELETE</code> devolve 404 e o primeiro 204, e o método continua idempotente.</li>
+    <li><strong>Cacheável</strong>: a resposta pode ser armazenada e reutilizada (controlada por <code>Cache-Control</code>, <code>ETag</code>, <code>Vary</code>).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Usar <code>GET</code> para ações com efeito (<code>GET /agendamentos/9/confirmar</code>). Pré-carregadores de navegador, antivírus de e-mail que "clicam" nos links e retentativas automáticas vão executar a ação sem o usuário pedir. Em saúde, confirmar ou cancelar consulta por link de SMS/e-mail com GET é um clássico: o scanner de segurança do provedor de e-mail confirma por você.</p></div>
+
+  <h3>Tornando o POST seguro para retentativa</h3>
+  <p>POST não é idempotente, e a rede falha: o cliente envia, o servidor cria, a resposta se perde, o cliente reenvia e <strong>duplica o agendamento</strong>. A solução é o cabeçalho <code>Idempotency-Key</code> (chave gerada pelo cliente, por exemplo um UUID): o servidor guarda a resposta da primeira execução e a devolve nas repetições com a mesma chave. É uma convenção de mercado bastante usada, com proposta de padronização em andamento no IETF. O módulo 06 aprofunda a implementação (armazenamento da chave, janela de validade, conflito de payload).</p>
+  <pre><code class="http">POST /v1/agendamentos HTTP/1.1
+Idempotency-Key: 3b1e7c52-6a0d-4a0b-8f1c-7d9a2f4e5b60
+Content-Type: application/json</code></pre>
+
+  <h3>PUT vs PATCH</h3>
+  <p><strong>PUT</strong> envia a representação <em>completa</em> e o servidor a substitui. O que o cliente não mandou é considerado removido ou volta ao padrão. Isso é ótimo para recursos pequenos e estáveis, e perigoso para recursos grandes: um cliente antigo que desconhece o campo novo <code>telefoneAlternativo</code> faz PUT sem ele e <strong>apaga o dado</strong>. <strong>PATCH</strong> envia só a mudança. Existem dois formatos padronizados, com <code>Content-Type</code> próprio:</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>JSON Merge Patch (RFC 7396)</th><th>JSON Patch (RFC 6902)</th></tr></thead>
+    <tbody>
+      <tr><td>Content-Type</td><td><code>application/merge-patch+json</code></td><td><code>application/json-patch+json</code></td></tr>
+      <tr><td>Forma</td><td>Um documento JSON parcial, com o mesmo formato do recurso</td><td>Uma lista de operações (<code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code>, <code>test</code>)</td></tr>
+      <tr><td>Remover campo</td><td><code>null</code> significa remover</td><td>Operação <code>remove</code> com caminho</td></tr>
+      <tr><td>Arrays</td><td>Substitui o array inteiro (não edita elemento)</td><td>Edita por índice (<code>/telefones/1</code>)</td></tr>
+      <tr><td>Definir um valor como null</td><td>Impossível (null remove)</td><td>Possível (<code>replace</code> com <code>null</code>)</td></tr>
+      <tr><td>Condição</td><td>Não tem</td><td><code>test</code> aborta tudo se o valor não for o esperado</td></tr>
+      <tr><td>Quando usar</td><td>Padrão para a maioria das APIs: simples e legível</td><td>Edição fina de arrays e aplicações que precisam de precondições</td></tr>
+    </tbody>
+  </table></div>
+  <pre data-file="Merge Patch: muda o telefone e remove a observação"><code class="http">PATCH /v1/pacientes/4d2f8a31-9c0e-4b7a-8a55-1e3f6c9b0d72 HTTP/1.1
+Content-Type: application/merge-patch+json
+If-Match: "v7"
+
+{ "telefone": "+5511999990000", "observacao": null }</code></pre>
+  <pre data-file="JSON Patch: troca o segundo contato, só se o primeiro for o esperado"><code class="http">PATCH /v1/pacientes/4d2f8a31-9c0e-4b7a-8a55-1e3f6c9b0d72 HTTP/1.1
+Content-Type: application/json-patch+json
+If-Match: "v7"
+
+[
+  { "op": "test",    "path": "/contatos/0/tipo", "value": "celular" },
+  { "op": "replace", "path": "/contatos/1/valor", "value": "mae@exemplo.com.br" }
+]</code></pre>
+  <h3>Concorrência: o "lost update"</h3>
+  <p>Dois atendentes abrem o mesmo cadastro, cada um edita um campo e salva: o último PUT apaga a mudança do primeiro. A defesa em HTTP é <strong>concorrência otimista</strong>: o GET devolve um <code>ETag</code>; o PUT/PATCH envia <code>If-Match</code> com esse valor; se o recurso mudou, o servidor responde <code>412 Precondition Failed</code>. Se o cliente não enviou o cabeçalho e você exige, use <code>428 Precondition Required</code>.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"PUT ou PATCH?" Resposta: <em>"PUT substitui o recurso inteiro e é idempotente; PATCH altera parcialmente e, em geral, não é idempotente. Em recursos grandes ou com clientes de versões diferentes eu prefiro PATCH com merge patch, sempre com ETag e If-Match para evitar lost update."</em> O entrevistador quer ouvir o <strong>ETag</strong>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Dois sinais de problema em code review: um PUT que ignora campos desconhecidos do cliente (apagou dado) e um POST de criação sem plano de idempotência (duplicou dado). Ambos são <strong>incidentes de integridade de dados</strong>, não bugs cosméticos, e em saúde viram problema de prontuário e de cobrança. Cobre testes de contrato para "repetir a mesma requisição duas vezes".</p></div>
+</section>
+
+<section class="chap" id="status-erros">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Códigos de status com precisão e erros padronizados</h2>
+  <p>O código de status é a primeira coisa que o cliente (e o monitoramento) lê. Devolver <code>200 OK</code> com <code>{"erro": true}</code> no corpo quebra métricas, caches, retentativas e SDKs. Use o código certo, e use o corpo para detalhar.</p>
+
+  <h3>Sucesso</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Código</th><th>Quando</th><th>Detalhes</th></tr></thead>
+    <tbody>
+      <tr><td><code>200 OK</code></td><td>Leitura ou atualização bem-sucedida com corpo</td><td>Corpo é o recurso atualizado.</td></tr>
+      <tr><td><code>201 Created</code></td><td>POST que criou um recurso</td><td>Inclua <code>Location</code> com a URL do novo recurso. Devolver o recurso no corpo poupa um GET.</td></tr>
+      <tr><td><code>202 Accepted</code></td><td>Aceito, será processado depois</td><td>Operação assíncrona; devolva <code>Location</code> de um recurso de status (seção 7).</td></tr>
+      <tr><td><code>204 No Content</code></td><td>Sucesso sem corpo</td><td>DELETE bem-sucedido; PUT/PATCH quando não devolve o recurso.</td></tr>
+      <tr><td><code>304 Not Modified</code></td><td>Cache ainda válido</td><td>Resposta ao GET condicional (<code>If-None-Match</code>).</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Erro do cliente: as distinções que importam</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Código</th><th>Significado exato</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><code>400 Bad Request</code></td><td>Requisição malformada: JSON inválido, tipo errado, parâmetro ilegível</td><td><code>{"inicio": "ontem"}</code> ou corpo que não é JSON</td></tr>
+      <tr><td><code>422 Unprocessable Content</code></td><td>Sintaxe correta, mas viola regra de validação ou de negócio</td><td>Data de fim anterior ao início; convênio inativo</td></tr>
+      <tr><td><code>401 Unauthorized</code></td><td>Sem credencial válida (o nome é enganoso: é <em>autenticação</em>)</td><td>Token ausente, expirado ou assinatura inválida; envie <code>WWW-Authenticate</code></td></tr>
+      <tr><td><code>403 Forbidden</code></td><td>Autenticado, mas sem permissão</td><td>Recepcionista tentando ler prontuário</td></tr>
+      <tr><td><code>404 Not Found</code></td><td>Não existe (ou você não pode saber que existe)</td><td>ID inexistente</td></tr>
+      <tr><td><code>405 / 415 / 406</code></td><td>Método não permitido / tipo de corpo não suportado / representação não oferecida</td><td>POST em recurso só-leitura; <code>text/xml</code> enviado</td></tr>
+      <tr><td><code>409 Conflict</code></td><td>Conflito com o estado atual do recurso</td><td>Horário já ocupado; cancelar agendamento já realizado; duplicidade</td></tr>
+      <tr><td><code>412 / 428</code></td><td>Precondição falhou / exigida</td><td><code>If-Match</code> com ETag desatualizado</td></tr>
+      <tr><td><code>429 Too Many Requests</code></td><td>Limite de taxa excedido</td><td>Devolva <code>Retry-After</code> (segundos ou data)</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>400 vs 422.</strong> Muitas APIs usam só 400 para tudo, o que é aceitável se for consistente. A distinção útil: <code>400</code> quando o servidor <em>nem consegue interpretar</em> a requisição; <code>422</code> quando entendeu, mas os valores são inválidos para o domínio. Se escolher uma convenção, documente e aplique em toda a API.</p>
+  <p><strong>401 vs 403 vs 404.</strong> A pergunta é "o que o cliente pode saber?". Sem token, 401. Com token, mas sem direito sobre um recurso que ele <em>pode saber que existe</em>, 403. Se revelar a existência já é vazamento (o prontuário 123 de outro paciente), devolva <strong>404</strong>: o atacante não consegue enumerar quais IDs existem. Isso complementa a proteção contra BOLA/IDOR, que o módulo 05 detalha: <em>não basta esconder, a autorização por objeto precisa ser verificada em toda leitura e escrita</em>.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Usar 409 para qualquer erro de validação, ou 403 para "recurso de outro tenant" quando a regra de sigilo pede 404. Outro clássico: <code>500</code> para erro de entrada porque a exceção não foi tratada. Toda entrada inválida que derruba o servidor é bug <em>e</em> vetor de ataque.</p></div>
+
+  <h3>Erros: Problem Details (RFC 9457)</h3>
+  <p>Cada API inventando seu formato de erro (<code>{"erro":"..."}</code>, <code>{"message":..}</code>, <code>{"errors":[..]}</code>) obriga o cliente a ter um parser por API. O <strong>Problem Details for HTTP APIs</strong> (RFC 9457, que <em>substitui</em> a RFC 7807, mantendo a mesma ideia) padroniza o corpo de erro com o tipo <code>application/problem+json</code>:</p>
+  <ul>
+    <li><code>type</code>: URI que identifica a <em>categoria</em> do erro (estável, idealmente com uma página de documentação). Se ausente, vale <code>about:blank</code>.</li>
+    <li><code>title</code>: resumo curto e fixo por tipo (não muda por ocorrência).</li>
+    <li><code>status</code>: o mesmo código HTTP, repetido para quando o corpo viaja sem o cabeçalho.</li>
+    <li><code>detail</code>: explicação desta ocorrência, legível por humanos.</li>
+    <li><code>instance</code>: URI ou identificador desta ocorrência (útil para suporte e correlação).</li>
+    <li><strong>Extensões</strong>: campos extras definidos por você, como <code>errors</code> com a lista de campos inválidos e <code>traceId</code>.</li>
+  </ul>
+  <pre><code class="http">HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  "type": "https://api.clinica.example/erros/validacao",
+  "title": "Dados inválidos",
+  "status": 422,
+  "detail": "A requisição tem 2 campos inválidos.",
+  "instance": "/v1/agendamentos",
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "errors": [
+    { "campo": "inicio", "codigo": "no_passado", "mensagem": "O horário já passou." },
+    { "campo": "convenio.carteirinha", "codigo": "formato_invalido", "mensagem": "Use 17 dígitos." }
+  ]
+}</code></pre>
+  <pre><code class="http">HTTP/1.1 409 Conflict
+Content-Type: application/problem+json
+
+{
+  "type": "https://api.clinica.example/erros/horario-ocupado",
+  "title": "Horário indisponível",
+  "status": 409,
+  "detail": "O horário 2026-03-10T14:00 do profissional já foi reservado.",
+  "alternativas": "/v1/horarios-disponiveis?profissionalId=7a1c&amp;de=2026-03-10"
+}</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>O cliente deve decidir o que fazer olhando <code>status</code> e <code>type</code>, nunca fazendo parse de <code>detail</code> (que é texto livre e pode mudar ou ser traduzido). Códigos de erro por campo (<code>codigo</code>) são estáveis; mensagens são para humanos. E nunca coloque stack trace, SQL ou nome de tabela no erro (OWASP: divulgação de informação).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como padroniza erros?" Resposta: <em>"Problem Details, RFC 9457, com application/problem+json: type estável, title, status, detail, instance e extensões como errors por campo e traceId. O status HTTP é correto, e o type permite ao cliente tratar por categoria."</em> Citar que 9457 substituiu a 7807 mostra atualização.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize o formato de erro <strong>uma vez</strong> para todas as APIs da empresa (biblioteca compartilhada ou middleware). É barato e reduz drasticamente o custo de integração. Métrica útil: taxa de 4xx por <code>type</code> mostra onde a documentação ou a validação do cliente está falhando; taxa de 5xx é o seu SLO.</p></div>
+</section>
+
+<section class="chap" id="maturidade">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Maturidade de Richardson e HATEOAS (com visão crítica)</h2>
+  <p>O modelo de maturidade de Richardson (popularizado por Martin Fowler) classifica o quanto uma API usa os mecanismos do HTTP. Não é um "ranking de qualidade", é uma <strong>régua para conversar</strong> sobre onde a API está.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Escada com quatro degraus: nível 0 um endpoint, nível 1 recursos, nível 2 verbos e status, nível 3 hipermídia">
+      <defs><marker id="ah-rich" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-b" x="20" y="150" width="140" height="70" rx="5"/>
+      <text class="ttl" x="32" y="170">Nível 0</text><text x="32" y="188">um endpoint</text><text x="32" y="206">POST /api</text>
+      <rect class="box-w" x="180" y="120" width="140" height="100" rx="5"/>
+      <text class="ttl" x="192" y="140">Nível 1</text><text x="192" y="158">recursos</text><text x="192" y="176">/pacientes/42</text><text class="lbl" x="192" y="198">URLs, mas só POST</text>
+      <rect class="box-a" x="340" y="90" width="150" height="130" rx="5"/>
+      <text class="ttl" x="352" y="110">Nível 2</text><text x="352" y="128">verbos + status</text><text x="352" y="146">GET, 201, 404</text><text class="lbl" x="352" y="168">onde a maioria</text><text class="lbl" x="352" y="184">das APIs vive</text>
+      <rect class="box-m" x="510" y="60" width="150" height="160" rx="5"/>
+      <text class="ttl" x="522" y="80">Nível 3</text><text x="522" y="98">hipermídia</text><text x="522" y="116">links na resposta</text><text class="lbl" x="522" y="138">HATEOAS: o cliente</text><text class="lbl" x="522" y="154">descobre as ações</text>
+      <line class="ln" x1="30" y1="40" x2="640" y2="40" marker-end="url(#ah-rich)"/>
+      <text class="lbl" x="30" y="30">mais aderente aos mecanismos do HTTP</text>
+      <text class="lbl" x="20" y="242">Nível 0 é "RPC sobre HTTP"; nível 2 é o que o mercado chama de REST.</text>
+    </svg>
+    <figcaption>Os quatro níveis do modelo de maturidade de Richardson.</figcaption>
+  </figure>
+  <ol>
+    <li><strong>Nível 0</strong>: HTTP como túnel. Um único endpoint recebe tudo e o corpo diz a operação (SOAP, JSON-RPC mal feito).</li>
+    <li><strong>Nível 1</strong>: recursos com URLs próprias, mas ainda sem usar a semântica dos métodos.</li>
+    <li><strong>Nível 2</strong>: métodos HTTP e códigos de status com significado. É o que se espera de uma "API REST" no dia a dia.</li>
+    <li><strong>Nível 3</strong>: hipermídia (HATEOAS). As respostas trazem links para as ações e recursos relacionados.</li>
+  </ol>
+  <h3>HATEOAS na prática</h3>
+  <p>A ideia: o servidor diz ao cliente <em>o que ele pode fazer agora</em>. Um agendamento já cancelado não oferece o link de cancelamento; um agendamento confirmado oferece o de reagendamento.</p>
+  <pre><code class="json">{
+  "id": "9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33",
+  "status": "confirmado",
+  "inicio": "2026-03-10T14:00:00-03:00",
+  "_links": {
+    "self":         { "href": "/v1/agendamentos/9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33" },
+    "paciente":     { "href": "/v1/pacientes/4d2f8a31-9c0e-4b7a-8a55-1e3f6c9b0d72" },
+    "cancelamento": { "href": "/v1/agendamentos/9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33/cancelamento", "method": "POST" },
+    "reagendamentos": { "href": "/v1/agendamentos/9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33/reagendamentos", "method": "POST" }
+  }
+}</code></pre>
+  <p>Formatos que padronizam a estrutura de links: HAL, JSON:API, Siren e Hydra. Para paginação, o cabeçalho <code>Link</code> (RFC 8288) com <code>rel="next"</code> é o uso de hipermídia que quase todo mundo já adota sem perceber.</p>
+  <h3>Visão crítica</h3>
+  <ul>
+    <li><strong>Fielding</strong>, que definiu o REST, diz que sem hipermídia não é REST. Na prática, quase nenhuma API de negócio chega ao nível 3, e o mercado convive bem com isso.</li>
+    <li><strong>Custo real</strong>: payload maior, mais código no servidor para calcular links por estado e permissão, e o cliente raramente segue links de forma genérica. Cliente móvel e SPA costumam ter as URLs "hard-coded" mesmo.</li>
+    <li><strong>Onde compensa</strong>: (1) links de paginação; (2) <em>ações permitidas por estado</em> quando as regras são complexas e mudam (o front não replica a regra, só mostra o botão se o link existe); (3) APIs de longa vida com muitos clientes de terceiros, onde mudar URLs sem quebrar é valioso.</li>
+    <li><strong>Alternativa pragmática</strong>: campos como <code>acoesPermitidas: ["cancelar","reagendar"]</code> dão boa parte do benefício com custo baixo.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Sua API é RESTful?" Resposta madura: <em>"Nível 2 de Richardson, que é o que entrega valor no nosso contexto. Uso hipermídia onde paga o custo: links de paginação e ações permitidas por estado. HATEOAS completo traz payload e complexidade que os clientes não aproveitam."</em> Evite dogma nos dois sentidos.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Não gaste capital do time tentando "pureza REST". O critério é <strong>custo de integração e de evolução</strong>. Se os clientes são o front interno, nível 2 com contrato (módulo 02) basta. Se são dezenas de parceiros (convênios, laboratórios), a estabilidade do contrato e a documentação pesam mais do que hipermídia.</p></div>
+</section>
+
+<section class="chap" id="consulta">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Filtros, ordenação, busca, campos parciais e expansão</h2>
+  <p>Coleções crescem. Sem uma forma padronizada de recortar o resultado, o cliente baixa tudo e filtra localmente (lento, caro e muitas vezes um vazamento de dados). A regra é: <strong>tudo isso vai na query string do GET</strong>, com nomes consistentes em todas as coleções.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Necessidade</th><th>Convenção</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td>Filtro por igualdade</td><td>Nome do campo = valor</td><td><code>?status=confirmado&amp;profissionalId=7a1c</code></td></tr>
+      <tr><td>Vários valores</td><td>Lista separada por vírgula (ou parâmetro repetido)</td><td><code>?status=confirmado,pendente</code></td></tr>
+      <tr><td>Intervalo</td><td>Sufixos ou par de parâmetros</td><td><code>?inicioDe=2026-03-01&amp;inicioAte=2026-03-31</code></td></tr>
+      <tr><td>Ordenação</td><td><code>sort</code> com campos; <code>-</code> para decrescente</td><td><code>?sort=-inicio,paciente.nome</code></td></tr>
+      <tr><td>Busca textual</td><td><code>q</code> para busca livre</td><td><code>?q=silva</code></td></tr>
+      <tr><td>Campos parciais</td><td><code>fields</code> lista o que devolver</td><td><code>?fields=id,inicio,status</code></td></tr>
+      <tr><td>Expansão</td><td><code>expand</code> embute recurso relacionado</td><td><code>?expand=paciente,profissional</code></td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="http">GET /v1/agendamentos?status=confirmado&amp;inicioDe=2026-03-01&amp;inicioAte=2026-03-31&amp;sort=inicio&amp;fields=id,inicio,status&amp;limite=50 HTTP/1.1
+Accept: application/json</code></pre>
+  <h3>Decisões e cuidados</h3>
+  <ul>
+    <li><strong>Lista branca de campos filtráveis e ordenáveis.</strong> Cada filtro e ordenação precisa de índice no banco. Aceitar <code>sort=qualquerCoisa</code> é convite a full scan e a SQL injection se o nome do campo for concatenado na query. Mapeie nomes públicos para colunas por uma tabela fixa e responda <code>400</code> para campo desconhecido.</li>
+    <li><strong>Campos parciais</strong> reduzem payload (importante em rede móvel), mas multiplicam as formas de resposta, dificultam cache e testes. Use quando houver recursos grandes; não faça por reflexo.</li>
+    <li><strong>Expansão</strong> troca o problema de "N+1 chamadas de rede" por "payload maior". Limite a profundidade (um nível) e a lista de relações expansíveis. É a forma "REST" de resolver o que o GraphQL resolve por seleção de campos (módulo 03).</li>
+    <li><strong>Filtros complexos</strong> (E/OU aninhados, dezenas de condições): query string vira ilegível e estoura limite de URL. Opções: um recurso de busca (<code>POST /agendamentos/buscas</code> com o filtro no corpo, devolvendo o resultado ou um recurso de consulta), ou rever o desenho. Não envie corpo em GET: muitos intermediários o descartam.</li>
+    <li><strong>Dado pessoal na URL é um problema de LGPD.</strong> URLs vão para logs de servidor, proxies, histórico do navegador e ferramentas de APM. Nunca passe CPF, nome ou data de nascimento em query string (<code>?cpf=...</code>); use identificador opaco ou, se a busca for inevitável, <code>POST</code> no recurso de busca.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Nomes e semântica dos parâmetros iguais em <em>todas</em> as coleções (<code>sort</code>, <code>limite</code>, <code>cursor</code>, <code>q</code>, <code>fields</code>). Um cliente que aprendeu uma coleção sabe usar todas. Isso se garante com style guide automatizado (módulo 02).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como o cliente filtra e ordena?" Responda com a convenção (<code>sort=-campo</code>, filtros por nome) <strong>e</strong> a defesa: <em>"lista branca de campos ligada a índices, para não permitir consultas arbitrárias que derrubam o banco".</em> Mostra que você pensa no banco, não só na URL.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cada filtro exposto é uma promessa de desempenho. Em revisão de design pergunte: "qual índice sustenta esse filtro? Quantas linhas no pior caso?". APIs públicas sem limite de página e sem lista branca são a causa clássica de incidentes de lentidão e de extração em massa de dados.</p></div>
+</section>
+
+<section class="chap" id="paginacao">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>Paginação em profundidade: offset vs cursor (keyset)</h2>
+  <p>Toda coleção que pode crescer precisa de paginação desde o primeiro dia, com limite padrão e limite máximo. Introduzir paginação depois quebra clientes, porque a resposta muda de formato. O módulo 08 da trilha web apresentou offset e cursor; aqui vamos entender <strong>por que</strong> um é bom e o outro escala, e como ligar isso ao banco (veja também a trilha de SQL, módulos sobre índices e paginação).</p>
+
+  <h3>Offset/limit</h3>
+  <pre data-file="Offset: simples, e é aí que mora o problema"><code class="text">GET /v1/agendamentos?limite=50&amp;pagina=3
+
+SELECT id, inicio, status
+  FROM agendamento
+ ORDER BY inicio, id
+OFFSET 100 ROWS FETCH NEXT 50 ROWS ONLY;     -- sintaxe padrão (Oracle 12c+, PostgreSQL)</code></pre>
+  <ul>
+    <li><strong>Desempenho</strong>: para entregar a página 2000, o banco lê e <em>descarta</em> as 99.950 linhas anteriores. O custo cresce linearmente com o deslocamento, mesmo com índice.</li>
+    <li><strong>Consistência</strong>: se um agendamento é inserido ou removido nas páginas anteriores enquanto o cliente navega, as linhas "deslizam": o cliente vê <strong>itens repetidos</strong> ou <strong>pula itens</strong> sem saber.</li>
+    <li><strong>Contagem total</strong>: <code>COUNT(*)</code> em tabela grande com filtro é caro; muitas APIs omitem o total ou o oferecem opcional.</li>
+    <li><strong>Vantagem</strong>: permite saltar para a página N e mostrar "página 3 de 40". Para listas administrativas pequenas isso é suficiente.</li>
+  </ul>
+
+  <h3>Cursor/keyset</h3>
+  <p>Em vez de "pule N linhas", o cliente diz "me dê o que vem <em>depois da última linha que vi</em>". A API devolve um <strong>cursor</strong> que codifica a posição. Na SQL isso é uma condição de busca no índice, não um descarte de linhas:</p>
+  <pre data-file="Keyset sobre (inicio, id): o id desempata"><code class="text">-- 1ª página
+SELECT id, inicio, status
+  FROM agendamento
+ WHERE status = 'confirmado'
+ ORDER BY inicio, id
+ FETCH FIRST 51 ROWS ONLY;                    -- pede limite + 1 para saber se há próxima
+
+-- página seguinte, com o cursor (inicio_ult, id_ult) da última linha devolvida
+SELECT id, inicio, status
+  FROM agendamento
+ WHERE status = 'confirmado'
+   AND (inicio &gt; :inicio_ult OR (inicio = :inicio_ult AND id &gt; :id_ult))
+ ORDER BY inicio, id
+ FETCH FIRST 51 ROWS ONLY;
+
+-- índice que sustenta: (status, inicio, id)
+-- PostgreSQL aceita a forma curta:  WHERE (inicio, id) &gt; (:inicio_ult, :id_ult)</code></pre>
+  <p>O banco desce direto no índice até o ponto do cursor: o custo da página 2000 é igual ao da página 1. Duas condições para funcionar: a ordenação precisa ser <strong>determinística</strong> (por isso o <code>id</code> como desempate; sem ele, linhas com o mesmo <code>inicio</code> ficam em ordem indefinida e itens se perdem entre páginas) e o <strong>índice composto</strong> precisa casar com os filtros e a ordenação. A forma expandida com <code>OR</code> é a portátil; no Oracle use-a, e no PostgreSQL a comparação de tupla também é válida.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Offset</th><th>Cursor (keyset)</th></tr></thead>
+    <tbody>
+      <tr><td>Custo na página N</td><td>Cresce com N</td><td>Constante (com índice adequado)</td></tr>
+      <tr><td>Itens repetidos/perdidos com escrita concorrente</td><td>Sim</td><td>Não (a posição é uma chave, não um número)</td></tr>
+      <tr><td>Saltar para a página N</td><td>Sim</td><td>Não; só avançar e voltar</td></tr>
+      <tr><td>Total de itens</td><td>Fácil (porém caro)</td><td>Normalmente omitido ou aproximado</td></tr>
+      <tr><td>Mudar a ordenação no meio</td><td>Possível</td><td>O cursor só vale para uma ordenação e filtro específicos</td></tr>
+      <tr><td>Complexidade</td><td>Baixa</td><td>Média (SQL e codificação do cursor)</td></tr>
+      <tr><td>Melhor para</td><td>Listas pequenas, telas com paginação numerada</td><td>Feeds, grandes volumes, exportação, sincronização</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>O cursor deve ser opaco</h3>
+  <p>O cliente trata o cursor como uma string sem significado: não parseia, não monta. Isso deixa você livre para mudar a implementação (adicionar um campo, trocar a ordenação) sem quebrar contrato. Tipicamente é o JSON da chave da última linha, codificado em base64url, opcionalmente <strong>assinado</strong> (HMAC) para impedir adulteração e acoplado a um hash dos filtros e da ordenação, para rejeitar um cursor usado com outra consulta. Cursor inválido ou expirado: <code>400</code> com Problem Details. Não é um mecanismo de segurança, só de integridade: autorização continua sendo verificada em cada página.</p>
+  <pre><code class="http">GET /v1/agendamentos?status=confirmado&amp;limite=2 HTTP/1.1
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Link: &lt;/v1/agendamentos?status=confirmado&amp;limite=2&amp;cursor=eyJpIjoiMjAyNi0wMy0xMFQxNzowMDowMFoiLCJpZCI6IjlmMmMifQ&gt;; rel="next"
+
+{
+  "itens": [
+    { "id": "5c1d…", "inicio": "2026-03-10T16:30:00Z", "status": "confirmado" },
+    { "id": "9f2c…", "inicio": "2026-03-10T17:00:00Z", "status": "confirmado" }
+  ],
+  "paginacao": {
+    "limite": 2,
+    "proximo": "eyJpIjoiMjAyNi0wMy0xMFQxNzowMDowMFoiLCJpZCI6IjlmMmMifQ",
+    "temMais": true
+  }
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Cursor baseado só em um campo não único (<code>inicio</code>): duas consultas marcadas para o mesmo horário e uma delas some na virada de página. Outra: ordenar por coluna sem índice e achar que "keyset" resolve; sem índice, o banco ainda varre e ordena tudo a cada página.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Defina <code>limite</code> padrão (por exemplo 50) e máximo (por exemplo 200), e rejeite ou reduza o excedente. Mantenha o <em>mesmo envelope</em> (<code>itens</code> + <code>paginacao</code>) em todas as coleções. Para consumo interno de lotes grandes, prefira cursor; para telas administrativas pequenas, offset resolve.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Offset ou cursor?" Resposta sênior: <em>"Offset faz o banco ler e descartar as linhas anteriores, então fica lento em páginas profundas, e é inconsistente com escrita concorrente. Cursor/keyset usa uma condição sobre a chave ordenada, sustentada por índice composto, com custo constante e sem repetir itens. O preço é não poder saltar para uma página qualquer. O cursor é opaco para o cliente."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Paginação offset em tabela de milhões de linhas é um incidente de performance agendado para o dia em que o parceiro começar a exportar tudo. Cobre: limite máximo imposto no servidor, plano de execução revisado (<code>EXPLAIN</code>) para as consultas das coleções principais, e um teste de carga com a página 10.000.</p></div>
+</section>
+
+<section class="chap" id="lote-longas">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Operações em lote, operações longas e upload de arquivos</h2>
+
+  <h3>Operações em lote e respostas parciais</h3>
+  <p>Um laboratório quer enviar 500 resultados de exames. Fazer 500 POSTs é lento (latência) e frágil. Um endpoint de lote reduz chamadas, mas traz uma pergunta de projeto: <strong>o que acontece se 3 dos 500 falham?</strong></p>
+  <div class="tbl"><table>
+    <thead><tr><th>Modelo</th><th>Comportamento</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td>Tudo ou nada (atômico)</td><td>Uma falha desfaz o lote inteiro; resposta 200/201 ou erro 4xx com o item culpado</td><td>Itens dependentes entre si; lotes pequenos</td></tr>
+      <tr><td>Parcial</td><td>Cada item é processado independentemente; a resposta traz o resultado individual</td><td>Importações, itens independentes (o mais comum)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Para o modelo parcial há duas formas de responder. O <code>207 Multi-Status</code> vem do WebDAV (RFC 4918) e é aceito por algumas APIs; o mais simples e legível é um <code>200</code> com <strong>uma lista de resultados por item</strong>, cada um com seu próprio status e, se falhou, um Problem Details. Atenção: um 200 dizendo que "o lote foi processado" não pode esconder que tudo falhou; o cliente precisa olhar os itens.</p>
+  <pre><code class="http">POST /v1/resultados-exame/lote HTTP/1.1
+Content-Type: application/json
+Idempotency-Key: 11e5c7a0-3d0a-4f0e-8d6a-0b5c2c1f9a10
+
+{ "itens": [
+  { "refCliente": "L-001", "exameId": "e1", "valor": "5.4", "unidade": "mmol/L" },
+  { "refCliente": "L-002", "exameId": "e9", "valor": "abc", "unidade": "mmol/L" }
+] }</code></pre>
+  <pre><code class="http">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{ "resumo": { "recebidos": 2, "sucesso": 1, "falha": 1 },
+  "resultados": [
+    { "refCliente": "L-001", "status": 201, "id": "r-7731" },
+    { "refCliente": "L-002", "status": 422,
+      "problema": { "type": "https://api.clinica.example/erros/validacao",
+                    "title": "Dados inválidos", "detail": "valor deve ser numérico" } }
+  ] }</code></pre>
+  <ul>
+    <li>Imponha <strong>limite de itens e de tamanho</strong> por lote (e documente).</li>
+    <li>Use <code>refCliente</code> (correlação) para o cliente casar entrada e saída sem depender da ordem.</li>
+    <li>A idempotência vale para o lote e para cada item: reenviar o lote não pode duplicar os itens já aceitos.</li>
+  </ul>
+
+  <h3>Operações longas: 202 + recurso de status</h3>
+  <p>Se a operação leva mais do que alguns segundos (gerar relatório, exportar prontuários, processar um lote grande), não segure a conexão: <strong>aceite e devolva um recurso que representa a operação</strong>. O cliente consulta esse recurso (polling) até terminar. Para evitar polling, o módulo 04 mostra webhooks e eventos.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 330" role="img" aria-label="Sequência: cliente cria exportação, API responde 202 com Location, cliente consulta o status até concluir">
+      <defs><marker id="ah-async" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="45" y="15" width="110" height="30" rx="5"/><text x="100" y="35" text-anchor="middle">Cliente</text>
+      <rect class="box" x="285" y="15" width="110" height="30" rx="5"/><text x="340" y="35" text-anchor="middle">API</text>
+      <rect class="box-w" x="525" y="15" width="110" height="30" rx="5"/><text x="580" y="35" text-anchor="middle">Worker</text>
+      <line class="ln" x1="100" y1="45" x2="100" y2="315"/>
+      <line class="ln" x1="340" y1="45" x2="340" y2="315"/>
+      <line class="ln" x1="580" y1="45" x2="580" y2="315"/>
+      <text class="lbl" x="220" y="78" text-anchor="middle">POST /exportacoes</text>
+      <line class="ln-a" x1="100" y1="85" x2="338" y2="85" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="460" y="108" text-anchor="middle">enfileira o job</text>
+      <line class="ln" x1="340" y1="115" x2="578" y2="115" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="220" y="138" text-anchor="middle">202 + Location: /operacoes/7</text>
+      <line class="ln-a" x1="338" y1="145" x2="102" y2="145" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="220" y="178" text-anchor="middle">GET /operacoes/7</text>
+      <line class="ln" x1="100" y1="185" x2="338" y2="185" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="220" y="208" text-anchor="middle">200 {status: "em_andamento"}</text>
+      <line class="ln" x1="338" y1="215" x2="102" y2="215" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="460" y="238" text-anchor="middle">termina, grava resultado</text>
+      <line class="ln" x1="578" y1="245" x2="342" y2="245" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="220" y="268" text-anchor="middle">GET /operacoes/7</text>
+      <line class="ln" x1="100" y1="275" x2="338" y2="275" marker-end="url(#ah-async)"/>
+      <text class="lbl" x="220" y="298" text-anchor="middle">200 {concluida, link p/ resultado}</text>
+      <line class="ln-a" x1="338" y1="305" x2="102" y2="305" marker-end="url(#ah-async)"/>
+    </svg>
+    <figcaption>Padrão 202 + recurso de status. O resultado final é um recurso próprio, referenciado pela operação.</figcaption>
+  </figure>
+  <pre><code class="http">HTTP/1.1 202 Accepted
+Location: /v1/operacoes/7c3a
+Retry-After: 5
+
+{ "id": "7c3a", "status": "em_andamento", "criadaEm": "2026-03-10T14:00:00Z" }</code></pre>
+  <pre><code class="http">GET /v1/operacoes/7c3a HTTP/1.1
+
+HTTP/1.1 200 OK
+
+{ "id": "7c3a", "status": "concluida", "progresso": 100,
+  "resultado": { "href": "/v1/exportacoes/b19e" } }</code></pre>
+  <p>Estados típicos: <code>na_fila</code>, <code>em_andamento</code>, <code>concluida</code>, <code>falhou</code> (com Problem Details no recurso), <code>cancelada</code>. Permita <code>DELETE /operacoes/{id}</code> para cancelar quando fizer sentido. Algumas APIs, ao concluir, respondem ao GET de status com <code>303 See Other</code> e <code>Location</code> do resultado; ambas as formas são válidas, escolha uma e documente. Defina por quanto tempo o resultado e o status ficam disponíveis (TTL).</p>
+
+  <h3>Upload de arquivos</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Técnica</th><th>Como funciona</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>multipart/form-data</code></td><td>O arquivo vai no corpo da própria requisição, junto de metadados</td><td>Arquivos pequenos (imagens, PDFs de poucos MB). Simples; passa pela sua API e consome sua banda e memória.</td></tr>
+      <tr><td>URL pré-assinada</td><td>A API cria o registro e entrega uma URL temporária do armazenamento de objetos (S3 e equivalentes); o cliente envia o arquivo <em>direto</em> ao armazenamento</td><td>Arquivos grandes, muito volume. Tira o tráfego pesado da API.</td></tr>
+      <tr><td>Upload retomável</td><td>Envio em partes com offset; se a conexão cai, retoma de onde parou (protocolo tus, multipart do S3, sessão retomável do Google Cloud Storage)</td><td>Arquivos muito grandes e redes instáveis (exames de imagem, vídeos)</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="figure">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Upload com URL pré-assinada: cliente pede à API, recebe URL, envia direto ao armazenamento, que notifica a API">
+      <defs><marker id="ah-upl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="45" y="15" width="110" height="30" rx="5"/><text x="100" y="35" text-anchor="middle">Cliente</text>
+      <rect class="box" x="285" y="15" width="110" height="30" rx="5"/><text x="340" y="35" text-anchor="middle">API</text>
+      <rect class="box-m" x="505" y="15" width="150" height="30" rx="5"/><text x="580" y="35" text-anchor="middle">Armazenamento</text>
+      <line class="ln" x1="100" y1="45" x2="100" y2="285"/>
+      <line class="ln" x1="340" y1="45" x2="340" y2="285"/>
+      <line class="ln" x1="580" y1="45" x2="580" y2="285"/>
+      <text class="lbl" x="220" y="78" text-anchor="middle">POST /documentos (metadados)</text>
+      <line class="ln" x1="100" y1="85" x2="338" y2="85" marker-end="url(#ah-upl)"/>
+      <text class="lbl" x="220" y="113" text-anchor="middle">201 + URL pré-assinada</text>
+      <line class="ln-a" x1="338" y1="120" x2="102" y2="120" marker-end="url(#ah-upl)"/>
+      <text class="lbl" x="340" y="153" text-anchor="middle">PUT do arquivo, direto (sem passar pela API)</text>
+      <line class="ln-a" x1="100" y1="160" x2="578" y2="160" marker-end="url(#ah-upl)"/>
+      <text class="lbl" x="460" y="188" text-anchor="middle">evento: objeto criado</text>
+      <line class="ln" x1="578" y1="195" x2="342" y2="195" marker-end="url(#ah-upl)"/>
+      <text class="lbl" x="340" y="218" text-anchor="middle">API valida (tipo, tamanho, antivírus)</text>
+      <text class="lbl" x="220" y="248" text-anchor="middle">GET /documentos/{id}</text>
+      <line class="ln" x1="100" y1="255" x2="338" y2="255" marker-end="url(#ah-upl)"/>
+      <text class="lbl" x="220" y="278" text-anchor="middle">200 {status: "disponivel"}</text>
+      <line class="ln" x1="338" y1="283" x2="102" y2="283" marker-end="url(#ah-upl)"/>
+    </svg>
+    <figcaption>URL pré-assinada: o arquivo não passa pela API; a API só controla permissão, metadados e validação posterior.</figcaption>
+  </figure>
+  <div class="note trap"><b>Armadilha comum</b><p>Confiar no <code>Content-Type</code> e no nome do arquivo enviados pelo cliente. Valide o conteúdo real (assinatura do arquivo), imponha tamanho máximo, gere o nome de armazenamento no servidor (nunca use o nome recebido no caminho), faça varredura de malware e <strong>não sirva o arquivo do mesmo domínio da API</strong> sem cabeçalhos adequados. URLs pré-assinadas devem expirar em minutos e valer para um único objeto e método. Documentos clínicos exigem controle de acesso também na leitura.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como aceitar upload de 2 GB?" <em>"Não passo pela API: o cliente pede uma URL pré-assinada, envia direto ao armazenamento, de preferência em partes retomáveis, e a API valida e marca o documento como disponível depois. Assim a API continua leve e a falha de rede não obriga recomeçar."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina o contrato de <strong>operações longas</strong> uma vez para todo o portfólio (mesmo recurso <code>/operacoes</code>, mesmos estados, mesmo TTL): evita que cada squad invente o seu. Lembre os custos: lote e upload mal limitados são um vetor de negação de serviço e de custo de armazenamento; exija limites, quotas e expiração de arquivos temporários.</p></div>
+</section>
+
+<section class="chap" id="convencoes">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Convenções: nomes, datas, dinheiro, IDs, nulos e envelopes</h2>
+  <p>Pequenas inconsistências se multiplicam: um campo <code>dataNascimento</code> em uma API e <code>data_nasc</code> em outra, uma data em fuso local e outra em UTC. Cada convenção abaixo evita uma classe inteira de bugs de integração. Escolha, escreva num style guide e automatize a verificação (módulo 02).</p>
+
+  <h3>Nomes</h3>
+  <ul>
+    <li><strong>Caminhos</strong>: minúsculas com hífen (<code>/horarios-disponiveis</code>), substantivos no plural.</li>
+    <li><strong>Campos JSON</strong>: escolha um estilo (<code>camelCase</code> é o mais comum em JSON; <code>snake_case</code> também é válido) e use sempre. Nada de abreviação obscura.</li>
+    <li><strong>Idioma</strong>: decida entre português e inglês para o vocabulário público e mantenha. Em APIs de saúde brasileiras, termos do domínio (<code>convenio</code>, <code>carteirinha</code>) costumam ser mais claros do que traduções forçadas. Valores de enum em minúsculas e estáveis (<code>"confirmado"</code>), nunca textos para exibição.</li>
+  </ul>
+
+  <h3>Datas e fusos</h3>
+  <p>Use <strong>ISO 8601 / RFC 3339</strong> em string: <code>2026-03-10T14:00:00Z</code> (UTC) ou com deslocamento <code>2026-03-10T11:00:00-03:00</code>. Distinga três conceitos:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Conceito</th><th>Formato</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td>Instante (momento exato no tempo)</td><td>RFC 3339 com <code>Z</code> ou offset</td><td><code>criadoEm</code>, <code>canceladoEm</code></td></tr>
+      <tr><td>Data de calendário (sem hora)</td><td><code>AAAA-MM-DD</code></td><td><code>dataNascimento: "1988-04-12"</code></td></tr>
+      <tr><td>Horário local de um lugar</td><td>Instante + nome de fuso IANA</td><td><code>inicio: "2026-03-10T14:00:00Z"</code>, <code>fuso: "America/Sao_Paulo"</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Armazene e transporte instantes em UTC; converta para exibição na borda. A consulta presencial é um caso em que o <strong>fuso do local</strong> importa: "às 14h na unidade de Manaus" não muda se o servidor mudar de região, e a regra de horário de verão (extinto no Brasil desde 2019, mas existente em outros países) é dada pelo nome IANA, não por um offset fixo. Nunca use timestamps sem fuso nem formatos locais (<code>10/03/2026</code>).</p>
+
+  <h3>Dinheiro e números</h3>
+  <p><strong>Nunca use ponto flutuante para dinheiro</strong> (<code>0.1 + 0.2 != 0.3</code>). Opções: inteiro em centavos com a moeda (<code>{"valorCentavos": 15000, "moeda": "BRL"}</code>) ou <strong>string decimal</strong> (<code>{"quantia": "150.00", "moeda": "BRL"}</code>). Centavos inteiros evitam arredondamento; string decimal evita problema com moedas de casas diferentes e com JavaScript (que usa <code>double</code>). Em qualquer caso informe a moeda. Mesma lógica para dosagens e resultados de exame: valor decimal exato como string, com unidade, quando a precisão for clínica.</p>
+
+  <h3>Identificadores</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Pró</th><th>Contra</th></tr></thead>
+    <tbody>
+      <tr><td>Sequencial (1, 2, 3…)</td><td>Compacto, bom para índice, legível</td><td>Enumerável (atacante percorre os IDs, base para BOLA/IDOR); revela volume de negócio; difícil gerar em sistemas distribuídos</td></tr>
+      <tr><td>UUID v4 (aleatório)</td><td>Imprevisível, gerado em qualquer lugar sem coordenação</td><td>Aleatório fragmenta índices B-tree (inserções espalhadas), 16 bytes, ilegível</td></tr>
+      <tr><td>UUID v7 (RFC 9562)</td><td>Prefixo temporal: inserções quase ordenadas, bom para índice, ainda gerado sem coordenação</td><td>Revela o momento de criação; precisa de biblioteca recente</td></tr>
+      <tr><td>ID opaco/ULID/curto</td><td>Compacto e amigável</td><td>Mais uma convenção a manter</td></tr>
+    </tbody>
+  </table></div>
+  <p>Expor IDs sequenciais não é, por si só, uma vulnerabilidade: a vulnerabilidade é <em>não verificar autorização por objeto</em>. Mas IDs imprevisíveis aumentam o custo de ataque e escondem volume (quantos pacientes? quantas consultas por dia?). Padrão comum: chave primária sequencial interna no banco e UUID (v7) como identificador público. O ID é sempre <strong>string</strong> na API, mesmo que hoje seja numérico, para poder mudar sem quebrar contrato.</p>
+
+  <h3>Nulos, ausentes e vazios</h3>
+  <p>Três estados distintos: <code>"telefone": null</code> (existe o campo, sem valor), campo <em>ausente</em> (não informado ou não retornado) e <code>""</code> ou <code>[]</code> (vazio). Defina o significado e seja consistente. Em respostas, prefira <strong>sempre incluir o campo</strong> com <code>null</code> quando o schema o prevê (cliente tipado agradece); em PATCH com merge patch, <code>null</code> significa "remover", e ausente significa "não mexer" (seção 2). Listas: devolva <code>[]</code>, nunca <code>null</code> ou ausente.</p>
+
+  <h3>Envelopes</h3>
+  <p><strong>Item</strong>: devolva o recurso direto, sem <code>{"data": {...}}</code>; o status HTTP já diz se deu certo. <strong>Coleção</strong>: devolva um <em>objeto</em> (<code>{"itens": [...], "paginacao": {...}}</code>) e não um array na raiz, porque um array não comporta metadados novos (paginação, totais) sem quebrar o contrato. Envelope de erro é o Problem Details.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Se o campo pode ganhar um irmão no futuro (um array que vira objeto com metadados, um valor que ganha moeda), comece com o objeto. Mudar um tipo é mudança incompatível; adicionar um campo opcional não é.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como representar dinheiro e datas numa API?" Respostas diretas: <em>"Dinheiro nunca em float: centavos inteiros ou string decimal, sempre com moeda. Instantes em RFC 3339 em UTC; datas de calendário como AAAA-MM-DD; e, quando o horário local importa, o nome do fuso IANA."</em> Perguntas sobre UUID v4 vs v7 são comuns: fale de fragmentação de índice.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Um <strong>style guide</strong> curto e verificado por lint (Spectral) é melhor do que debate em cada PR. Se hoje existem duas APIs com convenções diferentes, não reescreva: congele o padrão para as novas e registre a dívida das antigas. Pergunta de revisão: "essa mudança é compatível para um cliente que não foi atualizado?"</p></div>
+</section>
+
+<section class="chap" id="exemplo">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exemplo completo: API de agendamento de consultas</h2>
+  <p>Vamos juntar tudo num desenho de ponta a ponta de uma API fictícia de agendamento de uma rede de clínicas. Domínio: um <strong>paciente</strong> escolhe um <strong>profissional</strong> numa <strong>unidade</strong>, vê <strong>horários disponíveis</strong> e cria um <strong>agendamento</strong>, que pode ser <strong>cancelado</strong> ou <strong>reagendado</strong>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Mapa de recursos: agendamentos no centro, ligados a pacientes, profissionais e unidades, horários disponíveis, cancelamento e reagendamentos">
+      <defs><marker id="ah-map" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="160" height="40" rx="5"/><text x="100" y="54" text-anchor="middle">/pacientes</text>
+      <rect class="box" x="20" y="115" width="160" height="40" rx="5"/><text x="100" y="139" text-anchor="middle">/profissionais</text>
+      <rect class="box" x="20" y="200" width="160" height="40" rx="5"/><text x="100" y="224" text-anchor="middle">/unidades</text>
+      <rect class="box-a" x="250" y="105" width="180" height="60" rx="5"/><text class="ttl" x="340" y="130" text-anchor="middle">/agendamentos</text><text class="lbl" x="340" y="150" text-anchor="middle">recurso central</text>
+      <rect class="box-w" x="480" y="30" width="190" height="40" rx="5"/><text x="575" y="54" text-anchor="middle">/horarios-disponiveis</text>
+      <rect class="box-m" x="480" y="115" width="190" height="40" rx="5"/><text x="575" y="139" text-anchor="middle">/{id}/cancelamento</text>
+      <rect class="box-m" x="480" y="200" width="190" height="40" rx="5"/><text x="575" y="224" text-anchor="middle">/{id}/reagendamentos</text>
+      <line class="ln" x1="180" y1="55" x2="248" y2="120" marker-end="url(#ah-map)"/>
+      <line class="ln" x1="180" y1="135" x2="248" y2="135" marker-end="url(#ah-map)"/>
+      <line class="ln" x1="180" y1="220" x2="248" y2="152" marker-end="url(#ah-map)"/>
+      <line class="ln-a" x1="480" y1="55" x2="432" y2="120" marker-end="url(#ah-map)"/>
+      <line class="ln-a" x1="432" y1="135" x2="478" y2="135" marker-end="url(#ah-map)"/>
+      <line class="ln-a" x1="432" y1="152" x2="478" y2="215" marker-end="url(#ah-map)"/>
+      <text class="lbl" x="20" y="262">à esquerda: referências (ids); à direita: consulta de vagas e ações do agendamento</text>
+    </svg>
+    <figcaption>Mapa de recursos. Agendamento é de primeiro nível porque se relaciona com três entidades.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Operação</th><th>Requisição</th><th>Resposta</th></tr></thead>
+    <tbody>
+      <tr><td>Consultar vagas</td><td><code>GET /v1/horarios-disponiveis?profissionalId=…&amp;de=…&amp;ate=…</code></td><td>200 (somente leitura, cacheável por segundos)</td></tr>
+      <tr><td>Agendar</td><td><code>POST /v1/agendamentos</code> + <code>Idempotency-Key</code></td><td>201 + <code>Location</code>; 409 se o horário foi ocupado; 422 se inválido</td></tr>
+      <tr><td>Ler</td><td><code>GET /v1/agendamentos/{id}</code></td><td>200 + <code>ETag</code>; 404 se não existe <em>ou</em> não é do chamador</td></tr>
+      <tr><td>Listar</td><td><code>GET /v1/agendamentos?pacienteId=…&amp;status=…&amp;cursor=…</code></td><td>200 com <code>itens</code> e <code>paginacao</code></td></tr>
+      <tr><td>Alterar observação</td><td><code>PATCH /v1/agendamentos/{id}</code> + <code>If-Match</code></td><td>200; 412 se desatualizado</td></tr>
+      <tr><td>Cancelar</td><td><code>POST /v1/agendamentos/{id}/cancelamento</code></td><td>201; 409 se já realizado; 422 se fora do prazo</td></tr>
+      <tr><td>Reagendar</td><td><code>POST /v1/agendamentos/{id}/reagendamentos</code></td><td>201 com o novo agendamento; o antigo vira <code>reagendado</code></td></tr>
+    </tbody>
+  </table></div>
+  <h3>Fluxo feliz e o conflito</h3>
+  <pre><code class="http">GET /v1/horarios-disponiveis?profissionalId=7a1c2b90&amp;de=2026-03-10&amp;ate=2026-03-10 HTTP/1.1
+
+HTTP/1.1 200 OK
+Cache-Control: max-age=10
+
+{ "itens": [
+  { "inicio": "2026-03-10T17:00:00Z", "fim": "2026-03-10T17:30:00Z", "unidadeId": "u-03" },
+  { "inicio": "2026-03-10T17:30:00Z", "fim": "2026-03-10T18:00:00Z", "unidadeId": "u-03" }
+], "fuso": "America/Sao_Paulo" }</code></pre>
+  <pre><code class="http">POST /v1/agendamentos HTTP/1.1
+Authorization: Bearer eyJ…
+Idempotency-Key: 8c0f1f6e-2c1b-4c4e-9f0a-5e3d1a7b2c44
+Content-Type: application/json
+
+{ "pacienteId": "4d2f8a31-9c0e-4b7a-8a55-1e3f6c9b0d72",
+  "profissionalId": "7a1c2b90-0f3e-4d11-8b6a-9c4e5d2f7a10",
+  "unidadeId": "u-03",
+  "inicio": "2026-03-10T17:00:00Z",
+  "convenio": { "operadoraId": "op-12", "carteirinha": "00012345678901234" } }
+
+HTTP/1.1 201 Created
+Location: /v1/agendamentos/9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33
+ETag: "v1"
+
+{ "id": "9f2c4a10-5b7e-4d3a-9c1e-2a6b8d0f1e33", "status": "confirmado",
+  "inicio": "2026-03-10T17:00:00Z", "fim": "2026-03-10T17:30:00Z",
+  "criadoEm": "2026-03-05T12:41:09Z", "observacao": null }</code></pre>
+  <p>Se outro cliente reservou o horário no meio tempo, o <em>banco</em> é quem garante a exclusividade (restrição única em <code>(profissional_id, inicio)</code> para agendamentos ativos, ou bloqueio otimista); a API converte a violação em <code>409</code> e devolve alternativas (seção 3). Verificar "está livre?" e depois inserir, sem restrição no banco, é uma <em>condição de corrida</em>.</p>
+  <h3>Decisões registradas neste desenho</h3>
+  <ul>
+    <li><strong>Versão na URL</strong> (<code>/v1</code>) por simplicidade; estratégias de evolução no módulo 07.</li>
+    <li><strong>Autorização por objeto</strong>: um paciente só enxerga seus agendamentos; recepção enxerga os da unidade; 404 quando fora do escopo.</li>
+    <li><strong>Sem dado pessoal na URL</strong>: carteirinha e CPF só no corpo; logs sem corpo de requisição.</li>
+    <li><strong>Erros</strong> em Problem Details; <strong>paginação</strong> por cursor em <code>(inicio, id)</code>; <strong>IDs</strong> UUID (v7) como string.</li>
+    <li><strong>Reagendamento</strong> cria um novo agendamento e liga ao antigo (histórico preservado, sem editar o passado).</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>É comum pedirem "desenhe a API de X" no quadro. Roteiro: (1) substantivos e relações; (2) lista de endpoints com métodos; (3) uma requisição/resposta completa; (4) erros e concorrência (409, ETag); (5) paginação e filtros; (6) autorização e idempotência. Fale em voz alta as <strong>decisões e trade-offs</strong>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Este desenho cabe em uma página. Exija esse artefato (mapa de recursos, tabela de operações, 2 exemplos, regras de erro) numa revisão de design <em>antes</em> da implementação, e que o time de produto e quem consome a API estejam na sala. O custo de corrigir aqui é de uma tarde; depois do lançamento é de meses de compatibilidade.</p></div>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e glossário</h2>
+
+  <h3>Cenário 1: o PUT que apagou o telefone</h3>
+  <p>O app antigo faz <code>PUT /pacientes/{id}</code> só com nome e e-mail. Depois do lançamento do campo <code>telefoneAlternativo</code>, pacientes começam a perder esse dado.</p>
+  <div class="note"><b>O que fazer</b><p>Curto prazo: corrigir o dado a partir de auditoria/backup e fazer o servidor <em>rejeitar</em> PUT incompleto com 422. Médio: oferecer <code>PATCH</code> com merge patch para atualizações parciais, exigir <code>If-Match</code>, e migrar o app. Processo: teste de contrato com "cliente antigo" na CI.</p></div>
+
+  <h3>Cenário 2: a listagem que ficou lenta e duplicou itens</h3>
+  <p>A tela de agendamentos usa <code>?pagina=N</code> sobre 8 milhões de linhas. Em páginas altas passa de 5 s, e o suporte relata itens repetidos entre páginas.</p>
+  <div class="note"><b>O que fazer</b><p>Confirmar com <code>EXPLAIN</code> o descarte de linhas do offset. Migrar para cursor sobre <code>(inicio, id)</code> com índice composto; manter offset em período de transição com limite máximo de página; avisar clientes com cabeçalho de depreciação. Medir antes e depois (p95).</p></div>
+
+  <h3>Cenário 3: "só mais um endpoint" com verbo</h3>
+  <p>Surgem <code>/confirmarAgendamento</code>, <code>/cancelarAgendamento</code>, <code>/remarcar</code>, e cada um devolve um formato de erro diferente.</p>
+  <div class="note"><b>O que fazer</b><p>Não proibir; padronizar. Modelar ações como sub-recursos (<code>/cancelamento</code>) ou adotar o padrão <code>:acao</code> com POST em toda a API, unificar erros em Problem Details e colocar uma regra de lint no style guide. Congelar as antigas e documentar a dívida.</p></div>
+
+  <h3>Cenário 4: o convênio reenvia e duplica</h3>
+  <p>O sistema de uma operadora faz retentativa agressiva em timeout e cria dois agendamentos idênticos.</p>
+  <div class="note"><b>O que fazer</b><p>Exigir <code>Idempotency-Key</code> no POST, guardar a resposta por 24 h, e responder <code>409</code> ou <code>422</code> para a mesma chave com corpo diferente. Garantir restrição única no banco como segunda linha de defesa. Informar o parceiro por documentação e exemplo.</p></div>
+
+  <h3>Cenário 5: 200 com erro no corpo</h3>
+  <p>Um endpoint devolve <code>200 {"sucesso": false, "mensagem": "..."}</code>. O painel de monitoramento mostra 100% de sucesso enquanto os clientes falham.</p>
+  <div class="note"><b>O que fazer</b><p>Corrigir o status para 4xx/5xx com Problem Details; versionar a mudança porque clientes já dependem do comportamento (comunicar, janela de migração); passar a medir erros por <code>type</code> e a alertar sobre o SLO de disponibilidade pela taxa de 5xx real.</p></div>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>Recurso</dt><dd>Entidade nomeada e endereçável por URL, com representações.</dd></div>
+    <div><dt>Sub-recurso</dt><dd>Recurso aninhado que depende do pai (composição).</dd></div>
+    <div><dt>Seguro</dt><dd>Método que não pede mudança de estado (GET, HEAD, OPTIONS).</dd></div>
+    <div><dt>Idempotente</dt><dd>Repetir tem o mesmo efeito no servidor que executar uma vez.</dd></div>
+    <div><dt>Merge Patch</dt><dd>RFC 7396: PATCH com documento parcial; null remove.</dd></div>
+    <div><dt>JSON Patch</dt><dd>RFC 6902: PATCH com lista de operações sobre caminhos.</dd></div>
+    <div><dt>ETag / If-Match</dt><dd>Versão do recurso e precondição para evitar lost update.</dd></div>
+    <div><dt>Problem Details</dt><dd>RFC 9457: formato padrão de erro (application/problem+json).</dd></div>
+    <div><dt>HATEOAS</dt><dd>Respostas trazem links para as próximas ações possíveis.</dd></div>
+    <div><dt>Keyset / cursor</dt><dd>Paginação por posição de chave, com índice, sem descartar linhas.</dd></div>
+    <div><dt>Cursor opaco</dt><dd>Token sem significado para o cliente, que o cliente apenas devolve.</dd></div>
+    <div><dt>Multi-Status (207)</dt><dd>Resposta com resultado individual por item de um lote.</dd></div>
+    <div><dt>URL pré-assinada</dt><dd>URL temporária para enviar ou baixar um objeto direto do armazenamento.</dd></div>
+    <div><dt>UUID v7</dt><dd>Identificador com prefixo temporal (RFC 9562), amigável a índices.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é um recurso numa API REST e como você nomeia?</span></summary><div class="ans"><p>É uma entidade do domínio com identidade e uma ou mais representações, endereçada por URL. Nomeio com substantivos no plural (<code>/agendamentos</code>), o verbo fica no método HTTP. Hierarquia só para composição e no máximo dois níveis.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Diferença entre PUT e POST?</span></summary><div class="ans"><p>PUT substitui o recurso numa URL conhecida e é idempotente; POST cria em coleção (o servidor define o id) ou executa uma ação, e não é idempotente. Por isso POST precisa de <code>Idempotency-Key</code> se a retentativa for possível.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>O que significam seguro e idempotente? Dê exemplos.</span></summary><div class="ans"><p>Seguro: não muda estado (GET). Idempotente: N chamadas têm o mesmo efeito que uma (PUT, DELETE, GET). A resposta pode mudar: o segundo DELETE devolve 404. A distinção importa para retentativas e cache.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>PUT ou PATCH para atualizar parte de um recurso?</span></summary><div class="ans"><p>PATCH. PUT exige a representação inteira e clientes desatualizados apagam campos novos. Uso JSON Merge Patch (RFC 7396) para o caso comum; JSON Patch (RFC 6902) quando preciso editar arrays por índice ou ter precondições com <code>test</code>. Sempre com ETag e <code>If-Match</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Quando usar 400 e quando 422?</span></summary><div class="ans"><p>400 para requisição malformada (JSON inválido, tipo errado); 422 para requisição bem formada que viola validação ou regra de negócio. O mais importante é ser consistente e documentar a escolha.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>401, 403 e 404: como decidir?</span></summary><div class="ans"><p>401: sem credencial válida. 403: autenticado, sem permissão, e saber que o recurso existe não é problema. 404: não existe, ou revelar que existe seria vazamento (recurso de outro paciente). Em todos os casos a autorização por objeto é verificada no servidor.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Quando devolver 201, 202 e 204?</span></summary><div class="ans"><p>201 após criar, com <code>Location</code>. 202 quando aceitou mas o processamento é assíncrono, devolvendo um recurso de status. 204 sucesso sem corpo (DELETE, PUT sem retorno).</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Qual a diferença entre 409 e 412?</span></summary><div class="ans"><p>409 é conflito com o estado atual do recurso (horário ocupado, transição inválida). 412 é falha de precondição enviada pelo cliente (<code>If-Match</code> com ETag desatualizado): a versão que ele editou não é mais a atual. 428 se a precondição era obrigatória e não veio.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>O que é Problem Details?</span></summary><div class="ans"><p>RFC 9457 (substitui a 7807). Formato padrão de erro com <code>application/problem+json</code>: <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, <code>instance</code> e extensões como lista de erros de campo. O cliente decide por <code>type</code>/<code>status</code>, não por texto.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como modelar uma ação como "cancelar consulta"?</span></summary><div class="ans"><p>Preferencialmente como sub-recurso que representa o evento: <code>POST /agendamentos/{id}/cancelamento</code>. Carrega motivo e data, concentra a regra de prazo, é consultável depois. PATCH de status só se for transição trivial; verbo explícito é aceitável se consistente.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Sua API é RESTful? E HATEOAS?</span></summary><div class="ans"><p>Nível 2 de Richardson: recursos, verbos e status corretos. Hipermídia completa raramente compensa; uso links de paginação e ações permitidas por estado onde simplificam o cliente. Decisão pelo custo de integração, não pela pureza.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Offset ou cursor na paginação? Por quê?</span></summary><div class="ans"><p>Offset é simples, permite saltar páginas, mas o banco descarta as linhas anteriores (lento em páginas profundas) e há repetição/perda de itens com escrita concorrente. Cursor/keyset usa <code>WHERE (chave) &gt; último</code> com índice composto: custo constante e consistente; sem salto de página. O cursor é opaco.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como implementar keyset com ordenação por um campo não único?</span></summary><div class="ans"><p>Incluindo um desempate único na ordenação e no cursor: <code>ORDER BY inicio, id</code> e condição <code>inicio &gt; :i OR (inicio = :i AND id &gt; :id)</code>, com índice em <code>(inicio, id)</code> (mais os filtros na frente). Peço <code>limite + 1</code> linhas para saber se há próxima página.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como tratar uma operação que demora minutos?</span></summary><div class="ans"><p>202 Accepted com <code>Location</code> de um recurso de operação; o cliente faz polling (com <code>Retry-After</code>) até <code>concluida</code>, que referencia o resultado. Falha vira estado <code>falhou</code> com Problem Details. Para evitar polling, webhooks ou eventos (módulo 04).</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Como projetar um endpoint de lote?</span></summary><div class="ans"><p>Decido entre atômico e parcial. No parcial, devolvo um resultado por item (200 com lista ou 207), com status e Problem Details individuais e um campo de correlação do cliente. Imponho limite de itens, idempotência por lote e por item.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Como receber um upload de 2 GB com segurança?</span></summary><div class="ans"><p>URL pré-assinada de curta duração, upload direto ao armazenamento (retomável em partes), e a API valida depois: tipo real, tamanho, malware, permissões. Nunca confiar em nome ou Content-Type do cliente. O documento só fica disponível após a validação.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>UUID v4, v7 ou sequencial como identificador público? (sênior)</span></summary><div class="ans"><p>Sequencial é enumerável e revela volume; v4 é imprevisível, mas fragmenta índices; v7 é quase ordenado por tempo, bom para B-tree, gerado sem coordenação. Costumo usar chave interna sequencial e UUID v7 público como string. E lembro que ID imprevisível não substitui autorização por objeto.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Numa revisão de design de API, o que você cobra do time? (gestão)</span></summary><div class="ans"><p>Vocabulário do domínio validado com o negócio; mapa de recursos; semântica correta dos métodos e status; erros em Problem Details; paginação por cursor com índice; idempotência em POSTs sensíveis; limites (página, lote, upload); autorização por objeto; contrato escrito (OpenAPI) antes do código; e um plano de evolução sem quebrar clientes.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

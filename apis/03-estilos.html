@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 03: GraphQL, gRPC e outros estilos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 03 de 10 · GraphQL, gRPC e outros estilos</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html" aria-current="page"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li class="sub"><ol>
+        <li><a href="#panorama"><span class="n">1</span>Panorama: por que existem vários estilos</a></li>
+        <li><a href="#graphql-fundamentos"><span class="n">2</span>GraphQL: schema, operações e resolvers</a></li>
+        <li><a href="#graphql-desempenho"><span class="n">3</span>GraphQL: overfetching, N+1, DataLoader e cache</a></li>
+        <li><a href="#graphql-producao"><span class="n">4</span>GraphQL em produção: segurança, erros e federação</a></li>
+        <li><a href="#grpc-fundamentos"><span class="n">5</span>gRPC: Protocol Buffers, HTTP/2 e tipos de chamada</a></li>
+        <li><a href="#grpc-producao"><span class="n">6</span>gRPC em produção: deadlines, status, compatibilidade e navegador</a></li>
+        <li><a href="#soap"><span class="n">7</span>SOAP, WSDL e XML: o legado que ainda manda</a></li>
+        <li><a href="#outros-estilos"><span class="n">8</span>JSON-RPC, tRPC e OData em resumo</a></li>
+        <li><a href="#decisao-bff"><span class="n">9</span>Decisão: REST vs GraphQL vs gRPC vs SOAP, BFF e modismo</a></li>
+        <li><a href="#cenarios-glossario"><span class="n">10</span>Cenários práticos e glossário</a></li>
+        <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 03 · <span class="lvl l2">Intermediário</span></div>
+  <h1>GraphQL, gRPC e outros estilos</h1>
+  <p class="lede">REST resolve a maior parte dos casos, mas não todos. Este módulo mostra o que GraphQL, gRPC, SOAP e companhia realmente fazem, onde cada um brilha, onde machuca e como decidir sem cair em modismo.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar por que existem vários estilos de API e qual problema cada um atacou</li>
+    <li>Modelar e proteger uma API GraphQL (N+1, DataLoader, cache, limites de custo, introspecção)</li>
+    <li>Ler um arquivo .proto, escolher o tipo de chamada gRPC e evoluir o contrato sem quebrar clientes</li>
+    <li>Integrar com serviços SOAP legados (convênios, governo) sem sofrer</li>
+    <li>Comparar REST, GraphQL, gRPC e SOAP por critério e defender uma escolha numa revisão de design</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="panorama">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Panorama: por que existem vários estilos</h2>
+  <p>Todo estilo de API nasceu para resolver uma dor concreta de uma época e de um tipo de cliente. Entender a dor original é a forma mais rápida de saber quando o estilo serve e quando vira peso.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Estilo</th><th>Dor que atacou</th><th>Ideia central</th><th>Transporte típico</th></tr></thead>
+    <tbody>
+      <tr><td><b>SOAP</b></td><td>Integração corporativa com contrato formal, segurança e transações entre empresas</td><td>Envelope XML + contrato WSDL + extensões WS-*</td><td>HTTP (também SMTP, filas)</td></tr>
+      <tr><td><b>REST</b></td><td>Complexidade do SOAP; web como plataforma</td><td>Recursos com URL, verbos HTTP, cache da web</td><td>HTTP/1.1, HTTP/2</td></tr>
+      <tr><td><b>GraphQL</b></td><td>Apps móveis pedindo dados diferentes em telas diferentes; muitas viagens de rede</td><td>Cliente descreve o formato da resposta num endpoint único</td><td>HTTP POST (WebSocket/SSE em subscriptions)</td></tr>
+      <tr><td><b>gRPC</b></td><td>Chamadas entre microsserviços: latência, contrato forte, streaming</td><td>Contrato em Protocol Buffers, binário, funções remotas tipadas</td><td>HTTP/2</td></tr>
+      <tr><td><b>JSON-RPC / tRPC / OData</b></td><td>Chamar procedimentos de forma simples; consultar dados com padrão aberto</td><td>Método + parâmetros; tipos compartilhados; query string padronizada</td><td>HTTP</td></tr>
+    </tbody>
+  </table></div>
+  <p>Repare que nenhum substituiu o anterior. Hoje convivem na mesma empresa: um convênio fala SOAP com você, seu portal fala REST ou GraphQL com o backend, e os serviços internos falam gRPC ou eventos. Estilo de API é <b>ferramenta por contexto</b>, não religião.</p>
+
+  <h3>As três perguntas que organizam a escolha</h3>
+  <ol>
+    <li><b>Quem é o cliente?</b> Navegador, app móvel, outro serviço seu, parceiro externo, sistema legado de operadora.</li>
+    <li><b>Quem controla os dois lados?</b> Se você controla cliente e servidor, pode adotar contrato binário e evolução coordenada. Se não controla, o menor denominador comum (HTTP + JSON) vence.</li>
+    <li><b>O gargalo é rede, CPU, número de viagens ou coordenação entre times?</b> Cada estilo otimiza uma coisa diferente.</li>
+  </ol>
+
+  <div class="note iv"><b>Na entrevista</b><p>Quando perguntarem "REST ou GraphQL ou gRPC?", não escolha de cara. Diga: "depende de quem consome e de quem controla os dois lados. Para parceiros externos eu partiria de REST; para telas com dados muito variáveis, GraphQL, normalmente atrás de um BFF; entre serviços internos com latência crítica, gRPC". Em seguida cite o custo operacional de cada um. Isso é a resposta sênior: critérios, não preferência.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cada estilo novo custa: ferramentas de teste, observabilidade, gateway, segurança e curva de aprendizado do time. Antes de aprovar um estilo novo, pergunte "qual dor mensurável isto resolve que o REST atual não resolve?" e "quem vai operar isto às três da manhã?". Estilo sem dor medida é modismo.</p></div>
+  <div class="note"><b>Saiba mais</b><p>O módulo 08 da trilha web (<code>08-apis.html</code>) já apresentou os estilos em alto nível. Aqui o foco é o funcionamento interno, os problemas de produção e a decisão.</p></div>
+</section>
+
+<section class="chap" id="graphql-fundamentos">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>GraphQL: schema, operações e resolvers</h2>
+  <p>GraphQL é uma linguagem de consulta para APIs e um runtime que a executa. O servidor publica um <b>schema tipado</b>; o cliente envia um documento dizendo exatamente quais campos quer; a resposta tem o mesmo formato da pergunta. Há normalmente um único endpoint (por exemplo <code>POST /graphql</code>).</p>
+
+  <h3>Schema e tipos (SDL)</h3>
+<pre data-file="schema.graphql"><code class="text"># Escalares: Int, Float, String, Boolean, ID (e os que você definir)
+scalar DateTime
+
+enum StatusAgendamento { AGENDADO CONFIRMADO CANCELADO REALIZADO }
+
+type Paciente {
+  id: ID!
+  nome: String!
+  convenio: Convenio          # nullable: paciente particular não tem
+  agendamentos(status: StatusAgendamento, first: Int = 20, after: String): AgendamentoConnection!
+}
+
+type Convenio { id: ID!  nome: String!  plano: String }
+
+type Agendamento {
+  id: ID!
+  inicio: DateTime!
+  status: StatusAgendamento!
+  paciente: Paciente!
+  medico: Medico!
+}
+
+type Medico { id: ID!  nome: String!  especialidade: String! }
+
+# Paginação estilo Relay (cursor)
+type AgendamentoConnection { edges: [AgendamentoEdge!]!  pageInfo: PageInfo! }
+type AgendamentoEdge { node: Agendamento!  cursor: String! }
+type PageInfo { hasNextPage: Boolean!  endCursor: String }
+
+input NovoAgendamento { pacienteId: ID!  medicoId: ID!  inicio: DateTime! }
+
+type Query {
+  paciente(id: ID!): Paciente
+  agendamentos(medicoId: ID!, dia: String!): [Agendamento!]!
+}
+type Mutation {
+  agendar(input: NovoAgendamento!): Agendamento!
+  cancelarAgendamento(id: ID!, motivo: String): Agendamento!
+}
+type Subscription {
+  agendamentoAtualizado(medicoId: ID!): Agendamento!
+}</code></pre>
+  <ul>
+    <li><code>!</code> significa não nulo; sem <code>!</code> o campo pode ser <code>null</code>. Decidir nulabilidade é decisão de contrato: <code>String!</code> que vira <code>null</code> por falha de um serviço faz o erro "subir" e anular o objeto pai.</li>
+    <li><code>input</code> é um tipo só para entrada; <code>type</code> só para saída. Não se misturam.</li>
+    <li><code>interface</code> e <code>union</code> permitem retornos polimórficos (ex.: um resultado de busca que pode ser <code>Paciente</code> ou <code>Medico</code>).</li>
+    <li>Descontinuação é por campo: <code>campoAntigo: String @deprecated(reason: "use novoCampo")</code>. Não existe "versão da API" no GraphQL; a evolução é aditiva.</li>
+  </ul>
+
+  <h3>Query, mutation e subscription</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Operação</th><th>Para quê</th><th>Detalhe que importa</th></tr></thead>
+    <tbody>
+      <tr><td><code>query</code></td><td>Ler dados</td><td>Os campos de um mesmo nível podem ser resolvidos em paralelo. Deve ser livre de efeitos colaterais.</td></tr>
+      <tr><td><code>mutation</code></td><td>Alterar dados</td><td>Os campos da raiz executam <b>em série</b>, na ordem escrita. Retorne o objeto alterado para o cliente atualizar a tela sem nova consulta.</td></tr>
+      <tr><td><code>subscription</code></td><td>Receber eventos em tempo real</td><td>Conexão longa, em geral WebSocket (às vezes SSE). Dá estado no servidor e complica escala (ver módulo 04).</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Uma consulta e a resposta correspondente. O cliente de uma tela de agenda pede só o que a tela mostra:</p>
+<pre data-file="requisição"><code class="http">POST /graphql HTTP/1.1
+Host: api.clinica.exemplo
+Content-Type: application/json
+Authorization: Bearer eyJ...
+
+{
+  "query": "query Agenda($medico: ID!, $dia: String!) { agendamentos(medicoId: $medico, dia: $dia) { id inicio status paciente { nome convenio { nome } } } }",
+  "variables": { "medico": "m-77", "dia": "2026-03-10" },
+  "operationName": "Agenda"
+}</code></pre>
+<pre data-file="resposta"><code class="json">{
+  "data": {
+    "agendamentos": [
+      { "id": "a-1", "inicio": "2026-03-10T09:00:00-03:00", "status": "CONFIRMADO",
+        "paciente": { "nome": "Paciente Exemplo A", "convenio": { "nome": "Convênio Alfa" } } },
+      { "id": "a-2", "inicio": "2026-03-10T09:30:00-03:00", "status": "AGENDADO",
+        "paciente": { "nome": "Paciente Exemplo B", "convenio": null } }
+    ]
+  }
+}</code></pre>
+  <p>Sempre use <b>variáveis</b> (<code>$medico</code>) em vez de montar a string da consulta com valores concatenados: evita injeção e permite cache e persisted queries (seção 3).</p>
+
+  <h3>Resolvers: onde a lógica realmente roda</h3>
+  <p>Cada campo do schema tem um <b>resolver</b>: uma função que sabe buscar aquele campo. O runtime percorre a consulta de cima para baixo e chama o resolver de cada campo pedido, passando o objeto pai.</p>
+<pre data-file="resolvers.js"><code class="js">const resolvers = {
+  Query: {
+    agendamentos: (_, { medicoId, dia }, ctx) =&gt;
+      ctx.db.agendamentos.porMedicoEDia(medicoId, dia),
+  },
+  Agendamento: {
+    // chamado UMA VEZ PARA CADA agendamento retornado acima
+    paciente: (ag, _, ctx) =&gt; ctx.db.pacientes.porId(ag.pacienteId),
+  },
+  Paciente: {
+    convenio: (p, _, ctx) =&gt; p.convenioId ? ctx.db.convenios.porId(p.convenioId) : null,
+  },
+};</code></pre>
+  <p>Esse comentário no resolver de <code>paciente</code> é o germe do problema da próxima seção.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"GraphQL substitui REST?" Não: troca <b>quem decide o formato da resposta</b> (do servidor para o cliente) ao custo de mover complexidade para o servidor (resolvers, custo de consulta, cache). Mostre que você sabe o lado ruim: N+1, cache HTTP perdido e superfície de ataque maior.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O schema é um contrato vivo compartilhado entre times de frontend e backend. Cobre: dono do schema definido, revisão de mudanças no schema como em qualquer API pública (aditivo, depreciar antes de remover) e verificação automática de quebra no CI (ferramentas de schema diff e checagem contra as consultas reais em uso).</p></div>
+</section>
+
+<section class="chap" id="graphql-desempenho">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>GraphQL: overfetching, N+1, DataLoader e cache</h2>
+
+  <h3>Overfetching e underfetching: o que o GraphQL realmente resolve</h3>
+  <ul>
+    <li><b>Overfetching:</b> o endpoint REST devolve 40 campos e a tela usa 4. Em redes móveis ruins, bytes e parsing contam.</li>
+    <li><b>Underfetching:</b> uma tela precisa de agendamento, paciente, convênio e médico; em REST puro são 4 chamadas encadeadas, cada uma esperando a anterior.</li>
+  </ul>
+  <p>Mas REST bem desenhado já mitiga: campos selecionáveis (<code>?fields=</code>), expansão (<code>?include=paciente</code>) e endpoints de composição. Se o único motivo para GraphQL é "evitar duas chamadas", provavelmente um BFF (seção 9) resolve mais barato.</p>
+
+  <h3>O problema N+1</h3>
+  <p>No resolver da seção anterior, buscar 20 agendamentos custa 1 consulta; depois, para cada um, <code>paciente</code> dispara outra consulta. Total: <b>1 + N</b> idas ao banco. Com o campo <code>medico</code> também, vira 1 + 2N. A consulta GraphQL parece inocente; o custo está escondido nos resolvers.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Comparação do problema N+1 sem DataLoader com a versão em lote usando DataLoader">
+      <defs><marker id="ah-n1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">Sem DataLoader: 1 + N</text>
+      <text class="ttl" x="370" y="24">Com DataLoader: 1 + 1</text>
+      <rect class="box" x="20" y="40" width="290" height="36" rx="5"/><text x="165" y="63" text-anchor="middle">1 query: agendamentos (20)</text>
+      <rect class="box-b" x="20" y="110" width="290" height="36" rx="5"/><text x="165" y="133" text-anchor="middle">resolver paciente x 20</text>
+      <rect class="box-b" x="20" y="180" width="290" height="36" rx="5"/><text x="165" y="203" text-anchor="middle">20 queries: WHERE id = ?</text>
+      <line class="ln" x1="165" y1="76" x2="165" y2="108" marker-end="url(#ah-n1)"/>
+      <line class="ln-b" x1="165" y1="146" x2="165" y2="178" marker-end="url(#ah-n1)"/>
+      <rect class="box" x="370" y="40" width="290" height="36" rx="5"/><text x="515" y="63" text-anchor="middle">1 query: agendamentos (20)</text>
+      <rect class="box-a" x="370" y="110" width="290" height="36" rx="5"/><text x="515" y="133" text-anchor="middle">loader junta os 20 ids</text>
+      <rect class="box-a" x="370" y="180" width="290" height="36" rx="5"/><text x="515" y="203" text-anchor="middle">1 query: WHERE id IN (...)</text>
+      <line class="ln" x1="515" y1="76" x2="515" y2="108" marker-end="url(#ah-n1)"/>
+      <line class="ln-a" x1="515" y1="146" x2="515" y2="178" marker-end="url(#ah-n1)"/>
+      <text class="lbl" x="20" y="240">O loader espera o fim do "tick" do event loop, agrupa as chaves pedidas e faz uma só busca.</text>
+    </svg>
+    <figcaption>N+1 versus batching. O número de queries deixa de depender do tamanho da lista.</figcaption>
+  </figure>
+
+  <h3>DataLoader: batching e cache por requisição</h3>
+  <p>O padrão DataLoader (criado no ecossistema JavaScript, com equivalentes em Java, Python, C#, Go) faz duas coisas: <b>agrupa</b> (batch) todas as chaves pedidas no mesmo ciclo em uma única busca, e <b>memoiza</b> o resultado durante aquela requisição para não buscar a mesma chave duas vezes.</p>
+<pre data-file="loaders.js"><code class="js">import DataLoader from 'dataloader';
+
+// uma instância POR REQUISIÇÃO (nunca global: vazaria dados entre usuários)
+export function criarLoaders(db) {
+  return {
+    pacientePorId: new DataLoader(async (ids) =&gt; {
+      const rows = await db.query('SELECT * FROM paciente WHERE id = ANY($1)', [ids]);
+      const porId = new Map(rows.map(r =&gt; [r.id, r]));
+      // contrato: devolver na MESMA ORDEM das chaves, com null/erro onde faltar
+      return ids.map(id =&gt; porId.get(id) ?? null);
+    }),
+  };
+}
+
+// resolver
+paciente: (ag, _, ctx) =&gt; ctx.loaders.pacientePorId.load(ag.pacienteId),</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Três erros clássicos: (1) loader global em vez de por requisição, vazando cache e autorização entre usuários; (2) esquecer de devolver o array na mesma ordem e com o mesmo tamanho das chaves; (3) "resolver" N+1 só no resolver raiz e esquecer os campos aninhados. Meça sempre o número de queries por operação em teste automatizado.</p></div>
+  <p>Outra saída é olhar o que a consulta pediu e montar um <code>JOIN</code> único (look-ahead). É mais eficiente, porém mais acoplado ao banco. Para dados que vêm de outros serviços, o DataLoader costuma ser o caminho.</p>
+
+  <h3>Cache: por que é mais difícil que em REST</h3>
+  <p>Em REST, <code>GET /pacientes/42</code> é uma URL: navegador, CDN e proxy cacheiam de graça com <code>Cache-Control</code> e <code>ETag</code> (visto no módulo 06 da trilha web). Em GraphQL, por padrão tudo é <code>POST /graphql</code>: a URL é a mesma para qualquer consulta, e o <code>POST</code> não é cacheado por padrão. Consequências:</p>
+  <ul>
+    <li>Sem cache HTTP/CDN automático; o cache passa a ser do <b>cliente</b> (caches normalizados por <code>id</code> e <code>__typename</code>) e do <b>servidor</b> (por resolver, via DataLoader, Redis, hints de TTL por campo).</li>
+    <li>Cada tela tem uma consulta diferente, então a taxa de acerto de um cache de resposta inteira é baixa.</li>
+    <li>Invalidação: o cache normalizado do cliente só atualiza o que a mutation retornar. Mutation que devolve pouco deixa a tela velha.</li>
+  </ul>
+
+  <h3>Persisted queries: cache, segurança e banda</h3>
+  <p>Na persisted query, o texto da consulta é registrado antes (em build ou no primeiro uso) e o cliente envia só um <b>identificador/hash</b>. Ganhos:</p>
+  <ul>
+    <li>Pode-se usar <code>GET /graphql?id=abc123&amp;variables=...</code>, cacheável por CDN.</li>
+    <li>Menos bytes por requisição.</li>
+    <li><b>Segurança:</b> o servidor pode aceitar <i>somente</i> consultas previamente registradas (allowlist). Um atacante não consegue enviar consultas arbitrárias e caras.</li>
+  </ul>
+<pre data-file="persisted query"><code class="http">GET /graphql?extensions={"persistedQuery":{"version":1,"sha256Hash":"ecf4..."}}&amp;variables={"medico":"m-77","dia":"2026-03-10"} HTTP/1.1
+Host: api.clinica.exemplo
+Accept: application/json</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>API GraphQL consumida só pelos seus próprios apps: use persisted queries com allowlist em produção. API GraphQL aberta a terceiros: não dá para allowlist, então os limites de custo (próxima seção) viram obrigatórios.</p></div>
+
+  <div class="note iv"><b>Na entrevista</b><p>"O que é o problema N+1 em GraphQL e como resolve?" Resposta curta: "cada item da lista dispara um resolver filho que consulta o banco; corrijo com DataLoader (batching + cache por requisição) ou JOIN planejado, e protejo com teste que conta queries". Citar "uma instância por requisição" mostra experiência.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>GraphQL desloca o custo do cliente para o servidor. Monitore por <b>operação nomeada</b> (<code>operationName</code>), não por URL: todas as requisições têm a mesma rota. Exija nome de operação em todo cliente, latência p95 por operação e número médio de queries por operação. Sem isso, o time fica cego.</p></div>
+</section>
+
+<section class="chap" id="graphql-producao">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>GraphQL em produção: segurança, erros e federação</h2>
+
+  <h3>Limites de profundidade e complexidade</h3>
+  <p>Como o cliente escreve a consulta, ele também pode escrever uma consulta maliciosa (ou só ingênua) que custa uma fortuna. Com relações circulares no schema, a consulta pode se aninhar sem fim:</p>
+<pre data-file="consulta abusiva"><code class="text">query {
+  paciente(id: "42") {
+    agendamentos(first: 1000) { edges { node {
+      medico { agendamentos(first: 1000) { edges { node {
+        paciente { agendamentos(first: 1000) { edges { node { id } } } }
+      } } } }
+    } } }
+  }
+}</code></pre>
+  <p>Defesas em camadas (todas, não uma):</p>
+  <ul>
+    <li><b>Profundidade máxima</b> (ex.: 8 a 12 níveis) rejeitando antes de executar.</li>
+    <li><b>Análise de custo/complexidade:</b> cada campo tem um custo; listas multiplicam pelo argumento <code>first</code>; rejeitar acima de um orçamento por requisição.</li>
+    <li><b>Limite de paginação:</b> <code>first</code> com teto (ex.: 100). Nunca aceitar listas sem limite.</li>
+    <li><b>Timeout</b> de execução e cancelamento quando o cliente desiste.</li>
+    <li><b>Rate limit por custo</b>, não por número de requisições: 1 requisição pode valer 1 ou 10 mil unidades.</li>
+    <li><b>Limite de tamanho do documento</b> e de aliases/batching (um atacante pode repetir a mesma operação cara com 500 aliases numa só requisição, contornando o rate limit por requisição e tentando força bruta de login).</li>
+    <li><b>Persisted queries com allowlist</b> quando possível.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Autorização feita só na camada de rota ("o usuário tem acesso ao /graphql"). Em GraphQL a autorização precisa ser <b>por campo/objeto</b>, na regra de negócio: um paciente que consegue navegar de <code>agendamento</code> para <code>paciente</code> para outro <code>agendamento</code> vê dados que não são dele (BOLA/IDOR, visto no OWASP do módulo 09 da trilha web). Centralize a checagem em uma camada de domínio, não em cada resolver.</p></div>
+
+  <h3>Introspecção em produção</h3>
+  <p>A introspecção permite que o cliente pergunte ao servidor "quais tipos e campos você tem?" (<code>__schema</code>). É o que alimenta GraphiQL, geração de código e autocompletar. Em produção, para APIs que não são públicas, ela entrega o mapa completo da superfície de ataque, incluindo campos internos esquecidos.</p>
+  <ul>
+    <li>API privada/interna: desligue a introspecção em produção; use o schema versionado no repositório/registro de schemas para ferramentas.</li>
+    <li>API pública documentada: pode manter, mas então a segurança não pode depender de "ninguém conhece esse campo" (segurança por obscuridade).</li>
+    <li>Desligar introspecção não protege sozinho: muitos servidores sugerem nomes de campo parecidos nas mensagens de erro ("Did you mean ..."), vazando o schema. Desligue as sugestões também.</li>
+  </ul>
+
+  <h3>Erros que voltam com HTTP 200</h3>
+  <p>No GraphQL, a resposta pode ter <code>data</code> e <code>errors</code> ao mesmo tempo (resposta parcial), e o HTTP costuma ser <b>200</b> mesmo com erro de negócio, porque a requisição HTTP em si deu certo. Isso quebra hábitos: o monitor que olha só status 5xx não vê nada, e o retry automático do cliente HTTP não dispara.</p>
+<pre data-file="resposta parcial com erro"><code class="json">{
+  "data": { "paciente": { "nome": "Paciente Exemplo A", "convenio": null } },
+  "errors": [
+    {
+      "message": "Serviço de convênios indisponível",
+      "path": ["paciente", "convenio"],
+      "extensions": { "code": "UPSTREAM_UNAVAILABLE", "retryable": true }
+    }
+  ]
+}</code></pre>
+  <ul>
+    <li>Padronize <code>extensions.code</code> (equivalente ao <code>type</code>/<code>code</code> do problem details do REST) e nunca vaze stack trace.</li>
+    <li>Distinga <b>erros de sistema</b> (vão em <code>errors</code>) de <b>erros esperados de negócio</b>. Para estes, muitos times modelam no próprio schema: a mutation retorna uma <code>union</code> como <code>AgendarResultado = Agendamento | HorarioIndisponivel | ConvenioNaoCobre</code>, tipada e explícita.</li>
+    <li>Métricas e alertas precisam ler o corpo (<code>errors</code> não vazio), não só o status HTTP.</li>
+    <li>Erros em campo <code>!</code> propagam: o nulo "sobe" até o primeiro ancestral anulável. Um campo obrigatório que falha pode apagar um objeto inteiro da resposta.</li>
+  </ul>
+
+  <h3>Federação, em alto nível</h3>
+  <p>Quando há muitos times, um schema único mantido por um time vira gargalo. <b>Federação</b> (a mais conhecida é a do Apollo; há outras implementações) divide o schema em <b>subgrafos</b>, cada um pertencente a um time/serviço (pacientes, agenda, faturamento). Um <b>gateway/router</b> compõe tudo num <b>supergrafo</b> único para o cliente e planeja a consulta: decide quais subgrafos chamar e junta o resultado.</p>
+<pre data-file="subgrafo de faturamento (conceitual)"><code class="text"># o subgrafo de faturamento ESTENDE o tipo Paciente, que pertence ao subgrafo de pacientes
+extend type Paciente @key(fields: "id") {
+  id: ID! @external
+  guias: [GuiaTiss!]!        # campo que só o faturamento sabe resolver
+}</code></pre>
+  <ul>
+    <li><b>Ganho:</b> autonomia de times, schema único para o cliente, evolução independente.</li>
+    <li><b>Custo:</b> operar um router, gestão de composição/CI de schemas, consultas distribuídas difíceis de depurar (tracing distribuído é obrigatório), latência somada, e N+1 entre serviços.</li>
+    <li>Só compensa com vários times e vários domínios. Para um time único, um monólito GraphQL ou um BFF é muito mais simples.</li>
+  </ul>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Como protege uma API GraphQL?" Liste em ordem: autenticação e autorização por campo; profundidade e custo máximos; teto de paginação; timeouts; rate limit por custo; persisted queries; introspecção desligada se privada; erros sem detalhes internos; logs por operação.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Antes de aprovar GraphQL público, pergunte: "qual o orçamento de custo por requisição e quem é paginado?", "como o monitoramento enxerga erros se tudo é 200?", "quem é dono de cada campo do schema?". Se não há resposta, o time ainda não está pronto para operar isso fora de casa.</p></div>
+</section>
+
+<section class="chap" id="grpc-fundamentos">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>gRPC: Protocol Buffers, HTTP/2 e tipos de chamada</h2>
+  <p>gRPC é um framework de RPC (chamada de procedimento remoto) originado no Google. O cliente chama um método de um serviço remoto como se fosse uma função local, com tipos gerados a partir de um <b>contrato único</b> escrito em <b>Protocol Buffers</b> (protobuf). Dois pilares: o contrato (<code>.proto</code>) e o transporte (HTTP/2).</p>
+
+  <h3>Protocol Buffers e o arquivo .proto</h3>
+  <p>Protobuf é uma linguagem de definição de contrato <i>e</i> um formato binário compacto. Você escreve o <code>.proto</code>, roda o compilador (<code>protoc</code> ou <code>buf</code>) e ganha código cliente e servidor tipados em Java, Go, C#, Python, JS e outras.</p>
+<pre data-file="agenda/v1/agenda.proto"><code class="js">syntax = "proto3";
+
+package clinica.agenda.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service AgendaService {
+  // Unária: 1 pedido, 1 resposta
+  rpc ObterAgendamento(ObterAgendamentoRequest) returns (Agendamento);
+
+  // Server streaming: 1 pedido, N respostas ao longo do tempo
+  rpc ListarAgendamentos(ListarRequest) returns (stream Agendamento);
+
+  // Client streaming: N pedidos, 1 resposta (ex.: importar lote)
+  rpc ImportarAgendamentos(stream Agendamento) returns (ResumoImportacao);
+
+  // Bidirecional: os dois lados enviam streams independentes
+  rpc Acompanhar(stream FiltroEvento) returns (stream EventoAgenda);
+}
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;   // sempre um zero "não informado"
+  STATUS_AGENDADO = 1;
+  STATUS_CONFIRMADO = 2;
+  STATUS_CANCELADO = 3;
+}
+
+message Agendamento {
+  string id = 1;
+  string paciente_id = 2;
+  string medico_id = 3;
+  google.protobuf.Timestamp inicio = 4;
+  Status status = 5;
+  reserved 6;               // campo removido: o número nunca mais pode ser reutilizado
+  reserved "observacao_antiga";
+  optional string motivo_cancelamento = 7;
+}
+
+message ObterAgendamentoRequest { string id = 1; }
+message ListarRequest { string medico_id = 1; string dia = 2; }
+message FiltroEvento { string medico_id = 1; }
+message EventoAgenda { string tipo = 1; Agendamento agendamento = 2; }
+message ResumoImportacao { int32 importados = 1; int32 rejeitados = 2; }</code></pre>
+  <ul>
+    <li>Cada campo tem um <b>número</b> (<code>= 1</code>, <code>= 2</code>). No fio, o que viaja é o número, não o nome. Por isso o payload é pequeno.</li>
+    <li>Números de 1 a 15 ocupam menos bytes no fio: reserve-os para os campos mais usados.</li>
+    <li>No proto3, campo ausente assume o valor padrão (0, string vazia, falso). Para distinguir "ausente" de "zero", use <code>optional</code> ou tipos wrapper.</li>
+    <li>Timestamp, Duration e outros tipos conhecidos já vêm prontos na biblioteca padrão.</li>
+  </ul>
+
+  <h3>Por que HTTP/2 importa</h3>
+  <ul>
+    <li><b>Multiplexação:</b> muitas chamadas concorrentes numa única conexão TCP, sem bloqueio entre elas no nível HTTP.</li>
+    <li><b>Frames binários e compressão de cabeçalhos</b> (HPACK): menos overhead por chamada.</li>
+    <li><b>Streams bidirecionais</b> sobre a mesma conexão: base do streaming do gRPC.</li>
+    <li><b>Trailers:</b> o status final do gRPC viaja nos trailers, depois do corpo. É um dos motivos de o gRPC não funcionar direto em navegadores (seção 6).</li>
+  </ul>
+  <p>Cada chamada vira um <code>POST /clinica.agenda.v1.AgendaService/ObterAgendamento</code> com <code>content-type: application/grpc</code>. Na prática você não escreve isso à mão; o stub gerado cuida.</p>
+
+  <h3>Os quatro tipos de chamada</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Forma</th><th>Exemplo em saúde</th></tr></thead>
+    <tbody>
+      <tr><td><b>Unária</b></td><td>1 requisição, 1 resposta</td><td>Obter um agendamento; calcular cobertura de um procedimento</td></tr>
+      <tr><td><b>Server streaming</b></td><td>1 requisição, fluxo de respostas</td><td>Listar milhares de exames sem carregar tudo em memória; acompanhar a fila de atendimento</td></tr>
+      <tr><td><b>Client streaming</b></td><td>Fluxo de requisições, 1 resposta</td><td>Enviar um lote grande de resultados de laboratório e receber o resumo ao final</td></tr>
+      <tr><td><b>Bidirecional</b></td><td>Fluxos independentes nos dois sentidos</td><td>Canal de eventos de uma central de monitoramento; chat entre serviços</td></tr>
+    </tbody>
+  </table></div>
+  <p>Cliente em pseudocódigo JavaScript (stub gerado) para o streaming de servidor:</p>
+<pre data-file="cliente.js"><code class="js">const stream = client.listarAgendamentos({ medicoId: 'm-77', dia: '2026-03-10' });
+stream.on('data', (ag) =&gt; console.log(ag.id, ag.status));
+stream.on('error', (err) =&gt; console.error(err.code, err.details));
+stream.on('end', () =&gt; console.log('fim'));</code></pre>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Por que gRPC é mais rápido que REST/JSON?" Três razões: serialização binária compacta e barata de ler (protobuf), HTTP/2 com multiplexação numa conexão persistente e código gerado sem parsing manual. Mas diga: "o ganho aparece em volume alto e payload grande entre serviços; para um CRUD simples, a diferença some perto de uma consulta ao banco".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>gRPC exige um fluxo de contrato: repositório central de <code>.proto</code>, versionamento por pacote (<code>v1</code>, <code>v2</code>), geração de código no CI e linter de compatibilidade (ex.: <code>buf breaking</code>). Sem essa disciplina, o time perde a vantagem do contrato forte e acumula clientes quebrando em silêncio.</p></div>
+</section>
+
+<section class="chap" id="grpc-producao">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>gRPC em produção: deadlines, status, compatibilidade e navegador</h2>
+
+  <h3>Deadlines: o timeout que se propaga</h3>
+  <p>No gRPC, o cliente define um <b>deadline</b> (prazo absoluto) por chamada. O servidor recebe esse prazo, e ao chamar um terceiro serviço <b>propaga</b> o que sobrou. Se o prazo estoura, todos na cadeia cancelam o trabalho. Sem deadline, uma chamada pode ficar pendurada indefinidamente e esgotar threads e conexões (cascata de falhas; assunto do módulo 06 desta trilha).</p>
+<pre data-file="cliente.js"><code class="js">const deadline = new Date(Date.now() + 800); // 800 ms para a chamada inteira
+client.obterAgendamento({ id: 'a-1' }, { deadline }, (err, resp) =&gt; {
+  if (err) return tratar(err); // err.code === 4 (DEADLINE_EXCEEDED) se estourar
+  usar(resp);
+});</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Toda chamada gRPC sai com deadline. Defina um padrão na biblioteca do cliente para ninguém esquecer, e o servidor deve respeitar o cancelamento (parar de consultar o banco quando o cliente já desistiu).</p></div>
+
+  <h3>Códigos de status gRPC</h3>
+  <p>O gRPC tem seu próprio conjunto de códigos (não são status HTTP). Os mais usados:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Código</th><th>Nome</th><th>Quando usar</th><th>Equivalente HTTP aproximado</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td><code>OK</code></td><td>Sucesso</td><td>200</td></tr>
+      <tr><td>3</td><td><code>INVALID_ARGUMENT</code></td><td>Argumento inválido, independente do estado do sistema</td><td>400</td></tr>
+      <tr><td>4</td><td><code>DEADLINE_EXCEEDED</code></td><td>Prazo estourou</td><td>504</td></tr>
+      <tr><td>5</td><td><code>NOT_FOUND</code></td><td>Recurso não existe</td><td>404</td></tr>
+      <tr><td>6</td><td><code>ALREADY_EXISTS</code></td><td>Tentou criar o que já existe</td><td>409</td></tr>
+      <tr><td>7</td><td><code>PERMISSION_DENIED</code></td><td>Autenticado, mas sem permissão</td><td>403</td></tr>
+      <tr><td>8</td><td><code>RESOURCE_EXHAUSTED</code></td><td>Cota ou limite de taxa esgotado</td><td>429</td></tr>
+      <tr><td>9</td><td><code>FAILED_PRECONDITION</code></td><td>Sistema não está no estado exigido (ex.: cancelar consulta já realizada)</td><td>400/412/422</td></tr>
+      <tr><td>10</td><td><code>ABORTED</code></td><td>Conflito de concorrência; vale tentar de novo na transação</td><td>409</td></tr>
+      <tr><td>12</td><td><code>UNIMPLEMENTED</code></td><td>Método não implementado</td><td>501</td></tr>
+      <tr><td>13</td><td><code>INTERNAL</code></td><td>Erro interno</td><td>500</td></tr>
+      <tr><td>14</td><td><code>UNAVAILABLE</code></td><td>Serviço fora, transitório: <b>pode repetir com backoff</b></td><td>503</td></tr>
+      <tr><td>16</td><td><code>UNAUTHENTICATED</code></td><td>Sem credencial válida</td><td>401</td></tr>
+    </tbody>
+  </table></div>
+  <p>A política de retry depende do código: <code>UNAVAILABLE</code> e, com cuidado, <code>DEADLINE_EXCEEDED</code> são candidatos a retry; <code>INVALID_ARGUMENT</code>, <code>NOT_FOUND</code> e <code>PERMISSION_DENIED</code> nunca. Para detalhes além do código, o gRPC permite anexar mensagens de erro estruturadas (o modelo de erro "rich" do Google) com campos violados, informações de retry e mais.</p>
+
+  <h3>Compatibilidade: números de campo são o contrato</h3>
+  <p>Protobuf foi pensado para que cliente e servidor em versões diferentes continuem se entendendo. Isso vale se você respeitar regras, e elas são mais duras do que parecem:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mudança</th><th>Compatível?</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Adicionar campo novo com número novo</td><td>Sim</td><td>Clientes antigos ignoram o desconhecido</td></tr>
+      <tr><td>Remover campo</td><td>Sim, se <code>reserved</code></td><td>Reserve número e nome para ninguém reutilizar</td></tr>
+      <tr><td><b>Reutilizar um número de campo</b> para outra coisa</td><td><b>Não</b></td><td>Dados antigos serão lidos como o campo novo. Corrupção silenciosa</td></tr>
+      <tr><td>Renomear campo</td><td>No fio sim</td><td>Quebra JSON/transcoding e o código gerado dos clientes</td></tr>
+      <tr><td>Mudar o tipo do campo</td><td>Quase sempre não</td><td>Existem poucas trocas compatíveis (ex.: entre alguns inteiros); evite</td></tr>
+      <tr><td>Adicionar valor em enum</td><td>Sim, com cuidado</td><td>Cliente antigo vê valor desconhecido: trate o <code>default</code></td></tr>
+      <tr><td>Remover/renomear método do serviço</td><td>Não</td><td>Crie <code>v2</code> do serviço ou do pacote</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Apagar um campo do <code>.proto</code> "porque ninguém usa" e, meses depois, outro dev reaproveitar o número. Dados gravados em fila, cache ou banco com o formato antigo passam a ser interpretados errado. Sempre <code>reserved</code>, e rode checagem automática de quebra no CI.</p></div>
+
+  <h3>gRPC-Web, transcoding e o navegador</h3>
+  <p>O navegador não permite controlar frames HTTP/2 nem ler trailers via <code>fetch</code>, então não consegue falar gRPC nativo. Soluções:</p>
+  <ul>
+    <li><b>gRPC-Web:</b> variante do protocolo feita para navegadores, que usa um proxy (como o Envoy ou um middleware) para traduzir para gRPC puro. Suporta só unária e streaming de servidor, sem client streaming nem bidirecional.</li>
+    <li><b>Transcoding (gRPC-JSON):</b> o gateway expõe uma API REST/JSON gerada a partir do <code>.proto</code> (anotações <code>google.api.http</code>, grpc-gateway, Envoy). Parceiros e frontends falam REST; os serviços internos falam gRPC.</li>
+    <li>Protocolos alternativos compatíveis (como o Connect, da Buf) funcionam em navegador e falam também com servidores gRPC.</li>
+  </ul>
+  <figure class="figure">
+    <svg viewBox="0 0 680 190" role="img" aria-label="Navegador falando gRPC-Web com um proxy que traduz para gRPC entre serviços internos">
+      <defs><marker id="ah-gw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="10" y="30" width="110" height="40" rx="5"/><text x="65" y="55" text-anchor="middle">Navegador</text>
+      <rect class="box-a" x="190" y="30" width="130" height="40" rx="5"/><text x="255" y="55" text-anchor="middle">Proxy gRPC-Web</text>
+      <rect class="box-m" x="390" y="30" width="120" height="40" rx="5"/><text x="450" y="55" text-anchor="middle">svc-agenda</text>
+      <rect class="box-m" x="560" y="30" width="110" height="40" rx="5"/><text x="615" y="55" text-anchor="middle">svc-paciente</text>
+      <rect class="box" x="190" y="120" width="130" height="40" rx="5"/><text x="255" y="145" text-anchor="middle">Outro serviço</text>
+      <line class="ln" x1="120" y1="50" x2="188" y2="50" marker-end="url(#ah-gw)"/>
+      <line class="ln-a" x1="320" y1="50" x2="388" y2="50" marker-end="url(#ah-gw)"/>
+      <line class="ln-a" x1="510" y1="50" x2="558" y2="50" marker-end="url(#ah-gw)"/>
+      <path class="ln-a" d="M320,140 H450 V72" marker-end="url(#ah-gw)"/>
+      <text class="lbl" x="124" y="42">gRPC-Web</text>
+      <text class="lbl" x="334" y="42">gRPC</text>
+      <text class="lbl" x="514" y="42">gRPC</text>
+      <text class="lbl" x="340" y="132">gRPC direto (HTTP/2)</text>
+      <text class="lbl" x="10" y="182">Dentro da rede dos serviços: gRPC nativo. Na borda com o navegador: tradução por proxy ou gateway.</text>
+    </svg>
+    <figcaption>O navegador depende de um tradutor na borda; entre serviços o gRPC roda puro.</figcaption>
+  </figure>
+
+  <h3>Por que é ótimo entre serviços e ruim direto no navegador</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ótimo entre serviços</th><th>Ruim para clientes externos/web</th></tr></thead>
+    <tbody>
+      <tr><td>Contrato forte e código gerado; erro de tipo vira erro de compilação</td><td>Binário: não dá para testar com <code>curl</code> e olhar na aba Network sem ferramentas</td></tr>
+      <tr><td>Baixa latência e boa vazão, streaming nativo</td><td>Navegador exige proxy; sem client streaming</td></tr>
+      <tr><td>Deadlines e cancelamento propagados</td><td>Cache HTTP e CDN não se aplicam</td></tr>
+      <tr><td>Vários idiomas com o mesmo contrato</td><td>Parceiros esperam REST/JSON e OpenAPI; menos ferramentas para eles</td></tr>
+    </tbody>
+  </table></div>
+  <p>Detalhe operacional: o balanceamento de carga em gRPC é diferente. Como a conexão HTTP/2 é longa e multiplexada, um balanceador de camada 4 distribui <i>conexões</i>, não <i>chamadas</i>, e pode deixar uma instância sobrecarregada. Use balanceamento por chamada (camada 7 ciente de gRPC, service mesh ou balanceamento no cliente).</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Posso expor gRPC para o frontend web?" Resposta sênior: "diretamente não; só com gRPC-Web via proxy, e sem alguns tipos de streaming. Em geral mantenho gRPC entre serviços e exponho REST/JSON ou GraphQL na borda, com transcoding ou um BFF".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cobre três coisas do time que adota gRPC: deadline padrão em todo cliente, checagem de compatibilidade do <code>.proto</code> no CI e tracing distribuído (a depuração de binário é mais difícil). Pergunte também como os testes manuais serão feitos: sem ferramentas como <code>grpcurl</code> ou um cliente gráfico, o suporte sofre.</p></div>
+</section>
+
+<section class="chap" id="soap">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>SOAP, WSDL e XML: o legado que ainda manda</h2>
+  <p>SOAP (Simple Object Access Protocol) é um protocolo de mensagens baseado em XML, descrito por um contrato <b>WSDL</b> (Web Services Description Language). Parece coisa do passado, mas continua presente em saúde suplementar, governo e operadoras. Integrações com convênios (troca de guias, verificação de elegibilidade), serviços fiscais e sistemas de órgãos públicos muitas vezes ainda são SOAP, e você não escolhe: o lado de lá dita. Vale confirmar no manual de integração de cada parceiro (no Brasil, o padrão TISS da ANS é um caso em que serviços web SOAP são comuns).</p>
+
+  <h3>Anatomia de uma mensagem</h3>
+<pre data-file="requisição SOAP 1.1"><code class="http">POST /ws/elegibilidade HTTP/1.1
+Host: servicos.convenio-alfa.exemplo
+Content-Type: text/xml; charset=utf-8
+SOAPAction: "urn:verificarElegibilidade"
+
+&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:el="urn:convenio-alfa:elegibilidade:v2"&gt;
+  &lt;soapenv:Header&gt;
+    &lt;!-- credenciais, assinatura, timestamp (WS-Security) --&gt;
+  &lt;/soapenv:Header&gt;
+  &lt;soapenv:Body&gt;
+    &lt;el:VerificarElegibilidadeRequest&gt;
+      &lt;el:carteirinha&gt;0001234567890&lt;/el:carteirinha&gt;
+      &lt;el:procedimento&gt;10101012&lt;/el:procedimento&gt;
+    &lt;/el:VerificarElegibilidadeRequest&gt;
+  &lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;</code></pre>
+<pre data-file="resposta com falha (Fault)"><code class="http">HTTP/1.1 500 Internal Server Error
+Content-Type: text/xml; charset=utf-8
+
+&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+  &lt;soapenv:Body&gt;
+    &lt;soapenv:Fault&gt;
+      &lt;faultcode&gt;soapenv:Client&lt;/faultcode&gt;
+      &lt;faultstring&gt;Carteirinha inválida&lt;/faultstring&gt;
+      &lt;detail&gt;&lt;codigo&gt;E102&lt;/codigo&gt;&lt;/detail&gt;
+    &lt;/soapenv:Fault&gt;
+  &lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;</code></pre>
+  <ul>
+    <li><b>Envelope</b> (raiz), <b>Header</b> (metadados: segurança, roteamento) e <b>Body</b> (a mensagem). Falhas vêm como <code>Fault</code> dentro do Body.</li>
+    <li>Quase tudo é <code>POST</code> para um único endpoint; a operação vai no Body (e no cabeçalho <code>SOAPAction</code> no SOAP 1.1). Por isso o cache HTTP e as semânticas de verbo não se aplicam.</li>
+    <li>O <b>WSDL</b> descreve operações, mensagens, tipos (via XSD), endpoints e <i>bindings</i>. Dele se geram os clientes.</li>
+    <li>Há duas versões, SOAP 1.1 e 1.2, que diferem em content type e detalhes de Fault. Confirme qual o parceiro usa.</li>
+    <li>O status HTTP pode ser 200 com Fault no corpo em alguns serviços; leia o corpo, como no GraphQL.</li>
+  </ul>
+
+  <h3>WS-Security e a família WS-*</h3>
+  <p>SOAP tem um conjunto de extensões padronizadas. A mais comum é a <b>WS-Security</b>, que coloca segurança <i>dentro da mensagem</i> (no Header), não só no transporte: <code>UsernameToken</code> (usuário e senha, às vezes com hash e <i>nonce</i>), <b>assinatura XML</b> (integridade e autoria), <b>criptografia de partes do XML</b> e <code>Timestamp</code> (anti-replay). Isso permite que a mensagem atravesse intermediários e continue protegida, mas é complexo: erros de canonicalização do XML ou deslocamento de relógio causam falhas confusas.</p>
+
+  <h3>Como integrar com legado sem sofrer</h3>
+  <ol class="seq">
+    <li><div><strong>Gere o cliente a partir do WSDL.</strong> Não monte o XML à mão. Ferramentas: <code>wsimport</code>/Apache CXF (Java), clientes de serviço do .NET, <code>zeep</code> (Python). Versione o WSDL no repositório.</div></li>
+    <li><div><strong>Isole atrás de um adaptador (anti-corruption layer).</strong> Um módulo ou serviço próprio fala SOAP e expõe ao resto do sistema uma interface limpa em REST/JSON ou um contrato interno. Os nomes do legado não vazam para o domínio.</div></li>
+    <li><div><strong>Trate timeouts, retries e idempotência.</strong> Serviços legados são lentos e instáveis. Defina timeouts curtos, retry só para operações idempotentes e circuit breaker. Muitos não têm chave de idempotência: você precisa consultar antes de reenviar.</div></li>
+    <li><div><strong>Valide e registre as mensagens.</strong> Guarde (com mascaramento de dados pessoais) o XML enviado e recebido: é a prova em disputas com a operadora. Valide contra o XSD antes de enviar.</div></li>
+    <li><div><strong>Gerencie certificados e relógio.</strong> Certificados de cliente vencem; renovação sem alerta derruba a integração num feriado. Sincronize NTP: WS-Security rejeita timestamps fora da janela.</div></li>
+    <li><div><strong>Teste com um stub.</strong> Use SoapUI ou um mock a partir do WSDL para testes automatizados sem depender do homologador do parceiro, que vive fora do ar.</div></li>
+  </ol>
+<pre data-file="adaptador: REST interno em cima de SOAP legado"><code class="http">GET /elegibilidade?carteirinha=0001234567890&amp;procedimento=10101012 HTTP/1.1
+Host: api.clinica.exemplo
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{ "elegivel": true, "coparticipacao": 25.00, "origem": "convenio-alfa" }</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Cuidado com XML: use um parser com entidades externas desabilitadas (ataque XXE, que aparece no OWASP) e com limites de tamanho. SOAP aceita XML de fora; parser configurado por padrão em algumas bibliotecas é vulnerável.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Já integrou com SOAP?" Mesmo sem experiência, mostre o método: gero cliente do WSDL, isolo num adaptador, trato Fault e timeouts, valido contra o XSD e monitoro certificados. Demonstra maturidade tratar legado como realidade de saúde, não como desprezo.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Integração SOAP vira dívida de operação: poucos devs conhecem, o homologador é instável e o contrato muda por ofício. Mapeie quem é o dono de cada integração, onde ficam os certificados e as datas de vencimento, e meça disponibilidade e taxa de falha por parceiro. Não migre o parceiro: você não controla o lado dele.</p></div>
+</section>
+
+<section class="chap" id="outros-estilos">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>JSON-RPC, tRPC e OData em resumo</h2>
+
+  <h3>JSON-RPC</h3>
+  <p>Especificação minúscula (versão 2.0) para chamar métodos remotos com JSON. A requisição tem <code>jsonrpc</code>, <code>method</code>, <code>params</code> e <code>id</code>; sem <code>id</code> é uma <i>notificação</i> (não espera resposta). Suporta lote (array de chamadas). Códigos de erro padrão: <code>-32700</code> (parse), <code>-32600</code> (requisição inválida), <code>-32601</code> (método inexistente), <code>-32602</code> (parâmetros inválidos) e <code>-32603</code> (erro interno).</p>
+<pre data-file="JSON-RPC 2.0"><code class="json">{ "jsonrpc": "2.0", "method": "agenda.cancelar", "params": { "id": "a-1", "motivo": "paciente" }, "id": 7 }
+
+{ "jsonrpc": "2.0", "result": { "status": "CANCELADO" }, "id": 7 }
+
+{ "jsonrpc": "2.0", "error": { "code": -32602, "message": "Parâmetros inválidos" }, "id": 7 }</code></pre>
+  <p>Onde aparece: nós de blockchain, o Language Server Protocol dos editores e protocolos de agentes de IA. Bom para ações ("cancelar", "recalcular") que não encaixam em recurso. Ruim para cache e para descoberta (sem contrato padrão como OpenAPI).</p>
+
+  <h3>tRPC</h3>
+  <p>Biblioteca TypeScript para chamar funções do servidor no cliente com <b>tipos inferidos</b>, sem schema separado nem geração de código. Mudou o tipo no servidor, o cliente quebra na compilação. Excelente quando servidor e cliente são TypeScript no mesmo repositório (monorepo) e o mesmo time os mantém. Não serve como API pública nem para clientes em outras linguagens, porque o contrato <i>é</i> o código TypeScript.</p>
+
+  <h3>OData</h3>
+  <p>Padrão aberto (OASIS) para APIs de dados em cima de REST, com convenções de consulta na URL: <code>$filter</code>, <code>$select</code>, <code>$expand</code>, <code>$orderby</code>, <code>$top</code>/<code>$skip</code>, <code>$count</code>, além de um <code>$metadata</code> que descreve o modelo. Popular no ecossistema Microsoft, SAP e em ferramentas de BI.</p>
+<pre data-file="OData"><code class="http">GET /odata/Agendamentos?$filter=status eq 'CONFIRMADO' and inicio ge 2026-03-10T00:00:00Z&amp;$select=id,inicio&amp;$expand=Paciente($select=nome)&amp;$orderby=inicio&amp;$top=20 HTTP/1.1
+Host: api.clinica.exemplo</code></pre>
+  <p>Dá "um GraphQL limitado" sobre REST, com ferramentas prontas (Excel, Power BI leem OData). O risco é parecido: o cliente escreve filtros arbitrários que podem não ter índice. Limite campos filtráveis e ordenáveis, como no módulo de paginação e índices da trilha de SQL.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Estilo</th><th>Melhor quando</th><th>Evite quando</th></tr></thead>
+    <tbody>
+      <tr><td>JSON-RPC</td><td>Protocolo simples orientado a ações; ferramentas e agentes</td><td>Precisa de cache HTTP, descoberta e documentação padrão</td></tr>
+      <tr><td>tRPC</td><td>Full-stack TypeScript, um time, monorepo</td><td>Clientes em outras linguagens ou parceiros externos</td></tr>
+      <tr><td>OData</td><td>Consulta de dados por BI/planilhas; ecossistema Microsoft/SAP</td><td>Domínio com regras de negócio ricas: expor tabela vira anemia</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note iv"><b>Na entrevista</b><p>Se perguntarem por estilos menos comuns, basta uma frase de cada com o trade-off: "JSON-RPC é chamada de método leve sem contrato forte; tRPC dá tipos ponta a ponta só dentro do TypeScript; OData padroniza consulta em REST, útil para BI". Admitir que não usa em produção e explicar quando usaria é melhor do que fingir.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quanto mais estilos no portfólio, maior o custo de gateway, segurança e treinamento. Mantenha uma lista curta e aprovada: por exemplo REST para externos, gRPC ou eventos entre serviços, GraphQL só atrás de BFF. Exceções entram por revisão de design, com dono e justificativa.</p></div>
+</section>
+
+<section class="chap" id="decisao-bff">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Decisão: REST vs GraphQL vs gRPC vs SOAP, BFF e modismo</h2>
+
+  <h3>Tabela de decisão</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Critério</th><th>REST</th><th>GraphQL</th><th>gRPC</th><th>SOAP</th></tr></thead>
+    <tbody>
+      <tr><td><b>Cliente típico</b></td><td>Qualquer: web, mobile, parceiros</td><td>Apps/telas com necessidades variadas de dados</td><td>Outros serviços internos; apps móveis nativos</td><td>Sistemas corporativos/governo/convênios</td></tr>
+      <tr><td><b>Desempenho</b></td><td>Bom; texto JSON</td><td>Bom por reduzir viagens; resolvers podem pesar</td><td>Melhor: binário + HTTP/2 + streaming</td><td>Mais pesado (XML verboso)</td></tr>
+      <tr><td><b>Cache</b></td><td>Nativo do HTTP (CDN, ETag)</td><td>Difícil; cache do cliente e por campo</td><td>Sem cache HTTP; cache da aplicação</td><td>Praticamente nenhum</td></tr>
+      <tr><td><b>Ferramentas</b></td><td>Enorme (curl, OpenAPI, gateways)</td><td>Boas (GraphiQL, codegen); gateways exigem suporte</td><td>Boas para dev; testar/depurar exige ferramenta própria</td><td>Maduras mas datadas (SoapUI, geradores de WSDL)</td></tr>
+      <tr><td><b>Curva de aprendizado</b></td><td>Baixa</td><td>Média/alta (N+1, custo, cache, segurança)</td><td>Média (protobuf, HTTP/2, streaming)</td><td>Média (XML, XSD, WS-*)</td></tr>
+      <tr><td><b>Contrato</b></td><td>Opcional; OpenAPI por convenção</td><td>Schema obrigatório e tipado</td><td>.proto obrigatório, fortemente tipado</td><td>WSDL/XSD formal e rígido</td></tr>
+      <tr><td><b>Evolução</b></td><td>Versão na URL/cabeçalho + aditivo</td><td>Aditivo, depreciação por campo</td><td>Números de campo + reserved</td><td>Nova versão do serviço/namespace</td></tr>
+      <tr><td><b>Streaming/tempo real</b></td><td>Fora do padrão (SSE, WebSocket)</td><td>Subscriptions (WebSocket/SSE)</td><td>Nativo, 4 modos</td><td>Não</td></tr>
+      <tr><td><b>Segurança extra</b></td><td>OWASP API Top 10</td><td>Custo, profundidade, introspecção, autorização por campo</td><td>TLS/mTLS entre serviços; autenticação por metadados</td><td>WS-Security, XXE</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Default: REST com OpenAPI. Troque quando houver dor concreta: telas com dados muito variáveis (GraphQL, atrás de BFF), latência e vazão entre serviços ou streaming (gRPC), ou parceiro que só fala outro dialeto (SOAP, via adaptador).</p></div>
+
+  <h3>BFF: Backend for Frontend</h3>
+  <p>O BFF é uma camada de API <b>feita sob medida para um tipo de cliente</b> (app móvel, portal web, portal do convênio), de propriedade do time desse cliente. Ele compõe várias chamadas aos serviços internos, formata a resposta exatamente como a tela precisa e esconde a topologia interna. O problema que resolve: um backend genérico serve mal a todos e vira campo de disputa entre times.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="App móvel e portal web chamando cada um seu BFF, que compõem chamadas a serviços internos">
+      <defs><marker id="ah-bff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="10" y="20">Clientes</text>
+      <text class="ttl" x="250" y="20">BFFs</text>
+      <text class="ttl" x="500" y="20">Serviços de domínio</text>
+      <rect class="box" x="10" y="48" width="130" height="36" rx="5"/><text x="75" y="71" text-anchor="middle">App móvel</text>
+      <rect class="box" x="10" y="132" width="130" height="36" rx="5"/><text x="75" y="155" text-anchor="middle">Portal web</text>
+      <rect class="box-a" x="250" y="48" width="120" height="36" rx="5"/><text x="310" y="71" text-anchor="middle">BFF mobile</text>
+      <rect class="box-a" x="250" y="132" width="120" height="36" rx="5"/><text x="310" y="155" text-anchor="middle">BFF web</text>
+      <rect class="box-m" x="500" y="30" width="150" height="36" rx="5"/><text x="575" y="53" text-anchor="middle">svc-agenda</text>
+      <rect class="box-m" x="500" y="100" width="150" height="36" rx="5"/><text x="575" y="123" text-anchor="middle">svc-paciente</text>
+      <rect class="box-m" x="500" y="170" width="150" height="36" rx="5"/><text x="575" y="193" text-anchor="middle">svc-exames</text>
+      <line class="ln" x1="140" y1="66" x2="248" y2="66" marker-end="url(#ah-bff)"/>
+      <line class="ln" x1="140" y1="150" x2="248" y2="150" marker-end="url(#ah-bff)"/>
+      <text class="lbl" x="146" y="58">JSON sob medida</text>
+      <text class="lbl" x="146" y="142">JSON sob medida</text>
+      <line class="ln-a" x1="370" y1="62" x2="498" y2="48" marker-end="url(#ah-bff)"/>
+      <line class="ln-a" x1="370" y1="68" x2="498" y2="116" marker-end="url(#ah-bff)"/>
+      <line class="ln-a" x1="370" y1="72" x2="498" y2="184" marker-end="url(#ah-bff)"/>
+      <line class="ln-a" x1="370" y1="146" x2="498" y2="52" marker-end="url(#ah-bff)"/>
+      <line class="ln-a" x1="370" y1="152" x2="498" y2="120" marker-end="url(#ah-bff)"/>
+      <line class="ln-a" x1="370" y1="158" x2="498" y2="188" marker-end="url(#ah-bff)"/>
+      <text class="lbl" x="250" y="222">Cada BFF agrega agenda + paciente + exames para a tela do seu cliente.</text>
+    </svg>
+    <figcaption>O BFF concentra a composição, o formato e a adaptação por canal. Os serviços de domínio ficam estáveis e genéricos.</figcaption>
+  </figure>
+  <ul>
+    <li><b>Quando usar:</b> vários canais com necessidades diferentes; telas que juntam dados de vários serviços; necessidade de reduzir viagens no móvel; esconder serviços internos (gRPC, SOAP) do cliente.</li>
+    <li><b>Dentro do BFF você escolhe o estilo:</b> pode ser REST, ou GraphQL só para o frontend, enquanto fala gRPC para trás. Esse arranjo concentra o risco de GraphQL num lugar controlado.</li>
+    <li><b>Armadilhas:</b> regra de negócio vazando para o BFF (duplicada entre BFFs); BFF virando monólito "faz-tudo"; muitas camadas somando latência; time de BFF diferente do time do frontend, trazendo de volta a fila de pedidos.</li>
+    <li><b>Regra:</b> BFF compõe e adapta; regra de negócio fica nos serviços de domínio.</li>
+  </ul>
+
+  <h3>Erros comuns de escolha por modismo</h3>
+  <ul>
+    <li>"GraphQL porque o time de frontend pediu", sem ter medido overfetching: troca simplicidade por N+1, cache complexo e segurança nova.</li>
+    <li>"gRPC em tudo", inclusive na API pública: parceiros não conseguem integrar e o suporte fica cego.</li>
+    <li>"Microsserviços com gRPC" para um sistema que cabia num monólito: o custo é distribuição, não protocolo.</li>
+    <li>Querer "modernizar" a integração SOAP do convênio: você não controla o outro lado. Isole com adaptador.</li>
+    <li>Federação GraphQL com um time só.</li>
+    <li>Escolher estilo pelo currículo ("resume-driven development") em vez de pelo problema.</li>
+    <li>Duas APIs (REST e GraphQL) para o mesmo domínio sem dono e sem plano de desligar uma: dobra o custo e a superfície de ataque.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Comparar estilos só por velocidade de benchmark. Em saúde, o gargalo real quase sempre é banco, sistema de terceiros ou rede de unidades remotas, não a serialização. Meça antes de trocar de protocolo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Monte a resposta como um mini ADR: contexto, opções, critério, decisão, consequências. Por exemplo: "portal do paciente e app, com telas ricas em dados de vários serviços: BFF com GraphQL falando gRPC com os serviços; API de parceiros em REST/OpenAPI; integração com operadora via adaptador SOAP".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Registre a decisão (ADR) com a dor que motivou e a condição para revisar. Pergunta de revisão de design: "o que acontece se o time que fez isso sair?". Estilos exóticos aumentam o fator de risco de pessoas-chave.</p></div>
+</section>
+
+<section class="chap" id="cenarios-glossario">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cenários práticos e glossário</h2>
+
+  <h3>Cenários</h3>
+  <div class="note"><b>Cenário 1: a tela de agenda ficou lenta depois de migrar para GraphQL</b><p>A latência da operação <code>Agenda</code> subiu de 200 ms para 2 s. <b>O que fazer:</b> habilitar tracing por resolver e contar queries por operação; provavelmente 1 + N em <code>paciente</code> e <code>convenio</code>. Introduzir DataLoader por requisição, adicionar teste que falha se a operação passar de X queries e criar alerta de p95 por <code>operationName</code>.</p></div>
+  <div class="note"><b>Cenário 2: parceiro quer consultar seus agendamentos por API</b><p>O time sugere expor o GraphQL interno. <b>O que fazer:</b> não expor. Parceiro externo pede estabilidade, quotas e documentação clássica. Oferecer REST com OpenAPI, escopos OAuth e rate limit; reutilizar os serviços internos por baixo. GraphQL público só com limite de custo, sem introspecção e com monitoramento de abuso.</p></div>
+  <div class="note"><b>Cenário 3: integração com a operadora é SOAP e cai toda semana</b><p>Falhas esporádicas, timeouts e um certificado que venceu no domingo. <b>O que fazer:</b> adaptador isolado com timeout, circuit breaker e retry só em leitura; alerta de vencimento de certificado com 30 dias de antecedência; log do XML (mascarado) para disputa; painel de disponibilidade por parceiro; abrir chamado formal com evidências.</p></div>
+  <div class="note"><b>Cenário 4: um dev removeu um campo do .proto e o serviço de faturamento começou a gravar lixo</b><p>O número do campo foi reaproveitado. <b>O que fazer:</b> reverter, reservar o número e o nome, incluir <code>buf breaking</code> no CI e revisar dados gravados no período. Na retrospectiva, tornar o linter obrigatório no pipeline.</p></div>
+  <div class="note"><b>Cenário 5: o time quer gRPC para o portal do paciente</b><p>Argumento: "é mais rápido". <b>O que fazer:</b> perguntar qual métrica será melhorada e se foi medida; apontar que o navegador exige gRPC-Web com proxy e limita streaming; propor REST/GraphQL via BFF para o portal e gRPC só entre serviços, onde há ganho real.</p></div>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>SDL</dt><dd>Linguagem de definição de schema do GraphQL (tipos, campos, argumentos).</dd></div>
+    <div><dt>Resolver</dt><dd>Função que obtém o valor de um campo do schema GraphQL.</dd></div>
+    <div><dt>N+1</dt><dd>1 consulta para a lista mais N consultas, uma por item; sintoma típico de resolvers ingênuos.</dd></div>
+    <div><dt>DataLoader</dt><dd>Padrão que agrupa chaves em lote e memoiza por requisição para evitar N+1.</dd></div>
+    <div><dt>Persisted query</dt><dd>Consulta registrada previamente e chamada por identificador; habilita cache e allowlist.</dd></div>
+    <div><dt>Introspecção</dt><dd>Recurso do GraphQL que permite consultar o próprio schema em tempo de execução.</dd></div>
+    <div><dt>Federação</dt><dd>Composição de vários subgrafos GraphQL de times diferentes em um supergrafo único.</dd></div>
+    <div><dt>Protobuf</dt><dd>Protocol Buffers: linguagem de contrato e formato binário compacto usados pelo gRPC.</dd></div>
+    <div><dt>Deadline</dt><dd>Prazo absoluto de uma chamada gRPC, propagado pela cadeia de serviços.</dd></div>
+    <div><dt>gRPC-Web</dt><dd>Variante do gRPC para navegadores, normalmente com proxy tradutor.</dd></div>
+    <div><dt>Transcoding</dt><dd>Gateway que expõe REST/JSON gerado do contrato .proto.</dd></div>
+    <div><dt>WSDL</dt><dd>Contrato XML que descreve operações, tipos e endpoints de um serviço SOAP.</dd></div>
+    <div><dt>WS-Security</dt><dd>Extensão SOAP para autenticação, assinatura e criptografia dentro da mensagem.</dd></div>
+    <div><dt>BFF</dt><dd>Backend for Frontend: camada de API sob medida para um tipo de cliente.</dd></div>
+    <div><dt>OData</dt><dd>Padrão OASIS de consulta de dados sobre REST (<code>$filter</code>, <code>$expand</code>...).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença fundamental entre REST e GraphQL?</span></summary><div class="ans"><p>Em REST o servidor define o formato de cada recurso/endpoint; em GraphQL o cliente descreve, num endpoint único, exatamente os campos que quer, com base num schema tipado. GraphQL reduz overfetching e viagens de rede, mas move complexidade para o servidor e perde o cache HTTP padrão.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>O que são query, mutation e subscription?</span></summary><div class="ans"><p>Query lê dados; mutation altera (campos da raiz executam em série); subscription entrega eventos ao longo do tempo, normalmente por WebSocket ou SSE. As duas primeiras são requisição/resposta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>O que é overfetching e underfetching? GraphQL é a única solução?</span></summary><div class="ans"><p>Overfetching é receber mais campos do que a tela usa; underfetching é precisar de várias chamadas para montar uma tela. GraphQL resolve os dois, mas não é a única: campos selecionáveis, expansão de relações e um BFF também resolvem, com menos custo operacional.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Explique o problema N+1 e como o DataLoader ajuda.</span></summary><div class="ans"><p>Um resolver de lista dispara um resolver filho por item, que consulta o banco: 1 + N queries. O DataLoader agrupa as chaves pedidas no mesmo ciclo em uma busca em lote e memoiza por requisição. Deve haver uma instância por requisição, e a função de lote devolve resultados na mesma ordem das chaves.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Por que é mais difícil fazer cache em GraphQL?</span></summary><div class="ans"><p>Porque tudo é um <code>POST</code> para a mesma URL, com consultas diferentes por tela; o cache HTTP/CDN não se aplica. O cache fica no cliente (normalizado por id e tipo), no servidor (por resolver) ou via persisted queries com <code>GET</code>, que permitem cache de borda.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Como proteger uma API GraphQL contra consultas abusivas?</span></summary><div class="ans"><p>Limites de profundidade e de custo por consulta, teto de paginação, timeout, rate limit por custo, limite de aliases e tamanho, persisted queries com allowlist, autorização por campo e introspecção desligada se a API é privada.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Por que o monitoramento de uma API GraphQL pode "não ver" erros?</span></summary><div class="ans"><p>Porque erros de execução costumam voltar com HTTP 200 e um array <code>errors</code> no corpo, possivelmente com dados parciais. É preciso instrumentar pelo corpo e por operação nomeada, padronizar <code>extensions.code</code> e usar union types para erros de negócio esperados.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Quando faz sentido federação GraphQL?</span></summary><div class="ans"><p>Quando muitos times são donos de partes diferentes do domínio e um schema central virou gargalo. Cada time mantém um subgrafo e um router compõe o supergrafo. Custo: operar o router, governança de schema, tracing distribuído e latência somada. Para um time só é exagero.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é gRPC e o que o diferencia de REST?</span></summary><div class="ans"><p>É um framework de RPC com contrato em Protocol Buffers, serialização binária e HTTP/2. Dá código gerado tipado, multiplexação, streaming e deadlines, e brilha entre serviços internos. Perde em transparência (binário), cache e facilidade para parceiros e navegadores.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Quais os quatro tipos de chamada do gRPC? Dê um exemplo de uso.</span></summary><div class="ans"><p>Unária (obter um agendamento), server streaming (listar muitos exames em fluxo), client streaming (enviar lote de resultados e receber um resumo) e bidirecional (canal contínuo de eventos entre serviços).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como evoluir um .proto sem quebrar clientes antigos?</span></summary><div class="ans"><p>Só adicionar campos com números novos; nunca reutilizar um número nem mudar o tipo; ao remover, usar <code>reserved</code> para número e nome; tratar valores de enum desconhecidos; para mudança incompatível, criar nova versão do pacote/serviço. Automatizar com um linter de quebra (por exemplo <code>buf breaking</code>) no CI.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O que é um deadline em gRPC e por que não usar apenas timeout?</span></summary><div class="ans"><p>É um prazo absoluto definido pelo cliente e propagado pelos serviços da cadeia, que repassam o tempo restante. Ao estourar, todos cancelam o trabalho. Timeouts independentes por serviço não se coordenam e podem manter trabalho inútil rodando depois que o cliente já desistiu.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Por que o navegador não fala gRPC nativo e o que se faz?</span></summary><div class="ans"><p>As APIs do navegador não dão controle dos frames HTTP/2 nem acesso a trailers, onde viaja o status do gRPC. Usa-se gRPC-Web com um proxy (por exemplo Envoy), ciente de que não há client streaming nem bidirecional, ou transcoding para REST/JSON, ou um BFF.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O que é um BFF e quando não usar?</span></summary><div class="ans"><p>Uma camada de API sob medida para um tipo de cliente, que agrega serviços e adapta o formato. Não use quando há um só cliente simples ou quando o BFF viraria monólito com regra de negócio duplicada. Mantenha a regra de negócio nos serviços de domínio e o BFF no time dono do cliente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Você precisa integrar com um serviço SOAP de uma operadora. Como começa?</span></summary><div class="ans"><p>Pego o WSDL e os XSDs, gero o cliente, isolo tudo num adaptador que expõe uma interface limpa ao resto do sistema, valido o XML contra o XSD, trato Fault e timeouts, aplico retry só em operações idempotentes, registro mensagens mascaradas e monitoro certificados e relógio por causa do WS-Security. Testo com um mock gerado do WSDL.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Que riscos de segurança são específicos de SOAP/XML?</span></summary><div class="ans"><p>XXE (entidades externas no parser), expansão de entidades (billion laughs), documentos gigantes, e erros de validação de assinatura XML (por exemplo assinar uma parte do documento e processar outra). Mitigo com parser endurecido, limites de tamanho, validação de schema e bibliotecas de WS-Security mantidas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Montou uma tabela REST vs GraphQL vs gRPC. Qual você recomenda para uma API de parceiros?</span></summary><div class="ans"><p>REST com OpenAPI: é o denominador comum, cacheável, testável com curl, com ferramentas e gateways maduros e mais fácil de versionar e limitar. GraphQL público exige controle de custo e perde o cache; gRPC dificulta a adoção por terceiros.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como você evita que o time escolha o estilo de API por modismo?</span></summary><div class="ans"><p>Exijo um registro de decisão (ADR) com a dor medida, as alternativas, o custo operacional (ferramentas, observabilidade, segurança, treinamento) e a condição de revisão. Mantenho uma lista curta de estilos aprovados e aceito exceções por revisão de design com dono definido.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

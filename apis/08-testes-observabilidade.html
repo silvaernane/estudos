@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 08: Testes e observabilidade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 08 de 10 · Testes e observabilidade</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html" aria-current="page"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li class="sub"><ol>
+      <li><a href="#piramide-integracao"><span class="n">1</span>Pirâmide de testes e dependências reais</a></li>
+      <li><a href="#testes-de-contrato"><span class="n">2</span>Testes de contrato</a></li>
+      <li><a href="#mocks-ferramentas"><span class="n">3</span>Mocks, stubs, sandboxes e ferramentas</a></li>
+      <li><a href="#testes-de-carga"><span class="n">4</span>Testes de carga com k6</a></li>
+      <li><a href="#testes-no-ci"><span class="n">5</span>Testes no CI/CD e ambientes efêmeros</a></li>
+      <li><a href="#logs-e-correlacao"><span class="n">6</span>Observabilidade: logs estruturados, correlation id e Trace Context</a></li>
+      <li><a href="#opentelemetry"><span class="n">7</span>OpenTelemetry e traces distribuídos</a></li>
+      <li><a href="#slos-alertas"><span class="n">8</span>Métricas, SLOs, alertas e monitoramento sintético</a></li>
+      <li><a href="#cenarios"><span class="n">9</span>Cenários práticos</a></li>
+      <li><a href="#glossario"><span class="n">10</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 08 · <span class="lvl l3">Avançado</span></div>
+  <h1>Testes e observabilidade</h1>
+  <p class="lede">Como testar APIs com confiança (integração real, contrato, carga) e como enxergar o que acontece em produção com logs, traces, métricas e SLOs.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Montar uma estratégia de testes para APIs (pirâmide/troféu) e testar com dependências reais usando Testcontainers</li>
+    <li>Escolher entre contrato por schema (OpenAPI) e consumer-driven (Pact), e explicar o fluxo com o can-i-deploy</li>
+    <li>Usar mocks, stubs e sandboxes para parceiros, e conhecer Postman/Newman, Bruno, Hurl e REST Client</li>
+    <li>Planejar e ler testes de carga com k6 (smoke, load, stress, soak, spike) com metas em p95</li>
+    <li>Instrumentar uma API com logs JSON, correlation id, W3C Trace Context e OpenTelemetry</li>
+    <li>Definir SLIs, SLOs e error budget, alertas que acordam e monitoramento sintético, sem logar dados sensíveis</li>
+    <li>Conduzir a investigação de "a API está lenta" com método</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="piramide-integracao">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Pirâmide de testes e dependências reais</h2>
+  <p>Testes existem para dar <strong>confiança para mudar</strong>. Uma API de agendamento que ninguém ousa tocar porque "pode quebrar o parceiro" é uma API sem testes úteis, mesmo que tenha 90 % de cobertura. A pergunta certa não é "quanto cobrimos?" e sim "<em>o que acontece com o paciente e com o parceiro se isto falhar, e qual teste pegaria?</em>".</p>
+  <h3>A pirâmide e o troféu</h3>
+<figure class="figure">
+  <svg viewBox="0 0 700 250" role="img" aria-label="Pirâmide de testes: muitos unitários na base, integração no meio, poucos ponta a ponta no topo">
+    <defs>
+      <marker id="ah-pir" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+    <text class="ttl" x="10" y="20">Pirâmide de testes aplicada a uma API</text>
+    <rect class="box-b" x="260" y="36" width="180" height="52" rx="6"/>
+    <text x="350" y="58" text-anchor="middle">E2E</text><text class="lbl" x="350" y="76" text-anchor="middle">poucos, lentos, frágeis</text>
+    <rect class="box-w" x="170" y="96" width="360" height="52" rx="6"/>
+    <text x="350" y="118" text-anchor="middle">Integração + contrato</text><text class="lbl" x="350" y="136" text-anchor="middle">API real + banco real + contrato</text>
+    <rect class="box-a" x="80" y="156" width="540" height="52" rx="6"/>
+    <text x="350" y="178" text-anchor="middle">Unitários</text><text class="lbl" x="350" y="196" text-anchor="middle">regra de negócio pura, em milissegundos</text>
+    <line class="ln" x1="660" y1="200" x2="660" y2="44" marker-end="url(#ah-pir)"/>
+    <text class="lbl" x="420" y="236">mais lento, mais caro, mais realista</text>
+    <text class="lbl" x="10" y="236">Troféu: mais peso na integração</text>
+  </svg>
+  <figcaption>Na pirâmide clássica a base são testes unitários; no "troféu" (Kent C. Dodds), a maior parte do valor está nos testes de integração.</figcaption>
+</figure>
+  <p>Para APIs, o troféu costuma servir melhor: a maior parte do risco está <em>nas fronteiras</em> (HTTP, serialização, SQL, autenticação, filas), e não em funções puras. Regra de negócio complexa (cálculo de coparticipação, regras de elegibilidade) continua pedindo muitos unitários rápidos; mas o endpoint como um todo é testado de verdade, chamando HTTP e gravando no banco.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Camada</th><th>O que valida</th><th>Velocidade</th><th>Quando falha</th></tr></thead>
+    <tbody>
+      <tr><td>Unitário</td><td>Regra de negócio isolada (calcular valor, validar CPF, regra de remarcação)</td><td>ms</td><td>Lógica errada</td></tr>
+      <tr><td>Integração (componente)</td><td>Endpoint HTTP + serialização + validação + SQL + migração em banco real</td><td>s</td><td>Mapeamento, consulta, constraint, transação, índice</td></tr>
+      <tr><td>Contrato</td><td>Que provedor e consumidor concordam sobre o formato</td><td>s</td><td>Breaking change acidental</td></tr>
+      <tr><td>E2E / sistema</td><td>Fluxo completo entre vários serviços (ex.: agendar, notificar, cobrar)</td><td>min</td><td>Integração entre times, configuração de ambiente</td></tr>
+      <tr><td>Não funcional</td><td>Carga, segurança, resiliência</td><td>min a h</td><td>Gargalo, vazamento, degradação</td></tr>
+    </tbody></table></div>
+  <h3>Unitário vs integração com dependências reais</h3>
+  <p>O erro clássico é testar o repositório contra um banco <strong>em memória diferente</strong> do de produção (H2 no lugar de PostgreSQL, SQLite no lugar de Oracle). Passa no teste e falha em produção porque dialeto SQL, tipos, <code>JSONB</code>, índices parciais, locks e funções de data se comportam de outro jeito. A resposta moderna é o <strong>Testcontainers</strong>: biblioteca que sobe contêineres Docker descartáveis (PostgreSQL, Kafka, Redis, etc.) durante o teste e os remove ao fim.</p>
+<pre data-file="AgendamentoApiIT.java (Spring Boot 3.1+ com Testcontainers)"><code class="text">@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class AgendamentoApiIT {
+
+  @Container
+  @ServiceConnection                       // injeta URL/usuário/senha no datasource
+  static PostgreSQLContainer&lt;?&gt; pg = new PostgreSQLContainer&lt;&gt;("postgres:16");
+
+  @Autowired TestRestTemplate http;
+
+  @Test
+  void naoPermiteDoisAgendamentosNoMesmoHorarioParaOMesmoMedico() {
+    var req = new NovoAgendamento("pac_1", "med_204", "2026-04-02T14:30:00-03:00");
+
+    var primeira = http.postForEntity("/v2/agendamentos", req, Agendamento.class);
+    var segunda  = http.postForEntity("/v2/agendamentos", req, Problem.class);
+
+    assertThat(primeira.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    assertThat(segunda.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);   // 409 vindo da constraint única
+  }
+}</code></pre>
+  <p>O teste acima falharia com um mock de repositório e passaria "por engano" se a constraint única não existisse na migração. Só o banco real prova que a regra está garantida <em>também</em> no banco. As migrações (Flyway ou Liquibase) rodam no mesmo teste, então você testa o schema de verdade.</p>
+  <ul>
+    <li><strong>Vantagens</strong>: fidelidade, sem "funciona na minha máquina", qualquer pessoa roda com Docker, versão do banco fixada no código.</li>
+    <li><strong>Custos</strong>: mais lento (segundos para subir o contêiner), exige Docker no CI. Reutilize o contêiner entre classes de teste (um contêiner estático por suíte) e deixe os dados limpos entre testes (transação com rollback ou truncate).</li>
+    <li><strong>Oracle</strong>: existe módulo do Testcontainers para Oracle, mas as imagens são pesadas e o licenciamento exige atenção. Se a produção é Oracle, teste as consultas críticas nele; se o ambiente permitir só PostgreSQL, não finja que o resultado vale para Oracle.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Mockar o repositório e declarar "testamos o endpoint". Mocks provam que você chamou o método, não que a query funciona. Teste de API com mock total do banco é teste do mock.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Unitário para <em>decisões</em> (lógica), integração para <em>conexões</em> (HTTP, SQL, filas), contrato para <em>acordos</em> (entre times), e2e só para os poucos fluxos que não podem falhar.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você testa uma API?" Resposta sênior: unitários para regra de negócio; testes de integração da API contra PostgreSQL real com Testcontainers (migrações incluídas); testes de contrato para proteger os consumidores; e2e mínimos. Explique que H2 ou SQLite escondem bugs de dialeto.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cobertura de linhas é métrica fraca. Cobre do time: <strong>testes que falham quando o comportamento muda</strong>, suíte de integração abaixo de 10 minutos no CI, e zero testes ignorados ("flaky") por mais de uma semana. Um teste instável ensina o time a ignorar o vermelho.</p></div>
+</section>
+
+<section class="chap" id="testes-de-contrato">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l3">Avançado</span></div>
+  <h2>Testes de contrato</h2>
+  <p>O problema: o time do provedor muda a API e todos os testes <em>dele</em> passam; o aplicativo do consumidor quebra em produção. O teste de contrato fecha essa lacuna verificando o <strong>acordo</strong> entre as duas pontas. Há duas famílias.</p>
+  <h3>1. Contrato baseado em schema (OpenAPI)</h3>
+  <p>O contrato é o próprio OpenAPI (módulo 02). Valida-se que a <strong>implementação real</strong> responde conforme o schema e que a mudança no schema não é breaking (diff, módulo 07). Ferramentas: validadores em testes de integração (por exemplo, validar cada resposta contra o schema), Schemathesis e Dredd (geram requisições a partir do OpenAPI e checam respostas), Spectral para lint.</p>
+<pre data-file="terminal (Schemathesis contra o ambiente de testes)"><code class="sh">schemathesis run openapi/agendamentos.yaml \
+  --url http://localhost:8080 \
+  --checks all \
+  --header "Authorization: Bearer $TOKEN_TESTE"</code></pre>
+  <h3>2. Contrato dirigido pelo consumidor (consumer-driven, Pact)</h3>
+  <p>Cada <strong>consumidor</strong> escreve o que realmente usa da API, como exemplos de requisição e resposta. Esses exemplos formam o "pact" (arquivo JSON). O provedor os executa contra a implementação real no seu CI. Se alguma expectativa de consumidor quebrar, o provedor sabe <em>quem</em> será afetado <em>antes</em> do deploy.</p>
+<figure class="figure">
+  <svg viewBox="0 0 700 230" role="img" aria-label="Fluxo Pact: consumidor publica contrato no broker, provedor verifica, can-i-deploy autoriza o deploy">
+    <defs>
+      <marker id="ah-pact" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+    <rect class="box" x="10" y="36" width="150" height="60" rx="6"/>
+    <text x="85" y="60" text-anchor="middle">Consumidor</text><text class="lbl" x="85" y="80" text-anchor="middle">teste gera o pact</text>
+    <rect class="box-a" x="275" y="36" width="150" height="60" rx="6"/>
+    <text x="350" y="60" text-anchor="middle">Pact Broker</text><text class="lbl" x="350" y="80" text-anchor="middle">pacts + resultados</text>
+    <rect class="box" x="540" y="36" width="150" height="60" rx="6"/>
+    <text x="615" y="60" text-anchor="middle">Provedor</text><text class="lbl" x="615" y="80" text-anchor="middle">verifica na API real</text>
+    <line class="ln-a" x1="160" y1="58" x2="273" y2="58" marker-end="url(#ah-pact)"/>
+    <text class="lbl" x="178" y="52">1. publica pact</text>
+    <line class="ln-a" x1="538" y1="58" x2="427" y2="58" marker-end="url(#ah-pact)"/>
+    <text class="lbl" x="440" y="52">2. baixa pacts</text>
+    <line class="ln" x1="540" y1="84" x2="427" y2="84" marker-end="url(#ah-pact)"/>
+    <text class="lbl" x="436" y="108">3. publica resultado</text>
+    <rect class="box-m" x="10" y="150" width="150" height="44" rx="6"/>
+    <text x="85" y="177" text-anchor="middle">CI consumidor</text>
+    <rect class="box-w" x="275" y="150" width="150" height="44" rx="6"/>
+    <text x="350" y="177" text-anchor="middle">can-i-deploy</text>
+    <rect class="box-m" x="540" y="150" width="150" height="44" rx="6"/>
+    <text x="615" y="177" text-anchor="middle">CI provedor</text>
+    <line class="ln" x1="160" y1="172" x2="273" y2="172" marker-end="url(#ah-pact)"/>
+    <line class="ln" x1="538" y1="172" x2="427" y2="172" marker-end="url(#ah-pact)"/>
+    <line class="ln-a" x1="350" y1="150" x2="350" y2="98" marker-end="url(#ah-pact)"/>
+    <text class="lbl" x="358" y="128">consulta a matriz</text>
+    <text class="lbl" x="10" y="220">Deploy só segue se a combinação (versão do consumidor, versão do provedor) estiver verificada.</text>
+  </svg>
+  <figcaption>O Pact Broker guarda os contratos e os resultados de verificação. O <code>can-i-deploy</code> responde se uma versão é segura de promover.</figcaption>
+</figure>
+<pre data-file="app-paciente-api-agendamentos.json (trecho de um pact)"><code class="json">{
+  "consumer": { "name": "app-paciente" },
+  "provider": { "name": "api-agendamentos" },
+  "interactions": [
+    {
+      "description": "consulta de agendamento existente",
+      "providerStates": [{ "name": "agendamento ag_7731 existe" }],
+      "request": { "method": "GET", "path": "/v2/agendamentos/ag_7731" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": { "id": "ag_7731", "status": "AGENDADO", "inicio": "2026-04-02T14:30:00-03:00" },
+        "matchingRules": {
+          "body": { "$.status": { "match": "type" }, "$.inicio": { "match": "regex", "regex": "^\\d{4}-\\d{2}-\\d{2}T.*$" } }
+        }
+      }
+    }
+  ]
+}</code></pre>
+<pre data-file="terminal (no pipeline)"><code class="sh"># consumidor: publica o contrato gerado pelos testes
+pact-broker publish ./pacts --consumer-app-version "$GIT_SHA" --branch "$GIT_BRANCH"
+
+# antes de promover a versão para produção
+pact-broker can-i-deploy --pacticipant app-paciente --version "$GIT_SHA" --to-environment production</code></pre>
+  <h3>Quando cada um vale a pena</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Baseado em schema (OpenAPI)</th><th>Consumer-driven (Pact)</th></tr></thead>
+    <tbody>
+      <tr><td>Quem define o contrato</td><td>Provedor</td><td>Consumidores, pelo que realmente usam</td></tr>
+      <tr><td>Detecta</td><td>Implementação fora do schema; breaking change em relação ao OpenAPI publicado</td><td>Quebra de um consumidor <em>específico</em>, inclusive uso de campo que o provedor julgava pouco importante</td></tr>
+      <tr><td>Esforço</td><td>Baixo: um arquivo e ferramentas</td><td>Maior: cada consumidor escreve testes, há Broker, provider states, versionamento de pacts</td></tr>
+      <tr><td>Escala bem com</td><td>API pública com muitos consumidores desconhecidos</td><td>Poucos consumidores conhecidos e <strong>sob o mesmo guarda-chuva organizacional</strong> (times internos, parceiros próximos)</td></tr>
+      <tr><td>Limitação</td><td>Não sabe como cada consumidor usa a API</td><td>Não funciona se você não consegue fazer o consumidor escrever e publicar pacts</td></tr>
+      <tr><td>Boa escolha quando</td><td>Contrato design-first, API pública ou de parceiros externos</td><td>Microsserviços internos, app móvel próprio, BFF</td></tr>
+    </tbody></table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Comece pelo schema: é barato e dá 80 % do valor. Adote Pact onde houver <em>consumidores conhecidos e acessíveis</em> cuja quebra custa caro, como o app do paciente ou o sistema de faturamento interno.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Pact com asserção de valores exatos ("status == AGENDADO e id == ag_7731"). O contrato deve validar <em>formato e tipo</em> (matching rules), não dados de exemplo. Senão o teste quebra a cada mudança de massa de dados e ninguém confia nele.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Contract testing: o que é e por que Pact?" Resposta: acordo verificável entre as pontas. Por schema, o provedor valida que cumpre o OpenAPI; consumer-driven, cada consumidor declara o que usa e o provedor verifica antes do deploy, com <code>can-i-deploy</code> bloqueando o que quebraria alguém. Cite que é indicado quando os consumidores são conhecidos.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Contrato consumer-driven exige <strong>acordo entre times</strong>: quem escreve o pact, quem corrige quando quebra, qual o SLA para verificar. Sem isso, o Broker vira cemitério de contratos vermelhos. Comece com um par de times e um fluxo crítico; meça quantos incidentes de integração o contrato evitou.</p></div>
+</section>
+
+<section class="chap" id="mocks-ferramentas">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Mocks, stubs, sandboxes e ferramentas</h2>
+  <h3>Dublês de teste</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Termo</th><th>O que é</th><th>Exemplo em API de saúde</th></tr></thead>
+    <tbody>
+      <tr><td>Stub</td><td>Resposta pronta, sem lógica</td><td>Serviço de elegibilidade do convênio sempre devolve <code>{"elegivel": true}</code></td></tr>
+      <tr><td>Mock</td><td>Dublê que também <em>verifica</em> as chamadas recebidas</td><td>Garante que o envio de SMS foi chamado 1 vez com o telefone certo</td></tr>
+      <tr><td>Fake</td><td>Implementação simplificada que funciona</td><td>Fila em memória no lugar do broker real</td></tr>
+      <tr><td>Servidor simulado (mock server)</td><td>Processo HTTP que imita uma API externa, configurável</td><td>WireMock, MockServer ou Prism simulando o laboratório parceiro</td></tr>
+    </tbody></table></div>
+  <p>Use dublês para o que <em>você não controla</em> (APIs de terceiros, gateways de pagamento, convênios) e para simular falha: latência, 500, 429, timeout, resposta malformada. Para o que <em>você controla</em> (seu banco, sua fila), prefira o real com Testcontainers.</p>
+<pre data-file="elegibilidade-lenta.json (mapeamento do WireMock)"><code class="json">{
+  "request": {
+    "method": "GET",
+    "urlPath": "/convenios/elegibilidade",
+    "queryParameters": { "carteirinha": { "equalTo": "000111" } }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": { "elegivel": true, "plano": "ENFERMARIA" },
+    "fixedDelay": 3000
+  }
+}</code></pre>
+  <p>Esse stub devolve a resposta após 3 segundos: serve para provar que o <em>seu</em> código aplica timeout, circuit breaker e fallback (módulo 06) em vez de pendurar a thread.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Mock que diverge da API real. O parceiro mudou, o mock não, e os testes ficam verdes enquanto produção quebra. Gere ou valide o mock a partir do contrato (OpenAPI no Prism, contratos gravados) e rode periodicamente testes contra o ambiente real do parceiro.</p></div>
+  <h3>Sandbox para parceiros</h3>
+  <p>Se você <em>oferece</em> API, forneça um <strong>sandbox</strong>: ambiente separado, com o mesmo contrato da produção, dados fictícios e chaves próprias. É o que permite onboarding rápido (time to first hello world, módulo 07) e testes automatizados do parceiro sem tocar em dado real.</p>
+  <ul>
+    <li><strong>Mesmo contrato, mesma autenticação</strong>, URL e credenciais diferentes. Se o sandbox é "quase igual", o parceiro descobre a diferença em produção.</li>
+    <li><strong>Dados 100 % fictícios</strong>. Nunca copie produção, mesmo "anonimizada", sem análise formal de reidentificação (LGPD: dado de saúde é sensível).</li>
+    <li><strong>Gatilhos de cenário previsíveis</strong>: carteirinha terminada em <code>999</code> devolve convênio inativo; CPF de teste devolve conflito de horário; assim o parceiro testa erros sem depender de sorte.</li>
+    <li><strong>Reset e limites</strong>: dados redefinidos periodicamente, rate limit generoso, mas existente.</li>
+    <li><strong>Mesmo ciclo de vida</strong>: o sandbox recebe a versão nova antes da produção, para o parceiro testar migrações (módulo 07).</li>
+  </ul>
+  <h3>Ferramentas de teste de API: resumo</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ferramenta</th><th>Perfil</th><th>Ponto forte</th><th>Atenção</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Postman + Newman</strong></td><td>GUI popular; Newman é o executor de linha de comando para CI</td><td>Ecossistema enorme, documentação, mocks, monitores, colaboração</td><td>Coleções são JSON grande e difícil de revisar em PR; recursos de equipe e nuvem são pagos; cuidado com segredos em coleções compartilhadas</td></tr>
+      <tr><td><strong>Bruno</strong></td><td>Cliente de código aberto, orientado a arquivos locais</td><td>Coleções em texto simples versionadas no Git, revisáveis em PR; funciona offline</td><td>Ecossistema menor</td></tr>
+      <tr><td><strong>Hurl</strong></td><td>CLI que executa arquivos de texto com requisições e asserções</td><td>Muito leve para CI; sintaxe legível; captura valores entre requisições</td><td>Sem interface gráfica; precisa de quem goste de terminal</td></tr>
+      <tr><td><strong>REST Client</strong> (extensão do VS Code)</td><td>Arquivos <code>.http</code> dentro do editor</td><td>Zero fricção para explorar; arquivos no repositório</td><td>Pouco para automação e asserções</td></tr>
+      <tr><td><strong>cURL / HTTPie</strong></td><td>Linha de comando</td><td>Universal, ótimo em scripts e para reproduzir problemas</td><td>Sem estrutura de suíte</td></tr>
+    </tbody></table></div>
+<pre data-file="agendamento.hurl"><code class="text">POST {{host}}/v2/agendamentos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "paciente_id": "pac_teste_1",
+  "medico_id": "med_204",
+  "inicio": "2026-04-02T14:30:00-03:00"
+}
+HTTP 201
+[Captures]
+agendamento_id: jsonpath "$.id"
+[Asserts]
+jsonpath "$.status" == "AGENDADO"
+header "Location" exists
+
+GET {{host}}/v2/agendamentos/{{agendamento_id}}
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.medico.id" == "med_204"</code></pre>
+<pre data-file="terminal"><code class="sh">hurl --test --variable host=https://sandbox.clinica.example --variable token=$TOKEN_SANDBOX agendamento.hurl
+newman run colecao-agendamentos.json -e sandbox.json --reporters cli,junit</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Ferramenta boa é a que o time <em>versiona, revisa e roda no CI</em>. Teste manual numa GUI que ninguém guarda é conhecimento perdido; escolha formato em texto, no repositório, ao lado do código.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Mock, stub e fake?" Stub devolve resposta fixa; mock verifica interações; fake é implementação simples que funciona. E acrescente o critério sênior: dublê para o que é de terceiros e para simular falha; dependências próprias, reais com Testcontainers.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Sandbox bom é o investimento de maior retorno no onboarding de parceiros: reduz chamados de suporte e acelera integrações. Cobre: paridade de contrato com produção, dados fictícios, reset automático e monitoramento do próprio sandbox.</p></div>
+</section>
+
+<section class="chap" id="testes-de-carga">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Testes de carga com k6</h2>
+  <p>Testes funcionais respondem "<em>funciona?</em>". Testes de carga respondem "<em>funciona com 500 pacientes abrindo o app ao mesmo tempo na segunda às 8h?</em>". O k6 (open source, scripts em JavaScript, motor em Go) é uma escolha comum: código versionável, metas como <strong>thresholds</strong> que falham o build e saída padronizada.</p>
+  <h3>Tipos de teste</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Perfil de carga</th><th>Pergunta que responde</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Smoke</strong></td><td>1 a 3 usuários virtuais, 1 a 2 min</td><td>O script e a API funcionam? (rode a cada deploy)</td></tr>
+      <tr><td><strong>Load</strong></td><td>Carga esperada de pico, sustentada (10 a 60 min)</td><td>Atende o SLO com o tráfego normal?</td></tr>
+      <tr><td><strong>Stress</strong></td><td>Subir além do pico até degradar</td><td>Onde está o limite? Como falha (graciosamente ou em cascata)?</td></tr>
+      <tr><td><strong>Soak</strong> (resistência)</td><td>Carga moderada por horas</td><td>Há vazamento de memória, conexões ou disco? A latência deriva?</td></tr>
+      <tr><td><strong>Spike</strong></td><td>Salto súbito (ex.: 10x em segundos) e queda</td><td>Aguenta rajadas? Como o autoscaling, o pool e a fila reagem?</td></tr>
+    </tbody></table></div>
+<pre data-file="agendamentos-load.js"><code class="js">import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '2m', target: 50 },    // sobe até 50 usuários virtuais
+    { duration: '10m', target: 50 },   // mantém (carga normal de pico)
+    { duration: '1m', target: 0 },     // desce
+  ],
+  thresholds: {
+    http_req_failed: ['rate&lt;0.01'],                       // &lt; 1 % de erros
+    http_req_duration: ['p(95)&lt;400', 'p(99)&lt;1000'],       // metas em p95 e p99
+    'http_req_duration{endpoint:listar}': ['p(95)&lt;300'],  // meta por endpoint
+  },
+};
+
+const BASE = __ENV.BASE_URL;
+const params = { headers: { Authorization: `Bearer ${__ENV.TOKEN}` } };
+
+export default function () {
+  const lista = http.get(`${BASE}/v2/pacientes/pac_teste_1/agendamentos`, { ...params, tags: { endpoint: 'listar' } });
+  check(lista, { 'listar 200': (r) =&gt; r.status === 200 });
+  sleep(1);                           // tempo de "pensar" do usuário
+
+  const novo = http.post(`${BASE}/v2/agendamentos`,
+    JSON.stringify({ paciente_id: 'pac_teste_1', medico_id: 'med_204', inicio: '2026-04-02T14:30:00-03:00' }),
+    { headers: { ...params.headers, 'Content-Type': 'application/json', 'Idempotency-Key': `${__VU}-${__ITER}` }, tags: { endpoint: 'criar' } });
+  check(novo, { 'criar 201 ou 409': (r) =&gt; r.status === 201 || r.status === 409 });
+  sleep(1);
+}</code></pre>
+<pre data-file="terminal"><code class="sh">k6 run -e BASE_URL=https://staging.clinica.example -e TOKEN=$TOKEN_TESTE agendamentos-load.js</code></pre>
+  <h3>Como ler os resultados</h3>
+<pre data-file="trecho do resumo do k6"><code class="text">     http_req_duration..............: avg=182ms min=21ms med=140ms max=2.9s p(90)=320ms p(95)=410ms
+       { endpoint:listar }..........: avg=95ms  p(95)=180ms
+     http_req_failed................: 0.42%  ✓ 123      ✗ 29112
+     http_reqs......................: 29235  48.7/s
+     iterations.....................: 14617  24.3/s
+     vus............................: 50     min=1  max=50
+
+   ✗ http_req_duration p(95)&lt;400   (p(95)=410ms)</code></pre>
+  <ul>
+    <li><strong>Percentis, não média.</strong> A média (182 ms) esconde a cauda: o p95 (410 ms) diz que 5 % dos pacientes esperam mais que isso. Metas se escrevem em p95 e p99.</li>
+    <li><strong>Threshold vermelho</strong> acima: p95 de 410 ms estourou a meta de 400 ms. O teste <em>falha</em> mesmo com 99,6 % de sucesso. Isso é o objetivo.</li>
+    <li><strong>Erros</strong>: <code>http_req_failed</code> 0,42 %: dentro da meta de 1 %, mas investigue quais (timeouts? 5xx? 429 do rate limit?).</li>
+    <li><strong>Vazão</strong> (<code>http_reqs</code>/s) e a curva ao longo do tempo: a latência cresce linearmente com a carga ou "dobra" de repente (saturação de pool de conexões)?</li>
+    <li><strong>Correlacione com o servidor</strong>: o k6 mostra o sintoma; CPU, pool do banco, filas e traces mostram a causa (seções 7 e 8).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Testar contra um ambiente muito menor que o de produção (1 réplica, banco minúsculo) e extrapolar. Carga mede o <em>ambiente testado</em>. Garanta paridade de configuração e volume de dados; um índice ausente só aparece com milhões de linhas. E nunca rode carga contra produção ou contra sistema de terceiros sem autorização.</p></div>
+  <div class="note trap"><b>Cuidado com "coordinated omission"</b><p>Geradores de carga "closed model" (cada usuário só faz a próxima requisição após a resposta) diminuem a pressão justamente quando o sistema está lento, subestimando a latência. Para medir sistemas abertos ao público, use executores com taxa de chegada constante (no k6, <code>constant-arrival-rate</code>).</p></div>
+<pre data-file="cenário de taxa de chegada constante (k6)"><code class="js">export const options = {
+  scenarios: {
+    pico: {
+      executor: 'constant-arrival-rate',
+      rate: 100, timeUnit: '1s',     // 100 requisições por segundo, independentemente da resposta
+      duration: '10m',
+      preAllocatedVUs: 50, maxVUs: 400,
+    },
+  },
+};</code></pre>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você planeja um teste de carga?" Defina a meta em p95/p99 e erro (vinda do SLO); modele o tráfego real (mix de endpoints, pico); use ambiente equivalente; rode smoke, load, stress, soak e spike conforme o risco; falhe o build por thresholds; e correlacione com métricas do servidor. Cite que média engana.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija teste de carga antes de eventos previsíveis (campanha de vacinação, abertura de agenda, virada de ano) e depois de mudança de arquitetura relevante. Pergunta de revisão: "qual a capacidade medida, não estimada, e o que acontece 20 % acima dela?".</p></div>
+</section>
+
+<section class="chap" id="testes-no-ci">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Testes no CI/CD e ambientes efêmeros</h2>
+  <p>Testes que ninguém roda não protegem nada. A ordem do pipeline segue o princípio de <strong>falhar cedo e barato</strong>: o que é rápido e pega muito vem primeiro.</p>
+  <ol class="seq">
+    <li><div><strong>Lint e análise estática</strong> (código, Spectral no OpenAPI, diff de breaking change, scanners de dependências e de segredos). Segundos.</div></li>
+    <li><div><strong>Unitários.</strong> Segundos a poucos minutos.</div></li>
+    <li><div><strong>Integração com Testcontainers</strong> e <strong>contrato</strong> (verificação do provedor, publicação de pacts, <code>can-i-deploy</code>). Poucos minutos.</div></li>
+    <li><div><strong>Build da imagem</strong> e scan de vulnerabilidades.</div></li>
+    <li><div><strong>Deploy em ambiente efêmero</strong>, <strong>smoke/e2e</strong> mínimos e <strong>k6 smoke</strong> contra ele.</div></li>
+    <li><div><strong>Promoção</strong> a staging/produção por canary ou blue/green, com verificação automática (SLI) e rollback automático.</div></li>
+    <li><div><strong>Pós-deploy</strong>: monitoramento sintético e alertas de burn rate (seção 8).</div></li>
+  </ol>
+<pre data-file=".github/workflows/api.yml (resumo)"><code class="yaml">name: api
+on: [pull_request]
+jobs:
+  verificacao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx @stoplight/spectral-cli lint openapi/agendamentos.yaml
+      - run: ./mvnw -B verify            # unitários + integração (Testcontainers precisa de Docker)
+      - run: ./mvnw -B pact:publish      # publica contratos do consumidor
+      - run: |
+          pact-broker can-i-deploy --pacticipant api-agendamentos \
+            --version "${{ github.sha }}" --to-environment staging
+  ambiente-efemero:
+    needs: verificacao
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./scripts/deploy-preview.sh "pr-${{ github.event.number }}"
+      - run: k6 run -e BASE_URL="https://pr-${{ github.event.number }}.preview.clinica.example" smoke.js
+      - if: always()
+        run: ./scripts/destroy-preview.sh "pr-${{ github.event.number }}"</code></pre>
+  <h3>Ambientes efêmeros</h3>
+  <p>Um <strong>ambiente efêmero</strong> (ou preview environment) é uma cópia completa e isolada da aplicação criada por PR e destruída ao fechar. Em Kubernetes, um <em>namespace</em> por PR com a imagem do commit, um PostgreSQL próprio com dados sintéticos e as dependências externas substituídas por mocks ou sandboxes.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ganho</th><th>Custo / cuidado</th></tr></thead>
+    <tbody>
+      <tr><td>Fim da disputa por "o ambiente de homologação" compartilhado e sempre quebrado</td><td>Infra extra: defina TTL (ex.: destruir após 24 h sem uso) e cotas de recursos</td></tr>
+      <tr><td>Cada PR é testado isolado, com dados controlados</td><td>Dados sintéticos e semente de banco precisam ser mantidos como código</td></tr>
+      <tr><td>Parceiros e QA podem validar uma mudança antes do merge</td><td>Nunca copie dados de produção (LGPD); proteja o acesso ao ambiente</td></tr>
+    </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Testes e2e longos e instáveis como porta de entrada para todo PR. O pipeline passa a levar 40 minutos, o time re-executa até ficar verde e ignora o sinal. Mantenha a suíte de PR enxuta e mova os cenários pesados para execuções agendadas (noturnas), com dono para corrigir as falhas.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Pipeline de PR: menos de 15 minutos. Um teste instável é um bug a ser corrigido hoje, não um re-run. Quarentene-o com prazo, ou apague-o.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que roda no pipeline de uma API?" Lint do contrato e diff de breaking change, unitários, integração com Testcontainers, contrato (can-i-deploy), build e scan da imagem, deploy em ambiente efêmero com smoke e k6 smoke, depois canary com verificação automática por SLI e rollback.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Meça o pipeline: duração média, taxa de testes instáveis, tempo entre merge e produção, taxa de falha de mudança (DORA). Pipeline lento e instável é o maior imposto escondido sobre a produtividade do time.</p></div>
+</section>
+
+<section class="chap" id="logs-e-correlacao">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Observabilidade: logs estruturados, correlation id e Trace Context</h2>
+  <p><strong>Monitorar</strong> é saber se algo está errado (você definiu antes o que olhar). <strong>Observabilidade</strong> é conseguir perguntar <em>por que</em> está errado, inclusive perguntas que você não previu, a partir dos sinais que o sistema emite: <strong>logs, métricas e traces</strong>. A trilha web (<code>06-backend-infra.html</code>) apresentou os conceitos; aqui o foco é em APIs.</p>
+  <h3>Logs estruturados em JSON</h3>
+  <p>Log em texto livre ("Erro ao agendar paciente 123") é impossível de consultar em escala. Emita <strong>um evento JSON por linha</strong>, com campos consistentes, para poder filtrar e agregar.</p>
+<pre data-file="uma linha de log por requisição"><code class="json">{"ts":"2026-04-02T14:30:00.412Z","level":"info","service":"api-agendamentos","env":"prod",
+ "msg":"request completed","method":"POST","route":"/v2/agendamentos","status":201,
+ "duration_ms":187,"client_id":"parceiro_lab_01","api_version":"v2",
+ "trace_id":"0af7651916cd43dd8448eb211c80319c","span_id":"b7ad6b7169203331","request_id":"req_9f31c2"}</code></pre>
+  <ul>
+    <li><strong>Use a rota (<code>/v2/agendamentos/{id}</code>), não a URL com ID</strong>, para agregar. O ID vai em campo à parte, se necessário (e se não for dado pessoal identificável; veja abaixo).</li>
+    <li><strong>Níveis com critério</strong>: <code>error</code> exige ação; <code>warn</code> é anomalia tratada; <code>info</code> é fluxo normal (um por requisição, não dez); <code>debug</code> desligado em produção.</li>
+    <li><strong>Mesmos nomes de campo</strong> em todos os serviços (um esquema de log da empresa), para que uma consulta funcione em qualquer um.</li>
+    <li><strong>Amostragem e custo</strong>: logs custam armazenamento e consulta. Logue o necessário, com retenção definida.</li>
+  </ul>
+  <h3>Correlation id e W3C Trace Context</h3>
+  <p>Uma requisição passa por gateway, API, banco e fila. Para juntar o que cada componente registrou, ela precisa carregar um <strong>identificador que viaja junto</strong>. A forma antiga: um <em>correlation id</em> (ex.: <code>X-Request-Id</code>) gerado na borda e repassado. A forma padronizada: o <strong>W3C Trace Context</strong>, com o cabeçalho <code>traceparent</code>.</p>
+<pre data-file="requisição com traceparent"><code class="http">POST /v2/agendamentos HTTP/1.1
+Host: api.clinica.example
+traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+tracestate: clinica=t61rcWkgMzE
+Content-Type: application/json</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Parte</th><th>Exemplo</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td>versão</td><td><code>00</code></td><td>Versão do formato</td></tr>
+      <tr><td>trace-id</td><td><code>0af76519...319c</code> (32 hex)</td><td>Identifica a requisição de ponta a ponta; igual em todos os serviços</td></tr>
+      <tr><td>parent-id</td><td><code>b7ad6b71...3331</code> (16 hex)</td><td>Identifica o span que fez a chamada (o "pai")</td></tr>
+      <tr><td>trace-flags</td><td><code>01</code></td><td>Bit de amostragem: <code>01</code> indica que o trace está sendo amostrado</td></tr>
+    </tbody></table></div>
+  <p><code>tracestate</code> carrega dados específicos de fornecedor. Regras: o gateway (ou o primeiro serviço) <strong>cria</strong> o <code>traceparent</code> se não vier; cada serviço <strong>propaga</strong> o mesmo <code>trace-id</code> e gera um novo <code>span-id</code>; <strong>devolva o trace id ao cliente</strong> (por exemplo, no corpo do erro ou em um cabeçalho de resposta): quando o parceiro reclamar, ele manda esse ID e você acha tudo em segundos.</p>
+  <h3>O que NÃO logar</h3>
+  <p>Log é cópia de dado, normalmente com retenção longa, muita gente com acesso e fora das proteções do banco. Em saúde, o risco é alto: dado pessoal e <strong>dado de saúde são dados sensíveis</strong> pela LGPD. Um log que vaza expõe pacientes.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Não logue</th><th>Exemplo</th><th>Faça em vez disso</th></tr></thead>
+    <tbody>
+      <tr><td>Credenciais e tokens</td><td><code>Authorization: Bearer ...</code>, senhas, chaves de API, refresh tokens, JWT completo</td><td>Logue só <code>client_id</code> ou <code>sub</code>; mascare cabeçalhos sensíveis</td></tr>
+      <tr><td>Identificadores pessoais</td><td>CPF, RG, e-mail, telefone, endereço, carteirinha</td><td>ID interno opaco (<code>pac_7f3</code>); ou hash com segredo (pseudonimização)</td></tr>
+      <tr><td>Dados de saúde</td><td>Diagnóstico, CID, resultado de exame, prescrição, texto de prontuário</td><td>Nunca em log; se preciso, apenas o ID do registro</td></tr>
+      <tr><td>Corpos de requisição/resposta inteiros</td><td>JSON completo de agendamento ou exame</td><td>Logue campos escolhidos (allowlist), não o corpo todo</td></tr>
+      <tr><td>Dados financeiros</td><td>Número de cartão, conta</td><td>Nunca</td></tr>
+      <tr><td>Query strings com dado pessoal</td><td><code>/pacientes?cpf=123...</code></td><td>Não coloque dado pessoal em URL (já ruim por vazar em proxies e logs de acesso); use corpo ou ID</td></tr>
+    </tbody></table></div>
+<pre data-file="mascaramento por allowlist (exemplo em JS)"><code class="js">const CAMPOS_PERMITIDOS = ["id", "status", "medico_id", "inicio"];
+
+function paraLog(obj) {
+  // allowlist: só entra o que foi explicitamente aprovado
+  return Object.fromEntries(Object.entries(obj).filter(([k]) =&gt; CAMPOS_PERMITIDOS.includes(k)));
+}
+
+logger.info({ agendamento: paraLog(ag) }, "agendamento criado");</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Logar o corpo completo "só para depurar" e esquecer ligado. Ou o logger da biblioteca HTTP registrando cabeçalhos (inclusive <code>Authorization</code>) em nível <code>debug</code>. Revise a configuração dos loggers de terceiros e teste: faça uma requisição com dado fictício reconhecível e procure-o nos logs.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você rastreia uma requisição entre serviços?" Gero o <code>traceparent</code> (W3C Trace Context) na borda, cada serviço propaga o <code>trace-id</code> e põe-no em todos os logs estruturados; devolvo o trace id ao cliente. Complemento: não logo PII, tokens nem dado de saúde.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Logs de produção são ativo de risco LGPD. Defina: política de retenção, quem acessa, mascaramento por padrão e um teste automatizado que falha se campos proibidos aparecerem. Pergunte: "se este log vazar, o que está nele?". Incidente de log com dado de paciente é incidente de segurança.</p></div>
+</section>
+
+<section class="chap" id="opentelemetry">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>OpenTelemetry e traces distribuídos</h2>
+  <p><strong>OpenTelemetry</strong> (OTel) é o padrão aberto (projeto da CNCF) para <strong>gerar e exportar</strong> traces, métricas e logs, independente de fornecedor. Ele define APIs e SDKs por linguagem, convenções semânticas (nomes padronizados de atributos), o protocolo OTLP e o <strong>Collector</strong>, um processo que recebe, processa (filtra, amostra, mascara) e encaminha os dados para o backend de sua escolha (Jaeger, Tempo, Prometheus, Datadog, etc.). Você instrumenta uma vez e troca de backend sem mexer no código.</p>
+  <h3>Os três sinais</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Sinal</th><th>O que é</th><th>Boa para</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Traces</strong></td><td>O caminho de uma requisição, como árvore de <em>spans</em></td><td>Descobrir <em>onde</em> o tempo foi gasto e <em>qual</em> dependência falhou</td></tr>
+      <tr><td><strong>Métricas</strong></td><td>Números agregados ao longo do tempo (contadores, medidores, histogramas)</td><td>Painéis, alertas e tendências baratas</td></tr>
+      <tr><td><strong>Logs</strong></td><td>Eventos discretos com contexto</td><td>Detalhe de um caso; ligados ao trace via <code>trace_id</code></td></tr>
+    </tbody></table></div>
+  <h3>Spans e traces</h3>
+  <p>Um <strong>trace</strong> é a história de uma requisição; um <strong>span</strong> é uma etapa dela, com início, duração, atributos e status, ligada ao span-pai. Chamadas HTTP, consultas SQL e publicações em fila viram spans (a maioria automaticamente, via instrumentação automática). Spans de mensageria usam <strong>links</strong> ou contexto na mensagem para ligar o produtor ao consumidor, já que o processamento assíncrono acontece depois.</p>
+<figure class="figure">
+  <svg viewBox="0 0 700 290" role="img" aria-label="Trace atravessando gateway, API, banco e fila, em formato de cascata temporal">
+    <defs>
+      <marker id="ah-trace" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+    <text class="ttl" x="10" y="20">Trace de POST /v2/agendamentos (trace-id 0af76519...)</text>
+    <line class="ln" x1="150" y1="34" x2="690" y2="34"/>
+    <text class="lbl" x="150" y="48">0 ms</text><text class="lbl" x="400" y="48">250 ms</text><text class="lbl" x="650" y="48">500 ms</text>
+    <text x="10" y="76">gateway</text>
+    <rect class="box-a" x="150" y="60" width="520" height="24" rx="3"/>
+    <text class="lbl" x="158" y="76">POST /v2/agendamentos · 498 ms</text>
+    <text x="10" y="112">api-agendamentos</text>
+    <rect class="box-a" x="165" y="96" width="495" height="24" rx="3"/>
+    <text class="lbl" x="173" y="112">handler · 478 ms</text>
+    <text x="10" y="148">postgres</text>
+    <rect class="box-b" x="195" y="132" width="330" height="24" rx="3"/>
+    <text class="lbl" x="203" y="148">INSERT/SELECT agendamentos · 318 ms (lento)</text>
+    <text x="10" y="184">convenio-api</text>
+    <rect class="box-w" x="535" y="168" width="115" height="24" rx="3"/>
+    <text class="lbl" x="541" y="184">GET · 110 ms</text>
+    <text x="10" y="220">fila (publish)</text>
+    <rect class="box-w" x="652" y="204" width="30" height="24" rx="3"/>
+    <text class="lbl" x="560" y="220">publish 12 ms</text>
+    <text x="10" y="256">worker-notifica</text>
+    <rect class="box-m" x="662" y="240" width="28" height="24" rx="3"/>
+    <text class="lbl" x="150" y="256">assíncrono, depois da resposta; ligado ao trace por link/contexto na mensagem</text>
+    <text class="lbl" x="10" y="282">Leitura: o tempo está no banco (318 de 498 ms). Sem o trace, o gateway só diria "498 ms".</text>
+  </svg>
+  <figcaption>Cada barra é um span; o encaixe (pai e filho) mostra quem chamou quem. O worker aparece por link, pois roda depois da resposta.</figcaption>
+</figure>
+  <h3>Instrumentando uma API (Node.js)</h3>
+<pre data-file="tracing.js (carregado antes da aplicação)"><code class="js">const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+
+const sdk = new NodeSDK({
+  serviceName: 'api-agendamentos',
+  traceExporter: new OTLPTraceExporter({ url: 'http://otel-collector:4318/v1/traces' }),
+  instrumentations: [getNodeAutoInstrumentations()],   // HTTP, Express, pg, etc.
+});
+sdk.start();</code></pre>
+<pre data-file="span manual para uma regra de negócio"><code class="js">const { trace, SpanStatusCode } = require('@opentelemetry/api');
+const tracer = trace.getTracer('agendamentos');
+
+async function reservarHorario(medicoId, inicio) {
+  return tracer.startActiveSpan('reservar-horario', async (span) =&gt; {
+    span.setAttribute('medico.id', medicoId);        // atributos úteis, sem PII
+    try {
+      return await repo.reservar(medicoId, inicio);
+    } catch (e) {
+      span.recordException(e);
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw e;
+    } finally {
+      span.end();
+    }
+  });
+}</code></pre>
+<pre data-file="otel-collector.yaml (mínimo)"><code class="yaml">receivers:
+  otlp:
+    protocols: { http: {}, grpc: {} }
+processors:
+  batch: {}
+  attributes/limpeza:
+    actions:
+      - { key: http.request.header.authorization, action: delete }   # nunca exportar credenciais
+exporters:
+  otlp/tempo: { endpoint: "tempo:4317", tls: { insecure: true } }
+service:
+  pipelines:
+    traces: { receivers: [otlp], processors: [attributes/limpeza, batch], exporters: [otlp/tempo] }</code></pre>
+  <h3>Amostragem</h3>
+  <p>Guardar 100 % dos traces é caro. Estratégias: <strong>head sampling</strong> (decide no início: 5 % ao acaso) é simples, mas pode perder o trace raro que interessa; <strong>tail sampling</strong> (no Collector, decide ao fim do trace) guarda <em>todos os traces com erro ou lentos</em> e uma fração dos normais. Combine com o bit de amostragem do <code>traceparent</code> para o caminho todo respeitar a mesma decisão.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Perder o contexto no meio do caminho: uma chamada assíncrona, uma fila ou uma biblioteca HTTP não instrumentada. O trace quebra em dois pedaços e ninguém liga os pontos. Teste a propagação explicitamente (um teste de integração que verifica que o <code>trace-id</code> chega ao serviço seguinte e à mensagem na fila).</p></div>
+  <div class="note trap"><b>Atributos e cardinalidade</b><p>Não ponha dado pessoal em atributos de span (CPF, nome) nem valores de alta cardinalidade em <em>métricas</em> (ID do paciente como label): explode o custo do backend de métricas e expõe dados. Em traces, atributos com ID são aceitáveis só se opacos.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é OpenTelemetry?" Padrão aberto para instrumentar traces, métricas e logs, com SDKs, convenções semânticas, protocolo OTLP e Collector; desacopla instrumentação do backend. Explique trace, span e como o <code>traceparent</code> liga serviços. Comente que tail sampling guarda erros e lentidão.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Observabilidade tem custo (ingestão, armazenamento, licenças). Decida amostragem, retenção e o que é essencial; e padronize instrumentação (bibliotecas e convenções comuns) para não ter cada time com seu jeito. Cobre: todo serviço novo nasce com trace, métricas RED e logs correlacionados no checklist de go-live.</p></div>
+</section>
+
+<section class="chap" id="slos-alertas">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Métricas, SLOs, alertas e monitoramento sintético</h2>
+  <h3>RED e USE</h3>
+  <p>Duas listas curtas para não se perder em centenas de métricas:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Método</th><th>Para</th><th>Mede</th><th>Exemplo em API de agendamento</th></tr></thead>
+    <tbody>
+      <tr><td><strong>RED</strong></td><td>Serviços (o que o usuário sente)</td><td><strong>R</strong>ate (requisições/s), <strong>E</strong>rrors (taxa de erro), <strong>D</strong>uration (latência, em histograma)</td><td>Por rota e versão: 120 req/s, 0,3 % de 5xx, p95 = 240 ms</td></tr>
+      <tr><td><strong>USE</strong></td><td>Recursos (o que sustenta o serviço)</td><td><strong>U</strong>tilization (% ocupado), <strong>S</strong>aturation (fila de espera), <strong>E</strong>rrors</td><td>Pool de conexões do banco: 90 % em uso, 35 requisições esperando, 12 timeouts. CPU, disco, fila</td></tr>
+    </tbody></table></div>
+  <p>RED responde "o usuário está sofrendo?"; USE responde "<em>qual recurso</em> está no limite?". Use RED para painéis de serviço e alertas, USE para diagnóstico. Latência sempre em <strong>histograma</strong> (permite p95/p99) e nunca só média.</p>
+  <h3>SLI, SLO e error budget</h3>
+  <ul>
+    <li><strong>SLI</strong> (indicador): uma medida do que o usuário sente, como razão "bons / total". Ex.: requisições com status diferente de 5xx / total.</li>
+    <li><strong>SLO</strong> (objetivo): a meta para o SLI numa janela. Ex.: 99,9 % em 30 dias.</li>
+    <li><strong>SLA</strong>: compromisso contratual (com consequência), normalmente mais frouxo que o SLO interno.</li>
+    <li><strong>Error budget</strong>: o que você <em>pode</em> errar sem violar o SLO: 100 % menos o SLO.</li>
+  </ul>
+  <div class="tbl"><table>
+    <thead><tr><th>SLI</th><th>Como medir</th><th>SLO de exemplo (30 dias)</th></tr></thead>
+    <tbody>
+      <tr><td>Disponibilidade</td><td>requisições sem 5xx / total, medido no gateway</td><td>99,9 %</td></tr>
+      <tr><td>Latência</td><td>requisições respondidas em até 400 ms / total</td><td>95 % em ≤ 400 ms (equivale a p95 ≤ 400 ms)</td></tr>
+      <tr><td>Frescor (assíncrono)</td><td>eventos entregues em até 60 s / total</td><td>99 %</td></tr>
+    </tbody></table></div>
+  <h3>Exemplo numérico</h3>
+  <p>A API de agendamentos tem SLO de disponibilidade de <strong>99,9 % em 30 dias</strong> e recebe cerca de <strong>10 milhões de requisições</strong> por mês.</p>
+  <ul>
+    <li>Error budget = 0,1 % = <strong>10.000 requisições com falha</strong> no mês.</li>
+    <li>Em tempo, se fosse indisponibilidade total: 30 dias × 24 h × 60 min × 0,001 = <strong>43,2 minutos</strong> por mês.</li>
+    <li>Um deploy ruim que, por 20 minutos, faz 5 % das requisições falharem (tráfego de ~230 req/min, cerca de 4.600 requisições): são ~230 falhas, ou <strong>2,3 % do budget</strong>. Já uma queda total de 20 minutos, com o mesmo tráfego, perde 4.600 requisições: <strong>46 % do budget</strong> do mês.</li>
+    <li>Se o budget do mês já foi 80 % consumido na segunda semana, o time <strong>congela mudanças arriscadas</strong> e prioriza confiabilidade até a janela renovar. Com budget sobrando, pode correr mais riscos e lançar mais rápido.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>100 % não é meta: custa infinitamente mais e ninguém precisa. O SLO é uma negociação entre produto e engenharia sobre o que o usuário percebe como "bom o bastante". O budget transforma discussões de opinião ("está estável?") em números.</p></div>
+  <h3>Alertas que acordam vs dashboards</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Alerta que acorda (página)</th><th>Alerta em ticket</th><th>Dashboard</th></tr></thead>
+    <tbody>
+      <tr><td>Quando</td><td>Impacto no usuário <em>agora</em> ou iminente, e há ação humana possível</td><td>Degradação lenta; resolve em horário comercial</td><td>Contexto e diagnóstico; ninguém é notificado</td></tr>
+      <tr><td>Exemplo</td><td>Budget sendo queimado 14x mais rápido que o normal</td><td>Budget consumido a 1x ao longo de 3 dias; disco a 80 %</td><td>CPU, filas, p95 por rota</td></tr>
+      <tr><td>Foco</td><td><strong>Sintoma</strong> (usuário sofre)</td><td>Tendência</td><td>Causa e correlações</td></tr>
+    </tbody></table></div>
+  <p>Alerte em <strong>sintomas</strong> (taxa de erro, latência, burn rate), não em causas ("CPU a 85 %" pode ser perfeitamente saudável). Um alerta que acorda alguém deve ter dono, runbook e ser acionável; se não é, vira ruído e as pessoas passam a ignorar os alertas (fadiga).</p>
+  <h3>Alerta por taxa de consumo do budget (burn rate)</h3>
+  <p>Burn rate 1 significa consumir o budget exatamente ao longo da janela. Um burn rate de 14,4 durante 1 hora consome 2 % do budget mensal (14,4 ÷ 720 h). Usa-se uma janela longa e uma curta juntas, para ser rápido ao detectar e rápido ao silenciar.</p>
+<pre data-file="alertas-slo.yaml (Prometheus, ilustrativo)"><code class="yaml">groups:
+  - name: slo-agendamentos
+    rules:
+      - alert: AgendamentosBurnRateAlto
+        expr: |
+          (
+            sum(rate(http_server_requests_total{service="api-agendamentos",status=~"5.."}[1h]))
+            / sum(rate(http_server_requests_total{service="api-agendamentos"}[1h]))
+          ) &gt; (14.4 * 0.001)
+          and
+          (
+            sum(rate(http_server_requests_total{service="api-agendamentos",status=~"5.."}[5m]))
+            / sum(rate(http_server_requests_total{service="api-agendamentos"}[5m]))
+          ) &gt; (14.4 * 0.001)
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "Consumindo o error budget 14x mais rápido que o normal"
+          runbook: "https://runbooks.clinica.example/agendamentos-5xx"</code></pre>
+  <h3>Monitoramento sintético</h3>
+  <p>Métricas reais só existem se há tráfego. Às 3h da manhã, ou numa região sem usuários, uma API pode estar quebrada sem ninguém saber. <strong>Monitoramento sintético</strong> executa, de fora e continuamente (a cada minuto ou poucos minutos), <em>transações de teste</em> contra a API como um cliente faria: autentica, lista, cria e cancela um agendamento de um paciente fictício.</p>
+  <ul>
+    <li>Rode de <strong>fora da sua rede</strong> e de mais de um ponto: pega falha de DNS, certificado expirado e rota de internet que as métricas internas não veem.</li>
+    <li>Cubra <strong>jornadas críticas</strong> (agendar, consultar resultado), não só <code>/health</code>. Um health check que devolve 200 com o banco fora é mentira.</li>
+    <li>Use <strong>dados de teste isolados</strong> (paciente e agenda fictícios) e limpe depois, para não poluir relatórios nem tocar em dado real.</li>
+    <li>Alerte pela falha de N execuções consecutivas, para não acordar por um soluço de rede. Verifique também a validade do certificado TLS e do token do usuário sintético.</li>
+    <li>Ferramentas: scripts k6 agendados, blackbox exporter do Prometheus, serviços de monitoramento sintético dos provedores de nuvem e de observabilidade.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Alertas demais e sem dono: 200 alertas por semana, 190 inúteis. Revise toda semana os alertas que acordaram alguém: tinha ação? Era sintoma? Se não, mude, rebaixe a ticket ou apague. Quem recebe plantão deve poder dormir.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você define a confiabilidade de uma API?" SLI como razão bons/total (disponibilidade e latência), SLO acordado com produto (99,9 % em 30 dias, por exemplo), error budget como moeda de decisão, alerta por burn rate em sintoma. Complemente com RED para serviços, USE para recursos e checks sintéticos de jornadas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O SLO transforma conversa de "estabilidade vs velocidade" em decisão: budget sobrando, acelera; budget esgotado, congela e investe em confiabilidade. Cobre: SLO por API crítica publicado, revisão trimestral, post-mortem sem culpados quando o budget estoura e carga de plantão sob controle (número de páginas por semana).</p></div>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+  <h3>Cenário 1: "a API está lenta" (roteiro de investigação)</h3>
+  <p><strong>Situação:</strong> o suporte avisa que parceiros e o app do paciente reclamam de lentidão no agendamento. Nenhum alerta disparou.</p>
+  <p><strong>O que fazer:</strong> método, não palpite. Do sintoma para a causa:</p>
+  <ol class="seq">
+    <li><div><strong>Delimite o problema.</strong> Quando começou? Para quem (um parceiro, todos)? Quais rotas? Em que percentil (só p99 ou também p50)? Um deploy, configuração ou aumento de tráfego coincide com o início? <em>Mudou alguma coisa?</em> é a pergunta de maior retorno.</div></li>
+    <li><div><strong>Olhe o painel RED.</strong> Taxa, erros e latência por rota e por versão. Lentidão em uma rota aponta para código ou consulta; em todas, para recurso compartilhado (banco, rede, CPU, dependência comum).</div></li>
+    <li><div><strong>Use um trace lento.</strong> Pegue o <code>trace_id</code> de uma requisição lenta (do log, do parceiro, do tail sampling) e veja <em>onde está o tempo</em>: espera no banco, chamada externa, fila, GC?</div></li>
+    <li><div><strong>Confira o USE dos recursos suspeitos.</strong> Pool de conexões saturado? CPU em throttling? Bloqueios e consultas lentas no PostgreSQL (<code>pg_stat_statements</code>, <code>pg_locks</code>) ou no Oracle (relatórios de execução)? Fila acumulando? Réplicas insuficientes?</div></li>
+    <li><div><strong>Verifique dependências externas.</strong> O convênio ou o laboratório parceiro ficou lento? Timeouts, circuit breaker e fallbacks estão configurados (módulo 06)? A sua API herda a lentidão deles?</div></li>
+    <li><div><strong>Mitigue primeiro, entenda depois.</strong> Reverter o deploy, escalar réplicas, desligar feature flag, aplicar rate limit a um consumidor abusivo, aumentar o timeout curto demais. Comunique o status.</div></li>
+    <li><div><strong>Corrija a causa e feche o ciclo.</strong> Post-mortem sem culpados, teste de carga que reproduz, alerta de SLO que teria avisado antes (aqui, nenhum disparou: por quê?).</div></li>
+  </ol>
+<pre data-file="consulta no PostgreSQL: o que está lento agora"><code class="text">SELECT pid, now() - query_start AS duracao, state, wait_event_type, left(query, 120) AS consulta
+FROM   pg_stat_activity
+WHERE  state &lt;&gt; 'idle' AND now() - query_start &gt; interval '2 seconds'
+ORDER  BY duracao DESC;</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Dado antes de hipótese. "Deve ser o banco" sem trace é achismo caro. E mitigue (reverta, escale) antes de investigar a fundo, quando há paciente esperando.</p></div>
+
+  <h3>Cenário 2: o pipeline demora 45 minutos e ninguém confia nos testes</h3>
+  <p><strong>Situação:</strong> a suíte e2e tem testes instáveis; o time reexecuta até ficar verde.</p>
+  <p><strong>O que fazer:</strong> meça quais testes falham de modo intermitente; quarentene-os com prazo e dono; mova e2e pesados para o pipeline noturno; troque e2e por testes de integração com Testcontainers e contrato onde possível; paralelize; meta: PR em menos de 15 minutos. Trate a instabilidade como defeito prioritário.</p>
+
+  <h3>Cenário 3: o parceiro diz "vocês mudaram a API e quebraram a gente"</h3>
+  <p><strong>Situação:</strong> o laboratório parceiro afirma que parou de funcionar ontem à noite.</p>
+  <p><strong>O que fazer:</strong> peça o <code>trace-id</code> ou o horário e o <code>client_id</code>; ache as requisições deles nos logs e compare as respostas antes e depois do deploy; veja se foi mudança de contrato (o diff do OpenAPI deveria ter acusado). Se a mudança era "compatível" mas o parceiro tinha dependência implícita (lei de Hyrum), reverta, converse e inclua o caso na suíte de contrato. Para o futuro: Pact com esse parceiro, ou sandbox que receba a versão antes.</p>
+
+  <h3>Cenário 4: SLO violado três meses seguidos e o produto quer lançar funcionalidade nova</h3>
+  <p><strong>Situação:</strong> o error budget de 99,9 % estourou em três meses; a diretoria de produto pressiona por novidades.</p>
+  <p><strong>O que fazer:</strong> mostre o dado: quantos incidentes, quanto tempo de indisponibilidade, impacto em atendimento. Proponha a política de budget já acordada: com budget esgotado, congela-se funcionalidade nova até recuperar, ou aloca-se parte da capacidade a confiabilidade (causas dos três principais incidentes). Se o SLO é mais agressivo do que o negócio precisa, renegocie o SLO com números, não relaxe em silêncio.</p>
+
+  <h3>Cenário 5: alerta de madrugada por "CPU alta" que não era nada</h3>
+  <p><strong>Situação:</strong> o plantonista foi acordado três vezes na semana por CPU acima de 85 % sem impacto ao usuário.</p>
+  <p><strong>O que fazer:</strong> troque o alerta de causa por alerta de sintoma (burn rate de erro/latência); a CPU vira painel e alerta de ticket em caso de tendência. Registre num post-mortem curto de "alerta ruim" e revise todos os alertas que acordaram alguém no mês. Tempo de sono é parte da confiabilidade da equipe.</p>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Troféu de testes</dt><dd>Variante da pirâmide que dá mais peso aos testes de integração, onde está o risco das APIs.</dd></div>
+    <div><dt>Testcontainers</dt><dd>Biblioteca que sobe contêineres Docker descartáveis (PostgreSQL, Kafka) para testes de integração reais.</dd></div>
+    <div><dt>Teste de contrato</dt><dd>Verificação de que provedor e consumidor concordam sobre o formato da API.</dd></div>
+    <div><dt>Consumer-driven contract</dt><dd>Contrato escrito pelos consumidores com o que de fato usam; o provedor o verifica (Pact).</dd></div>
+    <div><dt>can-i-deploy</dt><dd>Comando do Pact Broker que diz se uma versão pode ir ao ambiente sem quebrar contratos verificados.</dd></div>
+    <div><dt>Stub / mock / fake</dt><dd>Dublês de teste: resposta fixa, dublê que verifica chamadas, implementação simplificada.</dd></div>
+    <div><dt>Sandbox</dt><dd>Ambiente para parceiros testarem, com contrato igual ao de produção e dados fictícios.</dd></div>
+    <div><dt>Threshold (k6)</dt><dd>Meta de desempenho embutida no script; se violada, o teste falha.</dd></div>
+    <div><dt>p95 / p99</dt><dd>Latência abaixo da qual ficam 95 % / 99 % das requisições; descreve a cauda, ao contrário da média.</dd></div>
+    <div><dt>traceparent</dt><dd>Cabeçalho do W3C Trace Context com versão, trace-id, parent-id e flags, que liga requisições entre serviços.</dd></div>
+    <div><dt>Span / trace</dt><dd>Span é uma etapa com duração; trace é a árvore de spans de uma requisição.</dd></div>
+    <div><dt>OpenTelemetry</dt><dd>Padrão aberto para gerar e exportar traces, métricas e logs, com SDKs e Collector.</dd></div>
+    <div><dt>RED / USE</dt><dd>Métodos de métricas: Rate, Errors, Duration para serviços; Utilization, Saturation, Errors para recursos.</dd></div>
+    <div><dt>SLI / SLO / SLA</dt><dd>Indicador, objetivo e compromisso contratual de confiabilidade.</dd></div>
+    <div><dt>Error budget</dt><dd>Quanto de falha o SLO permite na janela; guia o ritmo entre inovar e estabilizar.</dd></div>
+    <div><dt>Monitoramento sintético</dt><dd>Transações de teste executadas de fora e continuamente para detectar falhas sem depender de tráfego real.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>Pirâmide de testes: como você aplica a uma API?</span></summary><div class="ans"><p>Muitos unitários para regra de negócio; testes de integração do endpoint contra banco real (Testcontainers), que é onde está o maior risco; contratos para proteger consumidores; poucos e2e. Na prática, o "troféu" descreve melhor APIs, porque o risco mora nas fronteiras.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Por que não usar H2 ou SQLite para testar uma API que roda em PostgreSQL ou Oracle?</span></summary><div class="ans"><p>Dialeto, tipos, funções, índices e locks diferem; o teste passa e produção falha. Com Testcontainers subo o mesmo banco e rodo as migrações no teste. Em Oracle, as imagens são pesadas, então reservo para as consultas críticas.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Diferença entre mock, stub e fake?</span></summary><div class="ans"><p>Stub devolve respostas fixas; mock também verifica as chamadas recebidas; fake é uma implementação simplificada que funciona (fila em memória). Uso dublês para sistemas de terceiros e para simular falhas; para o que é meu, uso o real.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>O que é teste de contrato e por que importa?</span></summary><div class="ans"><p>Verifica o acordo entre provedor e consumidor para que mudanças em um lado não quebrem o outro de forma silenciosa. Evita o cenário em que todos os testes do provedor passam e o consumidor quebra em produção.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Contrato por schema vs consumer-driven: quando usar cada um?</span></summary><div class="ans"><p>Schema (OpenAPI): barato, o provedor valida que cumpre o contrato publicado; serve para APIs públicas e muitos consumidores desconhecidos. Consumer-driven (Pact): cada consumidor declara o que usa e o provedor verifica; vale com consumidores conhecidos e acessíveis, como app próprio e serviços internos.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Descreva o fluxo do Pact.</span></summary><div class="ans"><p>O consumidor escreve testes contra um mock do provedor, o que gera o pact; publica no Broker. O CI do provedor baixa os pacts e os verifica contra a API real, publicando o resultado. Antes do deploy, <code>can-i-deploy</code> consulta a matriz de versões verificadas e bloqueia combinações não verificadas.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como é um bom sandbox para parceiros?</span></summary><div class="ans"><p>Mesmo contrato e autenticação da produção, dados 100 % fictícios, gatilhos previsíveis de cenário (erros), reset periódico, limites razoáveis e recebendo versões novas antes da produção. Reduz o time to first hello world e o suporte.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Quais os tipos de teste de carga?</span></summary><div class="ans"><p>Smoke (funciona com carga mínima), load (carga esperada sustentada), stress (além do pico até degradar), soak (horas, atrás de vazamentos e deriva) e spike (salto súbito). Cada um responde a uma pergunta diferente sobre capacidade e comportamento sob pressão.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Por que usar p95/p99 em vez de média?</span></summary><div class="ans"><p>A média esconde a cauda: poucas requisições muito lentas somem num número bonito. O p95 diz que 95 % respondem abaixo daquele valor; o p99 pega os piores casos, que são os usuários insatisfeitos. SLOs e thresholds se escrevem em percentis.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como evitar que testes de carga enganem?</span></summary><div class="ans"><p>Ambiente e volume de dados equivalentes aos de produção, mix real de endpoints, modelo de chegada aberto (constant-arrival-rate) para evitar coordinated omission, metas vindas do SLO, e correlacionar com métricas do servidor (CPU, pool, filas) para achar a causa.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>O que é um correlation id e como o W3C Trace Context o padroniza?</span></summary><div class="ans"><p>Correlation id é um identificador que viaja com a requisição para juntar logs entre serviços. O W3C Trace Context padroniza isso no cabeçalho <code>traceparent</code>: versão, trace-id (32 hex), parent-id (16 hex) e flags. Cada serviço propaga o trace-id e gera seu próprio span-id.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que é OpenTelemetry e o que é o Collector?</span></summary><div class="ans"><p>OTel é o padrão aberto para traces, métricas e logs, com APIs/SDKs, convenções semânticas e o protocolo OTLP. O Collector recebe os dados, processa (amostra, filtra, mascara) e exporta para o backend; isso desacopla a instrumentação do fornecedor.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como a lentidão aparece num trace distribuído?</span></summary><div class="ans"><p>Como o span mais largo na cascata: se o gateway mostra 500 ms e o span do banco 320 ms, o tempo está na consulta. O trace também mostra dependências externas lentas e chamadas sequenciais que poderiam ser paralelas.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Explique RED e USE.</span></summary><div class="ans"><p>RED para serviços: taxa de requisições, taxa de erros e duração (histograma). USE para recursos: utilização, saturação e erros (CPU, pool de conexões, filas). RED diz se o usuário sofre; USE diz qual recurso está no limite.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Calcule o error budget de um SLO de 99,9 % em 30 dias com 10 milhões de requisições.</span></summary><div class="ans"><p>0,1 % de 10 milhões = 10.000 requisições com falha. Em tempo, equivale a cerca de 43 minutos de indisponibilidade total por mês. Budget consumido pela metade em duas semanas indica que é hora de reduzir risco de mudanças.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Que alertas devem acordar alguém e quais não?</span></summary><div class="ans"><p>Acordam os que indicam sintoma real ao usuário e têm ação possível: burn rate alto do error budget, indisponibilidade. Tendências e causas (CPU, disco 80 %) viram ticket ou painel. Todo alerta tem dono e runbook; revisão semanal elimina ruído.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>O que NÃO logar numa API de saúde e por quê?</span></summary><div class="ans"><p>Tokens e credenciais, CPF e demais identificadores pessoais, diagnósticos, exames e conteúdo de prontuário, corpos completos de requisição, dados financeiros. Log tem retenção longa e acesso amplo, e dado de saúde é sensível pela LGPD. Logue IDs opacos e campos em allowlist, e teste o mascaramento.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>"A API está lenta." Como você investiga?</span></summary><div class="ans"><p>Delimito (quando, quem, quais rotas, o que mudou), olho RED por rota, abro um trace lento para ver onde está o tempo, confiro USE dos recursos suspeitos (pool, CPU, locks, fila) e dependências externas. Mitigo cedo (rollback, escala, flag) e depois corrijo a causa, com post-mortem e alerta que teria avisado.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

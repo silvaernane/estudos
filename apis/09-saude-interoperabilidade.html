@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 09: Interoperabilidade em saúde</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 09 de 10 · Interoperabilidade em saúde</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: marcar o módulo atual com aria-current
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html" aria-current="page"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li class="sub"><ol>
+      <li><a href="#por-que"><span class="n">1</span>Interoperabilidade: o que é e por que saúde é o caso mais difícil</a></li>
+      <li><a href="#hl7v2"><span class="n">2</span>HL7 v2: o legado que move hospitais e laboratórios</a></li>
+      <li><a href="#cda-fhir"><span class="n">3</span>CDA e FHIR: documentos e recursos</a></li>
+      <li><a href="#api-fhir"><span class="n">4</span>A API REST do FHIR: leitura, busca, escrita e transações</a></li>
+      <li><a href="#terminologias"><span class="n">5</span>Terminologias e o trabalho pesado do mapeamento</a></li>
+      <li><a href="#smart-dicom"><span class="n">6</span>SMART on FHIR e imagem médica (DICOM)</a></li>
+      <li><a href="#brasil"><span class="n">7</span>Contexto brasileiro: RNDS, TISS, CNES e identificadores</a></li>
+      <li><a href="#motores"><span class="n">8</span>Motores de integração e barramento</a></li>
+      <li><a href="#identidade-lgpd"><span class="n">9</span>Identidade do paciente e LGPD em saúde</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos e glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 09 · <span class="lvl l3">Avançado</span></div>
+  <h1>Interoperabilidade em saúde</h1>
+  <p class="lede">Como sistemas de saúde trocam dados de verdade: HL7 v2, FHIR, terminologias, RNDS, TISS e a infraestrutura que liga tudo isso, com os cuidados de identidade e LGPD.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Ler uma mensagem HL7 v2 (MSH, PID, PV1, OBR, OBX) e explicar ADT, ORM/OML, ORU e ACK</li>
+    <li>Usar a API REST do FHIR: read, search, _include, Bundle e transaction, com perfis e CapabilityStatement</li>
+    <li>Explicar por que o mapeamento de terminologias (LOINC, SNOMED, CID-10, TUSS) é o trabalho pesado</li>
+    <li>Situar RNDS, TISS, CNES e CNS no contexto brasileiro e desenhar um hub de integração</li>
+    <li>Tratar identidade do paciente e LGPD em integrações de saúde</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="por-que">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Interoperabilidade: o que é e por que saúde é o caso mais difícil</h2>
+  <p>Interoperar é fazer sistemas independentes trocarem informação e <strong>usá-la</strong> sem intervenção humana. Nos módulos anteriores você construiu APIs entre sistemas que você controla. Em saúde quase nenhum sistema é seu: o prontuário é de um fornecedor, o laboratório de apoio tem outro sistema, a operadora impõe um padrão e o governo impõe outro. A API deixa de ser "um endpoint bem desenhado" e passa a ser um <strong>acordo entre organizações</strong>.</p>
+
+  <h3>Os níveis de interoperabilidade</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Nível</th><th>Pergunta que responde</th><th>Exemplo em saúde</th></tr></thead>
+    <tbody>
+      <tr><td>Técnico / transporte</td><td>Os bytes chegam?</td><td>HTTPS, TLS mútuo, MLLP sobre TCP, VPN</td></tr>
+      <tr><td>Sintático</td><td>O receptor consegue ler a estrutura?</td><td>Mensagem HL7 v2 com <code>|</code> e <code>^</code>, JSON FHIR, XML do TISS</td></tr>
+      <tr><td>Semântico</td><td>O receptor entende o <em>significado</em>?</td><td>O código <code>718-7</code> do LOINC significa hemoglobina em sangue; "HB" de um sistema local não significa nada para quem recebe</td></tr>
+      <tr><td>Organizacional / de processo</td><td>Há acordo de quem faz o quê, quando e sob qual regra legal?</td><td>Contrato com o laboratório, base legal LGPD, SLA, quem corrige um resultado errado</td></tr>
+    </tbody>
+  </table></div>
+  <p>A maior parte do esforço real está nos dois últimos níveis. Trocar JSON é fácil; concordar que "data do atendimento" é a data de agendamento, de chegada ou de faturamento é o que consome meses.</p>
+
+  <h3>Por que saúde é especialmente difícil</h3>
+  <ul>
+    <li><strong>Vocabulário enorme e ambíguo:</strong> milhares de exames, procedimentos, diagnósticos e medicamentos, cada sistema com códigos próprios.</li>
+    <li><strong>Padrões que convivem por décadas:</strong> HL7 v2 (anos 1980) ainda é a base de hospitais e laboratórios; CDA, FHIR, DICOM, TISS e padrões proprietários coexistem na mesma empresa.</li>
+    <li><strong>Identidade frágil:</strong> o paciente nem sempre tem CPF cadastrado, nomes se repetem, há duplicidade de cadastro dentro do próprio sistema (seção 9).</li>
+    <li><strong>Risco clínico:</strong> um erro de mapeamento pode virar um resultado de exame no paciente errado ou uma unidade trocada. Falha silenciosa é pior que falha com erro.</li>
+    <li><strong>Regulação pesada:</strong> LGPD (dado de saúde é sensível), sigilo profissional, normas da ANS e do Ministério da Saúde.</li>
+    <li><strong>Incentivos desalinhados:</strong> o fornecedor de software ganha com o dado preso no seu sistema; a integração costuma ser cobrada à parte.</li>
+  </ul>
+
+  <h3>Mapa do módulo</h3>
+  <p>As seções seguem a ordem em que você encontrará os padrões no trabalho: primeiro o legado que ainda domina (HL7 v2), depois o padrão moderno (FHIR), as terminologias que dão significado, a segurança (SMART), o contexto brasileiro (RNDS, TISS), imagem (DICOM), a infraestrutura de integração, identidade e LGPD.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>Se perguntarem "o que é interoperabilidade", não pare em "sistemas conversando". Responda com os níveis: técnico, sintático, semântico e organizacional, e diga que o semântico é onde saúde sofre. Isso mostra que você já viveu integração de verdade.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Ao aprovar uma integração, pergunte pelos quatro níveis, não só pelo técnico. O prazo estoura quase sempre no semântico (mapeamento de códigos) e no organizacional (contrato, homologação com a outra parte, base legal). Estime com margem e peça um <em>responsável do lado da contraparte</em> desde o início.</p></div>
+</section>
+
+<section class="chap" id="hl7v2">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>HL7 v2: o legado que move hospitais e laboratórios</h2>
+  <p>O HL7 v2 é um padrão de <strong>mensagens baseadas em texto</strong>, criado para trocar eventos entre sistemas dentro e entre hospitais: "paciente admitido", "pedido de exame", "resultado disponível". Não é uma API consultável como REST; é um fluxo de eventos ponto a ponto. A versão mais encontrada em campo é a 2.3 a 2.5.1, e o padrão é retrocompatível por desenho, o que explica a longevidade. Se o laboratório de apoio da sua empresa integra por "arquivo" ou "porta TCP", provavelmente é HL7 v2.</p>
+
+  <h3>Estrutura de uma mensagem</h3>
+  <ul>
+    <li>A mensagem é uma sequência de <strong>segmentos</strong>, um por linha, separados por <code>CR</code> (carriage return, <code>\r</code>), não por <code>\n</code>.</li>
+    <li>Cada segmento começa com um nome de 3 letras (<code>MSH</code>, <code>PID</code>) e tem <strong>campos</strong> separados por <code>|</code>.</li>
+    <li>Um campo pode ter <strong>componentes</strong> separados por <code>^</code>, <strong>repetições</strong> separadas por <code>~</code>, e subcomponentes por <code>&amp;</code>. O caractere de escape é <code>\</code>.</li>
+    <li>Os delimitadores são declarados no início do <code>MSH</code> (<code>^~\&amp;</code>) e, em teoria, podem mudar; na prática são sempre esses.</li>
+    <li>A <strong>posição</strong> do campo é o contrato: <code>PID-5</code> é o nome do paciente. Um campo vazio ainda ocupa posição, por isso aparecem várias barras seguidas.</li>
+  </ul>
+
+  <h3>Segmentos que você precisa reconhecer</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Segmento</th><th>Papel</th><th>Campos mais usados</th></tr></thead>
+    <tbody>
+      <tr><td><code>MSH</code></td><td>Cabeçalho: quem envia, quem recebe, tipo, id, versão</td><td>MSH-3/4 remetente, MSH-5/6 destinatário, MSH-7 data/hora, MSH-9 tipo, MSH-10 id da mensagem, MSH-12 versão</td></tr>
+      <tr><td><code>EVN</code></td><td>Evento que gerou a mensagem</td><td>EVN-1 código do evento, EVN-2 data/hora</td></tr>
+      <tr><td><code>PID</code></td><td>Identificação do paciente</td><td>PID-3 identificadores (prontuário, CPF, CNS), PID-5 nome, PID-7 nascimento, PID-8 sexo, PID-11 endereço</td></tr>
+      <tr><td><code>PV1</code></td><td>Visita / atendimento</td><td>PV1-2 classe (ambulatorial, internado, urgência), PV1-3 local, PV1-7 médico responsável, PV1-19 número do atendimento</td></tr>
+      <tr><td><code>ORC</code></td><td>Controle do pedido (comum a vários tipos de pedido)</td><td>ORC-1 controle (novo, cancelar), ORC-2 número do pedido do solicitante, ORC-3 número do executor</td></tr>
+      <tr><td><code>OBR</code></td><td>Pedido/solicitação de observação (o exame)</td><td>OBR-4 exame solicitado, OBR-7 data da coleta</td></tr>
+      <tr><td><code>OBX</code></td><td>Cada resultado individual</td><td>OBX-2 tipo do valor (NM numérico, ST texto, CWE codificado), OBX-3 identificador, OBX-5 valor, OBX-6 unidade, OBX-7 referência, OBX-8 flag anormal, OBX-11 status</td></tr>
+      <tr><td><code>MSA</code></td><td>Reconhecimento (no ACK)</td><td>MSA-1 código (AA aceito, AE erro, AR rejeitado), MSA-2 id da mensagem original</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Tipos de mensagem mais comuns</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Significado</th><th>Quando aparece</th></tr></thead>
+    <tbody>
+      <tr><td><code>ADT^A01</code>, <code>A04</code>, <code>A08</code>, <code>A03</code></td><td>Admissão, registro ambulatorial, atualização de cadastro, alta</td><td>O sistema de cadastro/atendimento avisa os demais (laboratório, imagem, faturamento)</td></tr>
+      <tr><td><code>ADT^A40</code></td><td>Fusão de pacientes (merge)</td><td>Duplicidade de cadastro resolvida</td></tr>
+      <tr><td><code>ORM^O01</code> / <code>OML^O21</code></td><td>Pedido (ORM é o genérico antigo; OML é o específico de laboratório nas versões mais novas)</td><td>Médico pede exame no prontuário; o laboratório precisa receber</td></tr>
+      <tr><td><code>ORU^R01</code></td><td>Resultado de observação</td><td>Laboratório devolve o resultado ao sistema solicitante</td></tr>
+      <tr><td><code>SIU^S12</code></td><td>Agendamento novo</td><td>Integração de agenda</td></tr>
+      <tr><td><code>ACK</code></td><td>Resposta de aceite da camada de aplicação</td><td>Toda mensagem recebida deve ser respondida com ACK</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Exemplo comentado (dados fictícios)</h3>
+  <p>Registro de paciente ambulatorial (<code>ADT^A04</code>). Os comentários abaixo não fazem parte da mensagem; na prática cada linha termina em <code>CR</code>.</p>
+<pre data-file="ADT_A04.hl7"><code class="text">MSH|^~\&amp;|SIS_CLINICA|CLINICA_A|LAB_APOIO|LAB_X|20261125101530-0300||ADT^A04^ADT_A01|MSG0000123|P|2.5.1
+EVN|A04|20261125101500
+PID|1||123456^^^CLINICA_A^MR~11144477735^^^BRA^CPF||SILVA^MARIA DA^^^||19850314|F|||RUA DAS FLORES 100^^SAO PAULO^SP^01000000^BR
+PV1|1|O|AMB^SALA2^^CLINICA_A||||1234^COSTA^JOAO^^^^^CRM-SP|||CLI|||||||||V0001</code></pre>
+  <ul>
+    <li><code>MSH-9</code> = <code>ADT^A04^ADT_A01</code>: tipo, evento de gatilho e estrutura da mensagem. <code>MSH-10</code> é o id único, usado no ACK e para deduplicar. <code>MSH-11</code> = <code>P</code> (produção; <code>T</code> é teste). <code>MSH-12</code> = versão <code>2.5.1</code>.</li>
+    <li><code>PID-3</code> tem <strong>duas repetições</strong> separadas por <code>~</code>: o número de prontuário (tipo <code>MR</code>, emitido pela <code>CLINICA_A</code>) e o CPF. Cada identificador tem sua "autoridade emissora", o que permite distinguir dois prontuários 123456 de clínicas diferentes.</li>
+    <li><code>PID-5</code> = <code>SILVA^MARIA DA</code>: sobrenome e nome em componentes. <code>PID-7</code> data de nascimento, <code>PID-8</code> sexo.</li>
+    <li><code>PV1-2</code> = <code>O</code> (outpatient), <code>PV1-3</code> local de atendimento, <code>PV1-7</code> médico com CRM, <code>PV1-19</code> número do atendimento.</li>
+  </ul>
+  <p>A resposta do receptor, o <code>ACK</code>:</p>
+<pre><code class="text">MSH|^~\&amp;|LAB_APOIO|LAB_X|SIS_CLINICA|CLINICA_A|20261125101531-0300||ACK^A04^ACK|ACK0000456|P|2.5.1
+MSA|AA|MSG0000123</code></pre>
+  <p><code>MSA-1 = AA</code> (aceito), e <code>MSA-2</code> repete o id da mensagem original. Se fosse <code>AE</code> (erro de aplicação) ou <code>AR</code> (rejeitada), um segmento <code>ERR</code> descreveria o problema.</p>
+
+  <h3>Resultado de exame: ORU^R01</h3>
+<pre data-file="ORU_R01.hl7"><code class="text">MSH|^~\&amp;|LAB_X|LAB_X|SIS_CLINICA|CLINICA_A|20261125143000-0300||ORU^R01^ORU_R01|MSG0009981|P|2.5.1
+PID|1||123456^^^CLINICA_A^MR||SILVA^MARIA DA||19850314|F
+ORC|RE|PED778899|EXM445566
+OBR|1|PED778899|EXM445566|58410-2^Hemograma completo^LN|||20261125083000
+OBX|1|NM|718-7^Hemoglobina^LN||13.2|g/dL|12.0-16.0|N|||F
+OBX|2|NM|6690-2^Leucocitos^LN||11.8|10*3/uL|4.0-11.0|H|||F</code></pre>
+  <p>Um <code>OBR</code> (o exame) com vários <code>OBX</code> (cada resultado). O sistema do laboratório escolhe o código; se ele usar um código próprio no lugar do LOINC, o prontuário só entende se houver <strong>mapeamento</strong> (seção 5). <code>OBX-8 = H</code> sinaliza valor alto e <code>OBX-11 = F</code> significa resultado final (<code>P</code> preliminar, <code>C</code> corrigido). Um resultado corrigido chega como nova mensagem com <code>C</code>, e o receptor precisa <strong>substituir</strong> o anterior, não duplicar.</p>
+
+  <h3>Transporte: MLLP</h3>
+  <p>O HL7 v2 não define HTTP. O transporte clássico é o <strong>MLLP</strong> (Minimal Lower Layer Protocol): uma conexão TCP aberta, e cada mensagem é envolvida por três bytes de enquadramento.</p>
+<pre><code class="text">0x0B  &lt;mensagem HL7 com segmentos separados por 0x0D&gt;  0x1C 0x0D
+(início)                                                  (fim de bloco + CR)</code></pre>
+  <p>O receptor lê até <code>0x1C 0x0D</code>, processa e responde com o ACK, também enquadrado. MLLP não tem criptografia nem autenticação: em produção ele roda dentro de <strong>VPN</strong> ou túnel TLS, e o IP/porta são liberados em firewall. Também existem variantes sobre HTTP e transferência de arquivos (SFTP, pasta compartilhada), comuns em laboratórios menores.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 320" role="img" aria-label="Sequência HL7 v2: pedido de exame do prontuário ao laboratório via motor de integração, e resultado de volta">
+      <defs><marker id="ah-hl7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="35" y="12" width="150" height="34" rx="5"/><text x="110" y="34" text-anchor="middle">SIS / Prontuário</text>
+      <rect class="box-m" x="265" y="12" width="150" height="34" rx="5"/><text x="340" y="34" text-anchor="middle">Motor integração</text>
+      <rect class="box-w" x="495" y="12" width="150" height="34" rx="5"/><text x="570" y="34" text-anchor="middle">Lab. de apoio (LIS)</text>
+      <line class="ln" x1="110" y1="46" x2="110" y2="312" stroke-dasharray="3 4"/>
+      <line class="ln" x1="340" y1="46" x2="340" y2="312" stroke-dasharray="3 4"/>
+      <line class="ln" x1="570" y1="46" x2="570" y2="312" stroke-dasharray="3 4"/>
+      <text class="lbl" x="225" y="80" text-anchor="middle">OML^O21 (pedido)</text>
+      <line class="ln-a" x1="110" y1="88" x2="340" y2="88" marker-end="url(#ah-hl7)"/>
+      <text class="lbl" x="225" y="110" text-anchor="middle">ACK (AA)</text>
+      <line class="ln" x1="340" y1="118" x2="110" y2="118" marker-end="url(#ah-hl7)"/>
+      <text class="lbl" x="455" y="140" text-anchor="middle">OML^O21 (mapeado)</text>
+      <line class="ln-a" x1="340" y1="148" x2="570" y2="148" marker-end="url(#ah-hl7)"/>
+      <text class="lbl" x="455" y="170" text-anchor="middle">ACK</text>
+      <line class="ln" x1="570" y1="178" x2="340" y2="178" marker-end="url(#ah-hl7)"/>
+      <text class="lbl" x="455" y="212" text-anchor="middle">ORU^R01 (resultado)</text>
+      <line class="ln-a" x1="570" y1="220" x2="340" y2="220" marker-end="url(#ah-hl7)"/>
+      <text class="lbl" x="225" y="242" text-anchor="middle">ORU^R01 (códigos LOINC)</text>
+      <line class="ln-a" x1="340" y1="250" x2="110" y2="250" marker-end="url(#ah-hl7)"/>
+      <text class="lbl" x="225" y="272" text-anchor="middle">ACK^R01</text>
+      <line class="ln" x1="110" y1="280" x2="340" y2="280" marker-end="url(#ah-hl7)"/>
+    </svg>
+    <figcaption>Pedido e resultado de exame. Cada mensagem tem seu ACK; o motor traduz formatos e códigos entre as duas pontas.</figcaption>
+  </figure>
+
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li><strong>Dialetos:</strong> cada fornecedor usa campos de forma ligeiramente diferente ("HL7 v2 conforme" não existe de verdade). Todo novo parceiro exige uma especificação de interface e uma rodada de testes.</li>
+    <li><strong>Sem ACK, sem garantia:</strong> enviar e não tratar o ACK (ou tratar <code>AE</code> como sucesso) perde mensagens silenciosamente.</li>
+    <li><strong>Codificação de caracteres:</strong> acentos corrompidos ("Hemoglobina" virando "Hem?globina") por divergência entre ISO-8859-1 e UTF-8. Combine e declare em <code>MSH-18</code>.</li>
+    <li><strong>Ordem e duplicidade:</strong> mensagens podem chegar repetidas ou fora de ordem. Use <code>MSH-10</code> para deduplicar e o status do resultado para decidir substituição.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"HL7 v2 é mensagem baseada em eventos, delimitada por pipe, com segmentos e campos posicionais; o ADT trata de cadastro e movimentação, ORM/OML de pedidos, ORU de resultados, e todo envio é confirmado por ACK. O transporte típico é MLLP sobre TCP, sempre dentro de VPN." Complete dizendo que o difícil são os dialetos de cada fornecedor.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Não tente reescrever integrações HL7 v2 estáveis só por modernização: o custo é alto e o ganho, baixo. Em novos projetos, exija da contraparte uma <strong>especificação de interface</strong> por escrito e um ambiente de homologação. Cobre do time monitoramento de fila (mensagens com erro, atraso de ACK) e um procedimento de reprocessamento.</p></div>
+</section>
+
+<section class="chap" id="cda-fhir">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>CDA e FHIR: documentos e recursos</h2>
+
+  <h3>HL7 CDA em resumo</h3>
+  <p>O <strong>CDA</strong> (Clinical Document Architecture) é um padrão de <strong>documento clínico em XML</strong>: um sumário de alta, um laudo, um relatório de consulta, com cabeçalho (paciente, autor, custodiante) e corpo (seções com texto narrativo e, opcionalmente, entradas codificadas). A unidade é o documento inteiro, assinável e legível por humanos. Ele é comum em trocas entre instituições e em registros nacionais de alguns países. Em novos projetos, o caminho tem sido representar documentos em FHIR (recurso <code>Composition</code> dentro de um <code>Bundle</code> do tipo <code>document</code>), mas você ainda encontrará CDA em integrações legadas e parceiros internacionais.</p>
+
+  <h3>FHIR: a ideia central</h3>
+  <p>O <strong>FHIR</strong> (Fast Healthcare Interoperability Resources, pronuncia-se "fire") traz para a saúde o que você já conhece de web: <strong>recursos</strong> pequenos e identificáveis, expostos por uma <strong>API REST</strong>, em JSON ou XML, com referências entre si. Em vez de uma mensagem monolítica com 50 segmentos, você tem <code>Patient/123</code>, <code>Encounter/456</code> e <code>Observation/789</code>, cada um com sua URL, e consulta o que precisa. Pontos fortes: usa tecnologia comum (HTTP, JSON, OAuth 2), tem modelo de dados definido e documentação aberta, e permite <strong>perfis</strong> para adaptar o padrão a um país ou caso de uso.</p>
+
+  <h3>Versões e estado atual</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Versão</th><th>Situação</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>DSTU2 / STU3</td><td>Antigas</td><td>Ainda aparecem em sistemas legados</td></tr>
+      <tr><td><strong>R4</strong> (4.0.1)</td><td>A mais usada no mundo, inclusive no Brasil (RNDS)</td><td>Primeira versão com partes normativas (ex.: Patient), o que dá estabilidade</td></tr>
+      <tr><td>R4B (4.3.0)</td><td>Pequena atualização do R4</td><td>Usada onde se quis ganhos pontuais sem migrar para R5</td></tr>
+      <tr><td>R5 (5.0.0)</td><td>Publicada em 2023</td><td>Adoção ainda baixa; muitos projetos pularam para esperar o R6</td></tr>
+      <tr><td>R6</td><td>Em ballot (votação) de rascunhos; publicação final prevista para o fim de 2026 ou depois</td><td>Objetivo: tornar normativa a maior parte dos recursos clínicos e administrativos. Confirme a data em hl7.org/fhir antes de planejar</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Para projetos novos no Brasil hoje, <strong>R4</strong>. É a versão da RNDS, das principais ferramentas e dos servidores de mercado. Versões diferentes <strong>não são compatíveis entre si</strong>: planeje conversão quando migrar.</p></div>
+
+  <h3>Recursos mais usados</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Recurso</th><th>Representa</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><code>Patient</code></td><td>A pessoa atendida</td><td>Nome, nascimento, sexo, identificadores (CPF, CNS, prontuário)</td></tr>
+      <tr><td><code>Practitioner</code> / <code>PractitionerRole</code></td><td>O profissional e o papel dele numa organização</td><td>Médico com CRM; papel de "clínico geral" na Clínica A</td></tr>
+      <tr><td><code>Organization</code> / <code>Location</code></td><td>Instituição e local físico</td><td>Estabelecimento com CNES; sala 2</td></tr>
+      <tr><td><code>Encounter</code></td><td>Um atendimento</td><td>Consulta ambulatorial de 25/11</td></tr>
+      <tr><td><code>Appointment</code> / <code>Slot</code> / <code>Schedule</code></td><td>Agendamento e disponibilidade</td><td>Consulta marcada para 14h</td></tr>
+      <tr><td><code>Observation</code></td><td>Uma medida ou achado</td><td>Hemoglobina 13,2 g/dL; pressão arterial; peso</td></tr>
+      <tr><td><code>DiagnosticReport</code></td><td>Laudo ou conjunto de resultados</td><td>Hemograma completo, com referências às <code>Observation</code></td></tr>
+      <tr><td><code>ServiceRequest</code></td><td>Pedido de exame ou procedimento</td><td>Solicitação de hemograma</td></tr>
+      <tr><td><code>Condition</code></td><td>Problema ou diagnóstico</td><td>Hipertensão (CID-10 I10)</td></tr>
+      <tr><td><code>MedicationRequest</code></td><td>Prescrição</td><td>Dipirona 500 mg, 6/6 h</td></tr>
+      <tr><td><code>AllergyIntolerance</code>, <code>Immunization</code>, <code>Procedure</code></td><td>Alergias, vacinas, procedimentos realizados</td><td>Alergia a penicilina</td></tr>
+      <tr><td><code>Coverage</code>, <code>Claim</code>, <code>ExplanationOfBenefit</code></td><td>Cobertura, cobrança e retorno financeiro</td><td>Equivalente conceitual das guias TISS</td></tr>
+      <tr><td><code>Bundle</code>, <code>OperationOutcome</code>, <code>CapabilityStatement</code></td><td>Pacote de recursos, erros, descrição do servidor</td><td>Resultado de busca; resposta de erro; "o que este servidor suporta"</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 290" role="img" aria-label="Grafo de recursos FHIR: Encounter referencia Patient, Practitioner e Organization; Observation, DiagnosticReport e MedicationRequest referenciam Encounter">
+      <defs><marker id="ah-fhir" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="14" width="150" height="34" rx="5"/><text x="95" y="36" text-anchor="middle">Practitioner</text>
+      <rect class="box-a" x="265" y="14" width="150" height="34" rx="5"/><text x="340" y="36" text-anchor="middle">Patient</text>
+      <rect class="box" x="510" y="14" width="150" height="34" rx="5"/><text x="585" y="36" text-anchor="middle">Organization</text>
+      <rect class="box-w" x="20" y="115" width="150" height="34" rx="5"/><text x="95" y="137" text-anchor="middle">Appointment</text>
+      <rect class="box-m" x="265" y="115" width="150" height="34" rx="5"/><text x="340" y="137" text-anchor="middle">Encounter</text>
+      <rect class="box" x="20" y="215" width="150" height="34" rx="5"/><text x="95" y="237" text-anchor="middle">Observation</text>
+      <rect class="box" x="265" y="215" width="150" height="34" rx="5"/><text x="340" y="237" text-anchor="middle">DiagnosticReport</text>
+      <rect class="box" x="510" y="215" width="150" height="34" rx="5"/><text x="585" y="237" text-anchor="middle">MedicationRequest</text>
+      <line class="ln-a" x1="340" y1="115" x2="340" y2="49" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="347" y="86">subject</text>
+      <line class="ln" x1="275" y1="115" x2="160" y2="49" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="188" y="95">participant</text>
+      <line class="ln" x1="405" y1="115" x2="520" y2="49" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="470" y="103">serviceProvider</text>
+      <line class="ln" x1="170" y1="132" x2="265" y2="132" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="217" y="125" text-anchor="middle">gera</text>
+      <line class="ln" x1="120" y1="215" x2="285" y2="149" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="124" y="190">encounter</text>
+      <line class="ln" x1="340" y1="215" x2="340" y2="150" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="347" y="188">encounter</text>
+      <line class="ln" x1="265" y1="232" x2="170" y2="232" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="217" y="226" text-anchor="middle">result</text>
+      <line class="ln" x1="555" y1="215" x2="405" y2="149" marker-end="url(#ah-fhir)"/>
+      <text class="lbl" x="500" y="186">encounter</text>
+    </svg>
+    <figcaption>Recursos referenciam outros recursos. Todos os clínicos também apontam para o <code>Patient</code> (campo <code>subject</code>), omitido para não poluir o desenho.</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>"FHIR modela a saúde como recursos REST pequenos e referenciáveis, em JSON, sobre HTTP e OAuth 2. Diferente do HL7 v2, que é push de eventos, no FHIR eu consulto o que preciso. A versão que importa hoje é a R4; o R6 ainda está em votação." Cite que o padrão tem perfis para adaptação local.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>FHIR não é "plug and play": é um modelo genérico que cada país e produto adapta com perfis. "Meu sistema suporta FHIR" não diz quais recursos, quais operações e qual versão. Exija o <code>CapabilityStatement</code> do fornecedor e uma lista dos recursos e buscas realmente implementados.</p></div>
+</section>
+<section class="chap" id="api-fhir">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>A API REST do FHIR: leitura, busca, escrita e transações</h2>
+  <p>Se você domina REST (módulo 08 da trilha web e módulo 01 desta trilha), a API FHIR é familiar: o recurso é a URL, os verbos são os do HTTP, o conteúdo é <code>application/fhir+json</code>. O que muda é o vocabulário de <strong>busca</strong> e o conceito de <strong>Bundle</strong>.</p>
+
+  <h3>Exemplo de recurso Patient</h3>
+<pre data-file="Patient/123 (JSON)"><code class="json">{
+  "resourceType": "Patient",
+  "id": "123",
+  "meta": { "versionId": "3", "lastUpdated": "2026-11-25T10:15:00-03:00" },
+  "identifier": [
+    { "system": "https://clinica-exemplo.com.br/fhir/prontuario", "value": "123456" },
+    { "system": "http://rnds.saude.gov.br/fhir/r4/NamingSystem/cpf", "value": "11144477735" }
+  ],
+  "active": true,
+  "name": [ { "use": "official", "family": "Silva", "given": ["Maria", "da"] } ],
+  "gender": "female",
+  "birthDate": "1985-03-14",
+  "telecom": [ { "system": "phone", "value": "+55 11 99999-0000" } ],
+  "address": [ { "line": ["Rua das Flores, 100"], "city": "São Paulo", "state": "SP", "postalCode": "01000-000" } ]
+}</code></pre>
+  <p>Repare em <code>identifier</code>: cada identificador tem um <code>system</code> (a "autoridade", uma URI) e um <code>value</code>. É o equivalente FHIR da autoridade emissora do HL7 v2. As URIs da RNDS para CPF e CNS vêm dos guias de implementação oficiais; confirme o valor exato ali antes de usar (o exemplo acima é ilustrativo). <code>meta.versionId</code> e <code>lastUpdated</code> são mantidos pelo servidor.</p>
+
+  <h3>Interações</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Interação</th><th>Requisição</th><th>Resposta típica</th></tr></thead>
+    <tbody>
+      <tr><td>read</td><td><code>GET [base]/Patient/123</code></td><td><code>200</code> + recurso, <code>ETag</code>; <code>404</code> se não existe; <code>410</code> se apagado</td></tr>
+      <tr><td>vread</td><td><code>GET [base]/Patient/123/_history/2</code></td><td>Versão específica</td></tr>
+      <tr><td>search</td><td><code>GET [base]/Patient?name=silva</code></td><td><code>200</code> + <code>Bundle</code> tipo <code>searchset</code></td></tr>
+      <tr><td>create</td><td><code>POST [base]/Patient</code></td><td><code>201 Created</code> + <code>Location</code> com o id gerado pelo servidor</td></tr>
+      <tr><td>update</td><td><code>PUT [base]/Patient/123</code></td><td><code>200</code>; com <code>If-Match</code> faz controle de concorrência otimista; <code>409</code>/<code>412</code> em conflito</td></tr>
+      <tr><td>patch</td><td><code>PATCH [base]/Patient/123</code></td><td>JSON Patch ou FHIRPath Patch</td></tr>
+      <tr><td>delete</td><td><code>DELETE [base]/Patient/123</code></td><td><code>204</code>; muitos servidores de saúde bloqueiam delete por regra de retenção</td></tr>
+      <tr><td>history</td><td><code>GET [base]/Patient/123/_history</code></td><td>Bundle <code>history</code> com todas as versões</td></tr>
+      <tr><td>operations</td><td><code>GET [base]/Patient/123/$everything</code></td><td>Operações nomeadas com <code>$</code>, como <code>$validate</code> e <code>$everything</code></td></tr>
+      <tr><td>batch / transaction</td><td><code>POST [base]</code> com um Bundle</td><td>Várias operações em uma requisição</td></tr>
+    </tbody>
+  </table></div>
+  <p>Quando algo falha, o corpo da resposta é um <code>OperationOutcome</code>, com severidade, código e localização do problema, não um JSON improvisado. Isso casa com o que você viu de erros padronizados no módulo 01.</p>
+
+  <h3>Busca: parâmetros, modificadores e prefixos</h3>
+<pre><code class="http">GET /fhir/Observation?patient=123&amp;code=http://loinc.org|718-7&amp;date=ge2026-01-01&amp;_sort=-date&amp;_count=10 HTTP/1.1
+Host: fhir.clinica-exemplo.com.br
+Accept: application/fhir+json
+Authorization: Bearer eyJhbGciOi...</code></pre>
+  <ul>
+    <li><code>patient=123</code>: parâmetro de referência ao paciente.</li>
+    <li><code>code=http://loinc.org|718-7</code>: busca por código com sistema e valor separados por <code>|</code>.</li>
+    <li><code>date=ge2026-01-01</code>: prefixos de comparação <code>eq</code>, <code>ne</code>, <code>gt</code>, <code>lt</code>, <code>ge</code>, <code>le</code>.</li>
+    <li><code>_sort</code>, <code>_count</code>, <code>_summary</code>, <code>_elements</code>: controle de ordem, tamanho de página e campos devolvidos.</li>
+    <li>Modificadores: <code>name:exact=Silva</code>, <code>name:contains=sil</code>, <code>code:missing=true</code>.</li>
+    <li><code>identifier=system|value</code>: a busca mais importante em integração. <code>GET /Patient?identifier=http://rnds.saude.gov.br/fhir/r4/NamingSystem/cpf|11144477735</code> encontra o paciente pelo CPF.</li>
+  </ul>
+  <p>O resultado é um <code>Bundle</code> do tipo <code>searchset</code> com paginação por <strong>links</strong> (<code>next</code>, <code>previous</code>): o cliente segue o link, não calcula offset. É a mesma ideia de paginação por cursor que você viu no módulo 08 da trilha web.</p>
+<pre data-file="resposta (resumida)"><code class="json">{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "total": 2,
+  "link": [
+    { "relation": "self", "url": "https://fhir.clinica-exemplo.com.br/fhir/Observation?patient=123&amp;code=http://loinc.org|718-7&amp;_count=10" }
+  ],
+  "entry": [
+    {
+      "fullUrl": "https://fhir.clinica-exemplo.com.br/fhir/Observation/789",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "789",
+        "status": "final",
+        "code": { "coding": [ { "system": "http://loinc.org", "code": "718-7", "display": "Hemoglobin [Mass/volume] in Blood" } ] },
+        "subject": { "reference": "Patient/123" },
+        "effectiveDateTime": "2026-11-25T08:30:00-03:00",
+        "valueQuantity": { "value": 13.2, "unit": "g/dL", "system": "http://unitsofmeasure.org", "code": "g/dL" }
+      },
+      "search": { "mode": "match" }
+    }
+  ]
+}</code></pre>
+
+  <h3>_include e _revinclude: menos idas e vindas</h3>
+  <p>Sem isso, listar consultas de um paciente com o nome do médico exige uma chamada por médico (o clássico N+1, módulo 06). O FHIR resolve com inclusão no mesmo resultado:</p>
+<pre><code class="http">GET /fhir/Encounter?patient=123&amp;_include=Encounter:practitioner HTTP/1.1
+GET /fhir/Patient?_id=123&amp;_revinclude=Observation:subject HTTP/1.1</code></pre>
+  <p><code>_include</code> traz os recursos <em>referenciados</em> (o médico de cada atendimento); <code>_revinclude</code> traz os que <em>referenciam</em> (as observações do paciente). Os incluídos entram no Bundle com <code>search.mode = "include"</code>.</p>
+
+  <h3>Bundle e transação</h3>
+  <p>Um <code>Bundle</code> do tipo <code>transaction</code> executa várias operações de forma <strong>atômica</strong>: ou todas valem, ou nenhuma. Tipo <code>batch</code> executa cada entrada de forma independente. Referências entre entradas novas usam <code>urn:uuid</code>, que o servidor substitui pelos ids reais.</p>
+<pre data-file="POST [base] (transaction)"><code class="json">{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:11111111-1111-4111-8111-111111111111",
+      "resource": { "resourceType": "Patient", "name": [ { "family": "Silva", "given": ["Maria"] } ] },
+      "request": { "method": "POST", "url": "Patient", "ifNoneExist": "identifier=https://clinica-exemplo.com.br/fhir/prontuario|123456" }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation", "status": "final",
+        "code": { "coding": [ { "system": "http://loinc.org", "code": "718-7" } ] },
+        "subject": { "reference": "urn:uuid:11111111-1111-4111-8111-111111111111" },
+        "valueQuantity": { "value": 13.2, "unit": "g/dL" }
+      },
+      "request": { "method": "POST", "url": "Observation" }
+    }
+  ]
+}</code></pre>
+  <p>O <code>ifNoneExist</code> é a <strong>criação condicional</strong>: só cria o paciente se a busca não achar nenhum, o que dá idempotência para reenvios (o mesmo problema do módulo 06, resolvido pela chave natural em vez de <code>Idempotency-Key</code>). A resposta é um Bundle <code>transaction-response</code> com o status de cada entrada.</p>
+
+  <h3>Perfis e extensões</h3>
+  <ul>
+    <li><strong>Perfil (<code>StructureDefinition</code>):</strong> restringe um recurso para um contexto. Exemplo: "Paciente brasileiro" exige CPF ou CNS e fixa o sistema do identificador; "Observação de laboratório" obriga código LOINC. O perfil não muda o formato, só aperta as regras, e é validável (<code>$validate</code>).</li>
+    <li><strong>Extensão:</strong> acrescenta um campo que o recurso base não tem (ex.: raça/cor, nome social, município de nascimento), sempre identificada por uma URL e sem quebrar quem não a conhece.</li>
+    <li><strong>Guia de implementação (IG):</strong> pacote publicado de perfis, extensões, terminologias e exemplos para um caso de uso. A RNDS e o "BR Core" são guias para o Brasil; confira as versões vigentes nos repositórios oficiais.</li>
+    <li><strong>ValueSet / CodeSystem:</strong> conjuntos e sistemas de códigos que os perfis referenciam (seção 5).</li>
+  </ul>
+
+  <h3>CapabilityStatement</h3>
+  <p><code>GET [base]/metadata</code> devolve o <code>CapabilityStatement</code>: versão do FHIR, recursos suportados, interações, parâmetros de busca e perfis. É o "OpenAPI" do FHIR (módulo 02) e o primeiro teste de aderência de um fornecedor. Um cliente robusto lê o <code>/metadata</code> em vez de supor.</p>
+
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li><strong>"Suporta FHIR" sem escopo:</strong> servidor que só implementa <code>Patient</code> e <code>Observation</code> sem <code>_include</code> ou busca por identificador. Valide pelo <code>CapabilityStatement</code> e por testes.</li>
+    <li><strong>Usar o id do servidor como identificador de negócio:</strong> o <code>id</code> é interno e muda entre ambientes. Integre por <code>identifier</code> (CPF, prontuário).</li>
+    <li><strong>Ignorar <code>meta.versionId</code> e <code>If-Match</code>:</strong> sobrescrever um recurso que outro sistema acabou de alterar (lost update).</li>
+    <li><strong>Buscas sem índice no servidor:</strong> <code>name:contains</code> em milhões de pacientes. Paginação e limites valem aqui também (módulo 06).</li>
+    <li><strong>Misturar versões:</strong> payload R5 enviado a um servidor R4 falha ou perde campos silenciosamente.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>Pergunta clássica: "Como buscar todas as hemoglobinas de um paciente no último ano?" Resposta: <code>GET /Observation?patient=123&amp;code=http://loinc.org|718-7&amp;date=ge2025-11-25</code>, seguindo os links <code>next</code> do Bundle. Se pedirem o médico junto, <code>_include</code>. Se perguntarem como gravar vários recursos com consistência, Bundle <code>transaction</code> com <code>urn:uuid</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em revisão de design de uma integração FHIR, pergunte: qual versão, qual guia de implementação, qual perfil, como é feita a criação idempotente e como o versionamento do recurso protege contra sobrescrita. Perfil bem definido evita que cada sistema "interprete" o padrão do seu jeito.</p></div>
+</section>
+
+<section class="chap" id="terminologias">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Terminologias e o trabalho pesado do mapeamento</h2>
+  <p>Estrutura (sintaxe) é a parte fácil. Para que dois sistemas concordem que um resultado é "hemoglobina" e que uma consulta foi "cardiologia", eles precisam usar o mesmo <strong>vocabulário controlado</strong>. Um mesmo conceito aparece em um código no laboratório, outro no prontuário, outro na tabela do convênio.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Terminologia</th><th>O que codifica</th><th>Quem mantém / uso</th></tr></thead>
+    <tbody>
+      <tr><td><strong>LOINC</strong></td><td>Exames laboratoriais e observações clínicas (o que foi medido)</td><td>Regenstrief Institute. Ex.: <code>718-7</code> hemoglobina; <code>58410-2</code> hemograma completo</td></tr>
+      <tr><td><strong>SNOMED CT</strong></td><td>Termos clínicos: diagnósticos, achados, procedimentos, estruturas anatômicas</td><td>SNOMED International. Muito rica e hierárquica; uso exige licença por país (verifique a situação do Brasil)</td></tr>
+      <tr><td><strong>CID-10</strong></td><td>Classificação de doenças (diagnóstico para estatística e faturamento)</td><td>OMS. No Brasil, adotada pelo SUS e pela ANS; a CID-11 existe, mas a transição é lenta</td></tr>
+      <tr><td><strong>TUSS</strong></td><td>Procedimentos e eventos em saúde suplementar (termo de cobrança com operadoras)</td><td>ANS, parte do padrão TISS</td></tr>
+      <tr><td><strong>SIGTAP</strong></td><td>Procedimentos do SUS</td><td>Ministério da Saúde</td></tr>
+      <tr><td><strong>CBO</strong></td><td>Ocupações (inclusive a especialidade do profissional)</td><td>Ministério do Trabalho</td></tr>
+      <tr><td><strong>ATC / DCB</strong>, catálogos de medicamentos</td><td>Princípios ativos e medicamentos</td><td>OMS (ATC); no Brasil, a DCB e catálogos como o da ANVISA e o do SUS</td></tr>
+      <tr><td><strong>UCUM</strong></td><td>Unidades de medida (<code>g/dL</code>, <code>10*3/uL</code>)</td><td>Padrão usado pelo FHIR</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Por que mapear é o trabalho pesado</h3>
+  <ul>
+    <li>Cada laboratório tem centenas ou milhares de códigos próprios. Mapeá-los para LOINC é trabalho de <strong>especialista de domínio</strong>, revisado e versionado, não de desenvolvedor sozinho.</li>
+    <li>Nem todo mapeamento é 1:1. "Glicose" pode ser jejum, pós-prandial, sangue total ou soro, e cada um tem um LOINC diferente. Mapear errado muda a interpretação clínica.</li>
+    <li>Unidades divergem (<code>mg/dL</code> versus <code>mmol/L</code>); a conversão precisa ser explícita e testada.</li>
+    <li>As tabelas mudam: a TUSS e o LOINC têm versões periódicas, e códigos são criados, alterados e descontinuados. Mapeamento sem <strong>processo de manutenção</strong> apodrece.</li>
+    <li>TUSS (cobrança) e LOINC/SNOMED (clínica) servem a propósitos diferentes e não correspondem 1:1: um procedimento de cobrança pode envolver vários exames clínicos.</li>
+  </ul>
+
+  <h3>Como isso aparece no FHIR</h3>
+  <p>Um <code>CodeableConcept</code> pode carregar <strong>vários codings</strong>: o código original do laboratório e o equivalente LOINC lado a lado, o que preserva a origem e permite auditoria.</p>
+<pre><code class="json">"code": {
+  "coding": [
+    { "system": "https://lab-x.exemplo.com.br/fhir/exames", "code": "HB", "display": "Hb" },
+    { "system": "http://loinc.org", "code": "718-7", "display": "Hemoglobin [Mass/volume] in Blood" }
+  ],
+  "text": "Hemoglobina"
+}</code></pre>
+  <p>O recurso <code>ConceptMap</code> descreve o mapeamento (origem, destino e equivalência: <code>equivalent</code>, <code>wider</code>, <code>narrower</code>), e a operação <code>$translate</code> aplica. Servidores de terminologia (como Ontoserver ou o recurso de terminologia de produtos como HAPI) hospedam <code>CodeSystem</code> e <code>ValueSet</code> e respondem a <code>$lookup</code> e <code>$validate-code</code>.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Guarde sempre o <strong>código original</strong> junto do código padronizado, a <strong>versão da tabela de mapeamento</strong> e quem aprovou. Quando alguém questionar um resultado, você precisa provar o caminho do dado.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Mapear por <em>nome</em> ("Hemoglobina" = "Hemoglobina") em vez de por código e contexto. Nomes variam por laboratório e idioma, e exames parecidos (hemoglobina glicada, hemoglobina fetal) são conceitos diferentes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Estrutura é o menor problema de interoperabilidade; o difícil é a semântica. Uso LOINC para exames, CID-10 para diagnóstico, TUSS para cobrança de convênio, e mantenho um mapa versionado do código local para o padrão, sempre preservando o código de origem."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Trate mapeamento de terminologia como <strong>produto com dono</strong>: um responsável clínico, versionamento, ciclo de atualização e métrica de cobertura (por exemplo, o percentual de exames do volume mensal já mapeado). Subestimar esse esforço é a causa mais comum de atraso em integrações com a RNDS e com laboratórios.</p></div>
+</section>
+
+<section class="chap" id="smart-dicom">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>SMART on FHIR e imagem médica (DICOM)</h2>
+
+  <h3>SMART on FHIR em resumo</h3>
+  <p>O <strong>SMART on FHIR</strong> define como um aplicativo de terceiros acessa dados FHIR com segurança, usando <strong>OAuth 2.0 e OIDC</strong> (módulo 07 da trilha web e módulo 05 desta). Ele padroniza o que o OAuth deixa em aberto: descoberta, escopos clínicos e contexto de paciente.</p>
+  <ul>
+    <li><strong>Descoberta:</strong> <code>GET [base]/.well-known/smart-configuration</code> devolve os endpoints de autorização e de token e os recursos suportados.</li>
+    <li><strong>Escopos clínicos:</strong> <code>patient/Observation.read</code> (apenas os dados do paciente em contexto), <code>user/Patient.read</code> (o que o usuário logado pode ver), <code>system/*.read</code> (acesso de sistema). Nas versões mais novas do SMART, o sufixo é <code>.rs</code> (read e search) em vez de <code>.read</code>.</li>
+    <li><strong>Contexto de lançamento:</strong> <code>launch</code> (app aberto de dentro do prontuário, que recebe o paciente e o encontro corrente) ou lançamento <em>standalone</em> (o app pede o paciente).</li>
+    <li><strong>Fluxo:</strong> Authorization Code com <strong>PKCE</strong>, igual ao que você já conhece, mais <code>fhirUser</code> no OIDC para saber quem é o usuário.</li>
+    <li><strong>Backend Services:</strong> para integração máquina a máquina sem usuário, o cliente se autentica com um JWT assinado (<code>client_credentials</code> com <code>private_key_jwt</code>) e usa escopos <code>system/...</code>. É o modo típico para sincronizações entre sistemas.</li>
+  </ul>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 290" role="img" aria-label="Sequência SMART on FHIR: descoberta, autorização com PKCE, troca do código por token e chamada à API FHIR">
+      <defs><marker id="ah-smart" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="35" y="12" width="150" height="34" rx="5"/><text x="110" y="34" text-anchor="middle">App (cliente)</text>
+      <rect class="box-m" x="265" y="12" width="150" height="34" rx="5"/><text x="340" y="34" text-anchor="middle">Servidor de auth</text>
+      <rect class="box-w" x="495" y="12" width="150" height="34" rx="5"/><text x="570" y="34" text-anchor="middle">Servidor FHIR</text>
+      <line class="ln" x1="110" y1="46" x2="110" y2="282" stroke-dasharray="3 4"/>
+      <line class="ln" x1="340" y1="46" x2="340" y2="282" stroke-dasharray="3 4"/>
+      <line class="ln" x1="570" y1="46" x2="570" y2="282" stroke-dasharray="3 4"/>
+      <text class="lbl" x="340" y="76" text-anchor="middle">1. GET /.well-known/smart-configuration</text>
+      <line class="ln" x1="110" y1="84" x2="570" y2="84" marker-end="url(#ah-smart)"/>
+      <text class="lbl" x="225" y="112" text-anchor="middle">2. authorize (scope, PKCE)</text>
+      <line class="ln-a" x1="110" y1="120" x2="340" y2="120" marker-end="url(#ah-smart)"/>
+      <text class="lbl" x="225" y="152" text-anchor="middle">3. login + consentimento, code</text>
+      <line class="ln" x1="340" y1="160" x2="110" y2="160" marker-end="url(#ah-smart)"/>
+      <text class="lbl" x="225" y="190" text-anchor="middle">4. POST /token (code + verifier)</text>
+      <line class="ln-a" x1="110" y1="198" x2="340" y2="198" marker-end="url(#ah-smart)"/>
+      <text class="lbl" x="225" y="222" text-anchor="middle">access_token + patient</text>
+      <line class="ln" x1="340" y1="230" x2="110" y2="230" marker-end="url(#ah-smart)"/>
+      <text class="lbl" x="340" y="254" text-anchor="middle">5. GET /Observation?patient=... (Bearer)</text>
+      <line class="ln-a" x1="110" y1="262" x2="570" y2="262" marker-end="url(#ah-smart)"/>
+    </svg>
+    <figcaption>Fluxo de lançamento standalone. No lançamento EHR, o prontuário abre o app já com o contexto de paciente e encontro.</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>"SMART on FHIR é OAuth 2.0 com PKCE mais convenções para saúde: descoberta por <code>smart-configuration</code>, escopos por recurso (<code>patient/Observation.read</code>) e contexto de paciente no token. Para sistema a sistema, uso Backend Services com JWT assinado."</p></div>
+
+  <h3>DICOM e DICOMweb em resumo</h3>
+  <p>Imagens médicas (radiografia, tomografia, ressonância, ultrassom) usam <strong>DICOM</strong>: um padrão que define tanto o formato do arquivo (imagem mais metadados do paciente, equipamento e exame) quanto o protocolo de rede clássico entre equipamentos (<em>modalidades</em>), o <strong>PACS</strong> (arquivo de imagens) e estações de laudo. Uma hierarquia identifica tudo: <strong>Estudo</strong> (o exame) contém <strong>Séries</strong>, que contêm <strong>Instâncias</strong> (imagens), cada nível com um UID único.</p>
+  <p>O <strong>DICOMweb</strong> é a forma de acessar isso por HTTP, com os serviços:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Serviço</th><th>Função</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>QIDO-RS</strong></td><td>Buscar estudos, séries e instâncias</td><td><code>GET /studies?PatientID=123456&amp;StudyDate=20261125</code></td></tr>
+      <tr><td><strong>WADO-RS</strong></td><td>Recuperar imagens, metadados ou miniaturas</td><td><code>GET /studies/{uid}/series/{uid}</code></td></tr>
+      <tr><td><strong>STOW-RS</strong></td><td>Enviar (armazenar) instâncias</td><td><code>POST /studies</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>A ponte com o resto é feita no FHIR: o recurso <code>ImagingStudy</code> aponta para o estudo DICOM, e o <code>DiagnosticReport</code> traz o laudo do radiologista. A integração típica: o prontuário envia o pedido ao RIS/PACS por HL7 v2 (ou pelo <em>modality worklist</em> do DICOM, que alimenta o equipamento com os dados do paciente); o equipamento envia as imagens ao PACS; o laudo volta ao prontuário por <code>ORU</code> ou FHIR.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Imagens são <strong>grandes</strong> (um estudo pode ter centenas de MB). Não trafegue DICOM por barramentos pensados para mensagens pequenas nem no mesmo canal da API de dados; use o serviço de imagem próprio (PACS/VNA) e guarde só a referência. Os metadados DICOM também contêm dado pessoal (nome do paciente na imagem e no cabeçalho): trate como dado sensível.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Imagem tem custo de armazenamento e de rede relevante (módulo 10, custos). Defina política de retenção e de armazenamento em camadas (recente em disco rápido, antigo em armazenamento frio) e confirme com o jurídico os prazos obrigatórios de guarda.</p></div>
+</section>
+<section class="chap" id="brasil">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Contexto brasileiro: RNDS, TISS, CNES e identificadores</h2>
+  <p>No Brasil, a interoperabilidade tem dois "mundos" com padrões diferentes: o <strong>público</strong> (SUS, com a RNDS em FHIR) e o da <strong>saúde suplementar</strong> (operadoras, com o padrão TISS em XML). Uma empresa de saúde costuma falar com os dois. Os detalhes de credenciamento e versões mudam; trate o que está aqui como mapa e confirme nos manuais oficiais vigentes.</p>
+
+  <h3>RNDS: Rede Nacional de Dados em Saúde</h3>
+  <p>A RNDS é a plataforma nacional do Ministério da Saúde (parte do programa Conecte SUS) para trocar informações clínicas entre estabelecimentos e o cidadão, de forma que o histórico acompanhe o paciente. Pontos que importam ao integrador:</p>
+  <ul>
+    <li><strong>Padrão:</strong> API <strong>FHIR R4</strong> com adaptações brasileiras (perfis e modelos de informação publicados nos guias da RNDS). Os dados são enviados como recursos FHIR dentro de Bundles.</li>
+    <li><strong>Modelos de informação:</strong> a RNDS define conjuntos de dados por tipo de registro. Exemplos conhecidos: resultado de exame laboratorial, registro de vacinação (imunobiológico administrado), sumário de alta e registro de atendimento clínico. Confira a lista vigente no portal de documentação.</li>
+    <li><strong>Autenticação:</strong> o estabelecimento é credenciado por um portal de serviços do Ministério, usando conta gov.br e dados do CNES. A conexão usa <strong>certificado digital ICP-Brasil</strong> (tipicamente um A1 do estabelecimento ou responsável) para obter o token de acesso, que então acompanha as chamadas à API. Há ambientes de <strong>homologação</strong> e de <strong>produção</strong>, e a passagem para produção exige validação dos envios.</li>
+    <li><strong>Identificação:</strong> o paciente é localizado por <strong>CPF ou CNS</strong>; o profissional, por CPF, e o estabelecimento, por CNES. As terminologias esperadas incluem CID-10, LOINC para exames e tabelas nacionais.</li>
+    <li><strong>Em conformidade com a LGPD:</strong> a finalidade é a tutela da saúde; acesso e envio ficam registrados (log).</li>
+  </ul>
+  <div class="note trap"><b>Atenção</b><p>Os detalhes finos (cabeçalhos exatos de autenticação, validade do token, URIs dos sistemas de identificadores, versões dos modelos e prazos de adesão) mudam com as portarias e as versões do guia. Não copie de um blog: use o manual da RNDS vigente e o ambiente de homologação.</p></div>
+
+  <h3>TISS: troca com operadoras (ANS)</h3>
+  <p>O <strong>Padrão TISS</strong> (Troca de Informações na Saúde Suplementar), mantido pela <strong>ANS</strong>, obriga prestadores e operadoras de planos de saúde a trocar dados administrativos e assistenciais em formato padronizado. É dividido em componentes:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Componente</th><th>O que define</th></tr></thead>
+    <tbody>
+      <tr><td>Organizacional</td><td>Regras de negócio e fluxos operacionais</td></tr>
+      <tr><td>Conteúdo e estrutura</td><td>Guias (consulta, SP/SADT, internação, honorários, odontologia, entre outras) e o esquema XML (XSD)</td></tr>
+      <tr><td>Representação de conceitos em saúde</td><td>Terminologias, como a TUSS</td></tr>
+      <tr><td>Segurança e privacidade</td><td>Requisitos de proteção da informação</td></tr>
+      <tr><td>Comunicação</td><td>Como as mensagens trafegam: mensagens <strong>XML</strong> trocadas por <strong>web services SOAP</strong>, com o hash do conteúdo no epílogo da mensagem</td></tr>
+    </tbody>
+  </table></div>
+  <p>Fluxos típicos do prestador: <strong>solicitação de autorização</strong> de procedimento, verificação de <strong>elegibilidade</strong> do beneficiário, <strong>envio de lote de guias</strong> para faturamento e recebimento dos <strong>demonstrativos de retorno</strong> (pagamentos e glosas). O padrão é versionado, com uma versão vigente e cronograma de transição publicado pela ANS; operadoras exigem que o prestador envie na versão que elas validam. Consulte sempre a página oficial do TISS para a versão atual (a série é 4.x, mas o número exato muda com as atualizações; ele aparece no cabeçalho de cada mensagem).</p>
+  <div class="note"><b>FHIR para convênio?</b><p>O recurso <code>Claim</code> e a família financeira do FHIR cobrem o mesmo conceito das guias, mas o mercado brasileiro de operadoras segue o TISS. Na prática, o motor de integração <strong>traduz</strong> entre o modelo interno da clínica e o XML do TISS, e entre o modelo interno e o FHIR da RNDS.</p></div>
+
+<pre data-file="TISS (ilustrativo, resumido)"><code class="html">&lt;ans:mensagemTISS xmlns:ans="http://www.ans.gov.br/padroes/tiss/schemas"&gt;
+  &lt;ans:cabecalho&gt;
+    &lt;ans:identificacaoTransacao&gt;
+      &lt;ans:tipoTransacao&gt;ENVIO_LOTE_GUIAS&lt;/ans:tipoTransacao&gt;
+      &lt;ans:sequencialTransacao&gt;1001&lt;/ans:sequencialTransacao&gt;
+    &lt;/ans:identificacaoTransacao&gt;
+    &lt;ans:Padrao&gt;4.xx.xx&lt;/ans:Padrao&gt;   &lt;!-- versão vigente --&gt;
+  &lt;/ans:cabecalho&gt;
+  &lt;ans:prestadorParaOperadora&gt;
+    &lt;!-- lote com guias SP/SADT, consulta etc. --&gt;
+  &lt;/ans:prestadorParaOperadora&gt;
+  &lt;ans:epilogo&gt;&lt;ans:hash&gt;...&lt;/ans:hash&gt;&lt;/ans:epilogo&gt;
+&lt;/ans:mensagemTISS&gt;</code></pre>
+  <p>O trecho é apenas ilustrativo da forma (cabeçalho, corpo, epílogo com hash); os nomes e a versão exatos vêm do esquema XSD publicado pela ANS.</p>
+
+  <h3>Identificadores brasileiros</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Identificador</th><th>Identifica</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td><strong>CPF</strong></td><td>Pessoa (paciente e profissional)</td><td>11 dígitos com dígito verificador (valide). Nem todo paciente tem (recém-nascidos, estrangeiros) ou informa</td></tr>
+      <tr><td><strong>CNS</strong></td><td>Cartão Nacional de Saúde do cidadão</td><td>15 dígitos; um paciente pode ter mais de um CNS ao longo do tempo (cadastros antigos); a RNDS aceita CPF ou CNS</td></tr>
+      <tr><td><strong>CNES</strong></td><td>Estabelecimento de saúde</td><td>Cadastro Nacional de Estabelecimentos de Saúde; 7 dígitos; identifica também as equipes e profissionais vinculados</td></tr>
+      <tr><td><strong>CRM / COREN etc.</strong></td><td>Registro profissional no conselho</td><td>Sempre com a UF; combine com CPF</td></tr>
+      <tr><td>Número da carteirinha</td><td>Beneficiário numa operadora</td><td>Identificador por operadora e plano; não é global</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Arquitetura de integração de uma rede de clínicas: sistemas internos, motor de integração e destinos externos RNDS, operadoras TISS, laboratório de apoio e cadastro mestre">
+      <defs>
+        <marker id="ah-hub1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="22">Sistemas internos</text>
+      <text class="ttl" x="500" y="22">Destinos externos</text>
+      <rect class="box-a" x="20" y="40" width="160" height="36" rx="5"/><text x="100" y="62" text-anchor="middle">SIS / Prontuário</text>
+      <rect class="box-a" x="20" y="100" width="160" height="36" rx="5"/><text x="100" y="122" text-anchor="middle">LIS (laboratório)</text>
+      <rect class="box-a" x="20" y="160" width="160" height="36" rx="5"/><text x="100" y="182" text-anchor="middle">PACS / RIS</text>
+      <rect class="box-a" x="20" y="220" width="160" height="36" rx="5"/><text x="100" y="242" text-anchor="middle">Faturamento</text>
+      <rect class="box-m" x="250" y="40" width="180" height="216" rx="6"/>
+      <text class="ttl" x="340" y="64" text-anchor="middle">Motor / barramento</text>
+      <text x="340" y="100" text-anchor="middle">roteamento</text>
+      <text x="340" y="128" text-anchor="middle">transformação</text>
+      <text x="340" y="156" text-anchor="middle">map. de terminologia</text>
+      <text x="340" y="184" text-anchor="middle">fila, retry, DLQ</text>
+      <text x="340" y="212" text-anchor="middle">log e auditoria</text>
+      <rect class="box-w" x="500" y="40" width="160" height="36" rx="5"/><text x="580" y="62" text-anchor="middle">RNDS (FHIR R4)</text>
+      <rect class="box-w" x="500" y="100" width="160" height="36" rx="5"/><text x="580" y="122" text-anchor="middle">Operadoras (TISS)</text>
+      <rect class="box-w" x="500" y="160" width="160" height="36" rx="5"/><text x="580" y="182" text-anchor="middle">Lab. apoio (HL7 v2)</text>
+      <rect class="box-w" x="500" y="220" width="160" height="36" rx="5"/><text x="580" y="242" text-anchor="middle">Cadastro mestre (MPI)</text>
+      <line class="ln" x1="180" y1="58" x2="250" y2="58" marker-end="url(#ah-hub1)"/>
+      <line class="ln" x1="180" y1="118" x2="250" y2="118" marker-end="url(#ah-hub1)"/>
+      <line class="ln" x1="180" y1="178" x2="250" y2="178" marker-end="url(#ah-hub1)"/>
+      <line class="ln" x1="180" y1="238" x2="250" y2="238" marker-end="url(#ah-hub1)"/>
+      <line class="ln-a" x1="430" y1="58" x2="500" y2="58" marker-end="url(#ah-hub1)"/>
+      <line class="ln-a" x1="430" y1="118" x2="500" y2="118" marker-end="url(#ah-hub1)"/>
+      <line class="ln-a" x1="430" y1="178" x2="500" y2="178" marker-end="url(#ah-hub1)"/>
+      <line class="ln-a" x1="430" y1="238" x2="500" y2="238" marker-end="url(#ah-hub1)"/>
+      <text class="lbl" x="20" y="285">Cada destino fala um padrão diferente; o motor concentra a tradução.</text>
+    </svg>
+    <figcaption>Hub de integração: sistemas internos falam com o motor, que traduz para FHIR (RNDS), XML/SOAP (TISS) e HL7 v2 (laboratório).</figcaption>
+  </figure>
+
+  <div class="note iv"><b>Na entrevista</b><p>"No SUS, a RNDS usa FHIR R4 com perfis brasileiros e autenticação por certificado ICP-Brasil; na saúde suplementar, o TISS da ANS usa XML sobre web services SOAP. Identifico paciente por CPF ou CNS, estabelecimento por CNES, e deixo um motor de integração fazer a tradução entre os padrões."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Regulação muda: a ANS publica nova versão do TISS e o Ministério atualiza os modelos da RNDS. Tenha um responsável por <strong>acompanhar publicações</strong> e um calendário de adequação. Certificado digital expira: coloque a renovação em calendário com alerta (um certificado A1 vencido derruba o envio à RNDS). Guarde a chave privada em cofre, nunca no repositório (módulo 05).</p></div>
+</section>
+
+<section class="chap" id="motores">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Motores de integração e barramento</h2>
+  <p>Um <strong>motor de integração</strong> (interface engine) é a ferramenta que recebe mensagens por vários protocolos, as <strong>transforma</strong>, <strong>roteia</strong> e entrega ao destino, com fila, retentativa e registro. Em saúde é quase onipresente, porque a quantidade de dialetos HL7 v2 e de parceiros torna o "ponto a ponto" insustentável: N sistemas ligados entre si geram N×(N−1) integrações, enquanto o hub gera N.</p>
+
+  <h3>O que um bom motor faz</h3>
+  <ul>
+    <li><strong>Canais (channels):</strong> uma fonte (MLLP, HTTP, arquivo, banco), filtros, transformadores e destinos.</li>
+    <li><strong>Transformação:</strong> HL7 v2 para FHIR, FHIR para XML do TISS, normalização de códigos, formatos de data e unidades.</li>
+    <li><strong>Confiabilidade:</strong> fila persistente, retentativa com <em>backoff</em>, fila de mensagens mortas (DLQ) para erros que precisam de olho humano (módulo 06).</li>
+    <li><strong>Observabilidade:</strong> rastreio por id de mensagem, painel de erros e atrasos, alertas (módulo 08).</li>
+    <li><strong>Segurança:</strong> TLS, autenticação por canal, mascaramento de dados sensíveis em log.</li>
+  </ul>
+
+  <h3>Mirth Connect e alternativas</h3>
+  <p>O <strong>Mirth Connect</strong> foi por anos o motor de código aberto mais usado em saúde. Em 2025, a NextGen Healthcare passou a distribuí-lo, a partir da versão 4.6, sob <strong>licença única comercial e proprietária</strong>, sem publicar o código-fonte das novas versões. A última versão de código aberto é a <strong>4.5.2</strong>. Surgiram <strong>forks comunitários</strong> dessa base, como o <strong>Open Integration Engine</strong> e o <strong>BridgeLink</strong>. Se sua empresa usa Mirth, confirme qual versão e qual licença estão em produção e avalie o risco de continuar na 4.5.x sem suporte do fabricante, migrar para o produto licenciado ou adotar um fork (cheque a licença e a atividade do projeto antes).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Perfil</th><th>Ponto de atenção</th></tr></thead>
+    <tbody>
+      <tr><td>Mirth Connect (NextGen, 4.6+)</td><td>Motor especializado em saúde, licença comercial</td><td>Custo de licença e dependência do fabricante</td></tr>
+      <tr><td>Forks de código aberto da 4.5.x (OIE, BridgeLink)</td><td>Continuidade de quem já tem canais Mirth</td><td>Maturidade da comunidade, suporte, segurança de patches</td></tr>
+      <tr><td>Rhapsody, Cloverleaf, InterSystems IRIS for Health</td><td>Produtos comerciais com suporte e muitos adaptadores</td><td>Licença cara; menos portabilidade</td></tr>
+      <tr><td>HAPI FHIR, Medplum, Aidbox, Smile CDR</td><td>Servidores/plataformas FHIR (repositório de dados e API)</td><td>São repositórios FHIR, não substituem totalmente um motor de transformação HL7 v2</td></tr>
+      <tr><td>Serviços de nuvem para saúde (Google Cloud Healthcare API, Azure Health Data Services, AWS HealthLake)</td><td>FHIR/DICOM/HL7 v2 gerenciados</td><td>Residência de dados (LGPD), custo e dependência de fornecedor</td></tr>
+      <tr><td>Apache Camel, NiFi, Kafka com código próprio</td><td>Flexível, grande controle</td><td>Você constrói o que o motor traz pronto (testes de HL7, painéis, reprocesso)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Barramento (ESB) e papel do desenho</h3>
+  <p>Um <strong>barramento de integração</strong> concentra as integrações da empresa. É útil para padronizar segurança, monitoramento e mapeamento, mas vira <strong>gargalo e ponto único de falha</strong> se for o único lugar onde mora toda a lógica de negócio. O equilíbrio sensato: o barramento faz <em>transporte, tradução e roteamento</em>; regras de negócio ficam nos serviços. Isso conecta ao módulo 10 (API gateway, anticorruption layer): o motor é, na prática, a camada anticorrupção entre os padrões externos e o modelo interno da empresa.</p>
+  <p>Um desenho comum e saudável: o <strong>modelo canônico interno</strong> (por exemplo, FHIR R4 ou um JSON próprio bem definido) no meio; cada integração externa converte de e para ele. Assim, trocar um laboratório não afeta o prontuário.</p>
+
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li><strong>Lógica de negócio dentro de scripts do motor</strong> sem teste nem versionamento. Exporte os canais para o Git e rode testes com mensagens de exemplo.</li>
+    <li><strong>Só uma instância</strong> do motor, sem alta disponibilidade e sem plano de reprocesso: uma queda de horas gera perda ou atraso de resultados clínicos.</li>
+    <li><strong>Logar a mensagem inteira</strong> com nome, CPF e resultado de exame em log aberto: vazamento de dado sensível.</li>
+    <li><strong>Mapeamento embutido no código</strong> do canal em vez de tabela versionada e editável.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Usaria um motor de integração com um modelo canônico interno: cada parceiro tem um canal que converte de e para esse modelo, com fila persistente, retry, DLQ e rastreio. Isso reduz integrações de N² para N e isola mudanças externas." Se mencionarem Mirth, cite a mudança de licenciamento da 4.6 e as alternativas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O motor é infraestrutura crítica: precisa de dono, alta disponibilidade, backup dos canais e do mapeamento, e plano de contingência para quando uma interface cair. Pergunte: "se este canal parar às 3h da manhã, quem é avisado e em quanto tempo o resultado do exame chega ao médico?" Reavalie contratos e licenças (como o caso do Mirth) a cada renovação.</p></div>
+</section>
+
+<section class="chap" id="identidade-lgpd">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Identidade do paciente e LGPD em saúde</h2>
+
+  <h3>Identidade: MPI, matching e duplicidade</h3>
+  <p>Toda integração depende de responder, sem erro: "este paciente é o mesmo que aquele?". Cada sistema tem seu cadastro, com ids próprios, e o mesmo paciente aparece várias vezes. O <strong>MPI</strong> (Master Patient Index, ou índice mestre de pacientes) mantém um identificador único e o vínculo com os ids de cada sistema.</p>
+  <ul>
+    <li><strong>Matching determinístico:</strong> regras exatas, como o mesmo CPF ou o mesmo CNS. Rápido e seguro quando o identificador existe e está correto.</li>
+    <li><strong>Matching probabilístico:</strong> pontua a semelhança de nome, nascimento, nome da mãe, telefone e endereço, com pesos. Necessário quando falta CPF, mas gera falsos positivos e negativos, e uma zona cinzenta que exige <strong>revisão humana</strong>.</li>
+    <li><strong>Falso positivo (unir pessoas diferentes):</strong> o pior erro. Mistura prontuários e expõe dados de um paciente a outro (incidente de privacidade e risco clínico).</li>
+    <li><strong>Falso negativo (não unir o mesmo paciente):</strong> duplicidade, histórico fragmentado, exame repetido.</li>
+    <li><strong>Merge e unmerge:</strong> a fusão tem de ser <strong>reversível</strong> e auditada. No HL7 v2, <code>ADT^A40</code>; no FHIR, o campo <code>link</code> do Patient (tipos <code>replaced-by</code>, <code>replaces</code>) e <code>active=false</code> no registro obsoleto.</li>
+    <li><strong>Normalização antes de comparar:</strong> caixa e acentos, abreviações ("MARIA DA S." versus "Maria da Silva"), validação do dígito do CPF, formato de data.</li>
+  </ul>
+  <p>Perfis do IHE para isso incluem PIX e PDQ (e suas versões FHIR, PIXm e PDQm): consulta de ids cruzados e demografia entre sistemas. Em consulta por FHIR, o operador <code>Patient/$match</code> devolve candidatos com pontuação.</p>
+<pre><code class="http">POST /fhir/Patient/$match HTTP/1.1
+Content-Type: application/fhir+json
+
+{ "resourceType": "Parameters",
+  "parameter": [
+    { "name": "resource", "resource": { "resourceType": "Patient",
+        "name": [ { "family": "Silva", "given": ["Maria"] } ], "birthDate": "1985-03-14" } },
+    { "name": "count", "valueInteger": 5 }
+  ] }</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Em saúde, prefira <strong>não unir</strong> a unir errado. Defina limiares: acima do corte, vincula automático; faixa intermediária, fila de revisão por pessoa treinada; abaixo, cadastro novo. Meça duplicidade e erros de união como indicadores de qualidade.</p></div>
+
+  <h3>LGPD aplicada à interoperabilidade</h3>
+  <ul>
+    <li><strong>Dado de saúde é dado pessoal sensível</strong> (LGPD, art. 5, II). Seu tratamento só é possível nas hipóteses do <strong>art. 11</strong>, mais restritas que as do art. 7.</li>
+    <li><strong>Base legal de tutela da saúde (art. 11, II, "f"):</strong> permite o tratamento <em>exclusivamente</em> em procedimento realizado por profissionais de saúde, serviços de saúde ou autoridade sanitária. É a base típica de atendimento, de prontuário e do envio à RNDS. Ela cobre a finalidade assistencial; não cobre marketing nem uso comercial dos dados.</li>
+    <li><strong>Consentimento (art. 11, I)</strong> fica para usos fora da assistência, como pesquisa não anonimizada ou comunicação promocional, e deve ser específico e destacado. Outras bases do art. 11, como cumprimento de obrigação legal ou regulatória (ex.: envio exigido pela ANS), também se aplicam conforme o caso.</li>
+    <li><strong>Compartilhamento (art. 11, §4):</strong> é vedada a comunicação ou o uso compartilhado de dados de saúde com objetivo de <strong>vantagem econômica</strong>, salvo nas hipóteses de prestação de serviços de saúde, assistência farmacêutica e assistência à saúde, incluídos os serviços auxiliares de diagnóstico e terapia, em benefício dos interesses do titular. É o fundamento para trocar dados com laboratório de apoio e operadora para <em>prestar e cobrar o atendimento</em>. O §5 proíbe operadoras de usar esses dados para selecionar riscos na contratação ou exclusão de beneficiários.</li>
+    <li><strong>Princípios:</strong> finalidade, adequação e <strong>necessidade</strong> (art. 6). Envie à operadora só o necessário para a guia, não o prontuário inteiro. Isso se traduz em contrato de dados mínimos por integração.</li>
+    <li><strong>Segurança e incidentes (arts. 46 e 48):</strong> controles técnicos, comunicação à ANPD e ao titular quando houver risco relevante. Integração mal configurada (endpoint aberto, log com CPF) é fonte comum de incidente.</li>
+    <li><strong>Operador e controlador:</strong> o laboratório de apoio e o fornecedor do motor na nuvem são, em geral, <strong>operadores</strong> (ou controladores, conforme o papel); isso exige contrato com cláusulas de proteção de dados.</li>
+    <li><strong>Sigilo profissional e prontuário:</strong> além da LGPD, valem o sigilo médico (código de ética profissional) e a guarda do prontuário (a lei sobre digitalização estabelece prazo mínimo de 20 anos para o prontuário eletrônico; confirme com o jurídico). O dado do paciente é do paciente; a empresa é a guardiã.</li>
+    <li><strong>Direitos do titular:</strong> acesso, correção, portabilidade. O MPI e o log de acesso facilitam responder "quem viu os meus dados".</li>
+    <li><strong>Transferência internacional:</strong> ao usar nuvem fora do país, avalie o mecanismo legal (módulo 10, custos, e o jurídico).</li>
+  </ul>
+  <p>Em termos de engenharia: TLS ou VPN em todo canal (inclusive MLLP), autenticação mútua, escopos mínimos (SMART), <strong>log de acesso auditável</strong> (quem, quando, qual paciente), mascaramento em logs, retenção definida e testes com dados fictícios ou anonimizados, nunca com a base de produção em ambiente de teste.</p>
+  <div class="note trap"><b>Armadilhas comuns</b><ul>
+    <li>Usar a base de produção para homologar uma integração (dado real em ambiente fraco).</li>
+    <li>Enviar mais campos do que o contrato prevê "porque já estava no objeto".</li>
+    <li>Assumir que a base legal da assistência cobre qualquer reuso (analytics, IA, marketing). Cada finalidade nova precisa de base própria e, muitas vezes, de anonimização.</li>
+    <li>Tratar certificado ICP-Brasil e chaves como "configuração comum" e não como segredo crítico.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Dado de saúde é sensível pelo art. 5, II, e tratado com base no art. 11, em geral a tutela da saúde para a assistência. O compartilhamento com laboratório e operadora é permitido para prestar e cobrar o serviço, com o mínimo necessário. Na engenharia: criptografia em trânsito, escopos mínimos, log de acesso, sem dado real em teste."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija um <strong>mapa de dados</strong> das integrações (o que sai, para quem, com qual base legal), contratos com operadores e um plano de resposta a incidentes testado. Inclua o encarregado (DPO) na revisão de design de novas integrações. A maior fragilidade costuma ser humana e de processo (planilha com exame por e-mail) mais do que técnica.</p></div>
+</section>
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e glossário</h2>
+
+  <h3>Cenário 1: integrar um laboratório de apoio</h3>
+  <p>A clínica quer pedir exames a um laboratório de apoio e receber os resultados no prontuário. O laboratório oferece HL7 v2 sobre MLLP em VPN.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Peça a <strong>especificação de interface</strong> (mensagens, versão, campos obrigatórios, tabela de exames do laboratório, códigos de unidade) e um ambiente de teste.</li>
+    <li>Monte a VPN e libere IP/porta; registre contatos de plantão dos dois lados.</li>
+    <li>Defina o identificador de correlação: número do pedido (<code>ORC-2</code>) e do paciente (prontuário + CPF) para casar pedido e resultado.</li>
+    <li>Construa um <strong>mapa de exames</strong> (código do laboratório para LOINC) com validação de um profissional da área; trate unidades e faixas de referência.</li>
+    <li>No canal de resultado, trate <code>P</code> (preliminar), <code>F</code> (final) e <code>C</code> (corrigido); o corrigido <strong>substitui</strong> o final, com aviso ao médico.</li>
+    <li>Dê ACK sempre, deduplique por <code>MSH-10</code>, configure fila de erros e alerta por atraso (pedido sem resultado além do prazo esperado).</li>
+    <li>Homologue com casos reais anonimizados (acentos, resultado textual, resultado com anexo em PDF) antes de produzir.</li>
+  </ol>
+
+  <h3>Cenário 2: enviar resultados de exames à RNDS</h3>
+  <p>A empresa precisa enviar à RNDS os resultados laboratoriais (conforme o modelo de resultado de exame).</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Confirme com o jurídico a obrigatoriedade e a base legal; acompanhe o credenciamento do estabelecimento (CNES) no portal do Ministério e solicite acesso a homologação.</li>
+    <li>Obtenha o certificado ICP-Brasil e guarde-o em cofre com alerta de vencimento; implemente a obtenção do token conforme o manual vigente, com cache até a expiração.</li>
+    <li>Construa a transformação do modelo interno (ou do <code>ORU</code>) para o Bundle FHIR do guia da RNDS: paciente identificado por CPF ou CNS, profissional, estabelecimento, exame com LOINC e unidade UCUM.</li>
+    <li>Trate pacientes sem CPF/CNS: fila de pendência para completar o cadastro em vez de enviar dado inconsistente.</li>
+    <li>Registre o retorno de cada envio (identificador na RNDS ou <code>OperationOutcome</code>), com <strong>reenvio idempotente</strong>, e crie painel de pendências e rejeições.</li>
+    <li>Monitore as publicações do guia e da regulamentação para atualizar o mapeamento.</li>
+  </ol>
+
+  <h3>Cenário 3: receber guias de convênio e conciliar</h3>
+  <p>A operadora exige envio de lotes de guias em TISS e devolve demonstrativos com glosas.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Identifique a <strong>versão do TISS</strong> que a operadora valida e o endpoint SOAP de cada operadora; gerencie credenciais por operadora.</li>
+    <li>Valide o XML contra o XSD antes de enviar (erro de esquema é a causa mais barata de glosa evitável) e calcule o hash conforme o padrão.</li>
+    <li>Mantenha o mapa de procedimentos internos para TUSS, com versionamento, e a validação de carteirinha e elegibilidade antes do atendimento.</li>
+    <li>Armazene o <strong>protocolo de recebimento</strong> do lote; reprocesse por lote, nunca por guia solta sem rastro.</li>
+    <li>Processe o demonstrativo de retorno e concilie pagamento e glosa com o faturamento; classifique motivos de glosa (código TISS) e meça o percentual por operadora.</li>
+    <li>Contemple indisponibilidade da operadora com retry com backoff e janelas de fechamento do mês.</li>
+  </ol>
+
+  <h3>Cenário 4: dois cadastros do mesmo paciente</h3>
+  <p>O laboratório devolve um resultado para um paciente cujo cadastro foi unificado ontem; o prontuário rejeita porque o id do paciente "não existe".</p>
+  <p><strong>O que fazer:</strong> reconheça que o <code>ADT^A40</code> (merge) não chegou ou não foi tratado. Corrija o fluxo para que o merge seja propagado a todos os sistemas e que o MPI resolva o id antigo para o vigente (tabela de ids substituídos). Reprocese a mensagem retida, valide que o resultado foi para o paciente correto e crie alerta para "paciente não encontrado" em vez de descarte silencioso. Revise o processo de unificação para ser reversível.</p>
+
+  <h3>Cenário 5: fornecedor diz que "tem FHIR"</h3>
+  <p>Um novo sistema de agendamento promete integração FHIR. Antes de assinar:</p>
+  <p><strong>O que fazer:</strong> peça o <code>CapabilityStatement</code>, a versão (R4?), a lista de recursos e buscas suportados (<code>Appointment</code>, <code>Slot</code>, <code>Patient?identifier=</code>), a política de autenticação (SMART Backend Services?), limites de taxa, ambiente de teste, perfis usados e a política de versionamento e de mudanças. Rode uma prova de conceito com seus 5 fluxos mais críticos. Confirme em contrato quem paga a integração e o SLA.</p>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>HL7 v2</dt><dd>Padrão de mensagens delimitadas por pipe, orientado a eventos, ainda dominante em hospitais e laboratórios.</dd></div>
+    <div><dt>MLLP</dt><dd>Protocolo de enquadramento de mensagens HL7 v2 sobre TCP, sem criptografia própria.</dd></div>
+    <div><dt>ADT / ORM / OML / ORU / ACK</dt><dd>Admissão e cadastro; pedido; pedido de laboratório; resultado; confirmação.</dd></div>
+    <div><dt>CDA</dt><dd>Documento clínico em XML, usado em trocas entre instituições.</dd></div>
+    <div><dt>FHIR</dt><dd>Padrão moderno do HL7: recursos REST, JSON, referências e perfis.</dd></div>
+    <div><dt>Bundle</dt><dd>Pacote de recursos: resultado de busca, transação, documento.</dd></div>
+    <div><dt>Perfil / IG</dt><dd>Restrições sobre um recurso para um contexto; guia de implementação que reúne perfis e exemplos.</dd></div>
+    <div><dt>CapabilityStatement</dt><dd>Descrição do que um servidor FHIR suporta, em <code>/metadata</code>.</dd></div>
+    <div><dt>LOINC / SNOMED CT</dt><dd>Terminologias para exames e para termos clínicos.</dd></div>
+    <div><dt>CID-10 / TUSS</dt><dd>Classificação de doenças; tabela de procedimentos da saúde suplementar.</dd></div>
+    <div><dt>SMART on FHIR</dt><dd>OAuth 2.0 mais convenções para aplicativos de saúde (escopos, contexto de paciente).</dd></div>
+    <div><dt>RNDS</dt><dd>Rede Nacional de Dados em Saúde, plataforma do Ministério da Saúde baseada em FHIR R4.</dd></div>
+    <div><dt>TISS</dt><dd>Padrão da ANS de troca de informações entre prestadores e operadoras (XML/SOAP).</dd></div>
+    <div><dt>CNES / CNS</dt><dd>Cadastro de estabelecimentos; Cartão Nacional de Saúde do cidadão.</dd></div>
+    <div><dt>MPI</dt><dd>Índice mestre de pacientes: identificador único e vínculos entre cadastros.</dd></div>
+    <div><dt>DICOM / DICOMweb</dt><dd>Padrão de imagem médica; acesso por HTTP (QIDO-RS, WADO-RS, STOW-RS).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é interoperabilidade e quais são seus níveis?</span></summary><div class="ans"><p>É a capacidade de sistemas trocarem dados e usá-los sem intervenção manual. Os níveis são técnico (transporte), sintático (estrutura), semântico (significado, via terminologias) e organizacional (acordos, regras e base legal). Em saúde, o semântico e o organizacional consomem a maior parte do esforço.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Descreva a estrutura de uma mensagem HL7 v2.</span></summary><div class="ans"><p>Segmentos separados por CR, cada um com nome de 3 letras e campos separados por pipe; componentes por <code>^</code>, repetições por <code>~</code>. O <code>MSH</code> abre a mensagem com remetente, destinatário, tipo (<code>MSH-9</code>), id (<code>MSH-10</code>) e versão. Depois vêm segmentos como <code>PID</code> (paciente) e <code>PV1</code> (atendimento). A posição do campo é o contrato.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Quais mensagens HL7 v2 você usaria num fluxo de pedido e resultado de exame?</span></summary><div class="ans"><p>O pedido segue em <code>ORM^O01</code> (ou <code>OML^O21</code>), o laboratório responde cada mensagem com <code>ACK</code> e devolve o resultado em <code>ORU^R01</code>, com um <code>OBR</code> por exame e <code>OBX</code> por resultado. O cadastro do paciente chega por <code>ADT</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>O que é MLLP e quais são suas limitações?</span></summary><div class="ans"><p>É o enquadramento de mensagens HL7 v2 sobre uma conexão TCP: byte de início <code>0x0B</code> e fim <code>0x1C 0x0D</code>. Não tem criptografia nem autenticação, então roda em VPN ou túnel TLS, com restrição de IP. O receptor responde com ACK no mesmo canal.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Por que o HL7 v2 ainda é tão usado se existe o FHIR?</span></summary><div class="ans"><p>Há décadas de sistemas funcionando, o padrão é estável, o custo de substituir integrações que funcionam é alto e muitos fornecedores de laboratório e hospital só falam v2. O FHIR cresce em novos projetos e em APIs de consulta, mas a convivência é a regra; o motor de integração traduz entre eles.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Qual a diferença de filosofia entre HL7 v2 e FHIR?</span></summary><div class="ans"><p>O v2 empurra eventos em mensagens posicionais, ponto a ponto. O FHIR expõe recursos granulares por uma API REST, com consulta, busca e referências, sobre HTTP e OAuth 2. O FHIR também define perfis para adaptação e é auto-descritivo pelo <code>CapabilityStatement</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Qual versão do FHIR usar hoje e por quê?</span></summary><div class="ans"><p>R4 (4.0.1): é a mais difundida, a base da RNDS e a suportada pelos servidores e bibliotecas principais. A R5 foi publicada em 2023 com adoção baixa e a R6 ainda estava em fase de votação, com publicação final esperada para o fim de 2026 ou depois (conferir em hl7.org/fhir). Versões não são compatíveis entre si, então a migração exige conversão.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Como buscar, via FHIR, os resultados de hemoglobina de um paciente no último ano, trazendo também o laudo?</span></summary><div class="ans"><p><code>GET /Observation?patient=123&amp;code=http://loinc.org|718-7&amp;date=ge2025-11-25&amp;_sort=-date</code>, seguindo os links <code>next</code> do Bundle. Para trazer os recursos relacionados na mesma resposta, uso <code>_include</code> (por exemplo, <code>DiagnosticReport:result</code> pelo lado do laudo) ou <code>_revinclude</code>. Evito N+1 chamadas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é um Bundle de transação e como ele garante consistência?</span></summary><div class="ans"><p>Um Bundle do tipo <code>transaction</code> agrupa várias operações que o servidor executa de forma atômica: ou todas são aplicadas, ou nenhuma. Referências entre entradas novas usam <code>urn:uuid</code>. Com <code>ifNoneExist</code> faço criação condicional e obtenho idempotência em reenvios. Já o <code>batch</code> é independente por entrada.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>O que são perfis e extensões no FHIR?</span></summary><div class="ans"><p>Perfil é uma <code>StructureDefinition</code> que restringe um recurso para um contexto (identificadores obrigatórios, terminologia exigida). Extensão adiciona um campo que o recurso base não possui, identificada por URL. Juntos, em um guia de implementação, adaptam o FHIR ao país ou caso de uso, como a RNDS faz no Brasil.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Por que mapeamento de terminologia é considerado o trabalho pesado?</span></summary><div class="ans"><p>Cada origem tem códigos próprios; os mapeamentos para LOINC, CID-10 ou TUSS não são sempre 1:1, exigem validação clínica, tratam unidades e mudam com as versões das tabelas. Erro de mapeamento muda o significado clínico sem causar falha técnica. Mantenho o código original, o mapa versionado e um responsável pelo domínio.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Como funciona o SMART on FHIR?</span></summary><div class="ans"><p>É OAuth 2.0 com PKCE e OIDC mais convenções de saúde: descoberta em <code>/.well-known/smart-configuration</code>, escopos por recurso (<code>patient/Observation.read</code>), contexto de paciente e encontro no lançamento e <code>fhirUser</code> para identificar o usuário. Para integrações sem usuário, SMART Backend Services, com JWT assinado e escopos <code>system/*</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Como é a integração com a RNDS?</span></summary><div class="ans"><p>Credenciamento do estabelecimento (CNES) no portal do Ministério da Saúde, autenticação com certificado digital ICP-Brasil para obter o token, envio de Bundles FHIR R4 conforme os modelos e perfis da RNDS, identificando paciente por CPF ou CNS, com ambiente de homologação antes da produção. Os detalhes finos vêm do manual vigente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O que é o padrão TISS e como você integraria com uma operadora?</span></summary><div class="ans"><p>É o padrão da ANS para troca de informações entre prestadores e operadoras: guias em XML trocadas por web services SOAP, com terminologia TUSS. Integro validando o XML contra o XSD na versão que a operadora aceita, enviando lotes, guardando o protocolo e processando o demonstrativo de retorno e as glosas. Um motor traduz do modelo interno para o TISS.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Como tratar identidade do paciente e duplicidade entre sistemas?</span></summary><div class="ans"><p>Um MPI com matching determinístico (CPF, CNS) e probabilístico (nome, nascimento, nome da mãe) com limiares. Prefiro não unir a unir errado, com fila de revisão humana na faixa intermediária. O merge é reversível, auditado e propagado por <code>ADT^A40</code> ou pelo <code>link</code> do Patient no FHIR.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Quais são os pontos de LGPD numa integração de dados de saúde?</span></summary><div class="ans"><p>Dado de saúde é sensível (art. 5, II) e tratado conforme o art. 11. A tutela da saúde sustenta a assistência, e o compartilhamento com laboratório e operadora é admitido para prestar e cobrar o serviço (art. 11, §4), com o mínimo necessário. Exige contrato com operadores, criptografia, log de acesso, ambiente de teste sem dado real e plano de resposta a incidentes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Como você desenharia a arquitetura de integração de uma rede de clínicas com RNDS, operadoras e laboratórios?</span></summary><div class="ans"><p>Um motor de integração com modelo canônico interno, um canal por parceiro (FHIR para RNDS, TISS/SOAP para operadoras, HL7 v2 para laboratório), fila persistente, retry, DLQ, rastreio por id e alta disponibilidade. Um MPI resolve identidade e uma tabela de terminologia versionada faz o mapeamento. As regras de negócio ficam nos serviços, não nos scripts do motor. Segurança: TLS/VPN, segredos em cofre, logs sem dado sensível.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Seu motor de integração Mirth está na versão 4.5. O que você avalia em 2026?</span></summary><div class="ans"><p>O Mirth deixou de ser código aberto a partir da 4.6 (licença comercial única da NextGen); a 4.5.2 é a última versão aberta, e existem forks comunitários como Open Integration Engine e BridgeLink. Avalio risco de segurança sem patches oficiais, custo de licença, maturidade e licença dos forks, alternativas comerciais e custo de migrar os canais. Decido com dados (quantos canais, criticidade, equipe) e planejo com testes de regressão por mensagens de exemplo.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

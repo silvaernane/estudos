@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 03: HTTP a fundo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 03 de 10 · HTTP a fundo</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html" aria-current="page"><span class="n">03</span>HTTP a fundo</a></li>
+    <li class="sub"><ol>
+      <li><a href="#url"><span class="n">1</span>URL e suas partes</a></li>
+      <li><a href="#modelo"><span class="n">2</span>Requisição, resposta e statelessness</a></li>
+      <li><a href="#mensagens"><span class="n">3</span>Anatomia das mensagens</a></li>
+      <li><a href="#metodos"><span class="n">4</span>Métodos</a></li>
+      <li><a href="#status"><span class="n">5</span>Códigos de status e redirecionamentos</a></li>
+      <li><a href="#cabecalhos"><span class="n">6</span>Cabeçalhos, negociação e compressão</a></li>
+      <li><a href="#cookies"><span class="n">7</span>Cookies no HTTP</a></li>
+      <li><a href="#cache"><span class="n">8</span>Cache HTTP</a></li>
+      <li><a href="#versoes"><span class="n">9</span>Conexões e versões do HTTP</a></li>
+      <li><a href="#ferramentas"><span class="n">10</span>Ferramentas e proxies</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 03 · <span class="lvl l1">Básico</span> <span class="lvl l2">Intermediário</span></div>
+  <h1>HTTP a fundo</h1>
+  <p class="lede">O HTTP é a língua que navegador, API, proxy e CDN usam para conversar. Quem lê uma requisição e uma resposta com fluência diagnostica incidentes em minutos e responde com segurança na entrevista.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Ler uma URL e uma mensagem HTTP crua e explicar cada parte.</li>
+    <li>Escolher o método e o código de status certos, sabendo o que é seguro e o que é idempotente.</li>
+    <li>Explicar cache HTTP, ETag e 304, e por que um deploy às vezes "não aparece" para o usuário.</li>
+    <li>Comparar HTTP/1.1, HTTP/2 e HTTP/3 sem mitos.</li>
+    <li>Usar DevTools, curl e HAR para diagnosticar, e saber o que cada proxy no caminho enxerga.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="url">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>URL e suas partes</h2>
+  <p>A URL (Uniform Resource Locator, localizador uniforme de recurso) diz <strong>onde</strong> está um recurso e <strong>como</strong> chegar até ele. A sintaxe geral está na RFC 3986.</p>
+  <pre><code class="text">https://portal.exemplo.com.br:8443/exames/123/laudo?formato=pdf&amp;versao=2#assinatura
+
+esquema    https
+host       portal.exemplo.com.br
+porta      8443
+caminho    /exames/123/laudo
+query      formato=pdf&amp;versao=2
+fragmento  assinatura</code></pre>
+  <div class="tbl"><table><thead><tr><th>Parte</th><th>Exemplo</th><th>O que faz</th></tr></thead><tbody>
+    <tr><td>Esquema</td><td><code>https</code></td><td>Protocolo. Define a porta padrão: 80 para <code>http</code>, 443 para <code>https</code>.</td></tr>
+    <tr><td>Userinfo</td><td><code>ana:senha@</code></td><td>Credenciais embutidas. Obsoleto e perigoso: navegadores alertam ou ignoram. Não use.</td></tr>
+    <tr><td>Host</td><td><code>portal.exemplo.com.br</code></td><td>Nome resolvido pelo DNS (<a href="02-dns.html">módulo 2</a>) ou um IP. Vai no cabeçalho <code>Host</code>.</td></tr>
+    <tr><td>Porta</td><td><code>8443</code></td><td>Opcional quando é a padrão do esquema.</td></tr>
+    <tr><td>Caminho (path)</td><td><code>/exames/123/laudo</code></td><td>Identifica o recurso dentro do servidor.</td></tr>
+    <tr><td>Query string</td><td><code>formato=pdf&amp;versao=2</code></td><td>Parâmetros chave=valor separados por <code>&amp;</code>.</td></tr>
+    <tr><td>Fragmento</td><td><code>#assinatura</code></td><td>Usado só pelo navegador. <strong>Nunca é enviado ao servidor.</strong></td></tr>
+  </tbody></table></div>
+  <h3>Codificação de caracteres</h3>
+  <p>Caracteres fora do conjunto permitido viajam com percent-encoding (codificação por porcentagem): espaço vira <code>%20</code>, <code>ç</code> em UTF-8 vira <code>%C3%A7</code>. Em formulários HTML, o espaço na query também aparece como <code>+</code>.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Colocar dado sensível na query string. A URL completa fica gravada em log de servidor, de proxy, de CDN, no histórico do navegador e pode vazar no cabeçalho <code>Referer</code>. Em sistema de saúde, CPF ou número de prontuário na URL é incidente de privacidade esperando para acontecer. O HTTPS cifra a URL em trânsito, mas não protege esses registros nas pontas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O fragmento fica no navegador; o servidor recebe esquema implícito, host, caminho e query. Dados sensíveis não vão na URL porque ela é registrada em logs e históricos, mesmo com HTTPS."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Inclua na revisão de código e no checklist de LGPD a pergunta "algum identificador pessoal aparece em URL?". Corrigir depois exige mudar contrato de API, front-end e limpar logs retidos.</p></div>
+</section>
+
+<section class="chap" id="modelo">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Requisição, resposta e statelessness</h2>
+  <p>O HTTP segue o modelo cliente-servidor. O cliente (navegador, app, outro serviço, <code>curl</code>) abre uma conexão, envia uma <strong>requisição</strong> e o servidor devolve uma <strong>resposta</strong>. O servidor nunca começa a conversa. Funcionalidades "em tempo real" usam outros mecanismos sobre ou ao lado do HTTP, como WebSocket ou Server-Sent Events.</p>
+  <p>O transporte fica por baixo: TCP no HTTP/1.1 e HTTP/2, QUIC sobre UDP no HTTP/3 (veja a <a href="#versoes">seção 9</a> e o <a href="01-internet.html">módulo 1</a>). Com HTTPS, o TLS cifra tudo (<a href="04-tls.html">módulo 4</a>).</p>
+  <h3>Stateless: cada requisição se explica sozinha</h3>
+  <p>O protocolo é <em>stateless</em> (sem estado): o servidor não precisa lembrar nada da requisição anterior para responder à próxima. Cada mensagem carrega tudo o que é preciso: quem é o host, qual o formato aceito, qual a credencial.</p>
+  <p>Aplicações precisam de estado (usuário logado, carrinho). Elas o constroem <em>em cima</em> do HTTP, mandando um identificador em toda requisição, normalmente um cookie ou um token no cabeçalho <code>Authorization</code>. Como isso vira sessão e autenticação é assunto do <a href="07-autenticacao.html">módulo 7</a>.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Stateless é uma propriedade do protocolo. A aplicação pode ter estado, mas ele deve morar em lugar compartilhado (banco, cache distribuído) e não na memória de uma instância, para que qualquer servidor atrás do load balancer consiga atender.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Stateless significa que cada requisição traz todo o contexto necessário. Isso permite escalar horizontalmente: qualquer instância atende qualquer requisição. O estado de sessão é reconstruído a partir de cookie ou token."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Sessão guardada na memória do servidor obriga a usar "sticky session" no balanceador e faz o usuário perder o login a cada deploy ou queda de instância. Quando o time pedir mais réplicas e o problema persistir, pergunte onde está o estado.</p></div>
+</section>
+
+<section class="chap" id="mensagens">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>Anatomia das mensagens</h2>
+  <p>No HTTP/1.1 a mensagem é texto (RFC 9112). Toda mensagem tem a mesma estrutura: <strong>linha inicial</strong>, <strong>cabeçalhos</strong> (um por linha, <code>Nome: valor</code>), uma <strong>linha vazia</strong> e o <strong>corpo</strong> opcional. As linhas terminam em CRLF (<code>\r\n</code>).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 720 250" role="img" aria-label="Requisição POST e resposta 201 lado a lado, com linha inicial, cabeçalhos, linha vazia e corpo">
+      <text class="ttl" x="10" y="24">Requisição (cliente → servidor)</text>
+      <text class="ttl" x="410" y="24">Resposta (servidor → cliente)</text>
+      <rect class="box-a" x="10" y="36" width="290" height="28" rx="4"/>
+      <text x="20" y="55">POST /api/pacientes HTTP/1.1</text>
+      <rect class="box" x="10" y="70" width="290" height="76" rx="4"/>
+      <text x="20" y="88">Host: api.exemplo.com.br</text>
+      <text x="20" y="104">Content-Type: application/json</text>
+      <text x="20" y="120">Content-Length: 34</text>
+      <text x="20" y="136">Authorization: Bearer eyJ...</text>
+      <rect class="box" x="10" y="152" width="290" height="20" rx="4"/>
+      <text class="lbl" x="20" y="166">\r\n</text>
+      <rect class="box-w" x="10" y="178" width="290" height="32" rx="4"/>
+      <text x="20" y="199">{"nome":"Ana","nasc":"1990-04-02"}</text>
+
+      <text class="lbl" x="355" y="55" text-anchor="middle">linha inicial</text>
+      <text class="lbl" x="355" y="112" text-anchor="middle">cabeçalhos</text>
+      <text class="lbl" x="355" y="166" text-anchor="middle">linha vazia</text>
+      <text class="lbl" x="355" y="199" text-anchor="middle">corpo</text>
+
+      <rect class="box-a" x="410" y="36" width="300" height="28" rx="4"/>
+      <text x="420" y="55">HTTP/1.1 201 Created</text>
+      <rect class="box" x="410" y="70" width="300" height="76" rx="4"/>
+      <text x="420" y="88">Location: /api/pacientes/812</text>
+      <text x="420" y="104">Content-Type: application/json</text>
+      <text x="420" y="120">Content-Length: 23</text>
+      <text x="420" y="136">Cache-Control: no-store</text>
+      <rect class="box" x="410" y="152" width="300" height="20" rx="4"/>
+      <text class="lbl" x="420" y="166">\r\n</text>
+      <rect class="box-w" x="410" y="178" width="300" height="32" rx="4"/>
+      <text x="420" y="199">{"id":812,"nome":"Ana"}</text>
+      <text class="lbl" x="10" y="238">Content-Length conta bytes do corpo: 34 na requisição, 23 na resposta.</text>
+    </svg>
+    <figcaption>A requisição começa com método, alvo e versão. A resposta começa com versão, código e frase de status. A linha vazia separa cabeçalhos do corpo.</figcaption>
+  </figure>
+  <h3>Linha inicial</h3>
+  <ul>
+    <li><strong>Requisição:</strong> <code>MÉTODO alvo VERSÃO</code>, por exemplo <code>GET /exames?pagina=2 HTTP/1.1</code>.</li>
+    <li><strong>Resposta:</strong> <code>VERSÃO código frase</code>, por exemplo <code>HTTP/1.1 404 Not Found</code>. A frase é só informativa; o cliente decide pelo número.</li>
+  </ul>
+  <h3>Corpo e tamanho</h3>
+  <p>O receptor precisa saber onde o corpo termina. Há dois jeitos no HTTP/1.1: <code>Content-Length</code> com o número de bytes, ou <code>Transfer-Encoding: chunked</code>, que envia o corpo em pedaços quando o tamanho total ainda não é conhecido (respostas geradas em streaming).</p>
+  <p>No HTTP/2 e no HTTP/3 a mensagem vira quadros binários e a linha inicial vira pseudo-cabeçalhos (<code>:method</code>, <code>:path</code>, <code>:status</code>), mas o significado é o mesmo. Por isso a RFC 9110 define a semântica do HTTP separada do formato de cada versão.</p>
+  <pre data-file="resposta real simplificada (ilustrativa)"><code class="http">HTTP/1.1 200 OK
+Date: Tue, 24 Nov 2026 13:02:11 GMT
+Content-Type: text/html; charset=utf-8
+Content-Encoding: br
+Cache-Control: max-age=0, must-revalidate
+ETag: "6f1c-5e2a"
+Vary: Accept-Encoding
+
+&lt;!doctype html&gt;...</code></pre>
+  <div class="note iv"><b>Na entrevista</b><p>"Uma mensagem HTTP tem linha inicial, cabeçalhos, linha vazia e corpo opcional. No HTTP/2 o formato vira binário, mas a semântica de método, status e cabeçalhos não muda."</p></div>
+</section>
+
+<section class="chap" id="metodos">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l1">Básico</span></div>
+  <h2>Métodos: segurança e idempotência</h2>
+  <p>O método diz a intenção da requisição. Duas propriedades definidas na RFC 9110 aparecem em quase toda entrevista:</p>
+  <ul>
+    <li><strong>Seguro (safe):</strong> o cliente não pede mudança de estado no servidor. Leitura pura. Logs e métricas não contam.</li>
+    <li><strong>Idempotente:</strong> repetir a mesma requisição N vezes deixa o servidor no mesmo estado que enviá-la uma vez. A resposta pode variar (um segundo DELETE pode devolver 404); o efeito não muda.</li>
+  </ul>
+  <div class="tbl"><table><thead><tr><th>Método</th><th>Uso típico</th><th>Seguro</th><th>Idempotente</th><th>Corpo na requisição</th></tr></thead><tbody>
+    <tr><td><code>GET</code></td><td>Ler um recurso</td><td>Sim</td><td>Sim</td><td>Sem semântica definida; evite</td></tr>
+    <tr><td><code>HEAD</code></td><td>Igual ao GET, mas só cabeçalhos</td><td>Sim</td><td>Sim</td><td>Não</td></tr>
+    <tr><td><code>OPTIONS</code></td><td>Descobrir capacidades; usado no preflight de CORS</td><td>Sim</td><td>Sim</td><td>Raro</td></tr>
+    <tr><td><code>POST</code></td><td>Criar ou processar (ação genérica)</td><td>Não</td><td>Não</td><td>Sim</td></tr>
+    <tr><td><code>PUT</code></td><td>Criar ou substituir o recurso inteiro em uma URL conhecida</td><td>Não</td><td>Sim</td><td>Sim</td></tr>
+    <tr><td><code>PATCH</code></td><td>Alterar parte do recurso (RFC 5789)</td><td>Não</td><td>Não garantido</td><td>Sim</td></tr>
+    <tr><td><code>DELETE</code></td><td>Remover</td><td>Não</td><td>Sim</td><td>Sem semântica definida</td></tr>
+  </tbody></table></div>
+  <p>O PATCH pode ser idempotente ou não, conforme o formato: "defina o telefone como X" é idempotente; "some 1 ao contador" não é. O preflight de CORS que usa OPTIONS é detalhado no <a href="09-seguranca-web.html">módulo 9</a>; o desenho de recursos e verbos em APIs REST, no <a href="08-apis.html">módulo 8</a>.</p>
+  <h3>Por que isso importa na prática</h3>
+  <p>Proxies, clientes HTTP e navegadores podem <strong>repetir automaticamente</strong> requisições idempotentes após falha de rede. Repetir um POST pode gerar cobrança duplicada ou dois agendamentos para o mesmo paciente. Por isso APIs críticas aceitam uma chave de idempotência enviada pelo cliente em operações POST; o padrão é discutido no <a href="08-apis.html">módulo 8</a>.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Link <code>GET /pacientes/812/excluir</code>. Crawlers, pré-carregamento do navegador e antivírus que "visitam" links podem disparar a exclusão. Mudança de estado nunca vai em GET.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Seguro é não alterar estado; idempotente é poder repetir sem mudar o efeito. Todo seguro é idempotente. PUT e DELETE são idempotentes, POST não, PATCH depende de como a alteração é descrita."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Incidentes de "registro duplicado" costumam nascer de retry automático em POST sem chave de idempotência. Ao revisar integrações com operadoras, laboratórios ou gateways de pagamento, pergunte: "o que acontece se esta chamada for enviada duas vezes?".</p></div>
+</section>
+
+<section class="chap" id="status">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l1">Básico</span></div>
+  <h2>Códigos de status e redirecionamentos</h2>
+  <p>O código de três dígitos é o contrato entre servidor e cliente. O primeiro dígito define a família.</p>
+  <div class="tbl"><table><thead><tr><th>Família</th><th>Significado</th><th>Quem errou</th></tr></thead><tbody>
+    <tr><td>1xx</td><td>Informativo (ex.: <code>101 Switching Protocols</code> no upgrade para WebSocket)</td><td>Ninguém</td></tr>
+    <tr><td>2xx</td><td>Sucesso</td><td>Ninguém</td></tr>
+    <tr><td>3xx</td><td>Redirecionamento ou "use sua cópia"</td><td>Ninguém</td></tr>
+    <tr><td>4xx</td><td>Erro do cliente: a requisição tem problema</td><td>Quem chamou</td></tr>
+    <tr><td>5xx</td><td>Erro do servidor: a requisição pode estar certa</td><td>Quem respondeu (ou algo atrás dele)</td></tr>
+  </tbody></table></div>
+  <h3>Os mais cobrados</h3>
+  <div class="tbl"><table><thead><tr><th>Código</th><th>Quando usar</th></tr></thead><tbody>
+    <tr><td><code>200 OK</code></td><td>Sucesso com corpo.</td></tr>
+    <tr><td><code>201 Created</code></td><td>Recurso criado. Inclua <code>Location</code> com a URL nova.</td></tr>
+    <tr><td><code>204 No Content</code></td><td>Sucesso sem corpo (ex.: DELETE ou PUT que não devolve nada).</td></tr>
+    <tr><td><code>301 Moved Permanently</code></td><td>Mudou de vez. Cacheável por padrão. Clientes antigos trocam POST por GET.</td></tr>
+    <tr><td><code>302 Found</code></td><td>Desvio temporário. Mesma ressalva do POST virar GET.</td></tr>
+    <tr><td><code>304 Not Modified</code></td><td>Resposta a uma requisição condicional: "sua cópia em cache ainda vale". Sem corpo.</td></tr>
+    <tr><td><code>307</code> / <code>308</code></td><td>Temporário / permanente, <strong>preservando método e corpo</strong>.</td></tr>
+    <tr><td><code>400 Bad Request</code></td><td>Requisição malformada: JSON inválido, parâmetro obrigatório ausente.</td></tr>
+    <tr><td><code>401 Unauthorized</code></td><td>Falta autenticação ou ela é inválida. Na prática quer dizer "não sei quem você é". Deve vir com <code>WWW-Authenticate</code>.</td></tr>
+    <tr><td><code>403 Forbidden</code></td><td>Sei quem você é, e você não tem permissão. Repetir com a mesma credencial não adianta.</td></tr>
+    <tr><td><code>404 Not Found</code></td><td>Recurso inexistente. Também usado para não revelar que algo existe.</td></tr>
+    <tr><td><code>409 Conflict</code></td><td>Conflito com o estado atual: e-mail já cadastrado, versão desatualizada na edição.</td></tr>
+    <tr><td><code>422 Unprocessable Content</code></td><td>Sintaxe certa, regra de negócio violada (data de nascimento no futuro).</td></tr>
+    <tr><td><code>429 Too Many Requests</code></td><td>Limite de taxa excedido. Pode vir com <code>Retry-After</code>.</td></tr>
+    <tr><td><code>500 Internal Server Error</code></td><td>Exceção não tratada na aplicação.</td></tr>
+    <tr><td><code>502 Bad Gateway</code></td><td>Um proxy ou gateway recebeu resposta inválida do servidor de trás (upstream): processo caído, conexão recusada ou fechada no meio.</td></tr>
+    <tr><td><code>503 Service Unavailable</code></td><td>Servidor indisponível no momento: sobrecarga, manutenção, nenhuma instância saudável.</td></tr>
+    <tr><td><code>504 Gateway Timeout</code></td><td>O proxy esperou o upstream e o tempo acabou.</td></tr>
+  </tbody></table></div>
+  <h3>Redirecionamentos</h3>
+  <p>Todo 3xx de redirecionamento traz o destino no cabeçalho <code>Location</code>. O cliente faz uma <strong>nova requisição</strong> para lá: um redirecionamento custa uma ida e volta a mais.</p>
+  <pre><code class="http">GET /portal HTTP/1.1
+Host: exemplo.com.br
+
+HTTP/1.1 301 Moved Permanently
+Location: https://www.exemplo.com.br/portal</code></pre>
+  <ul>
+    <li><strong>Permanente (301, 308):</strong> navegadores e buscadores guardam o destino. Um 301 errado pode continuar valendo no navegador dos usuários mesmo depois de corrigido no servidor.</li>
+    <li><strong>Temporário (302, 307):</strong> o cliente volta à URL original na próxima vez.</li>
+    <li><strong>Cadeias e laços:</strong> <code>http</code> → <code>https</code> → <code>www</code> → <code>/login</code> soma latência. Um laço (A → B → A) termina em erro "redirecionamentos demais" no navegador.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Devolver <code>200 OK</code> com <code>{"erro": "..."}</code> no corpo. Monitoramento, CDN, retries e o próprio front-end passam a tratar falha como sucesso. O status deve refletir o resultado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"401 é autenticação: não sei quem você é. 403 é autorização: sei quem você é e você não pode. 502 é o proxy recebendo resposta ruim do upstream; 504 é o proxy desistindo de esperar."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça dashboards com taxa de 4xx e 5xx separadas. Pico de 4xx costuma indicar mudança de contrato ou cliente quebrado; pico de 5xx é problema seu. Distinguir 502, 503 e 504 aponta a camada: aplicação caída, sem capacidade ou lenta demais.</p></div>
+</section>
+
+<section class="chap" id="cabecalhos">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cabeçalhos, negociação de conteúdo e compressão</h2>
+  <p>Cabeçalhos são metadados. Os nomes não diferenciam maiúsculas de minúsculas; no HTTP/2 e HTTP/3 eles trafegam em minúsculas.</p>
+  <div class="tbl"><table><thead><tr><th>Cabeçalho</th><th>Direção</th><th>Para quê</th></tr></thead><tbody>
+    <tr><td><code>Host</code></td><td>Req.</td><td>Nome do site pedido. Obrigatório no HTTP/1.1. Permite vários sites no mesmo IP (virtual hosts).</td></tr>
+    <tr><td><code>Content-Type</code></td><td>Ambas</td><td>Tipo do corpo enviado: <code>application/json</code>, <code>text/html; charset=utf-8</code>, <code>multipart/form-data</code>.</td></tr>
+    <tr><td><code>Accept</code></td><td>Req.</td><td>Tipos que o cliente aceita receber.</td></tr>
+    <tr><td><code>Authorization</code></td><td>Req.</td><td>Credencial, por exemplo <code>Bearer &lt;token&gt;</code> ou <code>Basic &lt;base64&gt;</code> (<a href="07-autenticacao.html">módulo 7</a>).</td></tr>
+    <tr><td><code>User-Agent</code></td><td>Req.</td><td>Identifica o software cliente. Facilmente falsificável; serve para estatística e diagnóstico, nunca para segurança.</td></tr>
+    <tr><td><code>Location</code></td><td>Resp.</td><td>Destino de um 3xx ou URL do recurso criado em um 201.</td></tr>
+    <tr><td><code>Content-Length</code></td><td>Ambas</td><td>Tamanho do corpo em bytes.</td></tr>
+    <tr><td><code>Content-Encoding</code></td><td>Resp. (geralmente)</td><td>Compressão aplicada ao corpo: <code>gzip</code>, <code>br</code>.</td></tr>
+  </tbody></table></div>
+  <h3>Negociação de conteúdo</h3>
+  <p>O cliente diz o que prefere com cabeçalhos <code>Accept-*</code> e o servidor escolhe a melhor representação. O parâmetro <code>q</code> (de 0 a 1) indica preferência.</p>
+  <pre><code class="http">GET /laudos/55 HTTP/1.1
+Host: api.exemplo.com.br
+Accept: application/json, application/pdf;q=0.5
+Accept-Language: pt-BR, en;q=0.6
+Accept-Encoding: br, gzip
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Language: pt-BR
+Content-Encoding: br
+Vary: Accept, Accept-Language, Accept-Encoding</code></pre>
+  <p>Se o servidor não tem nada aceitável, pode responder <code>406 Not Acceptable</code>, mas a maioria devolve a representação padrão. O cabeçalho <code>Vary</code> avisa aos caches que a resposta muda conforme aqueles cabeçalhos; sem ele, uma CDN pode servir a versão em inglês para quem pediu português.</p>
+  <h3>Compressão</h3>
+  <p>O cliente anuncia em <code>Accept-Encoding</code> o que sabe descomprimir e o servidor indica em <code>Content-Encoding</code> o que usou. Os dois mais comuns:</p>
+  <ul>
+    <li><strong>gzip:</strong> suportado praticamente em toda parte.</li>
+    <li><strong>br (Brotli):</strong> em geral comprime texto melhor que gzip; navegadores só o anunciam em conexões HTTPS.</li>
+  </ul>
+  <p>Texto (HTML, CSS, JS, JSON) costuma encolher bastante. Imagens JPEG/PNG/WebP, vídeo e arquivos ZIP já são comprimidos: recomprimir gasta CPU sem ganho.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Comprimir respostas que misturam um segredo com dados controlados pelo atacante sob HTTPS abriu espaço para ataques como BREACH. Não é motivo para desligar compressão no site todo, e sim para tratar com cuidado páginas que refletem entrada do usuário junto com tokens. Detalhes no <a href="09-seguranca-web.html">módulo 9</a>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Negociação de conteúdo é o cliente declarar preferências em Accept, Accept-Language e Accept-Encoding e o servidor escolher. O Vary diz ao cache quais cabeçalhos mudam a resposta."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Compressão é uma das otimizações mais baratas: normalmente é configuração no proxy ou na CDN. Peça ao time a medida de "bytes transferidos" antes e depois no DevTools. Em redes móveis de pacientes e unidades remotas, a diferença aparece.</p></div>
+</section>
+
+<section class="chap" id="cookies">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cookies no HTTP</h2>
+  <p>Cookie é um par nome=valor que o servidor pede para o navegador guardar e devolver nas próximas requisições ao mesmo site (RFC 6265). É o mecanismo HTTP que permite estado sobre um protocolo stateless. O uso para sessão e login fica no <a href="07-autenticacao.html">módulo 7</a>.</p>
+  <pre><code class="http">HTTP/1.1 200 OK
+Set-Cookie: sid=8f3a...; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=3600
+Set-Cookie: tema=escuro; Path=/; Max-Age=31536000
+
+GET /agenda HTTP/1.1
+Host: portal.exemplo.com.br
+Cookie: sid=8f3a...; tema=escuro</code></pre>
+  <p>Cada cookie vem em um <code>Set-Cookie</code> próprio. Na volta, todos seguem juntos em um único <code>Cookie</code>, só com nome e valor: o navegador não reenvia os atributos.</p>
+  <div class="tbl"><table><thead><tr><th>Atributo</th><th>Efeito</th></tr></thead><tbody>
+    <tr><td><code>Expires</code> / <code>Max-Age</code></td><td>Quando expira. Sem nenhum dos dois, é cookie de sessão do navegador e some quando o navegador decide encerrar a sessão.</td></tr>
+    <tr><td><code>Domain</code></td><td>Sem ele, só o host exato recebe. Com <code>Domain=exemplo.com.br</code>, todos os subdomínios recebem.</td></tr>
+    <tr><td><code>Path</code></td><td>Prefixo de caminho que recebe o cookie. Não é barreira de segurança.</td></tr>
+    <tr><td><code>Secure</code></td><td>Só enviado por HTTPS.</td></tr>
+    <tr><td><code>HttpOnly</code></td><td>Invisível para JavaScript (<code>document.cookie</code>). Reduz o roubo via XSS.</td></tr>
+    <tr><td><code>SameSite</code></td><td><code>Strict</code>, <code>Lax</code> ou <code>None</code>: controla o envio em requisições originadas de outros sites. <code>None</code> exige <code>Secure</code>. O Chrome trata a ausência do atributo como <code>Lax</code>; outros navegadores variam, então declare sempre.</td></tr>
+  </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Usar <code>Domain=</code> amplo "para funcionar em tudo". Um subdomínio menos protegido (um blog de marketing, um ambiente de homologação) passa a receber o cookie de sessão do sistema clínico.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O servidor envia Set-Cookie com atributos; o navegador devolve só nome e valor no cabeçalho Cookie. Para sessão: Secure, HttpOnly e SameSite, e Domain só quando necessário."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cookies de terceiros e de analytics entram no inventário de dados pessoais da LGPD e na política de consentimento. Cobre do time uma lista de cookies por sistema com finalidade, duração e atributos.</p></div>
+</section>
+
+<section class="chap" id="cache">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cache HTTP</h2>
+  <p>Cache evita buscar de novo o que não mudou. Ele reduz latência, banda e carga no servidor. As regras estão na RFC 9111. Há dois tipos de cache no caminho:</p>
+  <ul>
+    <li><strong>Privado:</strong> o cache do navegador, de um único usuário.</li>
+    <li><strong>Compartilhado:</strong> CDN, proxy reverso, proxy corporativo. Uma cópia serve muitos usuários.</li>
+  </ul>
+  <h3>Cache-Control</h3>
+  <div class="tbl"><table><thead><tr><th>Diretiva</th><th>Significado</th></tr></thead><tbody>
+    <tr><td><code>max-age=N</code></td><td>A resposta fica "fresca" por N segundos. Enquanto fresca, o cache a usa sem consultar o servidor.</td></tr>
+    <tr><td><code>s-maxage=N</code></td><td>Igual, mas só para caches compartilhados; tem precedência sobre max-age neles.</td></tr>
+    <tr><td><code>no-cache</code></td><td>Pode guardar, mas <strong>precisa revalidar</strong> com o servidor antes de cada uso.</td></tr>
+    <tr><td><code>no-store</code></td><td><strong>Não guarde</strong> em lugar nenhum.</td></tr>
+    <tr><td><code>private</code></td><td>Só caches privados podem guardar. Use em respostas com dados do usuário.</td></tr>
+    <tr><td><code>public</code></td><td>Caches compartilhados podem guardar, mesmo em situações em que normalmente não guardariam.</td></tr>
+    <tr><td><code>must-revalidate</code></td><td>Depois de vencida, não use a cópia sem revalidar.</td></tr>
+    <tr><td><code>immutable</code></td><td>O conteúdo nunca muda durante a validade; o navegador não revalida nem no recarregar.</td></tr>
+  </tbody></table></div>
+  <h3>Validação: ETag e Last-Modified</h3>
+  <p>Quando a cópia vence, o cache pergunta "mudou?" com uma <strong>requisição condicional</strong>. Se não mudou, o servidor responde <code>304 Not Modified</code> sem corpo e a cópia ganha nova validade.</p>
+  <ul>
+    <li><code>ETag</code> é um identificador da versão (muitas vezes um hash). O cliente devolve em <code>If-None-Match</code>.</li>
+    <li><code>Last-Modified</code> é a data da última alteração. O cliente devolve em <code>If-Modified-Since</code>. Tem resolução de segundos, por isso o ETag é mais preciso.</li>
+  </ul>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Sequência de cache: primeira busca com ETag, período fresco servido localmente, revalidação com If-None-Match e resposta 304">
+      <defs><marker id="ah-cache" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="40" y="10" width="140" height="28" rx="5"/><text x="110" y="29" text-anchor="middle">Navegador</text>
+      <rect class="box" x="500" y="10" width="140" height="28" rx="5"/><text x="570" y="29" text-anchor="middle">Servidor</text>
+      <line class="ln" x1="110" y1="38" x2="110" y2="215" stroke-dasharray="3 4"/>
+      <line class="ln" x1="570" y1="38" x2="570" y2="215" stroke-dasharray="3 4"/>
+      <text x="340" y="58" text-anchor="middle">GET /app.js</text>
+      <line class="ln-a" x1="110" y1="64" x2="568" y2="64" marker-end="url(#ah-cache)"/>
+      <text x="340" y="86" text-anchor="middle">200 OK · ETag: "a1" · max-age=60</text>
+      <line class="ln" x1="570" y1="92" x2="112" y2="92" marker-end="url(#ah-cache)"/>
+      <rect class="box-w" x="40" y="104" width="280" height="26" rx="4"/>
+      <text x="50" y="121">até 60 s: usa a cópia, sem rede</text>
+      <text x="340" y="156" text-anchor="middle">GET /app.js · If-None-Match: "a1"</text>
+      <line class="ln-a" x1="110" y1="162" x2="568" y2="162" marker-end="url(#ah-cache)"/>
+      <text x="340" y="184" text-anchor="middle">304 Not Modified (sem corpo)</text>
+      <line class="ln" x1="570" y1="190" x2="112" y2="190" marker-end="url(#ah-cache)"/>
+      <text class="lbl" x="110" y="212">depois dos 60 s, revalida</text>
+    </svg>
+    <figcaption>Primeiro a cópia é usada sem rede enquanto fresca. Depois de vencida, uma requisição condicional evita baixar o corpo de novo se nada mudou.</figcaption>
+  </figure>
+  <h3>Estratégia que funciona para front-end</h3>
+  <pre><code class="http"># HTML: sempre revalidar, para pegar o deploy novo
+Cache-Control: no-cache
+
+# Assets com hash no nome (app.3f9c2a.js): cache longo
+Cache-Control: public, max-age=31536000, immutable
+
+# Resposta de API com dados de paciente
+Cache-Control: no-store</code></pre>
+  <p>O nome do arquivo muda a cada build, então o HTML novo aponta para arquivos novos e o cache longo nunca serve versão velha. O HTML em si é revalidado sempre.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Achar que <code>no-cache</code> significa "não guarde". Quem garante que nada fica gravado em disco é <code>no-store</code>. Para dados de saúde, use <code>no-store</code> em respostas de API com dado pessoal.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"max-age define a validade; no-cache guarda mas revalida sempre; no-store não guarda. Na revalidação, o cliente manda If-None-Match com o ETag e recebe 304 se nada mudou. Assets com hash no nome recebem cache longo e o HTML é revalidado."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O risco mais grave de cache é uma CDN guardar a resposta de um usuário e servir para outro. Exija que respostas autenticadas tenham <code>private</code> ou <code>no-store</code> e que a configuração da CDN esteja versionada e revisada como código. Em todo deploy de front-end, alguém deve saber responder "como invalidamos o cache?".</p></div>
+</section>
+
+<section class="chap" id="versoes">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Conexões e versões do HTTP</h2>
+  <h3>Conexões persistentes</h3>
+  <p>No HTTP/1.0 cada requisição abria uma conexão TCP nova (e, com HTTPS, um handshake TLS novo). O HTTP/1.1 tornou a conexão <strong>persistente</strong> por padrão (keep-alive): várias requisições reaproveitam a mesma conexão até alguém enviar <code>Connection: close</code> ou o tempo ocioso esgotar.</p>
+  <p>O limite do HTTP/1.1 é que, numa conexão, as respostas saem uma de cada vez e na ordem. O pipelining existiu na especificação, mas quase não foi adotado na prática. Navegadores contornam abrindo várias conexões paralelas por host, em geral na ordem de seis.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 260" role="img" aria-label="HTTP/1.1 com três conexões e requisições em fila em cada uma, comparado com HTTP/2 com quadros de três streams intercalados em uma conexão">
+      <text class="ttl" x="10" y="22">HTTP/1.1: uma resposta por vez em cada conexão</text>
+      <text class="lbl" x="10" y="56">conexão 1</text>
+      <rect class="box-a" x="120" y="40" width="200" height="22" rx="3"/><text x="130" y="56">GET /app.js</text>
+      <rect class="box" x="330" y="40" width="200" height="22" rx="3"/><text x="340" y="56">GET /logo.png (espera)</text>
+      <text class="lbl" x="10" y="86">conexão 2</text>
+      <rect class="box-w" x="120" y="70" width="160" height="22" rx="3"/><text x="130" y="86">GET /app.css</text>
+      <rect class="box" x="290" y="70" width="200" height="22" rx="3"/><text x="300" y="86">GET /foto.jpg (espera)</text>
+      <text class="lbl" x="10" y="116">conexão 3</text>
+      <rect class="box-m" x="120" y="100" width="240" height="22" rx="3"/><text x="130" y="116">GET /api/me</text>
+
+      <text class="ttl" x="10" y="160">HTTP/2: streams intercalados em uma única conexão</text>
+      <text class="lbl" x="10" y="192">conexão 1</text>
+      <rect class="box-a" x="120" y="176" width="40" height="24" rx="3"/><text x="140" y="193" text-anchor="middle">s1</text>
+      <rect class="box-w" x="164" y="176" width="40" height="24" rx="3"/><text x="184" y="193" text-anchor="middle">s3</text>
+      <rect class="box-m" x="208" y="176" width="40" height="24" rx="3"/><text x="228" y="193" text-anchor="middle">s5</text>
+      <rect class="box-a" x="252" y="176" width="40" height="24" rx="3"/><text x="272" y="193" text-anchor="middle">s1</text>
+      <rect class="box-m" x="296" y="176" width="40" height="24" rx="3"/><text x="316" y="193" text-anchor="middle">s5</text>
+      <rect class="box-w" x="340" y="176" width="40" height="24" rx="3"/><text x="360" y="193" text-anchor="middle">s3</text>
+      <rect class="box-a" x="384" y="176" width="40" height="24" rx="3"/><text x="404" y="193" text-anchor="middle">s1</text>
+      <rect class="box-w" x="428" y="176" width="40" height="24" rx="3"/><text x="448" y="193" text-anchor="middle">s3</text>
+      <rect class="box-m" x="472" y="176" width="40" height="24" rx="3"/><text x="492" y="193" text-anchor="middle">s5</text>
+      <rect class="box-a" x="516" y="176" width="40" height="24" rx="3"/><text x="536" y="193" text-anchor="middle">s1</text>
+      <rect class="box-w" x="560" y="176" width="40" height="24" rx="3"/><text x="580" y="193" text-anchor="middle">s3</text>
+      <text class="lbl" x="10" y="226">s1 = /app.js · s3 = /app.css · s5 = /api/me (streams abertos pelo cliente têm ID ímpar)</text>
+      <text class="lbl" x="10" y="246">Um segmento TCP perdido ainda segura todos os streams até a retransmissão.</text>
+    </svg>
+    <figcaption>No HTTP/1.1 uma resposta lenta bloqueia a fila da sua conexão. No HTTP/2 os quadros de vários streams se intercalam na mesma conexão TCP.</figcaption>
+  </figure>
+  <h3>HTTP/2 (RFC 9113)</h3>
+  <ul>
+    <li><strong>Enquadramento binário:</strong> mensagens viram quadros (frames) HEADERS e DATA.</li>
+    <li><strong>Multiplexação:</strong> vários streams simultâneos numa conexão. Uma conexão por origem costuma bastar.</li>
+    <li><strong>HPACK (RFC 7541):</strong> compressão de cabeçalhos com tabelas compartilhadas entre as duas pontas. Cabeçalhos repetidos (cookies, user-agent) quase não custam bytes após a primeira vez.</li>
+    <li><strong>Server push:</strong> estava na especificação, mas os principais navegadores o desativaram. Não conte com ele.</li>
+    <li>Navegadores só usam HTTP/2 sobre TLS, negociado no handshake via ALPN (<a href="04-tls.html">módulo 4</a>).</li>
+  </ul>
+  <p>O HTTP/2 resolve o bloqueio na fila da aplicação, mas não no transporte. O TCP entrega bytes em ordem: se um segmento se perde, tudo o que chegou depois espera a retransmissão, inclusive quadros de outros streams. É o <strong>head-of-line blocking no TCP</strong>, que pesa em redes com perda, como celular.</p>
+  <h3>HTTP/3 (RFC 9114) sobre QUIC (RFC 9000)</h3>
+  <ul>
+    <li><strong>QUIC roda sobre UDP</strong> e implementa no espaço do usuário confiabilidade, controle de congestionamento e streams independentes. Uma perda atrasa só o stream afetado.</li>
+    <li><strong>TLS 1.3 embutido:</strong> transporte e criptografia são negociados juntos, então a conexão nova sai com menos idas e voltas que TCP + TLS.</li>
+    <li><strong>Migração de conexão:</strong> a conexão é identificada por um connection ID e pode sobreviver à troca de rede (Wi-Fi para 4G).</li>
+    <li><strong>QPACK (RFC 9204)</strong> substitui o HPACK, adaptado à entrega fora de ordem.</li>
+    <li>O navegador descobre que o servidor fala HTTP/3 pelo cabeçalho <code>Alt-Svc</code> ou por registro DNS do tipo HTTPS, e volta para HTTP/2 se o UDP estiver bloqueado.</li>
+  </ul>
+  <div class="tbl"><table><thead><tr><th></th><th>HTTP/1.1</th><th>HTTP/2</th><th>HTTP/3</th></tr></thead><tbody>
+    <tr><td>Transporte</td><td>TCP</td><td>TCP</td><td>QUIC sobre UDP</td></tr>
+    <tr><td>Formato</td><td>Texto</td><td>Binário (quadros)</td><td>Binário (quadros)</td></tr>
+    <tr><td>Paralelismo</td><td>Várias conexões</td><td>Streams em uma conexão</td><td>Streams independentes</td></tr>
+    <tr><td>Compressão de cabeçalhos</td><td>Nenhuma</td><td>HPACK</td><td>QPACK</td></tr>
+    <tr><td>Head-of-line blocking</td><td>Na aplicação e no TCP</td><td>Só no TCP</td><td>Resolvido entre streams</td></tr>
+    <tr><td>TLS</td><td>Opcional</td><td>Na prática obrigatório (navegadores)</td><td>Obrigatório (TLS 1.3)</td></tr>
+  </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Manter técnicas do HTTP/1.1 como domain sharding (espalhar assets em vários subdomínios). No HTTP/2 isso abre conexões extras e atrapalha a multiplexação.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O HTTP/2 multiplexa streams numa conexão TCP e comprime cabeçalhos com HPACK, mas uma perda de pacote no TCP trava todos os streams. O HTTP/3 usa QUIC sobre UDP, com streams independentes e TLS 1.3 integrado."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Ativar HTTP/2 e HTTP/3 costuma ser configuração na CDN ou no load balancer, sem mudar a aplicação. Antes, confirme com a equipe de rede que firewalls corporativos não bloqueiam UDP 443 e que existe fallback. O ganho aparece mais em usuários móveis e redes ruins do que no escritório.</p></div>
+</section>
+
+<section class="chap" id="ferramentas">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Ferramentas e proxies: o que cada um enxerga</h2>
+  <h3>DevTools, aba Network</h3>
+  <ul>
+    <li>Filtre por tipo (Fetch/XHR, JS, Doc) e marque <strong>Preserve log</strong> para não perder requisições em redirecionamentos.</li>
+    <li><strong>Disable cache</strong> simula o primeiro acesso enquanto o DevTools está aberto.</li>
+    <li>A coluna de tamanho mostra quando veio do cache (memória ou disco) e quantos bytes trafegaram.</li>
+    <li>A aba Timing separa DNS, conexão, TLS, espera pelo primeiro byte (TTFB) e download. Ela diz se a lentidão está na rede ou no servidor.</li>
+    <li>A coluna Protocol mostra <code>h2</code> ou <code>h3</code> (pode ser preciso ativá-la com o botão direito no cabeçalho da tabela).</li>
+  </ul>
+  <h3>curl</h3>
+  <div class="tabs">
+    <pre data-label="curl -v"><code class="sh">curl -v https://www.exemplo.com.br/ -o /dev/null
+# saída ilustrativa, resumida
+# * Connected to www.exemplo.com.br (203.0.113.10) port 443
+# * SSL connection using TLSv1.3 / TLS_AES_128_GCM_SHA256
+# * ALPN: server accepted h2
+# &gt; GET / HTTP/2
+# &gt; Host: www.exemplo.com.br
+# &gt; User-Agent: curl/8.x
+# &gt; Accept: */*
+# &lt; HTTP/2 200
+# &lt; content-type: text/html; charset=utf-8
+# &lt; cache-control: no-cache</code></pre>
+    <pre data-label="curl -I"><code class="sh">curl -I https://www.exemplo.com.br/app.js   # envia HEAD, mostra só cabeçalhos
+# saída ilustrativa
+# HTTP/2 200
+# cache-control: public, max-age=31536000, immutable
+# etag: "a1"
+# age: 5321</code></pre>
+    <pre data-label="condicional"><code class="sh">curl -s -o /dev/null -w "%{http_code}\n" \
+  -H 'If-None-Match: "a1"' https://www.exemplo.com.br/app.js
+# saída ilustrativa: 304</code></pre>
+    <pre data-label="tempos"><code class="sh">curl -s -o /dev/null -w "dns=%{time_namelookup} tcp=%{time_connect} tls=%{time_appconnect} ttfb=%{time_starttransfer} total=%{time_total}\n" \
+  https://api.exemplo.com.br/health
+# saída ilustrativa (segundos, acumulados): dns=0.012 tcp=0.031 tls=0.068 ttfb=0.240 total=0.241</code></pre>
+  </div>
+  <p>No <code>curl -v</code>, linhas com <code>&gt;</code> são enviadas, com <code>&lt;</code> são recebidas e com <code>*</code> são informações do próprio curl. Use <code>-L</code> para seguir redirecionamentos e <code>--resolve</code> para testar um servidor específico sem mexer no DNS.</p>
+  <h3>HAR</h3>
+  <p>O HAR (HTTP Archive) é um arquivo JSON com todas as requisições de uma sessão do DevTools, incluindo cabeçalhos, tempos e corpos. É o melhor anexo para um chamado de suporte com fornecedor.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Um HAR carrega cookies de sessão, tokens <code>Authorization</code> e corpos de resposta, ou seja, credenciais e dados de pacientes. Quem recebe o arquivo pode sequestrar a sessão. Sanitize antes de enviar e nunca anexe em ticket público.</p></div>
+  <h3>Proxies: quem está no caminho</h3>
+  <div class="tbl"><table><thead><tr><th>Intermediário</th><th>Onde fica</th><th>O que enxerga com HTTPS</th></tr></thead><tbody>
+    <tr><td>Proxy de saída (forward proxy) sem inspeção</td><td>Rede do cliente (empresa)</td><td>O IP e porta de destino, o nome no <code>CONNECT host:443</code> e o SNI. Não vê caminho, cabeçalhos nem corpo.</td></tr>
+    <tr><td>Proxy corporativo com inspeção TLS</td><td>Rede do cliente</td><td>Tudo. Ele abre o TLS com um certificado próprio confiado pelas máquinas da empresa (<a href="04-tls.html">módulo 4</a>).</td></tr>
+    <tr><td>CDN / proxy reverso / load balancer que termina TLS</td><td>Lado do servidor</td><td>Tudo: URL, cabeçalhos, cookies, corpo. Ele age como o servidor para o cliente.</td></tr>
+    <tr><td>Roteadores e provedores no meio</td><td>Internet</td><td>IPs, portas, volume, tempos e, sem ECH, o SNI. Conteúdo, não.</td></tr>
+  </tbody></table></div>
+  <p>Como o proxy reverso abre outra conexão até a aplicação, o IP de origem que a aplicação vê é o dele. O IP real do cliente vem em cabeçalhos como <code>X-Forwarded-For</code> ou <code>Forwarded</code> (RFC 7239), e o esquema original em <code>X-Forwarded-Proto</code>. Esses cabeçalhos só são confiáveis quando adicionados por um proxy seu; o cliente pode enviá-los forjados.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Para diagnosticar, uso a aba Network e o curl -v, olhando status, cabeçalhos e tempos. Com HTTPS, um proxy de saída comum só vê o destino; quem termina o TLS, como CDN ou load balancer, vê tudo."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina uma política simples: HAR e logs de requisição são dados sensíveis, com regra de onde podem ser armazenados e por quanto tempo. E lembre que a CDN e o load balancer enxergam dados de saúde em claro: eles entram no contrato com o fornecedor, no inventário da LGPD e na revisão de acesso.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>URL</dt><dd>Endereço de um recurso: esquema, host, porta, caminho, query e fragmento.</dd></div>
+    <div><dt>Método</dt><dd>Intenção da requisição: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS.</dd></div>
+    <div><dt>Seguro (safe)</dt><dd>Método que não pede mudança de estado.</dd></div>
+    <div><dt>Idempotente</dt><dd>Repetir a requisição produz o mesmo efeito que enviá-la uma vez.</dd></div>
+    <div><dt>Stateless</dt><dd>Cada requisição carrega todo o contexto; o protocolo não guarda memória entre elas.</dd></div>
+    <div><dt>Cabeçalho (header)</dt><dd>Metadado <code>Nome: valor</code> de uma mensagem.</dd></div>
+    <div><dt>Negociação de conteúdo</dt><dd>Escolha da representação com base em Accept, Accept-Language e Accept-Encoding.</dd></div>
+    <div><dt>Vary</dt><dd>Lista de cabeçalhos da requisição que mudam a resposta; orienta caches.</dd></div>
+    <div><dt>Cookie</dt><dd>Par nome=valor guardado pelo navegador e reenviado ao site.</dd></div>
+    <div><dt>Cache-Control</dt><dd>Cabeçalho com as regras de armazenamento e validade.</dd></div>
+    <div><dt>ETag</dt><dd>Identificador da versão de um recurso, usado em revalidação.</dd></div>
+    <div><dt>Requisição condicional</dt><dd>Requisição com If-None-Match ou If-Modified-Since; pode receber 304.</dd></div>
+    <div><dt>CDN</dt><dd>Content Delivery Network: rede de caches compartilhados perto dos usuários.</dd></div>
+    <div><dt>Keep-alive</dt><dd>Reuso da mesma conexão para várias requisições.</dd></div>
+    <div><dt>Multiplexação</dt><dd>Vários streams intercalados em uma única conexão (HTTP/2 e HTTP/3).</dd></div>
+    <div><dt>HPACK / QPACK</dt><dd>Compressão de cabeçalhos do HTTP/2 e do HTTP/3.</dd></div>
+    <div><dt>Head-of-line blocking</dt><dd>Um item atrasado na frente da fila segura os que vêm atrás.</dd></div>
+    <div><dt>QUIC</dt><dd>Protocolo de transporte sobre UDP com TLS 1.3 integrado; base do HTTP/3.</dd></div>
+    <div><dt>Upstream</dt><dd>O servidor que fica atrás de um proxy ou gateway.</dd></div>
+    <div><dt>HAR</dt><dd>Arquivo JSON com a gravação das requisições de uma sessão do navegador.</dd></div>
+    <div><dt>TTFB</dt><dd>Time to First Byte: tempo até chegar o primeiro byte da resposta.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e troubleshooting</h2>
+  <h3>Usuários veem a versão antiga do site após o deploy</h3>
+  <ol class="seq">
+    <li><div><strong>Reproduza com o cache ligado.</strong> Abra a aba Network sem "Disable cache" e veja se o HTML veio "from disk cache" ou da CDN (cabeçalhos como <code>Age</code> ou o indicador de HIT do fornecedor).</div></li>
+    <li><div><strong>Leia o Cache-Control do HTML.</strong> Um <code>max-age</code> alto no HTML prende o usuário à versão anterior até vencer.</div></li>
+    <li><div><strong>Verifique os nomes dos assets.</strong> Sem hash no nome, <code>app.js</code> novo e antigo têm a mesma URL e o cache serve o velho.</div></li>
+    <li><div><strong>Corrija e previna.</strong> Purgue a CDN, mude o HTML para <code>no-cache</code> e adote hash no nome dos assets no build.</div></li>
+  </ol>
+  <h3>API retorna 502 intermitente</h3>
+  <ul>
+    <li>Descubra <strong>quem</strong> gerou o 502: o corpo e os cabeçalhos da resposta costumam identificar o proxy (página padrão do nginx, da CDN, do load balancer).</li>
+    <li>Cruze o horário com deploys, reinícios e escalonamento: instâncias saindo do pool sem drenar conexões geram 502 curtos.</li>
+    <li>Compare os tempos de keep-alive: se a aplicação fecha a conexão ociosa antes do proxy, o proxy pode reutilizar uma conexão já fechada e receber erro. A regra usual é o timeout ocioso do upstream ser maior que o do proxy.</li>
+    <li>Olhe os logs do upstream no mesmo instante: se a requisição nem chegou, o problema está entre proxy e aplicação.</li>
+  </ul>
+  <h3>Formulário cria registros duplicados</h3>
+  <p>O usuário clica duas vezes ou o cliente HTTP refaz o POST após timeout. Desabilite o botão no front, mas a correção real é no servidor: chave de idempotência ou restrição de unicidade no banco.</p>
+  <h3>Depois de mudar para HTTPS, o POST de login virou GET</h3>
+  <p>O redirecionamento <code>http</code> → <code>https</code> usa 301 ou 302, e o cliente trocou o método. Use 308 para preservar método e corpo e, mais importante, faça o formulário apontar direto para <code>https</code>. Com HSTS (<a href="04-tls.html">módulo 4</a>) o navegador nem tenta o HTTP.</p>
+  <h3>Um usuário viu dados de outro</h3>
+  <p>Trate como incidente de segurança e de privacidade. Suspeito número um: resposta autenticada guardada em cache compartilhado por falta de <code>private</code>/<code>no-store</code>, ou CDN configurada para ignorar cookies na chave de cache. Desative o cache da rota, purgue, preserve logs e acione o processo de incidente (<a href="10-ciberseguranca.html">módulo 10</a>).</p>
+  <div class="note mgr"><b>Para gestores</b><p>Em incidentes HTTP, as três primeiras perguntas resolvem boa parte dos casos: "qual o código e quem o gerou?", "o que mudou nas últimas horas?" e "é todo mundo ou um grupo (região, navegador, rede corporativa)?". Exija que o pós-incidente traga a requisição e a resposta reais, não só a descrição.</p></div>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>O que acontece quando você digita uma URL e aperta Enter, do ponto de vista do HTTP?</span></summary><div class="ans"><p>O navegador separa esquema, host e caminho, resolve o host no DNS, abre conexão TCP (ou QUIC), negocia TLS, envia <code>GET</code> com <code>Host</code>, cabeçalhos e cookies, recebe status, cabeçalhos e corpo, e então busca os recursos referenciados no HTML, muitas vezes do cache.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre seguro e idempotente? Dê exemplos.</span></summary><div class="ans"><p>Seguro não pede mudança de estado (GET, HEAD, OPTIONS). Idempotente pode ser repetido sem mudar o efeito final (os seguros, mais PUT e DELETE). POST não é nenhum dos dois.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>PUT ou PATCH para atualizar o telefone de um paciente?</span></summary><div class="ans"><p>PATCH, porque altera parte do recurso. PUT substitui o recurso inteiro: campos omitidos seriam apagados ou exigidos. PUT é idempotente por definição; PATCH depende do formato da alteração.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>401 ou 403?</span></summary><div class="ans"><p>401 quando falta autenticação ou ela é inválida: "quem é você?". 403 quando o usuário está identificado e não tem permissão. Alguns sistemas devolvem 404 em vez de 403 para não revelar que o recurso existe.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Diferença entre 502, 503 e 504?</span></summary><div class="ans"><p>502: o gateway recebeu resposta inválida ou nenhuma do upstream. 503: o serviço está indisponível ou sobrecarregado agora. 504: o gateway esperou o upstream e estourou o tempo.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>301, 302, 307 e 308: quando usar cada um?</span></summary><div class="ans"><p>301 e 308 são permanentes; 302 e 307 temporários. 307 e 308 garantem que método e corpo se mantêm; com 301 e 302 clientes podem trocar POST por GET. Para mudança definitiva de URL de página, 301 ou 308; para API com POST, 307 ou 308.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>no-cache e no-store são a mesma coisa?</span></summary><div class="ans"><p>Não. <code>no-cache</code> permite guardar, mas exige revalidar antes de usar. <code>no-store</code> proíbe guardar. Para dado sensível, <code>no-store</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Como funciona o ETag?</span></summary><div class="ans"><p>O servidor envia um identificador da versão em <code>ETag</code>. Quando a cópia vence, o cliente pergunta com <code>If-None-Match</code>. Se a versão é a mesma, o servidor responde <code>304</code> sem corpo e o cliente reaproveita a cópia.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>O que o HTTP/2 resolveu e o que ficou para o HTTP/3?</span></summary><div class="ans"><p>O HTTP/2 trouxe multiplexação numa conexão, enquadramento binário e HPACK, eliminando a fila por conexão do HTTP/1.1. Continuou o head-of-line blocking do TCP: um pacote perdido trava todos os streams. O HTTP/3 usa QUIC sobre UDP, com streams independentes, TLS 1.3 embutido e migração de conexão.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>O que significa o HTTP ser stateless e como existe login?</span></summary><div class="ans"><p>Cada requisição é independente e traz todo o contexto. O login funciona porque o cliente reenvia em toda requisição um identificador, em cookie ou no cabeçalho Authorization, e o servidor reconstrói o contexto a partir dele.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Quais atributos você coloca num cookie de sessão?</span></summary><div class="ans"><p><code>Secure</code>, <code>HttpOnly</code>, <code>SameSite=Lax</code> ou <code>Strict</code>, <code>Path=/</code>, sem <code>Domain</code> amplo e com expiração coerente com a política de sessão.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Com HTTPS, o que um proxy corporativo consegue ver?</span></summary><div class="ans"><p>Sem inspeção TLS, o destino: IP, porta, o host do CONNECT e o SNI. Com inspeção, ele termina o TLS com uma CA instalada nas máquinas e vê tudo. A URL completa, cabeçalhos e corpo ficam protegidos só no primeiro caso.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como você investigaria uma página lenta?</span></summary><div class="ans"><p>Na aba Network, olho a requisição principal no Timing: DNS, conexão, TLS, espera (TTFB) e download. TTFB alto aponta servidor ou banco; download alto aponta tamanho ou falta de compressão; muitas requisições em fila apontam HTTP/1.1 ou dependências em cascata. Confirmo com <code>curl -w</code> fora do navegador.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Gestão: o time quer colocar uma CDN na frente do portal do paciente. Quais riscos você avalia?</span></summary><div class="ans"><p>Cache indevido de resposta autenticada (exigir <code>private</code>/<code>no-store</code> e testes), o fornecedor passa a ver dados de saúde em claro (contrato, LGPD, localização dos dados), configuração versionada e com revisão, plano de purge e de rollback, e monitoramento de taxa de acerto e de erros 5xx gerados pela própria CDN.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Gestão: um desenvolvedor anexou um HAR num chamado aberto ao fornecedor. O que você faz?</span></summary><div class="ans"><p>Trato como possível exposição: verifico se havia tokens, cookies ou dados pessoais, peço remoção ao fornecedor, invalido as sessões ou tokens envolvidos e avalio com o encarregado de dados se configura incidente. Em seguida, crio orientação de sanitização e um canal seguro para esse tipo de anexo.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Gestão: como evitar que "deploy não aparece para o usuário" vire rotina?</span></summary><div class="ans"><p>Padronizar a política de cache no pipeline de build: hash no nome dos assets, HTML com <code>no-cache</code>, purge automático da CDN no deploy e um teste pós-deploy que confere a versão servida. Isso transforma conhecimento individual em processo.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Por que não colocar o CPF do paciente na query string, se tudo é HTTPS?</span></summary><div class="ans"><p>O TLS protege em trânsito, mas a URL fica em logs de servidor, proxy e CDN, no histórico do navegador e pode vazar via <code>Referer</code>. Identificadores pessoais vão no corpo ou em cabeçalhos, e logs devem mascará-los.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

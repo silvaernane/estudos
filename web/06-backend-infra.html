@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 06: Back-end e infraestrutura</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 06 de 10 · Back-end e infraestrutura</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="03-http.html"><span class="n">03</span>HTTP a fundo</a></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html" aria-current="page"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li class="sub"><ol>
+      <li><a href="#servidores"><span class="n">1</span>Servidor web, servidor de aplicação e reverse proxy</a></li>
+      <li><a href="#load-balancer"><span class="n">2</span>Load balancer</a></li>
+      <li><a href="#stateless"><span class="n">3</span>Aplicação stateless e escalabilidade</a></li>
+      <li><a href="#cache"><span class="n">4</span>Cache em camadas e CDN</a></li>
+      <li><a href="#dados-filas"><span class="n">5</span>Bancos de dados e filas</a></li>
+      <li><a href="#arquitetura"><span class="n">6</span>Monólito, monólito modular e microsserviços</a></li>
+      <li><a href="#deploy"><span class="n">7</span>Ambientes, CI/CD e estratégias de deploy</a></li>
+      <li><a href="#cloud"><span class="n">8</span>Cloud: modelos, regiões e responsabilidade</a></li>
+      <li><a href="#observabilidade"><span class="n">9</span>Observabilidade, SLI, SLO e error budget</a></li>
+      <li><a href="#ha-dr-custos"><span class="n">10</span>Alta disponibilidade, recuperação de desastres e custos</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos e troubleshooting</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 06 · <span class="lvl l2">Intermediário</span> <span class="lvl l3">Avançado</span></div>
+  <h1>Back-end e infraestrutura web</h1>
+  <p class="lede">As peças que ficam atrás da URL: proxies, balanceadores, cache, bancos, filas, deploy, nuvem e observabilidade. Para cada uma, o que ela resolve, o que custa e o que um gestor precisa cobrar do time.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Desenhar uma arquitetura web típica com reverse proxy, load balancer, aplicação stateless, cache, banco e fila.</li>
+    <li>Escolher entre escalar vertical ou horizontalmente e explicar onde fica o estado.</li>
+    <li>Comparar monólito, monólito modular e microsserviços com honestidade.</li>
+    <li>Explicar CI/CD e estratégias de deploy (rolling, blue-green, canary, feature flags) e como fazer rollback.</li>
+    <li>Definir SLI, SLO e error budget, planejar RPO e RTO e conversar sobre custo de nuvem.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="servidores">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Servidor web, servidor de aplicação e reverse proxy</h2>
+  <p>Quando uma requisição HTTP (<a href="03-http.html">módulo 3</a>) chega à sua infraestrutura, ela costuma passar por várias camadas antes de chegar ao código do time.</p>
+  <div class="tbl"><table><thead><tr><th>Peça</th><th>Função</th><th>Exemplos</th></tr></thead><tbody>
+    <tr><td>Servidor web</td><td>Fala HTTP, serve arquivos estáticos, termina TLS, comprime, encaminha requisições</td><td>Nginx, Apache httpd, Caddy, IIS</td></tr>
+    <tr><td>Servidor de aplicação</td><td>Executa o código da aplicação e gera respostas dinâmicas</td><td>Tomcat e WildFly (Java), Kestrel (.NET), Gunicorn e Uvicorn (Python), PHP-FPM, o próprio processo Node.js</td></tr>
+    <tr><td>Reverse proxy</td><td>Fica na frente dos servidores de aplicação e recebe as requisições em nome deles</td><td>Nginx, HAProxy, Envoy, Traefik</td></tr>
+  </tbody></table></div>
+  <p>Um <strong>forward proxy</strong> age em nome do cliente (o proxy corporativo que controla o acesso dos funcionários à internet). Um <strong>reverse proxy</strong> age em nome do servidor: o cliente acha que fala com o site, mas fala com o proxy, que repassa ao servidor certo.</p>
+  <h3>O que um reverse proxy resolve</h3>
+  <ul>
+    <li><strong>Terminação TLS</strong>: os certificados (<a href="04-tls.html">módulo 4</a>) ficam num ponto só.</li>
+    <li><strong>Roteamento</strong>: <code>/api</code> vai para um serviço, <code>/</code> para outro.</li>
+    <li><strong>Estáticos e compressão</strong>: serve arquivos e comprime respostas sem ocupar a aplicação.</li>
+    <li><strong>Proteção</strong>: limite de taxa (rate limiting), limites de tamanho de corpo, esconder a topologia interna.</li>
+    <li><strong>Buffering</strong>: absorve clientes lentos para que a aplicação não fique presa esperando.</li>
+  </ul>
+  <pre data-file="nginx.conf (trecho)"><code class="text">upstream app {
+    server 10.0.1.11:8080;
+    server 10.0.1.12:8080;
+}
+server {
+    listen 443 ssl;
+    server_name portal.clinica.com.br;
+    location /static/ { root /srv; expires 30d; }
+    location / {
+        proxy_pass http://app;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Atrás de um proxy, a aplicação vê o IP do proxy como cliente. O IP real vem em cabeçalhos como <code>X-Forwarded-For</code>, que o próprio cliente pode forjar. Configure a aplicação para confiar nesse cabeçalho só quando ele vier dos seus proxies.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O servidor web fala HTTP e serve estáticos; o servidor de aplicação executa o código. O reverse proxy fica na frente, termina TLS, roteia, comprime e protege, e o cliente não enxerga os servidores internos."</p></div>
+</section>
+
+<section class="chap" id="load-balancer">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Load balancer</h2>
+  <p>Um <strong>load balancer</strong> (balanceador de carga) distribui requisições entre várias instâncias da aplicação. Ele permite crescer adicionando máquinas e tirar do caminho uma instância com problema.</p>
+  <h3>Camada 4 x camada 7</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>Camada 4 (transporte)</th><th>Camada 7 (aplicação)</th></tr></thead><tbody>
+    <tr><td>Enxerga</td><td>IP, porta, conexão TCP ou UDP</td><td>HTTP completo: método, caminho, host, cabeçalhos, cookies</td></tr>
+    <tr><td>Decide por</td><td>Conexão</td><td>Requisição</td></tr>
+    <tr><td>Pode fazer</td><td>Encaminhar com pouquíssima sobrecarga, qualquer protocolo</td><td>Rotear por caminho ou host, terminar TLS, reescrever cabeçalhos, retentar, aplicar regras de WAF</td></tr>
+    <tr><td>Exemplos</td><td>AWS NLB, HAProxy em modo TCP, LVS</td><td>AWS ALB, Nginx, HAProxy em modo HTTP, Envoy, Azure Application Gateway</td></tr>
+  </tbody></table></div>
+  <p>As camadas aqui são as do modelo OSI, vistas no <a href="01-internet.html">módulo 1</a>.</p>
+  <h3>Algoritmos</h3>
+  <div class="tbl"><table><thead><tr><th>Algoritmo</th><th>Como escolhe</th><th>Bom quando</th></tr></thead><tbody>
+    <tr><td>Round robin</td><td>Um de cada vez, em rodízio</td><td>Instâncias iguais e requisições parecidas</td></tr>
+    <tr><td>Round robin ponderado</td><td>Rodízio proporcional a pesos</td><td>Instâncias de tamanhos diferentes</td></tr>
+    <tr><td>Menos conexões (least connections)</td><td>A instância com menos conexões ativas</td><td>Requisições de duração muito variável</td></tr>
+    <tr><td>Menor tempo de resposta</td><td>A instância mais rápida recentemente</td><td>Desempenho desigual entre instâncias</td></tr>
+    <tr><td>Hash (IP ou chave)</td><td>Mesma chave vai sempre para a mesma instância</td><td>Afinidade de cache; hash consistente reduz remapeamento quando instâncias entram ou saem</td></tr>
+  </tbody></table></div>
+  <h3>Health checks</h3>
+  <p>O balanceador testa periodicamente cada instância (por exemplo, <code>GET /health</code>) e tira do rodízio as que falham. Em Kubernetes há dois conceitos separados: <strong>liveness</strong> (o processo está vivo ou precisa ser reiniciado?) e <strong>readiness</strong> (está pronto para receber tráfego agora?).</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Um health check que consulta o banco parece completo, mas se o banco ficar lento todas as instâncias falham ao mesmo tempo e o balanceador tira todas do ar. O check de readiness deve refletir se a instância consegue atender; dependências compartilhadas merecem alerta próprio.</p></div>
+  <h3>Sticky sessions e por que evitar</h3>
+  <p><strong>Sticky session</strong> (afinidade de sessão) prende cada usuário a uma instância, normalmente por um cookie do balanceador. Ela existe para aplicações que guardam a sessão na memória do servidor. Os problemas: a carga fica desigual, quando a instância cai os usuários dela perdem a sessão, e deploys e autoscaling ficam mais difíceis. A solução é tirar o estado da instância (próxima seção).</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Balanceador de camada 4 decide por conexão olhando IP e porta; o de camada 7 entende HTTP e roteia por caminho, host ou cabeçalho. Uso health checks para tirar instâncias doentes e evito sticky session deixando a aplicação stateless."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O balanceador é ponto único de falha se houver um só. Em nuvem, balanceadores gerenciados já são distribuídos entre zonas; em data center próprio, pergunte como está a redundância dele. Pergunte também o que o health check verifica de fato.</p></div>
+</section>
+
+<section class="chap" id="stateless">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Aplicação stateless e escalabilidade</h2>
+  <p>Uma aplicação <strong>stateless</strong> (sem estado) não guarda nada entre requisições na memória ou no disco local da instância. Qualquer instância atende qualquer requisição. O estado continua existindo, só que fora das instâncias:</p>
+  <ul>
+    <li><strong>Dados de negócio</strong>: no banco de dados.</li>
+    <li><strong>Sessão</strong>: num armazenamento compartilhado (Redis, banco) ou no próprio cliente em token assinado (<a href="07-autenticacao.html">módulo 7</a>).</li>
+    <li><strong>Arquivos enviados</strong>: em armazenamento de objetos (S3, Azure Blob, GCS), não no disco da instância.</li>
+    <li><strong>Trabalho em andamento</strong>: numa fila.</li>
+  </ul>
+
+  <figure class="figure">
+    <svg viewBox="0 0 760 300" role="img" aria-label="Arquitetura web típica: usuário, CDN, load balancer, três instâncias stateless da aplicação, que acessam cache, banco de dados e fila; um worker consome a fila">
+      <defs><marker id="ah-arq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="10" y="122" width="90" height="36" rx="5"/><text x="55" y="145" text-anchor="middle">Usuário</text>
+      <rect class="box" x="130" y="122" width="90" height="36" rx="5"/><text x="175" y="145" text-anchor="middle">CDN</text>
+      <rect class="box-a" x="250" y="122" width="110" height="36" rx="5"/><text x="305" y="145" text-anchor="middle">Load balancer</text>
+      <line class="ln" x1="100" y1="140" x2="130" y2="140" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="220" y1="140" x2="250" y2="140" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="175" y="178" text-anchor="middle">estáticos em cache</text>
+      <rect class="box" x="400" y="42" width="100" height="36" rx="5"/><text x="450" y="65" text-anchor="middle">App 1</text>
+      <rect class="box" x="400" y="122" width="100" height="36" rx="5"/><text x="450" y="145" text-anchor="middle">App 2</text>
+      <rect class="box" x="400" y="202" width="100" height="36" rx="5"/><text x="450" y="225" text-anchor="middle">App 3</text>
+      <line class="ln" x1="360" y1="140" x2="400" y2="60" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="360" y1="140" x2="400" y2="140" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="360" y1="140" x2="400" y2="220" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="450" y="262" text-anchor="middle">stateless: qualquer uma atende</text>
+      <line class="ln" x1="500" y1="60" x2="540" y2="60"/>
+      <line class="ln" x1="500" y1="140" x2="540" y2="140"/>
+      <line class="ln" x1="500" y1="220" x2="540" y2="220"/>
+      <line class="ln" x1="540" y1="48" x2="540" y2="220"/>
+      <rect class="box-m" x="580" y="30" width="160" height="36" rx="5"/><text x="660" y="53" text-anchor="middle">Cache (Redis)</text>
+      <rect class="box-a" x="580" y="100" width="160" height="36" rx="5"/><text x="660" y="123" text-anchor="middle">Banco de dados</text>
+      <rect class="box-w" x="580" y="180" width="160" height="36" rx="5"/><text x="660" y="203" text-anchor="middle">Fila</text>
+      <rect class="box" x="580" y="250" width="160" height="36" rx="5"/><text x="660" y="273" text-anchor="middle">Worker</text>
+      <line class="ln" x1="540" y1="48" x2="580" y2="48" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="540" y1="118" x2="580" y2="118" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="540" y1="198" x2="580" y2="198" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="660" y1="216" x2="660" y2="250" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="668" y="238">consome</text>
+    </svg>
+    <figcaption>Arquitetura web típica. As instâncias não guardam estado; sessão e cache ficam no Redis, dados no banco, trabalho demorado na fila, processado por workers que também gravam no banco.</figcaption>
+  </figure>
+
+  <h3>Vertical x horizontal</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>Vertical (scale up)</th><th>Horizontal (scale out)</th></tr></thead><tbody>
+    <tr><td>O que é</td><td>Máquina maior: mais CPU, memória, disco</td><td>Mais máquinas iguais atrás de um balanceador</td></tr>
+    <tr><td>Vantagem</td><td>Simples, nenhuma mudança no código</td><td>Sem teto prático, tolera falha de instância, permite autoscaling</td></tr>
+    <tr><td>Limite</td><td>Tamanho máximo da máquina; custo cresce rápido no topo; continua um ponto único de falha</td><td>Exige aplicação stateless; complexidade de rede, deploy e observabilidade</td></tr>
+    <tr><td>Típico para</td><td>Bancos relacionais, sistemas legados</td><td>Camada de aplicação web</td></tr>
+  </tbody></table></div>
+  <p><strong>Autoscaling</strong> ajusta o número de instâncias por métrica (CPU, requisições, tamanho de fila). Ele costuma levar minutos para reagir; picos muito bruscos pedem capacidade mínima já provisionada.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>A camada de aplicação escala horizontalmente com facilidade. O gargalo costuma migrar para o banco, que é a parte difícil de escalar. Antes de multiplicar instâncias, olhe as consultas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Stateless significa que a instância não guarda estado entre requisições: sessão vai para Redis ou token, arquivos para armazenamento de objetos, dados para o banco. Isso permite escalar horizontalmente e trocar instâncias sem perder nada."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Escalar vertical é a decisão mais barata em engenharia e a mais cara em infraestrutura no longo prazo. Ganhar tempo com uma máquina maior é legítimo, desde que exista um plano para o próximo limite. Peça teste de carga antes de eventos previsíveis de pico, como campanhas de vacinação ou abertura de agenda.</p></div>
+</section>
+
+<section class="chap" id="cache">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cache em camadas e CDN</h2>
+  <p>Cache é guardar uma resposta pronta para não recalcular nem buscar de novo. Numa aplicação web ele aparece em várias camadas, cada uma mais perto do usuário que a seguinte.</p>
+  <div class="tbl"><table><thead><tr><th>Camada</th><th>O que guarda</th><th>Controlado por</th><th>Cuidado</th></tr></thead><tbody>
+    <tr><td>Navegador</td><td>Estáticos, às vezes respostas de API</td><td>Cabeçalhos HTTP (<a href="03-http.html">módulo 3</a>)</td><td>Difícil de invalidar: você não alcança o disco do usuário</td></tr>
+    <tr><td>CDN</td><td>Estáticos e páginas públicas, perto do usuário</td><td>Cabeçalhos e regras da CDN</td><td>Nunca cachear resposta personalizada como se fosse pública</td></tr>
+    <tr><td>Reverse proxy</td><td>Respostas inteiras</td><td>Configuração do proxy</td><td>Mesma regra da CDN</td></tr>
+    <tr><td>Aplicação (Redis, Memcached)</td><td>Resultados de consultas, objetos calculados, sessões</td><td>Código da aplicação</td><td>Invalidação e consistência</td></tr>
+    <tr><td>Banco</td><td>Páginas de dados em memória, planos de consulta</td><td>O próprio banco</td><td>Memória insuficiente derruba o desempenho</td></tr>
+  </tbody></table></div>
+  <h3>Padrões e invalidação</h3>
+  <ul>
+    <li><strong>Cache-aside</strong>: a aplicação procura no cache; se não acha, busca no banco e grava no cache. É o padrão mais comum.</li>
+    <li><strong>TTL</strong> (time to live): o item expira depois de um tempo. Simples e tolera dado levemente desatualizado.</li>
+    <li><strong>Invalidação explícita</strong>: ao alterar o dado, apaga ou atualiza a chave. Mais atual, mais fácil de esquecer um caminho.</li>
+    <li><strong>Nomes versionados</strong>: para estáticos, um hash no nome do arquivo dispensa invalidação.</li>
+  </ul>
+  <pre><code class="js">async function buscarAgenda(medicoId) {
+  const chave = 'agenda:' + medicoId;
+  const emCache = await redis.get(chave);
+  if (emCache) return JSON.parse(emCache);
+  const agenda = await db.agendaDoMedico(medicoId);
+  await redis.set(chave, JSON.stringify(agenda), { EX: 60 }); // 60 s
+  return agenda;
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p><strong>Cache stampede</strong> (efeito manada): uma chave popular expira e centenas de requisições vão ao banco ao mesmo tempo. Mitigações: TTL com variação aleatória, uma única requisição recalcula enquanto as outras esperam ou recebem o valor antigo, renovação antes de expirar.</p></div>
+  <h3>CDN</h3>
+  <p>Uma <strong>CDN</strong> (Content Delivery Network, rede de distribuição de conteúdo) mantém servidores em muitos pontos de presença pelo mundo. O usuário é direcionado ao ponto mais próximo, normalmente por DNS ou anycast (<a href="02-dns.html">módulo 2</a>), e recebe de lá o conteúdo em cache. Além de latência menor, a CDN absorve picos e ataques volumétricos antes que cheguem à origem. Exemplos: Cloudflare, Akamai, Amazon CloudFront, Azure Front Door, Fastly.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Cache existe em camadas: navegador, CDN, proxy, aplicação com Redis e o próprio banco. O difícil é invalidar. Uso TTL quando tolero dado um pouco velho, invalidação explícita quando não tolero, e hash no nome para estáticos."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cache mal configurado em sistema de saúde pode mostrar dados de um paciente para outro. Exija revisão específica de qualquer regra de cache em CDN ou proxy que envolva rotas autenticadas. Pergunte também: se o cache cair, o banco aguenta a carga sozinho?</p></div>
+</section>
+
+<section class="chap" id="dados-filas">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Bancos de dados e filas</h2>
+  <h3>Relacional x NoSQL</h3>
+  <p>Aqui o banco aparece no papel de arquitetura; SQL em detalhe está no guia de SQL.</p>
+  <div class="tbl"><table><thead><tr><th>Tipo</th><th>Exemplos</th><th>Forte em</th><th>Atenção</th></tr></thead><tbody>
+    <tr><td>Relacional</td><td>PostgreSQL, Oracle, SQL Server, MySQL</td><td>Transações ACID, integridade referencial, consultas flexíveis com junções</td><td>Escala de escrita horizontal exige particionamento ou soluções específicas</td></tr>
+    <tr><td>Documento</td><td>MongoDB, Couchbase</td><td>Esquema flexível, leitura de agregados inteiros</td><td>Junções e transações entre documentos são mais limitadas ou caras</td></tr>
+    <tr><td>Chave-valor</td><td>Redis, DynamoDB</td><td>Acesso muito rápido por chave, cache, sessão</td><td>Consultas além da chave são pobres</td></tr>
+    <tr><td>Colunar largo</td><td>Cassandra</td><td>Grande volume de escrita distribuída</td><td>Modelagem guiada pelas consultas; consistência configurável</td></tr>
+    <tr><td>Busca</td><td>Elasticsearch, OpenSearch</td><td>Texto livre, filtros, agregações</td><td>Não deve ser a fonte da verdade</td></tr>
+  </tbody></table></div>
+  <p><strong>Réplicas de leitura</strong> aliviam o primário em sistemas com muita leitura, com a ressalva de que a réplica pode estar um pouco atrasada (replication lag). Em sistemas distribuídos, quando a rede se parte, o sistema precisa escolher entre responder com dado possivelmente desatualizado ou recusar a resposta; essa tensão é o que o teorema CAP descreve.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Comece com um banco relacional, a não ser que exista um padrão de acesso claro que ele atende mal. Dados clínicos, financeiros e de faturamento pedem transações e integridade.</p></div>
+
+  <h3>Filas e processamento assíncrono</h3>
+  <p>Uma fila desacopla quem produz trabalho de quem o executa. A requisição do usuário grava uma mensagem e responde logo; um <strong>worker</strong> processa depois.</p>
+  <ul>
+    <li><strong>Tempo de resposta</strong>: gerar PDF de laudo, enviar e-mail, integrar com operadora de saúde saem da requisição.</li>
+    <li><strong>Absorção de picos</strong>: a fila cresce no pico e esvazia depois; os workers trabalham no próprio ritmo.</li>
+    <li><strong>Resiliência</strong>: se o sistema de destino cair, as mensagens esperam em vez de se perder.</li>
+  </ul>
+  <div class="tbl"><table><thead><tr><th>Ferramenta</th><th>Modelo</th><th>Quando faz sentido</th></tr></thead><tbody>
+    <tr><td>RabbitMQ</td><td>Broker de mensagens com filas e roteamento flexível; a mensagem sai da fila ao ser confirmada</td><td>Tarefas de trabalho, roteamento por tipo, integrações</td></tr>
+    <tr><td>Apache Kafka</td><td>Log distribuído e particionado; mensagens ficam retidas por um período e podem ser relidas</td><td>Fluxos de eventos de alto volume, vários consumidores independentes, reprocessamento</td></tr>
+    <tr><td>Amazon SQS</td><td>Fila gerenciada; tipo padrão (entrega ao menos uma vez, ordem aproximada) ou FIFO</td><td>Quem já está na AWS e quer zero operação</td></tr>
+  </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>A maioria dos sistemas de fila entrega <strong>ao menos uma vez</strong>: a mesma mensagem pode chegar duas vezes. O consumidor precisa ser <strong>idempotente</strong> (processar duas vezes tem o mesmo efeito de processar uma), por exemplo registrando o ID da mensagem já processada. Mensagens que falham repetidamente vão para uma <strong>DLQ</strong> (dead-letter queue), que alguém precisa monitorar.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uso relacional por padrão pela integridade e transações, e NoSQL quando o padrão de acesso pede. Uso fila para tirar trabalho lento da requisição e absorver picos; como a entrega costuma ser ao menos uma vez, o consumidor precisa ser idempotente e as falhas vão para uma DLQ monitorada."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cada banco ou fila novo é mais uma coisa para operar, fazer backup, atualizar e proteger. Pergunte quem vai operar e se o time tem experiência. Exija alerta para tamanho de fila e idade da mensagem mais antiga: fila crescendo em silêncio é incidente adiado.</p></div>
+</section>
+
+<section class="chap" id="arquitetura">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Monólito, monólito modular e microsserviços</h2>
+  <div class="tbl"><table><thead><tr><th></th><th>Monólito</th><th>Monólito modular</th><th>Microsserviços</th></tr></thead><tbody>
+    <tr><td>Unidade de deploy</td><td>Uma</td><td>Uma</td><td>Várias, independentes</td></tr>
+    <tr><td>Fronteiras internas</td><td>Muitas vezes fracas</td><td>Módulos com interfaces explícitas e dados separados por módulo</td><td>Rede entre serviços; cada um com seus dados</td></tr>
+    <tr><td>Transações</td><td>Locais, simples</td><td>Locais, simples</td><td>Distribuídas; exigem sagas, eventos, consistência eventual</td></tr>
+    <tr><td>Operação</td><td>Simples</td><td>Simples</td><td>Exige plataforma madura: CI/CD por serviço, observabilidade distribuída, descoberta de serviços</td></tr>
+    <tr><td>Escala de times</td><td>Times grandes se atrapalham</td><td>Bom até muitos times com disciplina</td><td>Times autônomos com deploy independente</td></tr>
+    <tr><td>Falhas</td><td>Um bug pode derrubar tudo</td><td>Idem</td><td>Falhas parciais, latência de rede, versões incompatíveis entre serviços</td></tr>
+  </tbody></table></div>
+  <p>Microsserviços resolvem principalmente um problema organizacional: permitir que muitos times entreguem de forma independente. Eles trazem custos técnicos reais: rede onde antes havia chamada de função, consistência eventual, depuração entre serviços, mais infraestrutura. Uma divisão ruim gera um <strong>monólito distribuído</strong>, com os acoplamentos do monólito e os custos dos microsserviços.</p>
+  <p>O <strong>monólito modular</strong> é um meio-termo muito usado: um só deploy, com módulos separados por domínio, que conversam por interfaces e não acessam as tabelas uns dos outros. Se um dia um módulo precisar virar serviço, a fronteira já existe.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Extraia um serviço quando houver motivo concreto: um time precisa de deploy independente, uma parte tem necessidade de escala ou de tecnologia muito diferente, ou um requisito de isolamento (por exemplo, dados sensíveis num perímetro menor).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Microsserviços trocam complexidade de código por complexidade de operação e de dados distribuídos. Valem quando vários times precisam entregar de forma independente e há plataforma para sustentar. Na maioria dos casos eu começaria com um monólito modular bem dividido."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A lei de Conway diz que a arquitetura tende a espelhar a estrutura de comunicação da organização. Com três desenvolvedores, vinte microsserviços significam que cada pessoa opera sete sistemas. Pergunte qual problema de entrega a mudança resolve e se o time tem CI/CD, observabilidade e plantão maduros. Sem isso, a migração piora a confiabilidade.</p></div>
+</section>
+
+<section class="chap" id="deploy">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Ambientes, CI/CD e estratégias de deploy</h2>
+  <h3>Ambientes</h3>
+  <div class="tbl"><table><thead><tr><th>Ambiente</th><th>Para quê</th><th>Dados</th></tr></thead><tbody>
+    <tr><td>Desenvolvimento</td><td>Trabalho do dia a dia, local ou compartilhado</td><td>Fictícios</td></tr>
+    <tr><td>Homologação (staging)</td><td>Validação final num ambiente o mais parecido possível com produção</td><td>Fictícios ou anonimizados</td></tr>
+    <tr><td>Produção</td><td>Usuários reais</td><td>Reais</td></tr>
+  </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Copiar a base de produção para homologação com dados reais de pacientes. Isso espalha dado sensível para um ambiente com controles mais fracos e mais pessoas com acesso. Use dados sintéticos ou anonimizados.</p></div>
+  <h3>CI/CD</h3>
+  <p><strong>Integração contínua</strong> (CI): a cada mudança, o código é compilado e testado automaticamente. <strong>Entrega contínua</strong> (continuous delivery): todo build aprovado está pronto para ir a produção com um clique. <strong>Implantação contínua</strong> (continuous deployment): vai sozinho, sem clique.</p>
+  <pre data-file="pipeline (esquema)"><code class="text">commit -&gt; build -&gt; testes unitários -&gt; análise estática e de dependências
+       -&gt; imagem de container versionada -&gt; deploy em homologação
+       -&gt; testes de integração e smoke -&gt; aprovação -&gt; deploy em produção
+       -&gt; verificação automática de métricas -&gt; (rollback se piorar)</code></pre>
+  <h3>Estratégias de deploy</h3>
+  <div class="tbl"><table><thead><tr><th>Estratégia</th><th>Como funciona</th><th>Vantagem</th><th>Custo</th></tr></thead><tbody>
+    <tr><td>Recreate</td><td>Derruba a versão antiga e sobe a nova</td><td>Simples</td><td>Indisponibilidade durante a troca</td></tr>
+    <tr><td>Rolling</td><td>Troca as instâncias aos poucos</td><td>Sem indisponibilidade, sem infra extra</td><td>Duas versões convivem; rollback também é gradual</td></tr>
+    <tr><td>Blue-green</td><td>Sobe o ambiente novo inteiro ao lado do antigo e vira o tráfego de uma vez</td><td>Rollback instantâneo: volta o tráfego</td><td>Dobro de infraestrutura durante a troca</td></tr>
+    <tr><td>Canary</td><td>Manda uma fração pequena do tráfego para a versão nova e aumenta se as métricas forem boas</td><td>Problema atinge poucos usuários</td><td>Exige métricas confiáveis e roteamento por porcentagem</td></tr>
+    <tr><td>Feature flags</td><td>O código novo vai a produção desligado e é ativado por configuração, para todos ou para um grupo</td><td>Separa deploy de lançamento; desliga sem novo deploy</td><td>Flags acumuladas viram dívida e caminhos de código difíceis de testar</td></tr>
+  </tbody></table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 720 240" role="img" aria-label="Deploy canary: o load balancer envia 95% do tráfego para a versão estável e 5% para a versão nova; as métricas das duas são comparadas para promover ou fazer rollback">
+      <defs><marker id="ah-can" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="10" y="100" width="100" height="36" rx="5"/><text x="60" y="123" text-anchor="middle">Usuários</text>
+      <rect class="box-a" x="150" y="100" width="120" height="36" rx="5"/><text x="210" y="123" text-anchor="middle">Load balancer</text>
+      <line class="ln" x1="110" y1="118" x2="150" y2="118" marker-end="url(#ah-can)"/>
+      <rect class="box" x="330" y="30" width="160" height="50" rx="5"/><text x="410" y="52" text-anchor="middle">v1 estável</text><text class="lbl" x="410" y="70" text-anchor="middle">várias instâncias</text>
+      <rect class="box-w" x="330" y="160" width="160" height="50" rx="5"/><text x="410" y="182" text-anchor="middle">v2 canário</text><text class="lbl" x="410" y="200" text-anchor="middle">uma instância</text>
+      <line class="ln" x1="270" y1="112" x2="330" y2="58" marker-end="url(#ah-can)"/>
+      <line class="ln" x1="270" y1="126" x2="330" y2="182" marker-end="url(#ah-can)"/>
+      <text class="lbl" x="285" y="76">95%</text>
+      <text class="lbl" x="285" y="168">5%</text>
+      <rect class="box-m" x="540" y="90" width="170" height="56" rx="5"/><text x="625" y="113" text-anchor="middle">Comparar métricas</text><text class="lbl" x="625" y="133" text-anchor="middle">erros, latência p95/p99</text>
+      <line class="ln" x1="490" y1="58" x2="540" y2="106" marker-end="url(#ah-can)"/>
+      <line class="ln" x1="490" y1="182" x2="540" y2="132" marker-end="url(#ah-can)"/>
+      <text class="lbl" x="540" y="178">ok: 5% → 25% → 50% → 100%</text>
+      <line class="ln-b" x1="540" y1="200" x2="490" y2="200" marker-end="url(#ah-can)"/>
+      <text class="lbl" x="548" y="204">pior: rollback para 0%</text>
+    </svg>
+    <figcaption>Canary: a versão nova recebe uma fração pequena do tráfego. As métricas das duas versões são comparadas; se a nova estiver igual ou melhor, a fração aumenta em etapas; se piorar, o tráfego volta todo para a estável.</figcaption>
+  </figure>
+
+  <h3>Rollback e banco de dados</h3>
+  <p>O código volta fácil; o esquema do banco não. A técnica <strong>expand/contract</strong> (expandir e contrair) mantém as duas versões compatíveis: primeiro adiciona a coluna nova sem remover a antiga, faz o deploy do código que escreve nas duas, migra os dados e só num deploy posterior remove a antiga. Assim qualquer versão do código pode rodar com o esquema atual e o rollback não quebra.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Rolling troca instâncias aos poucos; blue-green sobe tudo ao lado e vira o tráfego, com rollback instantâneo; canary manda uma fração pequena para a versão nova e promove conforme as métricas; feature flags separam deploy de lançamento. Para o banco uso migrações compatíveis com as duas versões."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>As métricas DORA são uma boa base para medir entrega: frequência de deploy, lead time de mudanças, taxa de falha de mudanças e tempo de recuperação. Deploy pequeno e frequente com rollback fácil é mais seguro do que um deploy grande por mês. Defina antes do deploy qual sinal dispara o rollback e quem decide, para não discutir isso no meio do incidente. Faça a limpeza periódica de feature flags entrar no planejamento.</p></div>
+</section>
+
+<section class="chap" id="cloud">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cloud: modelos, regiões e responsabilidade</h2>
+  <div class="tbl"><table><thead><tr><th>Modelo</th><th>Você gerencia</th><th>O provedor gerencia</th><th>Exemplos</th></tr></thead><tbody>
+    <tr><td>IaaS</td><td>Sistema operacional, runtime, aplicação, dados</td><td>Hardware, rede física, virtualização</td><td>Máquinas virtuais (EC2, Azure VM, Compute Engine)</td></tr>
+    <tr><td>PaaS</td><td>Aplicação e dados</td><td>Também SO, runtime, escala</td><td>Azure App Service, Heroku, bancos gerenciados (RDS, Cloud SQL)</td></tr>
+    <tr><td>Serverless (FaaS)</td><td>Código das funções e dados</td><td>Tudo o mais, inclusive escalar a zero</td><td>AWS Lambda, Azure Functions, Cloud Run</td></tr>
+    <tr><td>SaaS</td><td>Configuração, usuários e dados que você coloca</td><td>O software inteiro</td><td>Microsoft 365, Salesforce, sistemas de gestão hospitalar em nuvem</td></tr>
+  </tbody></table></div>
+  <p>Serverless cobra por execução e escala sozinho, o que é ótimo para carga irregular. Os custos são partida a frio (cold start), limites de tempo de execução, dependência maior do provedor e custo que pode superar o de servidores fixos sob carga alta e constante.</p>
+  <h3>Regiões e zonas de disponibilidade</h3>
+  <p>Uma <strong>região</strong> é uma área geográfica (por exemplo, São Paulo) com vários data centers. Uma <strong>zona de disponibilidade</strong> (availability zone) é um ou mais data centers isolados dentro da região, com energia e rede independentes, ligados às outras zonas por conexões de baixa latência. Distribuir instâncias em várias zonas protege contra a queda de um data center; usar várias regiões protege contra a queda de uma região inteira, com custo e complexidade bem maiores.</p>
+  <h3>Modelo de responsabilidade compartilhada</h3>
+  <p>O provedor responde pela segurança <em>da</em> nuvem (instalações, hardware, virtualização). O cliente responde pela segurança <em>na</em> nuvem (configuração, identidades e permissões, dados, criptografia, aplicação). A fronteira se desloca conforme o modelo: em IaaS você corrige o sistema operacional; em SaaS, não. Em nenhum modelo o provedor configura por você quem tem acesso aos seus dados.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Boa parte dos vazamentos em nuvem vem de configuração do cliente: bucket público, chave de acesso em repositório, porta de banco aberta para a internet, permissões amplas demais. Ferramentas de postura de segurança (CSPM) e políticas automatizadas ajudam a pegar isso. Detalhes no <a href="10-ciberseguranca.html">módulo 10</a>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Em IaaS eu cuido do sistema operacional para cima; em PaaS, da aplicação e dos dados; em SaaS, da configuração e do acesso. O provedor protege a infraestrutura e eu protejo o que coloco nela. Para alta disponibilidade distribuo entre zonas de uma região."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A escolha de região tem efeito em latência, custo e requisitos legais. Para dados de saúde, envolva jurídico e encarregado de dados (DPO) antes de usar regiões fora do Brasil, por causa das regras de transferência internacional da LGPD. Prefira serviços gerenciados quando o time é pequeno: o custo da fatura costuma ser menor que o custo de operar.</p></div>
+</section>
+
+<section class="chap" id="observabilidade">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Observabilidade, SLI, SLO e error budget</h2>
+  <p><strong>Observabilidade</strong> é a capacidade de entender o que acontece dentro do sistema a partir do que ele emite. Monitoramento responde "algo conhecido quebrou?"; observabilidade ajuda a responder "por que isso está acontecendo?", inclusive em falhas que ninguém previu.</p>
+  <div class="tbl"><table><thead><tr><th>Sinal</th><th>O que é</th><th>Responde</th><th>Exemplos de ferramenta</th></tr></thead><tbody>
+    <tr><td>Logs</td><td>Registros de eventos com contexto, de preferência estruturados (JSON)</td><td>O que aconteceu nesta requisição?</td><td>ELK/OpenSearch, Loki, Splunk, CloudWatch Logs</td></tr>
+    <tr><td>Métricas</td><td>Números agregados ao longo do tempo</td><td>Como o sistema está agora e qual a tendência?</td><td>Prometheus, Grafana, Datadog, Azure Monitor</td></tr>
+    <tr><td>Traces</td><td>O caminho de uma requisição entre serviços, com o tempo de cada trecho</td><td>Onde o tempo foi gasto?</td><td>Jaeger, Tempo, Zipkin, ferramentas de APM</td></tr>
+  </tbody></table></div>
+  <p>O <strong>OpenTelemetry</strong> é o padrão aberto, mantido pela CNCF, para instrumentar aplicações e gerar logs, métricas e traces num formato comum. Instrumentar com ele reduz a dependência de um fornecedor específico de monitoramento.</p>
+  <pre><code class="json">{"ts":"2026-11-25T14:03:12Z","level":"error","service":"agenda",
+ "trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","rota":"POST /consultas",
+ "status":500,"duracao_ms":1840,"erro":"timeout ao consultar convênio"}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Logar dado pessoal: CPF, nome de paciente, diagnóstico, token. Logs são copiados para muitos sistemas e ficam acessíveis a muita gente. Defina campos proibidos e mascare na origem.</p></div>
+  <h3>Os sinais de ouro</h3>
+  <p>O livro de SRE do Google propõe quatro sinais para monitorar qualquer serviço voltado ao usuário: <strong>latência</strong> (tempo de resposta, separando sucesso de erro), <strong>tráfego</strong> (demanda, como requisições por segundo), <strong>erros</strong> (taxa de falhas) e <strong>saturação</strong> (quão cheio está o recurso mais limitado). Para latência, use percentis (p95, p99); a média esconde os usuários que esperam muito.</p>
+  <h3>SLI, SLO, SLA e error budget</h3>
+  <div class="tbl"><table><thead><tr><th>Termo</th><th>O que é</th><th>Exemplo</th></tr></thead><tbody>
+    <tr><td>SLI (indicador)</td><td>Medida da qualidade do serviço do ponto de vista do usuário</td><td>Proporção de requisições de agendamento respondidas com sucesso em menos de 500 ms</td></tr>
+    <tr><td>SLO (objetivo)</td><td>Meta interna para o SLI num período</td><td>99,9% em janela de 30 dias</td></tr>
+    <tr><td>SLA (acordo)</td><td>Compromisso contratual com cliente, com penalidade</td><td>99,5% ao mês, com desconto se não cumprir</td></tr>
+    <tr><td>Error budget</td><td>O quanto se pode falhar sem violar o SLO: 100% menos o SLO</td><td>0,1% de 30 dias, cerca de 43 minutos</td></tr>
+  </tbody></table></div>
+  <p>Conta de referência: 30 dias têm 43.200 minutos. 99,9% deixa cerca de 43 minutos de orçamento; 99,95%, cerca de 22 minutos; 99,99%, cerca de 4 minutos. Cada nove a mais custa bem mais em arquitetura e operação.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>O SLO interno fica mais apertado que o SLA, para haver margem. Alerte sobre a velocidade de consumo do error budget (burn rate), não sobre cada pico de CPU.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Logs dizem o que aconteceu, métricas mostram tendência e traces mostram onde o tempo foi gasto; instrumento com OpenTelemetry. Monitoro latência, tráfego, erros e saturação. O SLO é a meta interna sobre um SLI, o SLA é o contrato, e o error budget é a margem de falha que equilibra velocidade e estabilidade."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O error budget transforma a discussão "entregar features ou estabilizar" num acordo objetivo: com orçamento sobrando, o time arrisca mais; com o orçamento estourado, prioriza confiabilidade. Combine essa política com o produto antes de precisar dela. Exija que alertas sejam acionáveis (cada alerta tem um runbook e uma ação) e acompanhe o volume de alertas por plantão: excesso de alerta gera fadiga e o alerta importante passa despercebido.</p></div>
+</section>
+
+<section class="chap" id="ha-dr-custos">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Alta disponibilidade, recuperação de desastres e custos</h2>
+  <p><strong>Alta disponibilidade</strong> (HA) é continuar funcionando quando uma parte falha: várias instâncias, várias zonas, banco com réplica e failover automático, nenhum ponto único de falha. <strong>Recuperação de desastres</strong> (DR) é voltar a funcionar depois de uma falha grande: perda de região, corrupção de dados, ransomware, exclusão acidental.</p>
+  <h3>RPO e RTO</h3>
+  <div class="tbl"><table><thead><tr><th>Sigla</th><th>Pergunta</th><th>Exemplo</th></tr></thead><tbody>
+    <tr><td>RPO (Recovery Point Objective)</td><td>Quanto dado, medido em tempo, posso perder?</td><td>RPO de 15 min: o backup ou a replicação precisa ter no máximo 15 min de atraso</td></tr>
+    <tr><td>RTO (Recovery Time Objective)</td><td>Quanto tempo posso ficar fora do ar até restaurar?</td><td>RTO de 4 h: o sistema precisa voltar em até 4 horas</td></tr>
+  </tbody></table></div>
+  <div class="tbl"><table><thead><tr><th>Estratégia de DR</th><th>Como é</th><th>RTO típico</th><th>Custo</th></tr></thead><tbody>
+    <tr><td>Backup e restauração</td><td>Backups em outro local; infraestrutura recriada na hora</td><td>Horas a dias</td><td>Baixo</td></tr>
+    <tr><td>Pilot light</td><td>Dados replicados e o mínimo ligado; o resto sobe sob demanda</td><td>Dezenas de minutos a horas</td><td>Baixo a médio</td></tr>
+    <tr><td>Warm standby</td><td>Cópia menor do ambiente rodando, pronta para crescer</td><td>Minutos</td><td>Médio a alto</td></tr>
+    <tr><td>Ativo-ativo multirregião</td><td>Duas ou mais regiões atendendo ao mesmo tempo</td><td>Próximo de zero</td><td>Alto, com complexidade de dados</td></tr>
+  </tbody></table></div>
+  <p>Os tempos acima são ordens de grandeza; dependem do sistema e do quanto o processo está automatizado e ensaiado.</p>
+  <h3>Backups</h3>
+  <ul>
+    <li><strong>Regra 3-2-1</strong>: três cópias dos dados, em dois tipos de mídia, uma fora do local principal. Contra ransomware, mantenha também uma cópia imutável ou isolada.</li>
+    <li><strong>Backup que nunca foi restaurado não é confiável.</strong> Agende testes de restauração e meça o tempo real, que é o seu RTO de verdade.</li>
+    <li><strong>Replicação não substitui backup</strong>: um <code>DELETE</code> errado é replicado em segundos.</li>
+  </ul>
+  <h3>Custos de nuvem e FinOps</h3>
+  <p><strong>FinOps</strong> é a prática de gerir custo de nuvem em conjunto entre engenharia, finanças e produto. A FinOps Foundation descreve um ciclo de três fases: <strong>informar</strong> (saber quem gasta o quê), <strong>otimizar</strong> (reduzir desperdício e negociar preço) e <strong>operar</strong> (tornar isso contínuo).</p>
+  <div class="tbl"><table><thead><tr><th>Alavanca</th><th>O que é</th></tr></thead><tbody>
+    <tr><td>Tags e alocação</td><td>Toda conta ou recurso marcado com sistema, time e ambiente; sem isso não há como atribuir custo</td></tr>
+    <tr><td>Rightsizing</td><td>Ajustar o tamanho das máquinas ao uso real</td></tr>
+    <tr><td>Desligar o ocioso</td><td>Ambientes de desenvolvimento e homologação fora do horário, discos e IPs órfãos, snapshots antigos</td></tr>
+    <tr><td>Compromisso de uso</td><td>Instâncias reservadas e savings plans: desconto em troca de compromisso de um a três anos</td></tr>
+    <tr><td>Instâncias spot ou preemptivas</td><td>Capacidade ociosa com grande desconto, que pode ser retomada pelo provedor; boa para lotes tolerantes a interrupção</td></tr>
+    <tr><td>Transferência de dados</td><td>Saída de dados para a internet e entre zonas ou regiões costuma ser cobrada e surpreende</td></tr>
+    <tr><td>Showback e chargeback</td><td>Mostrar a cada área quanto ela custa, ou cobrar dela</td></tr>
+  </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"RPO é quanto dado posso perder; RTO é quanto tempo posso ficar fora. Eles definem a estratégia, de backup e restauração até ativo-ativo, e o custo. Backup só vale se a restauração for testada. Em custo de nuvem começo por tags, rightsizing e desligar o que está ocioso."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>RPO e RTO são decisões de negócio: pergunte à área usuária quanto custa uma hora parada e quanto custa perder uma hora de registros clínicos, e mostre o preço de cada nível. Faça exercícios de DR pelo menos uma vez por ano, com cronômetro. Em custos, coloque orçamento e alertas por conta, revise a fatura mensalmente com o time e torne o custo de cada sistema visível para quem toma decisões de arquitetura.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Reverse proxy</dt><dd>Servidor na frente da aplicação que recebe requisições em nome dela.</dd></div>
+    <div><dt>Load balancer</dt><dd>Distribui requisições entre instâncias e retira as que falham.</dd></div>
+    <div><dt>L4 / L7</dt><dd>Balanceamento por conexão (transporte) / por requisição HTTP (aplicação).</dd></div>
+    <div><dt>Health check</dt><dd>Verificação periódica de que uma instância pode atender.</dd></div>
+    <div><dt>Sticky session</dt><dd>Afinidade que prende um usuário a uma instância.</dd></div>
+    <div><dt>Stateless</dt><dd>Instância que não guarda estado entre requisições.</dd></div>
+    <div><dt>Escala vertical / horizontal</dt><dd>Máquina maior / mais máquinas.</dd></div>
+    <div><dt>Autoscaling</dt><dd>Ajuste automático do número de instâncias por métrica.</dd></div>
+    <div><dt>Cache-aside</dt><dd>A aplicação busca no cache e, se faltar, no banco, gravando o resultado no cache.</dd></div>
+    <div><dt>TTL</dt><dd>Tempo de vida de um item em cache.</dd></div>
+    <div><dt>CDN</dt><dd>Rede de servidores distribuídos que entrega conteúdo perto do usuário.</dd></div>
+    <div><dt>Réplica de leitura</dt><dd>Cópia do banco que atende leituras, com possível atraso.</dd></div>
+    <div><dt>Idempotência</dt><dd>Executar duas vezes tem o mesmo efeito de executar uma.</dd></div>
+    <div><dt>DLQ</dt><dd>Fila para mensagens que falharam repetidamente.</dd></div>
+    <div><dt>Monólito modular</dt><dd>Um deploy, com módulos de fronteiras e dados bem separados.</dd></div>
+    <div><dt>Blue-green</dt><dd>Dois ambientes completos; o tráfego vira de um para o outro.</dd></div>
+    <div><dt>Canary</dt><dd>Versão nova recebe uma fração do tráfego antes de ser promovida.</dd></div>
+    <div><dt>Feature flag</dt><dd>Chave de configuração que liga ou desliga código já implantado.</dd></div>
+    <div><dt>Expand/contract</dt><dd>Migração de esquema em etapas compatíveis com a versão antiga e a nova.</dd></div>
+    <div><dt>Zona de disponibilidade</dt><dd>Data center isolado dentro de uma região de nuvem.</dd></div>
+    <div><dt>OpenTelemetry</dt><dd>Padrão aberto para gerar logs, métricas e traces.</dd></div>
+    <div><dt>SLI / SLO / SLA</dt><dd>Indicador / meta interna / contrato de nível de serviço.</dd></div>
+    <div><dt>Error budget</dt><dd>Margem de falha permitida pelo SLO.</dd></div>
+    <div><dt>RPO / RTO</dt><dd>Perda máxima de dados / tempo máximo fora do ar.</dd></div>
+    <div><dt>FinOps</dt><dd>Gestão colaborativa de custos de nuvem.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e troubleshooting</h2>
+  <h3>"O site ficou lento depois do deploy"</h3>
+  <ol class="seq">
+    <li><div><strong>Correlacione.</strong> A latência p95 e a taxa de erro subiram exatamente no horário do deploy? Marque deploys nos painéis para enxergar isso de imediato.</div></li>
+    <li><div><strong>Reverta se o impacto for alto.</strong> Restaurar o serviço vem antes de entender a causa.</div></li>
+    <li><div><strong>Siga um trace lento.</strong> O tempo está na aplicação, no banco, no cache ou numa API externa?</div></li>
+    <li><div><strong>Suspeitos comuns:</strong> consulta nova sem índice, N+1 consultas, cache desativado ou com chave errada, dependência nova lenta, pool de conexões pequeno.</div></li>
+    <li><div><strong>Corrija a causa e o processo.</strong> Que teste ou métrica de canary teria pego isso antes?</div></li>
+  </ol>
+  <h3>"O banco caiu no pico"</h3>
+  <p>Contenha primeiro: limite a taxa de entrada, desligue funcionalidades não essenciais por feature flag, aumente o cache de leituras. Depois investigue: conexões esgotadas (cada instância nova abre mais conexões; um pooler como PgBouncer ou o pool do próprio banco ajuda), consultas pesadas no horário de pico, relatório rodando no primário em vez da réplica, falta de memória. No médio prazo: réplicas de leitura, filas para escritas que podem esperar, teste de carga antes do próximo pico.</p>
+  <h3>"O time quer migrar para microsserviços"</h3>
+  <p>Pergunte qual dor isso resolve: deploys travados por outro time, uma parte que precisa escalar diferente, base de código que ninguém entende. Muitas dessas dores se resolvem com monólito modular e melhor CI/CD. Se a extração for justificada, comece por um módulo de fronteira clara, com time dono, e só depois de ter observabilidade distribuída e pipeline por serviço. Use o padrão <strong>strangler fig</strong>: a nova parte cresce em volta da antiga e assume rota por rota.</p>
+  <h3>"Usuários são deslogados aleatoriamente"</h3>
+  <p>Clássico de sessão guardada em memória com várias instâncias e sem sticky session, ou de instâncias reiniciadas pelo autoscaling. Corrija levando a sessão para um armazenamento compartilhado ou para token, em vez de ligar sticky session.</p>
+  <h3>"A fatura da nuvem dobrou"</h3>
+  <p>Abra o relatório de custos por serviço e por tag. Suspeitos comuns: autoscaling que subiu e não desceu, ambiente de teste esquecido ligado, logs em volume excessivo, transferência de dados entre regiões, snapshots acumulados. Crie alerta de orçamento para detectar o próximo aumento em poucos dias, antes do fechamento do mês.</p>
+  <h3>"Queremos 99,99% de disponibilidade"</h3>
+  <p>São cerca de 4 minutos de indisponibilidade por mês, incluindo deploys e manutenção. Isso exige múltiplas zonas, deploy sem indisponibilidade, failover automático do banco e plantão rápido, e todas as dependências precisam ser mais disponíveis que isso. Mostre o custo e pergunte se 99,9% atende ao negócio.</p>
+  <div class="note mgr"><b>Para gestores</b><p>Durante um incidente, defina um coordenador (incident commander) que não está digitando comandos, um canal único de comunicação e atualizações em intervalos fixos para as áreas afetadas. Depois, faça um postmortem sem culpados (blameless): linha do tempo, causa, o que ajudou, o que atrapalhou e ações com dono e prazo. O objetivo é melhorar o sistema e o processo; procurar culpado faz as pessoas esconderem informação na próxima vez.</p></div>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre servidor web, servidor de aplicação e reverse proxy?</span></summary><div class="ans"><p>O servidor web fala HTTP e serve estáticos. O servidor de aplicação executa o código que gera respostas dinâmicas. O reverse proxy fica na frente, recebe as requisições em nome dos servidores internos, termina TLS, roteia, comprime e protege. O Nginx, por exemplo, pode fazer os papéis de servidor web e de reverse proxy.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Load balancer de camada 4 ou de camada 7?</span></summary><div class="ans"><p>Camada 4 decide por conexão com base em IP e porta, com pouca sobrecarga e para qualquer protocolo. Camada 7 entende HTTP e pode rotear por caminho, host ou cabeçalho, terminar TLS e retentar. Para aplicações web costumo usar camada 7; camada 4 para protocolos não HTTP ou volume muito alto.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Por que evitar sticky sessions?</span></summary><div class="ans"><p>Porque distribuem a carga de forma desigual, fazem o usuário perder a sessão quando a instância cai e atrapalham deploy e autoscaling. A alternativa é deixar a aplicação stateless, com sessão em armazenamento compartilhado ou em token.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>O que significa uma aplicação ser stateless e onde fica o estado?</span></summary><div class="ans"><p>A instância não guarda nada entre requisições. Dados ficam no banco, sessão no Redis ou em token, arquivos em armazenamento de objetos, trabalho pendente em fila. Assim qualquer instância atende qualquer requisição e posso escalar horizontalmente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Como você invalidaria cache?</span></summary><div class="ans"><p>Depende da tolerância a dado velho. Com tolerância, TTL curto. Sem tolerância, invalidação explícita ao gravar. Para estáticos, hash no nome do arquivo e cache longo. Também me protejo de stampede com TTL variável ou recálculo por uma única requisição.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Quando usar NoSQL em vez de relacional?</span></summary><div class="ans"><p>Quando o padrão de acesso pede: chave-valor para cache e sessão, documento para agregados com esquema variável, colunar largo para escrita distribuída em grande volume, busca para texto livre. Para dados transacionais com integridade, como clínicos e financeiros, começo pelo relacional.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Por que usar uma fila? Qual o cuidado principal?</span></summary><div class="ans"><p>Para tirar trabalho lento da requisição, absorver picos e não perder trabalho quando um destino cai. O cuidado principal é que a entrega costuma ser ao menos uma vez, então o consumidor precisa ser idempotente, e mensagens que falham vão para uma DLQ monitorada.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Kafka ou RabbitMQ?</span></summary><div class="ans"><p>RabbitMQ é um broker de filas com roteamento flexível, bom para distribuir tarefas. Kafka é um log distribuído que retém eventos e permite que vários consumidores leiam e releiam no próprio ritmo, bom para fluxos de eventos de alto volume e reprocessamento. A escolha segue o padrão de uso e a experiência do time em operar cada um.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Monólito ou microsserviços?</span></summary><div class="ans"><p>Microsserviços resolvem principalmente o problema de muitos times entregarem de forma independente, ao custo de rede, consistência eventual e operação complexa. Sem esse problema e sem plataforma madura, um monólito modular entrega mais. Extraio serviços quando há motivo concreto.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Explique blue-green e canary.</span></summary><div class="ans"><p>Blue-green sobe a versão nova completa ao lado da antiga e vira todo o tráfego de uma vez, com rollback instantâneo e custo de infraestrutura dobrada na troca. Canary manda uma fração pequena do tráfego para a versão nova, compara métricas e aumenta em etapas, limitando o impacto de um problema.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como fazer rollback quando o deploy inclui migração de banco?</span></summary><div class="ans"><p>Com migrações expand/contract: cada mudança de esquema é compatível com a versão anterior do código. Adiciono antes de remover, migro dados em etapas e só removo o antigo num deploy posterior. Assim o código pode voltar sem quebrar o banco.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O que é o modelo de responsabilidade compartilhada?</span></summary><div class="ans"><p>O provedor protege a infraestrutura da nuvem; o cliente protege o que coloca nela: configuração, identidades, dados, aplicação. A fronteira muda entre IaaS, PaaS e SaaS, mas o controle de acesso aos dados é sempre do cliente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Quais são os pilares da observabilidade e os sinais de ouro?</span></summary><div class="ans"><p>Logs, métricas e traces, de preferência instrumentados com OpenTelemetry e ligados por um trace ID. Os sinais de ouro são latência, tráfego, erros e saturação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Diferencie SLI, SLO e SLA. O que é error budget?</span></summary><div class="ans"><p>SLI é a medida (por exemplo, requisições bem-sucedidas abaixo de 500 ms). SLO é a meta interna para ela (99,9% em 30 dias). SLA é o contrato com cliente, com penalidade, normalmente menos exigente que o SLO. Error budget é 100% menos o SLO: cerca de 43 minutos em 30 dias para 99,9%. Ele decide quando acelerar e quando priorizar estabilidade.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>O que são RPO e RTO e como eles afetam a arquitetura?</span></summary><div class="ans"><p>RPO é a perda máxima de dados aceitável, medida em tempo; RTO é o tempo máximo para voltar. RPO baixo exige replicação contínua ou backups frequentes; RTO baixo exige ambiente de reserva pronto e failover automatizado. Quanto menores, maior o custo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como gestor, como você conduz um incidente grave em produção?</span></summary><div class="ans"><p>Defino um coordenador, um canal único e atualizações periódicas para as áreas afetadas. A prioridade é restaurar o serviço, com rollback se possível, antes de buscar a causa. Depois faço um postmortem sem culpados, com ações que têm dono e prazo, e acompanho a conclusão delas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>A fatura de nuvem está crescendo. O que você faz como gestor?</span></summary><div class="ans"><p>Garanto tags para saber quem gasta o quê, coloco orçamentos e alertas, reviso a fatura com o time todo mês e ataco o óbvio: recursos ociosos, máquinas superdimensionadas, ambientes de teste ligados à noite. Depois avalio compromissos de uso para a carga estável e torno o custo visível nas decisões de arquitetura.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Que métricas você usaria para avaliar a entrega do seu time?</span></summary><div class="ans"><p>As métricas DORA: frequência de deploy, lead time de mudanças, taxa de falha de mudanças e tempo de recuperação, junto com o cumprimento dos SLOs. Uso para encontrar gargalos no processo, não para comparar pessoas.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

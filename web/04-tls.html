@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web 04: Criptografia, TLS e HTTPS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Web — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#17734f; --accent-soft:#e0f1e8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#6fd0a2; --accent-soft:#143024;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#6fd0a2; --accent-soft:#143024;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Web</span></a>
+  <div class="topnote">Módulo 04 de 10 · Criptografia, TLS e HTTPS</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-internet.html"><span class="n">01</span>Como a internet funciona</a></li>
+    <li><a href="02-dns.html"><span class="n">02</span>DNS e domínios</a></li>
+    <li><a href="04-tls.html" aria-current="page"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li class="sub"><ol>
+      <li><a href="#objetivos"><span class="n">1</span>O que a criptografia garante</a></li>
+      <li><a href="#cifras"><span class="n">2</span>Simétrica e assimétrica</a></li>
+      <li><a href="#hash"><span class="n">3</span>Hash, HMAC e assinatura</a></li>
+      <li><a href="#troca"><span class="n">4</span>Troca de chaves e forward secrecy</a></li>
+      <li><a href="#certificados"><span class="n">5</span>Certificados e cadeia de confiança</a></li>
+      <li><a href="#handshake"><span class="n">6</span>Handshake TLS 1.3</a></li>
+      <li><a href="#https"><span class="n">7</span>HTTPS na prática</a></li>
+      <li><a href="#ciclo"><span class="n">8</span>Ciclo de vida dos certificados</a></li>
+      <li><a href="#arquitetura"><span class="n">9</span>Terminação, mTLS e inspeção</a></li>
+      <li><a href="#diagnostico"><span class="n">10</span>Erros comuns e ferramentas</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#cenarios"><span class="n">12</span>Cenários práticos</a></li>
+      <li><a href="#entrevista"><span class="n">13</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="04-tls.html"><span class="n">04</span>Criptografia, TLS e HTTPS</a></li>
+    <li><a href="05-navegador.html"><span class="n">05</span>Navegador e front-end</a></li>
+    <li><a href="06-backend-infra.html"><span class="n">06</span>Back-end e infraestrutura</a></li>
+    <li><a href="07-autenticacao.html"><span class="n">07</span>Autenticação e autorização</a></li>
+    <li><a href="08-apis.html"><span class="n">08</span>APIs: fundamentos</a></li>
+    <li><a href="09-seguranca-web.html"><span class="n">09</span>Segurança de aplicações</a></li>
+    <li><a href="10-ciberseguranca.html"><span class="n">10</span>Cibersegurança e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 04 · <span class="lvl l2">Intermediário</span> <span class="lvl l3">Avançado</span></div>
+  <h1>Criptografia, TLS e HTTPS</h1>
+  <p class="lede">O HTTPS é HTTP dentro de um túnel TLS. Entender as peças (cifras, hashes, assinaturas, certificados) explica por que o cadeado funciona, por que ele às vezes quebra e por que um certificado vencido consegue derrubar um hospital inteiro às três da manhã.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar confidencialidade, integridade e autenticidade e qual ferramenta criptográfica entrega cada uma.</li>
+    <li>Diferenciar criptografia simétrica, assimétrica, hash, HMAC e assinatura digital.</li>
+    <li>Descrever o handshake TLS 1.3 passo a passo e o que mudou desde o 1.2.</li>
+    <li>Ler um certificado, montar a cadeia de confiança e diagnosticar os erros mais comuns.</li>
+    <li>Organizar a gestão de certificados de uma equipe para que expiração nunca vire incidente.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="objetivos">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O que a criptografia garante</h2>
+  <p>Sem TLS, qualquer equipamento entre o cliente e o servidor (Wi-Fi público, roteador, provedor) lê e altera o HTTP. O TLS (Transport Layer Security, segurança da camada de transporte) entrega três propriedades:</p>
+  <div class="tbl"><table><thead><tr><th>Propriedade</th><th>Pergunta que responde</th><th>Ferramenta</th></tr></thead><tbody>
+    <tr><td>Confidencialidade</td><td>Alguém no caminho consegue ler?</td><td>Cifra simétrica (AES, ChaCha20)</td></tr>
+    <tr><td>Integridade</td><td>Alguém alterou no caminho?</td><td>Cifra autenticada (AEAD) / MAC</td></tr>
+    <tr><td>Autenticidade</td><td>Estou falando com o servidor certo?</td><td>Certificado + assinatura digital</td></tr>
+  </tbody></table></div>
+  <p>As três precisam estar juntas. Criptografar sem autenticar o servidor permite que um atacante no meio (man-in-the-middle) negocie chaves com você fingindo ser o servidor: a conversa fica cifrada, só que com a pessoa errada.</p>
+  <p>O nome SSL (Secure Sockets Layer) é o antecessor do TLS e ainda aparece no mercado ("certificado SSL"). Todas as versões de SSL estão quebradas e desativadas.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"O TLS garante confidencialidade com cifra simétrica, integridade com cifra autenticada e autenticidade do servidor com certificado e assinatura. Sem autenticidade, a criptografia não impede um man-in-the-middle."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O TLS protege dados <strong>em trânsito</strong>. Não protege o banco, o backup, o log nem o notebook roubado. Quando alguém disser "nosso sistema é seguro porque usa HTTPS", pergunte pelos dados em repouso (<a href="#diagnostico">seção 10</a>).</p></div>
+</section>
+
+<section class="chap" id="cifras">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Criptografia simétrica e assimétrica</h2>
+  <h3>Simétrica: uma chave compartilhada</h3>
+  <p>A mesma chave cifra e decifra. É rápida, com suporte em hardware nos processadores modernos, e por isso cifra todo o tráfego de uma conexão.</p>
+  <ul>
+    <li><strong>AES</strong> (Advanced Encryption Standard), com chaves de 128 ou 256 bits, no modo <strong>GCM</strong>.</li>
+    <li><strong>ChaCha20-Poly1305</strong>, rápido em software, comum em celulares sem aceleração de AES.</li>
+  </ul>
+  <p>Os dois são cifras autenticadas (AEAD, Authenticated Encryption with Associated Data): além de cifrar, detectam qualquer alteração. O problema da simétrica é a distribuição: como as duas pontas combinam a chave sem que alguém no meio a veja?</p>
+  <h3>Assimétrica: par de chaves</h3>
+  <p>Cada parte tem uma <strong>chave pública</strong>, que pode ser divulgada, e uma <strong>chave privada</strong>, que nunca sai do dono. O que uma faz, só a outra desfaz.</p>
+  <ul>
+    <li><strong>RSA:</strong> baseado na dificuldade de fatorar números grandes. Chaves de 2048 bits são o mínimo usual hoje.</li>
+    <li><strong>ECC</strong> (criptografia de curvas elípticas): mesma segurança com chaves bem menores. Uma chave ECDSA P-256 oferece segurança comparável a RSA 3072, com operações mais rápidas. X25519 é a curva mais usada na troca de chaves.</li>
+  </ul>
+  <p>Operações assimétricas são ordens de grandeza mais lentas que as simétricas. Por isso o TLS usa assimétrica só no início, para autenticar e combinar uma chave, e simétrica para o resto da conexão.</p>
+  <div class="tbl"><table><thead><tr><th></th><th>Simétrica</th><th>Assimétrica</th></tr></thead><tbody>
+    <tr><td>Chaves</td><td>Uma, compartilhada</td><td>Par pública/privada</td></tr>
+    <tr><td>Velocidade</td><td>Alta</td><td>Baixa</td></tr>
+    <tr><td>Uso no TLS</td><td>Cifrar os dados da conexão</td><td>Troca de chaves e assinatura do handshake</td></tr>
+    <tr><td>Exemplos</td><td>AES-GCM, ChaCha20-Poly1305</td><td>RSA, ECDSA, Ed25519, X25519</td></tr>
+  </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O TLS é híbrido: usa assimétrica no handshake para autenticar o servidor e combinar um segredo, e depois cifra os dados com chave simétrica, que é muito mais rápida."</p></div>
+</section>
+
+<section class="chap" id="hash">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>Hash, HMAC e assinatura digital</h2>
+  <h3>Hash</h3>
+  <p>Uma função hash criptográfica transforma qualquer entrada numa saída de tamanho fixo. O SHA-256 gera 256 bits. Propriedades exigidas:</p>
+  <ul>
+    <li><strong>Determinística:</strong> a mesma entrada dá sempre o mesmo resultado.</li>
+    <li><strong>Unidirecional:</strong> a partir do hash não se reconstrói a entrada.</li>
+    <li><strong>Resistente a colisão:</strong> é inviável achar duas entradas com o mesmo hash.</li>
+    <li><strong>Efeito avalanche:</strong> mudar um bit da entrada muda o resultado inteiro.</li>
+  </ul>
+  <pre><code class="sh">printf 'laudo-123' | sha256sum
+printf 'laudo-124' | sha256sum
+# as duas saídas não têm nada em comum, embora a entrada mude um caractere</code></pre>
+  <p>MD5 e SHA-1 têm colisões práticas conhecidas e não servem mais para segurança. Use SHA-256 ou superior.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Chamar hash de criptografia. Criptografia tem chave e é reversível por quem tem a chave. Hash não tem chave e não se desfaz. "Criptografamos as senhas com SHA-256" está errado duas vezes: não é criptografia e hash rápido não serve para senha (o certo está no <a href="07-autenticacao.html">módulo 7</a>).</p></div>
+  <h3>HMAC</h3>
+  <p>Um hash sozinho não prova autoria: qualquer um recalcula. O HMAC (RFC 2104) mistura uma chave secreta no cálculo. Só quem tem a chave gera ou confere o resultado. É usado para validar webhooks, assinar tokens JWT com HS256 e garantir integridade entre sistemas que compartilham um segredo.</p>
+  <pre><code class="http">POST /webhooks/laboratorio HTTP/1.1
+Host: api.exemplo.com.br
+Content-Type: application/json
+X-Signature: sha256=5d41...   # HMAC-SHA256 do corpo com o segredo combinado</code></pre>
+  <h3>Assinatura digital</h3>
+  <p>A assinatura usa par de chaves. O signatário calcula o hash da mensagem e o processa com sua <strong>chave privada</strong>. Qualquer um confere com a <strong>chave pública</strong>. Ela entrega integridade e autenticidade, e, como só o dono tem a chave privada, também não repúdio.</p>
+  <div class="tbl"><table><thead><tr><th>Ferramenta</th><th>Chave</th><th>Garante</th><th>Quem verifica</th></tr></thead><tbody>
+    <tr><td>Hash</td><td>Nenhuma</td><td>Integridade contra erro acidental</td><td>Qualquer um</td></tr>
+    <tr><td>HMAC</td><td>Segredo compartilhado</td><td>Integridade e autenticidade entre as partes</td><td>Só quem tem o segredo</td></tr>
+    <tr><td>Assinatura</td><td>Privada assina, pública verifica</td><td>Integridade, autenticidade, não repúdio</td><td>Qualquer um com a chave pública</td></tr>
+  </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Hash não tem chave e não se reverte. HMAC é hash com segredo compartilhado, prova que a mensagem veio de quem conhece o segredo. Assinatura usa chave privada para assinar e pública para verificar, o que permite a qualquer um validar."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Segredos de HMAC de webhooks e integrações são credenciais. Cobre que fiquem em cofre de segredos, com dono e plano de rotação, e nunca no repositório.</p></div>
+</section>
+
+<section class="chap" id="troca">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Troca de chaves e forward secrecy</h2>
+  <p>O Diffie-Hellman resolve o problema de distribuir a chave simétrica: duas partes chegam ao mesmo segredo trocando só valores públicos.</p>
+  <ol class="seq">
+    <li><div><strong>Parâmetros públicos.</strong> Cliente e servidor usam um grupo conhecido (hoje, quase sempre a curva X25519 ou P-256).</div></li>
+    <li><div><strong>Segredos locais.</strong> O cliente sorteia um número secreto <em>a</em>; o servidor sorteia <em>b</em>.</div></li>
+    <li><div><strong>Troca dos valores públicos.</strong> Cada lado envia o valor público derivado do seu segredo (no TLS 1.3, o campo <code>key_share</code>).</div></li>
+    <li><div><strong>Mesmo segredo dos dois lados.</strong> Cada um combina o seu segredo com o valor público do outro e chega ao mesmo resultado. Quem só viu os valores públicos não consegue calculá-lo.</div></li>
+    <li><div><strong>Derivação.</strong> Desse segredo saem, por uma função de derivação (HKDF), as chaves simétricas da conexão.</div></li>
+  </ol>
+  <p>O Diffie-Hellman sozinho não autentica ninguém. Por isso o servidor assina o handshake com a chave privada do certificado: o cliente confirma que o valor público veio mesmo do dono do domínio.</p>
+  <h3>Forward secrecy</h3>
+  <p>No <strong>ECDHE</strong> (Elliptic Curve Diffie-Hellman Ephemeral) os segredos são efêmeros: novos a cada conexão e descartados no fim. Se a chave privada do certificado vazar amanhã, quem gravou o tráfego de ontem continua sem conseguir decifrá-lo. Essa propriedade se chama forward secrecy (sigilo futuro).</p>
+  <p>No TLS 1.2 era possível usar troca de chaves por RSA: o cliente cifrava o segredo com a chave pública do servidor. Quem obtivesse a chave privada depois decifrava todo o tráfego gravado. O TLS 1.3 removeu essa opção: toda troca de chaves é efêmera.</p>
+  <div class="note"><b>Saiba mais</b><p>Navegadores e grandes CDNs já ativam por padrão uma troca de chaves híbrida que combina X25519 com ML-KEM, um algoritmo pós-quântico. A ideia é proteger hoje o tráfego que alguém poderia gravar e tentar decifrar no futuro com computador quântico.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"ECDHE permite combinar uma chave sem enviá-la e, por ser efêmero, dá forward secrecy: vazar a chave privada do certificado não expõe sessões passadas. O TLS 1.3 tornou isso obrigatório."</p></div>
+</section>
+
+<section class="chap" id="certificados">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Certificados X.509 e cadeia de confiança</h2>
+  <p>Um certificado liga uma chave pública a uma identidade (um nome de domínio) e é assinado por uma autoridade certificadora (CA, Certificate Authority). O formato é o X.509; o perfil usado na internet está na RFC 5280.</p>
+  <h3>Campos que importam</h3>
+  <div class="tbl"><table><thead><tr><th>Campo</th><th>Para quê</th></tr></thead><tbody>
+    <tr><td>Subject</td><td>A quem pertence. O CN (Common Name) é legado: navegadores validam o nome só pelo SAN.</td></tr>
+    <tr><td>Subject Alternative Name (SAN)</td><td>Lista de nomes cobertos: <code>exemplo.com.br</code>, <code>www.exemplo.com.br</code>, <code>*.api.exemplo.com.br</code>.</td></tr>
+    <tr><td>Issuer</td><td>Quem assinou (a CA emissora).</td></tr>
+    <tr><td>Validity</td><td><code>Not Before</code> e <code>Not After</code>: janela de validade.</td></tr>
+    <tr><td>Subject Public Key Info</td><td>A chave pública e o algoritmo (RSA, ECDSA).</td></tr>
+    <tr><td>Serial Number</td><td>Identificador único na CA; usado em revogação.</td></tr>
+    <tr><td>Basic Constraints</td><td><code>CA:TRUE</code> para quem pode emitir certificados; <code>CA:FALSE</code> na folha.</td></tr>
+    <tr><td>Key Usage / Extended Key Usage</td><td>Para que a chave serve, por exemplo autenticação de servidor ou de cliente.</td></tr>
+    <tr><td>Authority Information Access</td><td>Onde baixar o certificado do emissor.</td></tr>
+  </tbody></table></div>
+  <h3>A cadeia</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Cadeia de certificados: raiz assina intermediária, intermediária assina folha; servidor envia folha e intermediária, raiz já está no trust store">
+      <defs><marker id="ah-chain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-m" x="10" y="40" width="190" height="100" rx="6"/>
+      <text class="ttl" x="105" y="62" text-anchor="middle">Raiz</text>
+      <text x="105" y="82" text-anchor="middle">CN: Exemplo Root</text>
+      <text x="105" y="98" text-anchor="middle">Emissor = Sujeito</text>
+      <text x="105" y="114" text-anchor="middle">(autoassinada)</text>
+      <rect class="box" x="245" y="40" width="190" height="100" rx="6"/>
+      <text class="ttl" x="340" y="62" text-anchor="middle">Intermediária</text>
+      <text x="340" y="82" text-anchor="middle">Emissor: Exemplo Root</text>
+      <text x="340" y="98" text-anchor="middle">Sujeito: Exemplo CA 1</text>
+      <text x="340" y="114" text-anchor="middle">CA:TRUE</text>
+      <rect class="box-a" x="480" y="40" width="190" height="100" rx="6"/>
+      <text class="ttl" x="575" y="62" text-anchor="middle">Folha</text>
+      <text x="575" y="82" text-anchor="middle">Emissor: Exemplo CA 1</text>
+      <text x="575" y="98" text-anchor="middle">SAN: exemplo.com.br,</text>
+      <text x="575" y="114" text-anchor="middle">www.exemplo.com.br</text>
+      <text x="575" y="130" text-anchor="middle">CA:FALSE</text>
+      <line class="ln" x1="200" y1="90" x2="243" y2="90" marker-end="url(#ah-chain)"/>
+      <line class="ln" x1="435" y1="90" x2="478" y2="90" marker-end="url(#ah-chain)"/>
+      <text class="lbl" x="222" y="32" text-anchor="middle">assina</text>
+      <text class="lbl" x="457" y="32" text-anchor="middle">assina</text>
+      <line class="ln" x1="10" y1="158" x2="200" y2="158"/>
+      <text class="lbl" x="105" y="176" text-anchor="middle">já instalada no trust store</text>
+      <text class="lbl" x="105" y="192" text-anchor="middle">do SO ou do navegador</text>
+      <line class="ln-a" x1="245" y1="158" x2="670" y2="158"/>
+      <text class="lbl" x="457" y="176" text-anchor="middle">enviadas pelo servidor no handshake</text>
+      <text class="lbl" x="10" y="220">Validação: folha → intermediária → raiz confiável. Sem a intermediária, a cadeia quebra.</text>
+    </svg>
+    <figcaption>A raiz fica guardada offline e assina intermediárias; as intermediárias assinam os certificados dos sites. O cliente só confia na folha se conseguir subir, assinatura por assinatura, até uma raiz do seu trust store.</figcaption>
+  </figure>
+  <p>Para validar, o cliente confere: a assinatura de cada elo, a validade de cada certificado, se o nome acessado está no SAN da folha, se a raiz está no trust store (repositório de raízes confiáveis do sistema operacional, do navegador ou do runtime, como o Java) e se o uso da chave é compatível.</p>
+  <p><strong>Cadeia incompleta</strong> é o erro clássico: o servidor envia só a folha. Navegadores às vezes contornam, baixando a intermediária pelo endereço do AIA ou usando uma que já têm em cache, então "no Chrome funciona". Já <code>curl</code>, Java, Python e apps móveis costumam falhar.</p>
+  <h3>Tipos de certificado</h3>
+  <div class="tbl"><table><thead><tr><th>Tipo</th><th>O que a CA verifica / cobre</th><th>Observação</th></tr></thead><tbody>
+    <tr><td>DV (Domain Validated)</td><td>Só o controle do domínio</td><td>Emitido em minutos e automatizável. O que o Let's Encrypt emite.</td></tr>
+    <tr><td>OV (Organization Validated)</td><td>Domínio e existência da organização</td><td>Dados da empresa aparecem no certificado, mas o navegador não mostra diferença.</td></tr>
+    <tr><td>EV (Extended Validation)</td><td>Validação mais rigorosa da organização</td><td>Os navegadores removeram o destaque visual (barra verde). O ganho prático para o usuário é pequeno.</td></tr>
+    <tr><td>Wildcard</td><td><code>*.exemplo.com.br</code></td><td>Cobre um único nível: <code>a.exemplo.com.br</code> sim; <code>exemplo.com.br</code> e <code>a.b.exemplo.com.br</code> não.</td></tr>
+    <tr><td>Multidomínio (SAN)</td><td>Vários nomes listados no SAN</td><td>Um certificado para vários sites.</td></tr>
+  </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Um wildcard com a mesma chave privada copiada para dezenas de servidores. Se um servidor vaza a chave, todos os subdomínios ficam expostos, e a troca exige mexer em todos de uma vez. Prefira certificados por serviço, emitidos automaticamente.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O servidor envia folha e intermediárias; a raiz já está no trust store do cliente. O cliente valida assinaturas, validade e se o nome está no SAN. Cadeia incompleta funciona em alguns navegadores e quebra em clientes como curl e Java."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pagar por OV ou EV raramente compra segurança adicional para o usuário. O que compra segurança é automação de emissão e renovação. Use o orçamento em ferramenta de inventário e monitoramento, não em tipo de certificado.</p></div>
+</section>
+
+<section class="chap" id="handshake">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Handshake TLS 1.3</h2>
+  <p>O handshake é a negociação inicial. No TLS 1.3 (RFC 8446) ele leva uma ida e volta (1-RTT) antes do primeiro dado da aplicação.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Sequência do handshake TLS 1.3 entre cliente e servidor em uma ida e volta">
+      <defs><marker id="ah-hs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="40" y="8" width="140" height="28" rx="5"/><text x="110" y="27" text-anchor="middle">Cliente</text>
+      <rect class="box" x="500" y="8" width="140" height="28" rx="5"/><text x="570" y="27" text-anchor="middle">Servidor</text>
+      <line class="ln" x1="110" y1="36" x2="110" y2="240" stroke-dasharray="3 4"/>
+      <line class="ln" x1="570" y1="36" x2="570" y2="240" stroke-dasharray="3 4"/>
+      <text x="340" y="62" text-anchor="middle">ClientHello: versões, cifras, key_share, SNI</text>
+      <line class="ln" x1="110" y1="70" x2="568" y2="70" marker-end="url(#ah-hs)"/>
+      <text x="340" y="98" text-anchor="middle">ServerHello: cifra e key_share escolhidos</text>
+      <line class="ln" x1="570" y1="106" x2="112" y2="106" marker-end="url(#ah-hs)"/>
+      <text x="340" y="128" text-anchor="middle">{EncryptedExtensions, Certificate,</text>
+      <text x="340" y="142" text-anchor="middle">CertificateVerify, Finished}</text>
+      <line class="ln-a" x1="570" y1="150" x2="112" y2="150" marker-end="url(#ah-hs)"/>
+      <text x="340" y="178" text-anchor="middle">{Finished} + {GET / HTTP/1.1 ...}</text>
+      <line class="ln-a" x1="110" y1="186" x2="568" y2="186" marker-end="url(#ah-hs)"/>
+      <text x="340" y="214" text-anchor="middle">{HTTP/1.1 200 OK ...}</text>
+      <line class="ln-a" x1="570" y1="222" x2="112" y2="222" marker-end="url(#ah-hs)"/>
+      <line class="ln" x1="60" y1="70" x2="60" y2="150"/>
+      <text class="lbl" x="14" y="114">1 RTT</text>
+      <text class="lbl" x="10" y="268">{ } = cifrado com chaves derivadas do ECDHE. O certificado já viaja cifrado no TLS 1.3.</text>
+      <text class="lbl" x="10" y="288">No TLS 1.2 eram 2 RTT até o primeiro dado da aplicação, e o certificado ia em claro.</text>
+    </svg>
+    <figcaption>O cliente já manda seu key_share no primeiro pacote, apostando no grupo que o servidor vai aceitar. Isso economiza uma ida e volta em relação ao TLS 1.2.</figcaption>
+  </figure>
+  <ol class="seq">
+    <li><div><strong>ClientHello.</strong> O cliente envia versões suportadas, suítes de cifra, um ou mais <code>key_share</code> (valores públicos de ECDHE), o SNI com o nome do site e o ALPN com os protocolos de aplicação que aceita (<code>h2</code>, <code>http/1.1</code>).</div></li>
+    <li><div><strong>ServerHello.</strong> O servidor escolhe a suíte e o grupo e devolve seu <code>key_share</code>. A partir daqui os dois lados já calculam o segredo e todo o resto vai cifrado.</div></li>
+    <li><div><strong>Certificate e CertificateVerify.</strong> O servidor envia a cadeia e assina o histórico do handshake com sua chave privada. Isso prova que ele possui a chave do certificado e amarra a troca ECDHE à identidade.</div></li>
+    <li><div><strong>Finished.</strong> Cada lado envia um MAC de todo o handshake. Se alguém alterou qualquer mensagem no meio, a verificação falha.</div></li>
+    <li><div><strong>Dados.</strong> O cliente já manda a requisição HTTP junto com seu Finished.</div></li>
+  </ol>
+  <p>Se o cliente apostou num grupo que o servidor não aceita, o servidor responde com HelloRetryRequest e o handshake ganha uma ida e volta extra.</p>
+  <h3>0-RTT e seus riscos</h3>
+  <p>Na reconexão a um servidor já visitado, o cliente pode usar uma chave pré-compartilhada (PSK) da sessão anterior e enviar dados no primeiro pacote, o chamado early data ou 0-RTT. O ganho é latência. O risco é <strong>replay</strong>: um atacante pode capturar e reenviar esse primeiro pacote, e o servidor não tem como distinguir. Esses dados também não têm forward secrecy em relação à PSK.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Só aceite 0-RTT para requisições seguras e idempotentes (GET sem efeito colateral). Um POST de agendamento em 0-RTT pode ser executado duas vezes. O HTTP tem o código <code>425 Too Early</code> (RFC 8470) para o servidor pedir que a requisição seja repetida após o handshake completo.</p></div>
+  <h3>O que mudou do TLS 1.2 para o 1.3</h3>
+  <div class="tbl"><table><thead><tr><th></th><th>TLS 1.2</th><th>TLS 1.3</th></tr></thead><tbody>
+    <tr><td>Handshake completo</td><td>2 RTT</td><td>1 RTT (0-RTT opcional na retomada)</td></tr>
+    <tr><td>Troca de chaves</td><td>RSA estático ou (EC)DHE</td><td>Só (EC)DHE efêmero: forward secrecy sempre</td></tr>
+    <tr><td>Cifras</td><td>Muitas, incluindo CBC e RC4 em configurações antigas</td><td>Só AEAD: AES-GCM, ChaCha20-Poly1305 (e AES-CCM)</td></tr>
+    <tr><td>Certificado</td><td>Enviado em claro</td><td>Enviado cifrado</td></tr>
+    <tr><td>Configuração</td><td>Fácil errar a lista de suítes</td><td>Poucas opções, todas seguras</td></tr>
+  </tbody></table></div>
+  <h3>SNI</h3>
+  <p>O SNI (Server Name Indication) informa no ClientHello qual host o cliente quer. Sem ele, um servidor com muitos sites no mesmo IP não saberia qual certificado apresentar. O SNI vai em claro, então quem observa a rede vê o nome do site, mesmo sem ver a URL. A extensão ECH (Encrypted Client Hello) cifra essa informação e está em implantação gradual.</p>
+  <h3>Versões obsoletas</h3>
+  <p>SSL 2.0, SSL 3.0, TLS 1.0 e TLS 1.1 estão obsoletos; os dois últimos foram formalmente descontinuados pela RFC 8996 e os navegadores não os aceitam mais. O mínimo hoje é TLS 1.2, com TLS 1.3 preferido. Equipamentos médicos, integrações legadas e sistemas antigos de parceiros às vezes só falam versões antigas: isso vira exceção documentada e isolada, nunca configuração padrão.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"No TLS 1.3 o cliente manda o key_share já no ClientHello, o servidor responde com o seu, envia o certificado cifrado e assina o handshake. Em 1 RTT há chaves e dados. O 0-RTT economiza mais uma volta, mas aceita replay, então só serve para requisições idempotentes."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Desligar TLS 1.0/1.1 costuma quebrar alguém: um parceiro, um equipamento, um sistema antigo. Antes de desativar, peça ao time os logs da versão negociada por cliente, comunique os afetados com prazo e mantenha exceções isoladas e com data de fim.</p></div>
+</section>
+
+<section class="chap" id="https">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>HTTPS na prática</h2>
+  <h3>Redirecionar HTTP para HTTPS</h3>
+  <p>A porta 80 fica aberta só para redirecionar, com 301 ou 308 (<a href="03-http.html#status">módulo 3</a>). O problema: a primeira requisição em HTTP ainda vai em claro e pode ser interceptada e desviada por um atacante na rede, antes do redirecionamento (ataque de SSL stripping).</p>
+  <h3>HSTS</h3>
+  <p>O cabeçalho HSTS (HTTP Strict Transport Security, RFC 6797) diz ao navegador: "pelos próximos N segundos, acesse este site só por HTTPS e não deixe o usuário ignorar erros de certificado".</p>
+  <pre><code class="http">HTTP/1.1 200 OK
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</code></pre>
+  <ul>
+    <li>O navegador só respeita o cabeçalho recebido por HTTPS.</li>
+    <li><code>includeSubDomains</code> estende a regra para todos os subdomínios. Confirme antes que todos têm HTTPS funcionando, inclusive os internos.</li>
+    <li>A primeira visita ainda fica desprotegida. A <strong>lista de preload</strong>, embutida nos navegadores, fecha essa brecha. Para entrar, o site precisa servir o cabeçalho com <code>max-age</code> de pelo menos um ano, <code>includeSubDomains</code> e <code>preload</code>.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Ativar preload sem inventário de subdomínios. Sair da lista leva meses, porque depende de novas versões dos navegadores. Um subdomínio interno sem HTTPS fica inacessível nos navegadores durante todo esse tempo.</p></div>
+  <h3>Mixed content</h3>
+  <p>Uma página HTTPS que carrega script, CSS, imagem ou chamada de API por <code>http://</code> tem conteúdo misto. Navegadores bloqueiam recursos ativos (scripts, iframes, fetch) e atualizam ou bloqueiam os passivos (imagens), conforme o navegador. A correção é usar <code>https://</code> ou URLs relativas. A diretiva CSP <code>upgrade-insecure-requests</code> ajuda na migração e é tratada no <a href="09-seguranca-web.html">módulo 9</a>.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Redireciono a porta 80 para HTTPS e envio HSTS para o navegador não tentar mais HTTP. O preload cobre até a primeira visita, mas é difícil de desfazer, então só depois de garantir HTTPS em todos os subdomínios."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>HSTS com preload é uma decisão de mão única para o domínio inteiro. Ela precisa de dono, inventário de subdomínios e aprovação de quem cuida de infraestrutura, não só do time do site.</p></div>
+</section>
+
+<section class="chap" id="ciclo">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Ciclo de vida dos certificados</h2>
+  <h3>Let's Encrypt e ACME</h3>
+  <p>O Let's Encrypt é uma CA gratuita que emite certificados DV pelo protocolo <strong>ACME</strong> (RFC 8555). Um cliente ACME (certbot, o próprio proxy como Caddy ou Traefik, o cert-manager no Kubernetes, ou serviços gerenciados de nuvem) prova o controle do domínio e recebe o certificado, sem intervenção humana.</p>
+  <div class="tbl"><table><thead><tr><th>Desafio</th><th>Como prova o controle</th><th>Quando usar</th></tr></thead><tbody>
+    <tr><td><code>HTTP-01</code></td><td>Publica um arquivo em <code>http://dominio/.well-known/acme-challenge/</code></td><td>Servidor público na porta 80</td></tr>
+    <tr><td><code>DNS-01</code></td><td>Cria um registro TXT <code>_acme-challenge</code> no DNS</td><td>Wildcard, servidores internos, vários balanceadores</td></tr>
+    <tr><td><code>TLS-ALPN-01</code></td><td>Responde um certificado especial na porta 443</td><td>Quando só a 443 está disponível</td></tr>
+  </tbody></table></div>
+  <p>Os certificados do Let's Encrypt valem 90 dias, e a recomendação é renovar com uns 30 dias de folga. A validade curta é proposital: força a automação e limita o estrago de uma chave vazada. A indústria caminha na mesma direção: o CA/Browser Forum aprovou uma redução gradual da validade máxima dos certificados públicos, que chega a 47 dias em 2029. Renovar manualmente deixará de ser viável.</p>
+  <pre><code class="sh">sudo certbot renew --dry-run   # testa a renovação sem emitir de verdade
+systemctl list-timers | grep certbot   # confere se o agendamento existe</code></pre>
+  <h3>Por que certificados derrubam produção</h3>
+  <p>"Certificado expirado derrubou o sistema" é um dos incidentes mais evitáveis e mais repetidos do mercado. A causa raiz raramente é técnica. Os padrões são sempre os mesmos:</p>
+  <ul>
+    <li>Ninguém sabia que o certificado existia (instalado à mão anos atrás, num balanceador esquecido, num appliance).</li>
+    <li>O alerta foi para o e-mail de alguém que saiu da empresa.</li>
+    <li>A renovação automática falhava em silêncio há semanas (DNS mudou, porta 80 foi fechada, credencial da API de DNS expirou).</li>
+    <li>O certificado foi renovado no servidor, mas o serviço não recarregou, ou havia outra cópia em outro lugar.</li>
+    <li>Um certificado de <strong>cliente</strong> (mTLS com operadora, com órgão público) ou uma intermediária vencida, que ninguém monitorava.</li>
+  </ul>
+  <div class="note mgr"><b>Para gestores: o plano contra expiração</b>
+    <ul>
+      <li><strong>Inventário.</strong> Lista de todos os certificados: onde está instalado, domínios, emissor, data de expiração, como renova, dono. Os logs públicos de Certificate Transparency (consultáveis em sites como o crt.sh) mostram todos os certificados públicos emitidos para seus domínios e ajudam a achar os esquecidos.</li>
+      <li><strong>Automação.</strong> ACME ou certificado gerenciado pela nuvem por padrão. Exceções manuais são documentadas, com data e responsável.</li>
+      <li><strong>Monitoramento externo.</strong> Uma sonda que conecta no endpoint real e lê a data de expiração do certificado servido, com alertas escalonados (por exemplo 30, 14 e 7 dias) para um canal da equipe, não para uma pessoa.</li>
+      <li><strong>Dono.</strong> Cada certificado tem um time responsável. "TI" não é dono.</li>
+      <li><strong>Runbook.</strong> Passo a passo para emitir e instalar um certificado em emergência, testado antes de precisar.</li>
+      <li><strong>Pós-incidente sem culpados.</strong> Se expirou, a pergunta é "por que o processo permitiu?", e a ação é corrigir o processo.</li>
+    </ul>
+  </div>
+  <div class="note iv"><b>Na entrevista</b><p>"Automatizo emissão e renovação com ACME, monitoro de fora o certificado efetivamente servido e mantenho inventário com dono. Expiração de certificado é falha de processo, não de tecnologia."</p></div>
+</section>
+
+<section class="chap" id="arquitetura">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Terminação TLS, mTLS, pinning e inspeção</h2>
+  <h3>Onde o TLS termina</h3>
+  <p>"Terminar" o TLS é decifrar. Em arquiteturas comuns isso acontece no load balancer, no proxy reverso ou na CDN, que guarda o certificado público. A pergunta é o que acontece daí para dentro.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 210" role="img" aria-label="Duas arquiteturas: TLS termina no balanceador com HTTP em claro até a aplicação, ou TLS também entre balanceador e aplicação">
+      <defs><marker id="ah-term" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="10" y="18">A. TLS termina no balanceador</text>
+      <rect class="box-a" x="10" y="28" width="130" height="36" rx="5"/><text x="75" y="51" text-anchor="middle">Navegador</text>
+      <rect class="box-m" x="270" y="28" width="150" height="36" rx="5"/><text x="345" y="51" text-anchor="middle">Load balancer</text>
+      <rect class="box" x="540" y="28" width="130" height="36" rx="5"/><text x="605" y="51" text-anchor="middle">Aplicação</text>
+      <line class="ln-a" x1="140" y1="46" x2="268" y2="46" marker-end="url(#ah-term)"/>
+      <text class="lbl" x="205" y="40" text-anchor="middle">HTTPS</text>
+      <line class="ln-b" x1="420" y1="46" x2="538" y2="46" stroke-dasharray="5 4" marker-end="url(#ah-term)"/>
+      <text class="lbl" x="480" y="40" text-anchor="middle">HTTP em claro</text>
+      <text class="lbl" x="345" y="82" text-anchor="middle">decifra: vê tudo</text>
+
+      <text class="ttl" x="10" y="114">B. TLS até o back-end</text>
+      <rect class="box-a" x="10" y="124" width="130" height="36" rx="5"/><text x="75" y="147" text-anchor="middle">Navegador</text>
+      <rect class="box-m" x="270" y="124" width="150" height="36" rx="5"/><text x="345" y="147" text-anchor="middle">Load balancer</text>
+      <rect class="box" x="540" y="124" width="130" height="36" rx="5"/><text x="605" y="147" text-anchor="middle">Aplicação</text>
+      <line class="ln-a" x1="140" y1="142" x2="268" y2="142" marker-end="url(#ah-term)"/>
+      <text class="lbl" x="205" y="136" text-anchor="middle">HTTPS</text>
+      <line class="ln-a" x1="420" y1="142" x2="538" y2="142" marker-end="url(#ah-term)"/>
+      <text class="lbl" x="480" y="136" text-anchor="middle">TLS ou mTLS</text>
+      <text class="lbl" x="345" y="178" text-anchor="middle">decifra, roteia, cifra de novo</text>
+      <text class="lbl" x="10" y="202">Em A, qualquer um com acesso à rede interna lê o tráfego. Em B, só as pontas e o balanceador.</text>
+    </svg>
+    <figcaption>Terminar no balanceador simplifica certificados e permite roteamento por URL. Cifrar também o trecho interno protege contra quem já está dentro da rede.</figcaption>
+  </figure>
+  <p>A tendência é não confiar na rede interna (o princípio de zero trust, tratado no <a href="10-ciberseguranca.html">módulo 10</a>). Para dados de saúde, cifrar o trecho interno é a escolha defensável. Service meshes (como Istio ou Linkerd) automatizam isso com mTLS entre serviços. Quando o TLS termina no balanceador, a aplicação descobre o esquema original por <code>X-Forwarded-Proto</code> (<a href="03-http.html#ferramentas">módulo 3</a>).</p>
+  <h3>mTLS</h3>
+  <p>No TLS comum só o servidor apresenta certificado. No <strong>mTLS</strong> (mutual TLS) o servidor pede e valida também um certificado do cliente. Usos típicos: comunicação entre serviços, integrações B2B, APIs de parceiros. No Brasil, web services do governo, como os da NF-e, autenticam o cliente com certificado ICP-Brasil.</p>
+  <p>O mTLS autentica a <em>máquina ou sistema</em>, não o usuário final. A autorização por usuário continua sendo assunto do <a href="07-autenticacao.html">módulo 7</a>.</p>
+  <h3>Certificate pinning</h3>
+  <p>Pinning é o cliente aceitar só um certificado ou chave pública específicos, além da validação normal. Já foi recomendado; hoje está em desuso:</p>
+  <ul>
+    <li>O HPKP, versão web via cabeçalho, foi removido dos navegadores porque um erro de configuração bloqueava o site para os usuários sem volta rápida.</li>
+    <li>Em apps móveis, trocar o certificado sem atualizar o app quebra o app em produção, e nem todo usuário atualiza.</li>
+    <li>Validade cada vez mais curta e rotação automática tornam o pin frágil.</li>
+  </ul>
+  <p>Quem ainda usa costuma fixar a chave de uma CA ou ter chaves reserva. Para a maioria dos sistemas, a validação padrão mais Certificate Transparency é o caminho.</p>
+  <h3>Inspeção TLS corporativa</h3>
+  <p>Muitas empresas, inclusive hospitais, colocam um proxy que intercepta o HTTPS para filtrar malware e vazamento de dados. Ele termina o TLS do usuário com um certificado gerado na hora, assinado por uma <strong>CA corporativa</strong> instalada nas máquinas gerenciadas, e abre outra conexão TLS até o site real.</p>
+  <ul>
+    <li>No navegador da empresa tudo parece normal. O certificado mostrado é emitido pela CA corporativa.</li>
+    <li>Ferramentas com trust store próprio (Java, Node.js, Python, Docker, Git) falham com "unable to get local issuer certificate" ou "PKIX path building failed", porque não conhecem a CA corporativa.</li>
+    <li>mTLS e pinning quebram, já que o proxy não tem o certificado do cliente nem a chave esperada.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Resolver o erro de certificado com <code>curl -k</code>, <code>verify=False</code> ou <code>NODE_TLS_REJECT_UNAUTHORIZED=0</code>, e o atalho ir para produção. Isso desliga a autenticidade: qualquer man-in-the-middle passa. O certo é adicionar a CA corporativa ao trust store da ferramenta.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Terminar TLS no balanceador é comum, mas com dados sensíveis cifro também até o back-end, muitas vezes com mTLS. Pinning caiu em desuso por risco operacional. Inspeção corporativa funciona porque a empresa instala uma CA própria nas máquinas."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Proíba por política e verifique na revisão de código qualquer desativação de verificação de certificado. Um grep por <code>verify=False</code>, <code>-k</code> e <code>InsecureSkipVerify</code> no repositório é um bom indicador de saúde. E mantenha documentado, para o time, como instalar a CA corporativa em cada ferramenta: isso evita os atalhos.</p></div>
+</section>
+
+<section class="chap" id="diagnostico">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Erros comuns, ferramentas e o que o TLS não protege</h2>
+  <h3>Erros mais comuns</h3>
+  <div class="tbl"><table><thead><tr><th>Sintoma</th><th>Causa provável</th><th>Correção</th></tr></thead><tbody>
+    <tr><td><code>NET::ERR_CERT_DATE_INVALID</code>, "certificate has expired"</td><td>Certificado vencido, ou relógio errado no cliente</td><td>Renovar e recarregar o serviço; conferir NTP no cliente</td></tr>
+    <tr><td><code>ERR_CERT_COMMON_NAME_INVALID</code>, "no alternative certificate subject name matches"</td><td>Nome acessado fora do SAN (ex.: <code>exemplo.com.br</code> sem o <code>www</code>, ou acesso por IP)</td><td>Emitir com todos os nomes no SAN</td></tr>
+    <tr><td>"unable to get local issuer certificate", "PKIX path building failed"</td><td>Cadeia incompleta no servidor ou CA ausente no trust store do cliente</td><td>Servir a cadeia completa (fullchain); adicionar a CA ao trust store</td></tr>
+    <tr><td><code>ERR_CERT_AUTHORITY_INVALID</code></td><td>Autoassinado, CA interna não distribuída, ou interceptação</td><td>Usar CA confiável ou distribuir a CA interna</td></tr>
+    <tr><td>"protocol version" / "handshake failure"</td><td>Cliente e servidor sem versão ou cifra em comum</td><td>Atualizar o lado antigo; revisar a configuração</td></tr>
+  </tbody></table></div>
+  <h3>openssl s_client</h3>
+  <div class="tabs">
+    <pre data-label="conexão"><code class="sh">openssl s_client -connect portal.exemplo.com.br:443 -servername portal.exemplo.com.br -showcerts &lt;/dev/null
+# saída ilustrativa, resumida
+# Certificate chain
+#  0 s:CN = portal.exemplo.com.br
+#    i:C = US, O = Let's Encrypt, CN = R11
+#  1 s:C = US, O = Let's Encrypt, CN = R11
+#    i:C = US, O = Internet Security Research Group, CN = ISRG Root X1
+# ...
+# New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+# Verify return code: 0 (ok)</code></pre>
+    <pre data-label="validade e nomes"><code class="sh">openssl s_client -connect portal.exemplo.com.br:443 -servername portal.exemplo.com.br &lt;/dev/null 2&gt;/dev/null \
+  | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+# saída ilustrativa
+# subject=CN = portal.exemplo.com.br
+# issuer=C = US, O = Let's Encrypt, CN = R11
+# notBefore=Oct  1 08:12:44 2026 GMT
+# notAfter=Dec 30 08:12:43 2026 GMT
+# X509v3 Subject Alternative Name:
+#     DNS:portal.exemplo.com.br</code></pre>
+    <pre data-label="versão"><code class="sh">openssl s_client -connect legado.exemplo.com.br:443 -tls1_2 &lt;/dev/null   # força TLS 1.2
+curl -sv https://portal.exemplo.com.br/ -o /dev/null 2&gt;&amp;1 | grep -E "SSL connection|expire date|subject:"</code></pre>
+  </div>
+  <p>No s_client, cada certificado da cadeia aparece com <code>s:</code> (sujeito) e <code>i:</code> (emissor). O emissor de um elo deve ser o sujeito do próximo. Se a lista tem só o elemento 0 e o emissor não é uma raiz, a cadeia está incompleta. Sempre passe <code>-servername</code>: sem SNI, o servidor pode devolver um certificado padrão diferente.</p>
+  <h3>SSL Labs e afins</h3>
+  <p>O SSL Server Test, do Qualys SSL Labs, analisa um endpoint público: versões, cifras, cadeia, HSTS, vulnerabilidades conhecidas, e dá uma nota. É útil como verificação periódica e como evidência em auditoria. Para endpoints internos, ferramentas de linha de comando como <code>testssl.sh</code> fazem análise parecida.</p>
+  <h3>O que o TLS não protege: dados em repouso</h3>
+  <p>Ao chegar no servidor, o dado sai do túnel e é gravado em banco, arquivos, filas, logs e backups. Proteger esses lugares é outra camada:</p>
+  <ul>
+    <li><strong>Criptografia de disco e de banco</strong> (por exemplo, a cifragem de volumes da nuvem ou o TDE do banco): protege contra roubo do disco ou do backup, não contra quem consulta o banco com credencial válida.</li>
+    <li><strong>Criptografia de campo</strong> na aplicação para dados muito sensíveis, com chaves num KMS (serviço de gerenciamento de chaves) e não no código.</li>
+    <li><strong>Senhas</strong> não são cifradas: recebem hash lento e com salt, como bcrypt ou Argon2. O tema completo está no <a href="07-autenticacao.html">módulo 7</a>.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Para diagnosticar TLS uso openssl s_client com -servername e -showcerts: vejo a cadeia, a validade, o SAN e a versão negociada. Para dados em repouso, criptografia de disco e de campo com chaves em KMS; senha recebe hash lento, não criptografia."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Gestão de chaves é o ponto fraco mais comum: chave de criptografia no mesmo servidor do dado, ou no repositório. Pergunte onde ficam as chaves, quem tem acesso e como seria a rotação. A resposta revela a maturidade do time.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>TLS</dt><dd>Protocolo que cria um canal cifrado e autenticado sobre o transporte. Sucessor do SSL.</dd></div>
+    <div><dt>Cifra simétrica</dt><dd>Mesma chave para cifrar e decifrar (AES, ChaCha20).</dd></div>
+    <div><dt>Cifra assimétrica</dt><dd>Par de chaves pública e privada (RSA, ECC).</dd></div>
+    <div><dt>AEAD</dt><dd>Cifra autenticada: cifra e detecta alteração ao mesmo tempo (AES-GCM).</dd></div>
+    <div><dt>Hash</dt><dd>Resumo de tamanho fixo, sem chave e irreversível (SHA-256).</dd></div>
+    <div><dt>HMAC</dt><dd>Hash combinado com segredo compartilhado; prova integridade e origem.</dd></div>
+    <div><dt>Assinatura digital</dt><dd>Feita com a chave privada e verificada com a pública.</dd></div>
+    <div><dt>ECDHE</dt><dd>Diffie-Hellman efêmero sobre curvas elípticas; combina a chave da sessão.</dd></div>
+    <div><dt>Forward secrecy</dt><dd>Vazar a chave privada não permite decifrar sessões antigas gravadas.</dd></div>
+    <div><dt>Certificado X.509</dt><dd>Documento assinado por uma CA que liga uma chave pública a nomes.</dd></div>
+    <div><dt>SAN</dt><dd>Subject Alternative Name: lista de nomes cobertos pelo certificado.</dd></div>
+    <div><dt>CA</dt><dd>Autoridade certificadora que assina certificados.</dd></div>
+    <div><dt>Trust store</dt><dd>Conjunto de raízes em que o sistema, navegador ou runtime confia.</dd></div>
+    <div><dt>Intermediária</dt><dd>Certificado de CA entre a raiz e a folha; o servidor deve enviá-lo.</dd></div>
+    <div><dt>SNI</dt><dd>Nome do site enviado no ClientHello para o servidor escolher o certificado.</dd></div>
+    <div><dt>ALPN</dt><dd>Extensão do handshake que negocia o protocolo de aplicação (h2, http/1.1).</dd></div>
+    <div><dt>0-RTT</dt><dd>Dados enviados no primeiro pacote de uma retomada; sujeitos a replay.</dd></div>
+    <div><dt>HSTS</dt><dd>Cabeçalho que obriga o navegador a usar só HTTPS no domínio.</dd></div>
+    <div><dt>ACME</dt><dd>Protocolo de emissão e renovação automática de certificados.</dd></div>
+    <div><dt>mTLS</dt><dd>TLS em que o cliente também apresenta certificado.</dd></div>
+    <div><dt>Certificate Transparency</dt><dd>Logs públicos com todos os certificados emitidos por CAs confiáveis.</dd></div>
+    <div><dt>KMS</dt><dd>Serviço que guarda e controla o uso de chaves criptográficas.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e troubleshooting</h2>
+  <h3>O certificado expirou às 3h da manhã</h3>
+  <ol class="seq">
+    <li><div><strong>Confirme.</strong> <code>openssl s_client</code> no endpoint público mostra <code>notAfter</code> no passado. Verifique se é a folha, uma intermediária ou um certificado de cliente.</div></li>
+    <li><div><strong>Restaure.</strong> Siga o runbook: emita (ACME ou CA contratada), instale com a cadeia completa e <strong>recarregue</strong> o serviço. Confira de fora, não no servidor.</div></li>
+    <li><div><strong>Procure cópias.</strong> O mesmo certificado pode estar em outros balanceadores, em appliances, num app móvel com pinning ou em parceiros que o fixaram.</div></li>
+    <li><div><strong>Comunique.</strong> Status para áreas clínicas e atendimento: o que caiu, desde quando e previsão.</div></li>
+    <li><div><strong>Pós-incidente.</strong> Por que o alerta não chegou ou não foi ouvido? Saem como ações: inventário, automação, alerta para canal com plantão e dono definido.</div></li>
+  </ol>
+  <h3>"Funciona no navegador, mas a integração em Java falha"</h3>
+  <p>Quase sempre é cadeia incompleta: o navegador completou a cadeia sozinho e o Java não. Confirme com <code>openssl s_client -showcerts</code>; corrija configurando o servidor com o arquivo de cadeia completa (fullchain), e não importando o certificado no trust store do Java.</p>
+  <h3>"Na rede da empresa o npm install falha com erro de certificado"</h3>
+  <p>Inspeção TLS corporativa. A CA do proxy não está no trust store do Node. Configure a CA corporativa (por exemplo, com a variável <code>NODE_EXTRA_CA_CERTS</code>) em vez de desativar a verificação.</p>
+  <h3>Só alguns usuários veem erro de certificado</h3>
+  <p>Investigue o que esses usuários têm em comum: relógio do computador errado, sistema operacional antigo sem a raiz atual no trust store, antivírus que intercepta HTTPS, ou um dos servidores do pool com certificado diferente (renovado em uns e não em outros).</p>
+  <h3>Depois do preload de HSTS, a intranet sumiu</h3>
+  <p>O <code>includeSubDomains</code> passou a valer para <code>intranet.exemplo.com.br</code>, que só respondia em HTTP. Correção rápida: colocar HTTPS no subdomínio. Sair da lista de preload leva meses e não resolve a tempo.</p>
+  <div class="note mgr"><b>Para gestores</b><p>Incidentes de TLS são curtos de corrigir e longos de explicar. Meça "tempo até o primeiro alerta" além de "tempo até a correção": se quem avisou foi o usuário, o monitoramento falhou. Inclua certificados de cliente e de integrações no mesmo inventário, porque são os que mais surpreendem.</p></div>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre criptografia simétrica e assimétrica, e como o TLS usa cada uma?</span></summary><div class="ans"><p>Simétrica usa uma chave compartilhada e é rápida; assimétrica usa par pública/privada e é lenta. O TLS usa assimétrica no handshake para autenticar e combinar a chave, e simétrica (AES-GCM, ChaCha20) para cifrar os dados.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Hash é criptografia?</span></summary><div class="ans"><p>Não. Criptografia tem chave e é reversível por quem a possui. Hash não tem chave e é unidirecional. Serve para integridade e, na versão lenta e com salt, para armazenar senhas.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Qual a diferença entre HMAC e assinatura digital?</span></summary><div class="ans"><p>HMAC usa um segredo compartilhado: só quem tem o segredo gera e confere. Assinatura usa chave privada para assinar e pública para verificar, então qualquer um valida e o signatário não pode negar a autoria.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>O que é forward secrecy e como o TLS 1.3 garante?</span></summary><div class="ans"><p>É a garantia de que vazar a chave privada do servidor não permite decifrar sessões antigas gravadas. O TLS 1.3 só aceita troca de chaves efêmera (ECDHE): cada sessão tem segredos novos, descartados no fim.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Descreva o handshake TLS 1.3.</span></summary><div class="ans"><p>O cliente envia ClientHello com versões, cifras, key_share e SNI. O servidor responde ServerHello com seu key_share; daí em diante tudo vai cifrado: EncryptedExtensions, Certificate, CertificateVerify (assinatura do handshake) e Finished. O cliente confere, envia Finished e já manda a requisição. Uma ida e volta.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>O que é 0-RTT e qual o risco?</span></summary><div class="ans"><p>Na retomada, o cliente envia dados já no primeiro pacote usando uma chave da sessão anterior. O risco é replay: o pacote pode ser reenviado por um atacante. Só se aceita para requisições idempotentes.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como o navegador decide que um certificado é confiável?</span></summary><div class="ans"><p>Monta a cadeia da folha até uma raiz do trust store, verifica a assinatura de cada elo, a validade, se o nome acessado está no SAN, as restrições de uso e o status de revogação, conforme a política do navegador.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Por que o site funciona no Chrome e falha no curl com "unable to get local issuer certificate"?</span></summary><div class="ans"><p>Provavelmente o servidor não envia a intermediária. O navegador a obtém por conta própria; o curl não. A correção é configurar o servidor com a cadeia completa.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Para que serve o SNI e o que ele revela?</span></summary><div class="ans"><p>Indica no ClientHello qual site o cliente quer, para o servidor escolher o certificado certo quando hospeda vários sites no mesmo IP. Vai em claro, então revela o nome do site a quem observa a rede. O ECH resolve isso e está em implantação.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>O que é HSTS e qual o risco do preload?</span></summary><div class="ans"><p>É o cabeçalho que obriga o navegador a usar só HTTPS no domínio por um período, impedindo SSL stripping. O preload embute o domínio nos navegadores e protege até a primeira visita, mas é difícil de desfazer e quebra qualquer subdomínio sem HTTPS.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Onde você terminaria o TLS numa aplicação com dados de saúde?</span></summary><div class="ans"><p>No balanceador ou CDN para o tráfego público, e com TLS também entre balanceador e aplicação e entre serviços, de preferência mTLS, para não depender da rede interna ser confiável.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que é mTLS e quando usar?</span></summary><div class="ans"><p>TLS em que o cliente também apresenta certificado e o servidor o valida. Usado entre serviços, em integrações B2B e em APIs de parceiros. Autentica sistemas, não usuários finais.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Por que certificate pinning caiu em desuso?</span></summary><div class="ans"><p>Porque transforma a troca de certificado em risco de indisponibilidade: o HPKP podia bloquear um site e foi removido dos navegadores, e em apps móveis a rotação exige atualização do app. Validade curta e rotação automática tornam o pin ainda mais frágil.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como uma empresa consegue inspecionar HTTPS dos funcionários?</span></summary><div class="ans"><p>Instala uma CA própria nas máquinas gerenciadas e usa um proxy que termina o TLS com certificados gerados na hora por essa CA, abrindo outra conexão até o site real. Ferramentas com trust store próprio precisam receber essa CA.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Gestão: um certificado expirado derrubou o portal. O que muda no seu time depois disso?</span></summary><div class="ans"><p>Inventário de todos os certificados com dono, automação ACME como padrão, monitoramento externo do certificado servido com alertas para canal de plantão em 30, 14 e 7 dias, runbook de emergência testado e pós-incidente sem culpados focado em processo.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Gestão: um desenvolvedor colocou verify=False para "destravar" uma integração. Como você reage?</span></summary><div class="ans"><p>Trato como defeito de segurança: remove-se antes de produção e corrige-se a causa (cadeia incompleta do parceiro ou CA ausente no trust store). Depois, garanto a orientação documentada para o problema recorrente e uma checagem automática no pipeline que barre esse padrão.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Gestão: um parceiro antigo só fala TLS 1.0. O que você faz?</span></summary><div class="ans"><p>Não rebaixo a configuração geral. Isolo a exceção num endpoint ou proxy dedicado, registro o risco com prazo e dono, comunico ao parceiro uma data de corte e acompanho. Se o dado for sensível, avalio com segurança e jurídico se a exceção é aceitável.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>HTTPS protege o banco de dados?</span></summary><div class="ans"><p>Não. Protege o trânsito. Em repouso valem criptografia de disco e de banco, criptografia de campo com chaves num KMS, controle de acesso e backups cifrados. Senhas recebem hash lento com salt.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Web · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-web-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

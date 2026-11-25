@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 07: Versionamento e governança</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 07 de 10 · Versionamento e governança</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html" aria-current="page"><span class="n">07</span>Versionamento e governança</a></li>
+    <li class="sub"><ol>
+      <li><a href="#apis-para-sempre"><span class="n">1</span>APIs são para sempre (ou quase)</a></li>
+      <li><a href="#breaking-changes"><span class="n">2</span>O que é (e o que não é) breaking change</a></li>
+      <li><a href="#estrategias-versionamento"><span class="n">3</span>Estratégias de versionamento</a></li>
+      <li><a href="#evoluir-sem-quebrar"><span class="n">4</span>Evoluir sem quebrar</a></li>
+      <li><a href="#ciclo-de-vida"><span class="n">5</span>Ciclo de vida e depreciação</a></li>
+      <li><a href="#gateway-management"><span class="n">6</span>API gateway e API management</a></li>
+      <li><a href="#catalogo-style-guide"><span class="n">7</span>Inventário, catálogo e style guide</a></li>
+      <li><a href="#api-produto-governanca"><span class="n">8</span>API como produto e governança</a></li>
+      <li><a href="#cenarios"><span class="n">9</span>Cenários práticos</a></li>
+      <li><a href="#glossario"><span class="n">10</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 07 · <span class="lvl l3">Avançado</span></div>
+  <h1>Versionamento e governança</h1>
+  <p class="lede">Como evoluir, depreciar e governar APIs ao longo dos anos sem quebrar quem depende delas: versionamento, ciclo de vida, gateway, catálogo, style guide e API como produto.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar por que uma API publicada vira compromisso permanente (lei de Hyrum) e classificar qualquer mudança como breaking ou não</li>
+    <li>Escolher entre versionamento na URI, em cabeçalho, em media type ou por data, defendendo o trade-off</li>
+    <li>Evoluir uma API sem quebrar consumidores: expand/contract, tolerant reader, campos aditivos e feature flags</li>
+    <li>Conduzir depreciação e desligamento com Deprecation, Sunset, métricas por consumidor e política de suporte</li>
+    <li>Definir o papel do API gateway, do catálogo, do style guide e do lint automatizado, sem criar burocracia</li>
+    <li>Tratar API como produto e escolher entre governança centralizada e federada</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="apis-para-sempre">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>APIs são para sempre (ou quase)</h2>
+  <p>Uma API pública, ou usada por qualquer time que você não controla, é um <strong>contrato com terceiros</strong>. Código interno você refatora num PR; uma API publicada você só consegue mudar com a cooperação de quem a consome, e essas pessoas têm outras prioridades, outros sprints e às vezes nem trabalham mais na empresa parceira. É por isso que mudar uma API é mais caro do que construí-la.</p>
+  <h3>Lei de Hyrum</h3>
+  <p>A formulação popular diz: <em>com um número suficiente de usuários de uma API, não importa o que você prometeu no contrato; alguém vai depender de cada comportamento observável do sistema</em>. Ordem dos campos no JSON, formato exato de uma mensagem de erro, o fato de a lista vir sempre ordenada por data, o tempo de resposta (alguém faz um <code>sleep</code> calibrado nele), o tamanho padrão de página. Nada disso estava na documentação, tudo isso virou contrato de fato.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Comportamento não documentado</th><th>Como alguém passa a depender dele</th><th>Quando quebra</th></tr></thead>
+    <tbody>
+      <tr><td>Lista de agendamentos vem ordenada por <code>data</code></td><td>Tela do parceiro exibe na ordem recebida, sem reordenar</td><td>Você adiciona um índice novo e o planner passa a devolver por <code>id</code></td></tr>
+      <tr><td>Mensagem de erro <code>"CPF inválido"</code></td><td>Integrador faz <code>if (msg.includes("CPF"))</code> para decidir o fluxo</td><td>Você traduz ou reescreve a mensagem</td></tr>
+      <tr><td>Campo <code>valor</code> sempre com 2 casas</td><td>Parser de convênio usa regex <code>\d+\.\d{2}</code></td><td>Serializador novo emite <code>150.5</code></td></tr>
+      <tr><td>Resposta em ~300 ms</td><td>Cliente assume que a operação é "quase síncrona" e não trata timeout</td><td>Você move o processamento para fila e responde 202</td></tr>
+      <tr><td>IDs numéricos sequenciais</td><td>Sistema legado guarda como <code>int</code></td><td>Você migra para UUID</td></tr>
+    </tbody></table></div>
+  <h3>O que isso muda no jeito de trabalhar</h3>
+  <ul>
+    <li><strong>Publicar é decisão de produto</strong>, não de deploy. O que entra na resposta de hoje é o que você sustenta por anos.</li>
+    <li><strong>Seja conservador no que expõe.</strong> Um campo que não existe nunca quebra. Retornar o objeto inteiro do banco "porque é fácil" transforma cada coluna em contrato.</li>
+    <li><strong>Deixe explícito o que é garantido.</strong> Documente "a ordem não é garantida" e, se possível, embaralhe de propósito em ambientes de teste para que ninguém dependa dela.</li>
+    <li><strong>Prefira códigos de erro estáveis</strong> (<code>"codigo": "CPF_INVALIDO"</code>) a mensagens. A mensagem é para humanos, o código é para máquinas (erros em problem+json, módulo 01 desta trilha).</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Tudo que sai pela rede e é observável será usado. Exponha o mínimo, documente o que é garantido e trate o resto como "pode mudar sem aviso", dizendo isso por escrito.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que versionamento é difícil?" Resposta sênior: porque o custo de mudar não está no seu código, está nos consumidores que você não controla. Cite a lei de Hyrum: qualquer comportamento observável vira contrato de fato, então o trabalho é reduzir a superfície exposta e planejar a evolução desde o primeiro dia.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pergunte em toda revisão de design: "quem consome isso hoje? Quem vai consumir? Se precisarmos mudar daqui a 2 anos, quanto custa?" Um endpoint que nasce sem dono e sem consumidores mapeados é dívida técnica com juros altos. Cobre do time o hábito de <strong>expor menos</strong>: DTOs explícitos, nunca entidades do banco.</p></div>
+  <p>Este módulo continua o que foi visto sobre versionamento no <code>08-apis.html</code> da trilha web (noções de <code>/v1</code>) e sobre contratos no módulo 02 desta trilha. Aqui o foco é a operação: como evoluir, comunicar, desligar e governar um conjunto de APIs ao longo dos anos.</p>
+</section>
+
+<section class="chap" id="breaking-changes">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O que é (e o que não é) breaking change</h2>
+  <p>Mudança <strong>breaking</strong> é a que pode fazer um consumidor correto, escrito conforme o contrato anterior, parar de funcionar sem alterar o código dele. A pergunta de teste é sempre: <em>um cliente que funcionava ontem continua funcionando hoje, sem redeploy?</em> O ponto de vista muda entre <strong>requisição</strong> (o que o cliente envia) e <strong>resposta</strong> (o que ele recebe): o que é seguro numa direção costuma ser perigoso na outra.</p>
+  <h3>Tabela de classificação</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Mudança</th><th>Breaking?</th><th>Por quê / como fazer com segurança</th></tr></thead>
+    <tbody>
+      <tr><td>Remover campo da resposta</td><td><strong>Sim</strong></td><td>Cliente que lê o campo recebe <code>undefined</code>. Primeiro deprecie, meça uso, depois remova na próxima versão.</td></tr>
+      <tr><td>Renomear campo (resposta ou requisição)</td><td><strong>Sim</strong></td><td>É remover + adicionar. Entregue os dois durante a transição (expand/contract).</td></tr>
+      <tr><td>Mudar o tipo de um campo (<code>"id": 7</code> para <code>"id": "7"</code>)</td><td><strong>Sim</strong></td><td>Quebra parsers tipados (Java, C#, Go). Crie um campo novo.</td></tr>
+      <tr><td>Mudar formato (data <code>2026-03-01</code> para <code>01/03/2026</code>; <code>150.50</code> para <code>150.5</code>)</td><td><strong>Sim</strong></td><td>Mesmo tipo JSON, outro contrato. Formato é parte do tipo.</td></tr>
+      <tr><td>Adicionar campo opcional na resposta</td><td>Não*</td><td>*Só se o contrato já exigia tolerant reader (seção 4). Clientes com desserialização estrita falham em campo desconhecido.</td></tr>
+      <tr><td>Adicionar campo <strong>opcional</strong> na requisição</td><td>Não</td><td>Quem não envia continua funcionando. O default precisa reproduzir o comportamento antigo.</td></tr>
+      <tr><td>Adicionar campo <strong>obrigatório</strong> na requisição</td><td><strong>Sim</strong></td><td>Todo cliente antigo passa a receber 400/422.</td></tr>
+      <tr><td>Tornar opcional em obrigatório (requisição)</td><td><strong>Sim</strong></td><td>Idem. Se precisar, aceite ausência com default por uma versão inteira.</td></tr>
+      <tr><td>Tornar obrigatório em opcional (requisição)</td><td>Não</td><td>Afrouxar entrada é seguro.</td></tr>
+      <tr><td>Campo da <strong>resposta</strong> passar a poder ser <code>null</code> ou ausente</td><td><strong>Sim</strong></td><td>Cliente que assumia sempre presente quebra com NPE. Afrouxar saída é perigoso, apertar saída é seguro.</td></tr>
+      <tr><td>Estreitar validação de entrada (aceitava 200 caracteres, agora 100)</td><td><strong>Sim</strong></td><td>Requisições antes válidas viram 422. Ampliar o limite é seguro.</td></tr>
+      <tr><td>Adicionar valor a um <strong>enum</strong> na resposta (<code>status: "REAGENDADO"</code>)</td><td><strong>Sim, na prática</strong></td><td>Cliente com <code>switch</code> exaustivo cai no <code>default</code> ou lança erro. Só é seguro se o contrato disser "enums são abertos, trate desconhecido".</td></tr>
+      <tr><td>Adicionar valor a enum na <strong>requisição</strong></td><td>Não</td><td>Quem não usa o valor novo não é afetado.</td></tr>
+      <tr><td>Remover valor de enum</td><td><strong>Sim</strong></td><td>Requisições com o valor passam a falhar.</td></tr>
+      <tr><td>Mudar status code (<code>200</code> para <code>201</code>, <code>404</code> para <code>204</code>)</td><td><strong>Sim</strong></td><td>Clientes comparam <code>== 200</code>. Até 200 para 201 pega gente.</td></tr>
+      <tr><td>Passar a devolver 429 / 503 onde antes nunca havia</td><td>Depende</td><td>Rate limit novo é breaking para quem faz rajada. Anuncie e publique os limites antes de aplicar.</td></tr>
+      <tr><td>Mudar ordenação padrão</td><td><strong>Sim</strong> (Hyrum)</td><td>Não estava no contrato, mas todo mundo depende. Mantenha o default e ofereça <code>?ordenar=</code>.</td></tr>
+      <tr><td>Mudar tamanho padrão de página</td><td><strong>Sim</strong> (Hyrum)</td><td>Cliente que lia "só a primeira página" passa a receber mais (ou menos) dados.</td></tr>
+      <tr><td>Mudar paginação de offset para cursor</td><td><strong>Sim</strong></td><td>Parâmetros e formato de resposta diferentes. Nova versão ou novo recurso.</td></tr>
+      <tr><td>Adicionar endpoint ou recurso novo</td><td>Não</td><td>Mudança puramente aditiva.</td></tr>
+      <tr><td>Adicionar cabeçalho de resposta novo</td><td>Não</td><td>Clientes ignoram cabeçalhos desconhecidos.</td></tr>
+      <tr><td>Mudar o formato do ID (inteiro para UUID)</td><td><strong>Sim</strong></td><td>Tipo e tamanho mudam; colunas e validações do cliente quebram.</td></tr>
+      <tr><td>Mudar a mensagem textual de erro</td><td>Sim, por Hyrum</td><td>Contratualmente não, na prática sim. Por isso exponha <code>codigo</code> estável.</td></tr>
+      <tr><td>Exigir novo escopo OAuth ou novo método de autenticação</td><td><strong>Sim</strong></td><td>Tokens antigos passam a receber 403. Aceite os dois em paralelo durante a migração.</td></tr>
+      <tr><td>Piorar a latência (p95 de 200 ms para 2 s)</td><td>Pode ser</td><td>Timeouts do cliente. O SLO é parte do contrato (módulo 06).</td></tr>
+      <tr><td>Corrigir bug que devolvia dado errado</td><td>Formalmente não</td><td>Mas avise: alguém calibrou o sistema em cima do bug.</td></tr>
+    </tbody></table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Na <strong>requisição</strong>, aceitar mais é seguro e exigir mais quebra. Na <strong>resposta</strong>, devolver mais campos é quase seguro e devolver menos, mais nulos ou mais valores possíveis quebra. Em resumo: <em>seja liberal no que aceita e conservador no que promete</em>.</p></div>
+  <h3>Detectando breaking changes automaticamente</h3>
+  <p>Revisão humana falha. Se o contrato é OpenAPI (módulo 02), compare a versão do PR com a publicada no CI e falhe o build se houver quebra. Ferramentas como <code>oasdiff</code> e <code>openapi-diff</code> fazem isso.</p>
+<pre data-file=".github/workflows/api-diff.yml"><code class="yaml">name: api-breaking-check
+on: [pull_request]
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Baixa o contrato publicado (main)
+        run: git show origin/main:openapi/agendamentos.yaml &gt; /tmp/base.yaml
+      - name: Falha se houver breaking change
+        run: |
+          docker run --rm -v "$PWD:/w" -v /tmp:/t tufin/oasdiff \
+            breaking /t/base.yaml /w/openapi/agendamentos.yaml \
+            --fail-on ERR</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>"Adicionar campo não é breaking" é verdade só se o <em>consumidor</em> foi escrito para ignorar campos desconhecidos. Alguns geradores de cliente e configurações de desserialização (como <code>FAIL_ON_UNKNOWN_PROPERTIES</code> no Jackson) rejeitam. Escreva essa expectativa no guia de integração.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Pedem uma lista de breaking changes. Organize pela direção: <em>requisição</em> (exigir mais, estreitar, remover) e <em>resposta</em> (remover, mudar tipo ou formato, afrouxar nulabilidade, novo valor de enum). Mencione que status code e ordenação padrão também contam, e que o CI deve rodar um diff do OpenAPI.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina por escrito o que o time considera breaking e quem pode autorizar uma exceção. Uma boa política: <strong>breaking change exige ADR curto, plano de migração e aprovação do dono da API</strong>. Mudança "pequena" sem diff automático é a causa mais comum de incidente com parceiro.</p></div>
+</section>
+
+<section class="chap" id="estrategias-versionamento">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Estratégias de versionamento</h2>
+  <p>Versionar é o último recurso, não o primeiro: cada versão em produção é uma API a mais para operar, testar, documentar e proteger. A ordem de preferência é <strong>(1) evoluir de forma aditiva sem nova versão</strong>; (2) versionar só quando houver quebra inevitável. Quando precisar, estas são as opções.</p>
+<div class="tabs">
+<pre data-label="URI"><code class="http">GET /v2/pacientes/8841/agendamentos HTTP/1.1
+Host: api.clinica.example
+Authorization: Bearer eyJ...</code></pre>
+<pre data-label="Cabeçalho"><code class="http">GET /pacientes/8841/agendamentos HTTP/1.1
+Host: api.clinica.example
+Api-Version: 2
+Authorization: Bearer eyJ...</code></pre>
+<pre data-label="Media type"><code class="http">GET /pacientes/8841/agendamentos HTTP/1.1
+Host: api.clinica.example
+Accept: application/vnd.clinica.agendamento.v2+json
+Authorization: Bearer eyJ...</code></pre>
+<pre data-label="Por data"><code class="http">GET /pacientes/8841/agendamentos HTTP/1.1
+Host: api.clinica.example
+Clinica-Version: 2026-03-01
+Authorization: Bearer eyJ...</code></pre>
+</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Estratégia</th><th>Prós</th><th>Contras</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Na URI</strong> (<code>/v2/...</code>)</td><td>Visível, óbvia, fácil de rotear no gateway, de cachear, de testar no navegador e de pôr em logs e métricas por versão</td><td>O "mesmo recurso" tem duas URLs; a versão do <em>conjunto</em> muda quando só um recurso quebrou; links antigos ficam presos à versão</td><td>Padrão para APIs públicas e de parceiros. É o que a maioria dos consumidores espera</td></tr>
+      <tr><td><strong>Em cabeçalho</strong> customizado</td><td>URL estável; versão fica fora do identificador do recurso</td><td>Invisível no navegador e em cURL casual; cache precisa de <code>Vary: Api-Version</code>; fácil esquecer de enviar (qual é o default?)</td><td>APIs internas com clientes controlados, onde a URL "limpa" importa</td></tr>
+      <tr><td><strong>Em media type</strong> (<code>Accept: ...v2+json</code>)</td><td>Purista: versiona a <em>representação</em>, não o recurso; permite versão por recurso; combina com hypermedia</td><td>Mais difícil de entender e depurar; ferramentas e gateways lidam pior; exige disciplina com <code>Vary: Accept</code></td><td>APIs maduras com muitas representações, times que dominam content negotiation</td></tr>
+      <tr><td><strong>Por data</strong> (estilo Stripe)</td><td>Cada consumidor fica "fixado" na data da integração e migra quando quiser; mudanças pequenas e frequentes, sem "grande v2"</td><td>Exige camada de transformação entre versões, testes e documentação por data; difícil de operar sem time de plataforma</td><td>Plataformas com muitos integradores e equipe dedicada. Raramente vale para equipe pequena</td></tr>
+      <tr><td><strong>Parâmetro de consulta</strong> (<code>?version=2</code>)</td><td>Simples, visível</td><td>Mistura versionamento com filtros; entra na chave de cache; fácil de ser descartado por intermediários</td><td>Raro; aceitável em APIs internas legadas</td></tr>
+    </tbody></table></div>
+  <h3>Versionamento por data na prática</h3>
+  <p>No modelo popularizado pela Stripe, a primeira chamada de uma conta fixa a versão (uma data) vigente naquele momento; o cliente pode sobrescrever por requisição com um cabeçalho. Internamente o código responde sempre na versão mais nova, e uma cadeia de <em>transformações de compatibilidade</em> converte a resposta para a data do cliente.</p>
+<pre data-file="transformacoes-por-data.js"><code class="js">// Cada migração converte a resposta da versão N para a versão N-1.
+const migracoes = [
+  { data: "2026-03-01", down: (r) =&gt; { r.status = r.status === "REAGENDADO" ? "CONFIRMADO" : r.status; return r; } },
+  { data: "2025-11-10", down: (r) =&gt; { r.medico_nome = r.medico.nome; delete r.medico; return r; } },
+];
+
+function paraVersao(resposta, versaoCliente) {
+  // aplica, da mais nova para a mais antiga, até chegar na data pedida
+  for (const m of migracoes) {
+    if (m.data &gt; versaoCliente) resposta = m.down(resposta);
+  }
+  return resposta;
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Versionar <em>tudo</em> junto ("v2 da API toda") porque um recurso quebrou. Você acaba mantendo 40 endpoints duplicados para mudar 1. Prefira versionar o recurso ou o campo afetado (novo campo, novo endpoint, novo media type) e reserve a "grande v2" para reescritas reais.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Versão <strong>major na URI</strong> (<code>/v1</code>, <code>/v2</code>) e <strong>evolução aditiva dentro da major</strong>. Não existe <code>/v1.3</code> na URL: minor e patch são para o changelog, não para o roteamento.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você versiona?" Não responda só "na URL". Diga: evoluo de forma aditiva para evitar nova versão; quando há breaking, major na URI por ser a mais simples de rotear, medir e depreciar; conheço o modelo por data da Stripe e sei por que ele exige uma camada de transformação. Mostrar que versionar tem custo operacional é o diferencial sênior.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina o <strong>limite de versões em paralelo</strong> (ex.: no máximo 2 majors suportadas) e a janela mínima de convivência (ex.: 12 meses). Sem esse teto, o time passa a manter N versões e a velocidade de entrega cai. Versão nova só nasce com plano de desligamento da anterior escrito.</p></div>
+</section>
+
+<section class="chap" id="evoluir-sem-quebrar">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Evoluir sem quebrar</h2>
+  <p>A forma mais barata de versionar é não precisar. Quatro técnicas, usadas juntas, cobrem a maioria das mudanças.</p>
+  <h3>1. Expand / contract (parallel change)</h3>
+  <p>Toda mudança incompatível é quebrada em três passos compatíveis. Exemplo: trocar <code>medico_nome</code> (string) por um objeto <code>medico</code> com <code>id</code> e <code>nome</code>.</p>
+<figure class="figure">
+  <svg viewBox="0 0 700 250" role="img" aria-label="Três fases do expand/contract: expandir, migrar, contrair">
+    <defs>
+      <marker id="ah-ec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+    <text class="ttl" x="10" y="20">Expand / contract em uma API</text>
+    <rect class="box-a" x="10" y="36" width="206" height="96" rx="6"/>
+    <text class="ttl" x="22" y="58">1. EXPAND</text>
+    <text x="22" y="78">resposta devolve</text>
+    <text x="22" y="94">medico_nome (antigo)</text>
+    <text x="22" y="110">+ medico {id,nome}</text>
+    <rect class="box-w" x="247" y="36" width="206" height="96" rx="6"/>
+    <text class="ttl" x="259" y="58">2. MIGRATE</text>
+    <text x="259" y="78">consumidores trocam</text>
+    <text x="259" y="94">para o campo novo;</text>
+    <text x="259" y="110">medimos uso do antigo</text>
+    <rect class="box-m" x="484" y="36" width="206" height="96" rx="6"/>
+    <text class="ttl" x="496" y="58">3. CONTRACT</text>
+    <text x="496" y="78">uso do antigo = 0</text>
+    <text x="496" y="94">(ou prazo vencido):</text>
+    <text x="496" y="110">remove medico_nome</text>
+    <line class="ln" x1="216" y1="84" x2="245" y2="84" marker-end="url(#ah-ec)"/>
+    <line class="ln" x1="453" y1="84" x2="482" y2="84" marker-end="url(#ah-ec)"/>
+    <rect class="box" x="10" y="150" width="680" height="82" rx="6"/>
+    <text class="lbl" x="22" y="172">O passo 1 é aditivo (não quebra). O passo 2 é onde o tempo passa (semanas ou meses).</text>
+    <text class="lbl" x="22" y="192">O passo 3 só acontece com dado de uso, nunca por "acho que ninguém usa".</text>
+    <text class="lbl" x="22" y="212">Se o passo 3 quebrar alguém, ele é breaking: vale prorrogar o passo 2 ou abrir nova versão.</text>
+  </svg>
+  <figcaption>O mesmo padrão serve para colunas de banco, eventos e endpoints.</figcaption>
+</figure>
+<pre data-file="resposta durante o EXPAND"><code class="json">{
+  "id": "ag_7731",
+  "medico_nome": "Dra. Helena Prado",
+  "medico": { "id": "med_204", "nome": "Dra. Helena Prado" },
+  "inicio": "2026-04-02T14:30:00-03:00"
+}</code></pre>
+  <h3>2. Tolerant reader (leitor tolerante)</h3>
+  <p>Princípio do lado do <strong>consumidor</strong> (Martin Fowler descreve o padrão): leia só os campos de que precisa, ignore o que não conhece, não valide o que não usa, trate enum desconhecido com um caminho padrão. Você, como provedor, <em>exige isso no contrato</em> e publica no guia de integração; sem essa regra, "campo aditivo" deixa de ser seguro.</p>
+<pre data-file="cliente-tolerante.js"><code class="js">function lerAgendamento(json) {
+  // lê só o que usa; campo novo no JSON não faz diferença
+  const { id, inicio, status } = json;
+  return {
+    id,
+    inicio: new Date(inicio),
+    // enum desconhecido vira um estado seguro em vez de exceção
+    status: ["AGENDADO", "CONFIRMADO", "CANCELADO"].includes(status) ? status : "DESCONHECIDO",
+  };
+}</code></pre>
+  <h3>3. Campos aditivos e defaults seguros</h3>
+  <ul>
+    <li>Adicione campos novos como <strong>opcionais</strong> e com <strong>default que preserva o comportamento antigo</strong>. Ex.: <code>?incluir_cancelados=false</code> como padrão se antes nunca vinham.</li>
+    <li>Em vez de mudar o significado de um campo, crie outro (<code>valor_centavos</code> ao lado de <code>valor</code> ambíguo).</li>
+    <li>Declare no OpenAPI quais enums são <em>abertos</em> (o cliente deve tolerar valores novos). Em Protobuf, a regra de ouro é nunca reaproveitar números de campo (módulo 03).</li>
+    <li>Use <code>additionalProperties</code> com consciência: um objeto "fechado" não deixa o provedor evoluir.</li>
+  </ul>
+  <h3>4. Feature flags e rollout gradual</h3>
+  <p>Flags <strong>desacoplam deploy de lançamento</strong>: o código novo vai para produção desligado, é ligado para 1 % do tráfego, depois por consumidor, depois para todos. Para APIs, o mais útil é a flag <em>por consumidor</em> (identificado pelo <code>client_id</code> do token): você habilita o comportamento novo para o parceiro que topou testar primeiro.</p>
+<pre data-file="flags.js"><code class="js">// comportamento novo só para quem optou, e sempre com saída de emergência
+function responderAgendamento(ag, ctx) {
+  const base = { id: ag.id, inicio: ag.inicio, medico_nome: ag.medico.nome };
+  if (flags.enabled("agendamento.medico-objeto", { client: ctx.clientId })) {
+    base.medico = { id: ag.medico.id, nome: ag.medico.nome };
+  }
+  return base;
+}</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Esquecer o passo 3. APIs ficam com <code>campo_v1</code>, <code>campo_v2</code> e <code>campoNovo</code> para sempre porque ninguém tem coragem de remover. Dê um <strong>dono e uma data</strong> a cada contract, abra o ticket de remoção junto com o de adição e use as métricas de uso (seção 5) para decidir.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como renomear um campo sem derrubar ninguém?" Expand/contract: o passo 1 entrega os dois campos; o 2 migra consumidores e mede uso; o 3 remove quando o uso do antigo for zero. Cite que o tolerant reader no cliente e o diff de OpenAPI no CI sustentam isso.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Feature flag sem dono vira lixo em semanas. Estabeleça: toda flag nasce com data de remoção e responsável; revise a lista todo mês. E exija de todo breaking change um <strong>plano de três fases</strong> no desenho, antes do código.</p></div>
+</section>
+
+<section class="chap" id="ciclo-de-vida">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Ciclo de vida e depreciação</h2>
+  <p>Toda API nasce, vive e morre. Tratar o desligamento como parte do projeto (e não como emergência) separa times maduros dos demais: você precisa de estágios explícitos, sinais legíveis por máquina, dados sobre quem usa e uma política de suporte conhecida por todos.</p>
+<figure class="figure">
+  <svg viewBox="0 0 700 210" role="img" aria-label="Ciclo de vida de uma versão de API em cinco estágios">
+    <defs>
+      <marker id="ah-cv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+    <text class="ttl" x="11" y="20">Ciclo de vida de uma versão (ex.: v1)</text>
+    <rect class="box" x="11" y="36" width="118" height="54" rx="6"/>
+    <text x="70" y="58" text-anchor="middle">Beta</text><text class="lbl" x="70" y="76" text-anchor="middle">sem garantias</text>
+    <rect class="box-a" x="151" y="36" width="118" height="54" rx="6"/>
+    <text x="210" y="58" text-anchor="middle">Estável (GA)</text><text class="lbl" x="210" y="76" text-anchor="middle">SLA e suporte</text>
+    <rect class="box-w" x="291" y="36" width="118" height="54" rx="6"/>
+    <text x="350" y="58" text-anchor="middle">Deprecada</text><text class="lbl" x="350" y="76" text-anchor="middle">funciona + aviso</text>
+    <rect class="box-m" x="431" y="36" width="118" height="54" rx="6"/>
+    <text x="490" y="58" text-anchor="middle">Brownout</text><text class="lbl" x="490" y="76" text-anchor="middle">apagões curtos</text>
+    <rect class="box-b" x="571" y="36" width="118" height="54" rx="6"/>
+    <text x="630" y="58" text-anchor="middle">Sunset</text><text class="lbl" x="630" y="76" text-anchor="middle">410 Gone</text>
+    <line class="ln" x1="129" y1="63" x2="149" y2="63" marker-end="url(#ah-cv)"/>
+    <line class="ln" x1="269" y1="63" x2="289" y2="63" marker-end="url(#ah-cv)"/>
+    <line class="ln" x1="409" y1="63" x2="429" y2="63" marker-end="url(#ah-cv)"/>
+    <line class="ln" x1="549" y1="63" x2="569" y2="63" marker-end="url(#ah-cv)"/>
+    <text class="lbl" x="291" y="116">cabeçalho Deprecation</text>
+    <text class="lbl" x="571" y="116">cabeçalho Sunset</text>
+    <line class="ln-a" x1="350" y1="124" x2="350" y2="134"/>
+    <line class="ln-b" x1="630" y1="124" x2="630" y2="134"/>
+    <line class="ln-a" x1="350" y1="134" x2="630" y2="134"/>
+    <text class="lbl" x="372" y="154">janela de migração (mínimo definido pela política)</text>
+    <text class="lbl" x="11" y="190">Medir uso por consumidor em todos os estágios: a decisão de avançar usa o dado, não só a data.</text>
+  </svg>
+  <figcaption>Brownout é opcional, mas muito eficaz para acordar quem ignora avisos.</figcaption>
+</figure>
+  <h3>Cabeçalhos <code>Deprecation</code> e <code>Sunset</code></h3>
+  <ul>
+    <li><strong><code>Deprecation</code></strong> (RFC 9745): informa que o recurso está depreciado, ou será. O valor é uma data no formato de <em>Structured Fields</em> (um timestamp Unix precedido de <code>@</code>). Depreciado significa <em>"não use em código novo e planeje sair"</em>; continua funcionando.</li>
+    <li><strong><code>Sunset</code></strong> (RFC 8594): informa a data em que o recurso <em>deixará de responder</em>, no formato de data HTTP.</li>
+    <li>Ambos podem vir acompanhados de <code>Link</code> com <code>rel="deprecation"</code> (documentação da depreciação), <code>rel="sunset"</code> (política de desligamento) e <code>rel="successor-version"</code> (para onde migrar).</li>
+  </ul>
+<pre data-file="resposta de GET /v1/agendamentos/ag_7731"><code class="http">HTTP/1.1 200 OK
+Content-Type: application/json
+Deprecation: @1775001600
+Sunset: Wed, 01 Jul 2026 00:00:00 GMT
+Link: &lt;https://docs.clinica.example/migracao-v2&gt;; rel="deprecation"; type="text/html",
+      &lt;https://docs.clinica.example/politica-de-sunset&gt;; rel="sunset",
+      &lt;https://api.clinica.example/v2/agendamentos/ag_7731&gt;; rel="successor-version"
+
+{ "id": "ag_7731", "medico_nome": "Dra. Helena Prado" }</code></pre>
+  <p>Depois do Sunset, devolva <code>410 Gone</code> com corpo de erro (RFC 9457) apontando a migração, em vez de cair num 404 ou timeout.</p>
+<pre data-file="resposta após o sunset"><code class="http">HTTP/1.1 410 Gone
+Content-Type: application/problem+json
+
+{
+  "type": "https://docs.clinica.example/erros/versao-desligada",
+  "title": "API v1 desligada",
+  "status": 410,
+  "detail": "A v1 foi desligada em 2026-07-01. Use /v2.",
+  "migracao": "https://docs.clinica.example/migracao-v2"
+}</code></pre>
+  <h3>Medir antes de desligar</h3>
+  <p>Só se desliga com segurança o que se sabe que ninguém usa. Registre <strong>versão, endpoint e consumidor</strong> (o <code>client_id</code> do token ou a chave de API) em toda requisição e agregue.</p>
+<pre data-file="consulta de uso (SQL sobre os logs de acesso)"><code class="text">-- Quem ainda chama a v1, em ordem de volume, nos últimos 30 dias
+SELECT client_id,
+       COUNT(*)                 AS chamadas,
+       COUNT(DISTINCT endpoint) AS endpoints,
+       MAX(ts)                  AS ultima_chamada
+FROM   api_access_log
+WHERE  api_version = 'v1'
+  AND  ts &gt;= CURRENT_DATE - INTERVAL '30 days'
+GROUP  BY client_id
+ORDER  BY chamadas DESC;</code></pre>
+  <h3>Comunicação</h3>
+  <ol>
+    <li><strong>Canal múltiplo</strong>: e-mail para contatos técnicos <em>e</em> de negócio, changelog, portal do desenvolvedor, cabeçalhos nas respostas. Um canal só falha.</li>
+    <li><strong>Datas absolutas</strong> e cronograma (anúncio, deprecação, brownouts, sunset), nunca "em breve".</li>
+    <li><strong>Guia de migração</strong> com antes e depois, ferramentas de teste e canal de suporte.</li>
+    <li><strong>Lembretes escalonados</strong> (12, 6, 3 e 1 mês e 1 semana antes) para quem ainda usa; o dado de uso diz quem.</li>
+    <li><strong>Brownouts</strong>: janelas curtas e combinadas em que a versão antiga responde erro de propósito, expondo quem ignorava os avisos antes do desligamento definitivo.</li>
+  </ol>
+  <h3>Política de suporte</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Elemento</th><th>Exemplo de política</th></tr></thead>
+    <tbody>
+      <tr><td>Versões suportadas</td><td>Atual e a imediatamente anterior (máx. 2 majors)</td></tr>
+      <tr><td>Janela mínima entre deprecação e sunset</td><td>12 meses para parceiros externos; 3 a 6 para consumidores internos</td></tr>
+      <tr><td>Correções na versão deprecada</td><td>Só segurança e bugs críticos; sem funcionalidade nova</td></tr>
+      <tr><td>Exceção</td><td>Prorrogação por escrito, com data final e custo explícito para o consumidor</td></tr>
+      <tr><td>Exceção de segurança</td><td>Falha grave pode forçar desligamento antecipado; o contrato deve prever isso</td></tr>
+    </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Anunciar o sunset só por e-mail para uma lista que ninguém atualiza. Em saúde é comum o contato técnico do parceiro ser um fornecedor terceirizado que já saiu do contrato. Confira os contatos e use <em>também</em> o canal da própria API (cabeçalhos e brownouts).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você desliga uma API em produção?" Anúncio com data absoluta; cabeçalhos <code>Deprecation</code> e <code>Sunset</code> nas respostas; métricas de uso por consumidor para saber quem falta migrar; contato direto com os maiores consumidores; brownouts; e por fim <code>410 Gone</code> com link de migração.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O custo de manter uma versão antiga é real (infra, testes, segurança, atenção do time). Estime-o e leve ao produto para justificar a data de sunset. Cobre do time um <strong>painel de "consumidores restantes"</strong> por versão: é o indicador de risco do desligamento.</p></div>
+</section>
+
+<section class="chap" id="gateway-management">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>API gateway e API management</h2>
+  <p>Um <strong>API gateway</strong> é um proxy reverso especializado, na frente das suas APIs, que concentra preocupações transversais. <strong>API management</strong> é a plataforma ao redor dele: portal do desenvolvedor, planos e chaves, analytics, ciclo de vida. Produtos comuns: Kong, Apigee, AWS API Gateway e Azure API Management (e também gateways para Kubernetes baseados em Envoy). Load balancers e proxies foram vistos no <code>06-backend-infra.html</code> da trilha web; o gateway fica na camada 7 e entende de APIs.</p>
+<figure class="figure">
+  <svg viewBox="0 0 700 270" role="img" aria-label="Clientes passam pelo gateway, que aplica políticas, e chegam a serviços internos">
+    <defs>
+      <marker id="ah-gw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+    <text class="ttl" x="10" y="20">Papel do gateway</text>
+    <rect class="box" x="10" y="50" width="130" height="40" rx="5"/><text x="75" y="75" text-anchor="middle">App do paciente</text>
+    <rect class="box" x="10" y="110" width="130" height="40" rx="5"/><text x="75" y="135" text-anchor="middle">Sistema parceiro</text>
+    <rect class="box" x="10" y="170" width="130" height="40" rx="5"/><text x="75" y="195" text-anchor="middle">Convênio</text>
+    <rect class="box-a" x="200" y="36" width="280" height="200" rx="8"/>
+    <text class="ttl" x="340" y="58" text-anchor="middle">API gateway</text>
+    <text x="218" y="84">autenticação (JWT/mTLS)</text>
+    <text x="218" y="104">rate limit e quotas</text>
+    <text x="218" y="124">roteamento por versão</text>
+    <text x="218" y="144">TLS, CORS, WAF</text>
+    <text x="218" y="164">log, métrica, trace id</text>
+    <text x="218" y="184">cache simples</text>
+    <text class="lbl" x="218" y="216">NÃO: regra de negócio</text>
+    <rect class="box-w" x="540" y="50" width="150" height="40" rx="5"/><text x="615" y="75" text-anchor="middle">agendamentos v2</text>
+    <rect class="box-w" x="540" y="110" width="150" height="40" rx="5"/><text x="615" y="135" text-anchor="middle">agendamentos v1</text>
+    <rect class="box-w" x="540" y="170" width="150" height="40" rx="5"/><text x="615" y="195" text-anchor="middle">exames</text>
+    <line class="ln" x1="140" y1="70" x2="198" y2="100" marker-end="url(#ah-gw)"/>
+    <line class="ln" x1="140" y1="130" x2="198" y2="130" marker-end="url(#ah-gw)"/>
+    <line class="ln" x1="140" y1="190" x2="198" y2="160" marker-end="url(#ah-gw)"/>
+    <line class="ln-a" x1="480" y1="90" x2="538" y2="70" marker-end="url(#ah-gw)"/>
+    <line class="ln-a" x1="480" y1="130" x2="538" y2="130" marker-end="url(#ah-gw)"/>
+    <line class="ln-a" x1="480" y1="170" x2="538" y2="190" marker-end="url(#ah-gw)"/>
+    <text class="lbl" x="10" y="258">O gateway é a porta única; cada serviço continua responsável por autorização fina e regras.</text>
+  </svg>
+  <figcaption>O gateway decide <em>se</em> e <em>para onde</em> a requisição vai; o serviço decide <em>o que</em> acontece com ela.</figcaption>
+</figure>
+  <div class="tbl"><table>
+    <thead><tr><th>O que o gateway deve fazer</th><th>O que NÃO deve fazer</th></tr></thead>
+    <tbody>
+      <tr><td>Autenticar (validar JWT, mTLS, chave de API) e rejeitar cedo</td><td>Conter regra de negócio ("se convênio X, aplicar desconto Y")</td></tr>
+      <tr><td>Rate limit, quotas por plano, proteção a abuso (módulo 06)</td><td>Ser a <strong>única</strong> camada de autorização: o serviço também checa (BOLA, módulo 05)</td></tr>
+      <tr><td>Roteamento por versão, host e caminho; canary e blue/green</td><td>Orquestrar chamadas entre vários serviços com lógica complexa (vira um ESB de novo)</td></tr>
+      <tr><td>Terminação TLS, CORS, validação básica de schema, WAF</td><td>Fazer transformações pesadas de payload sem dono nem teste</td></tr>
+      <tr><td>Emitir logs e métricas, propagar <code>traceparent</code> (módulo 08)</td><td>Guardar estado de negócio</td></tr>
+      <tr><td>Publicar contratos no portal, emitir chaves, analytics por consumidor</td><td>Virar gargalo ou ponto único de falha, sem alta disponibilidade e sem configuração versionada</td></tr>
+    </tbody></table></div>
+  <h3>Gateway como código</h3>
+  <p>A configuração do gateway é <strong>código</strong>: fica no Git, passa por PR e é aplicada por pipeline. Exemplo ilustrativo (formato declarativo, no estilo do Kong):</p>
+<pre data-file="gateway.yaml (ilustrativo)"><code class="yaml">services:
+  - name: agendamentos-v2
+    url: http://agendamentos.svc.cluster.local:8080
+    routes:
+      - name: agendamentos-v2-route
+        paths: ["/v2/agendamentos"]
+    plugins:
+      - name: rate-limiting
+        config: { minute: 600, policy: redis }
+      - name: jwt
+      - name: correlation-id
+        config: { header_name: X-Request-Id }</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Gateway "inteligente demais". Ao colocar regras, scripts e transformações no gateway, o comportamento da API fica espalhado, sem teste e sem dono. A regra: o gateway é <em>burro e rápido</em>; a inteligência mora no serviço.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que um gateway faz e o que não faz?" Faz o que é transversal e independente de negócio: autenticação, limites, roteamento, observabilidade, TLS. Não decide regra de negócio e não substitui autorização no serviço. Mencione alta disponibilidade e configuração como código.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Gateways comerciais cobram por requisição ou por instância, e o custo cresce rápido. Avalie lock-in (políticas proprietárias), operação (quem está de plantão para o gateway?) e o risco de ponto único de falha. A pergunta de compra: "o que ganhamos que um proxy bem configurado não daria?".</p></div>
+</section>
+
+<section class="chap" id="catalogo-style-guide">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Inventário, catálogo e style guide</h2>
+  <p>Não se governa o que não se enxerga. Em empresas com dezenas de sistemas (como um ecossistema Oracle e PostgreSQL de saúde), a primeira pergunta é "<strong>quais APIs existem, quem é o dono e quem as consome?</strong>". A resposta costuma ser decepcionante.</p>
+  <h3>Inventário e catálogo</h3>
+  <ul>
+    <li><strong>Inventário</strong>: lista viva de todas as APIs, inclusive internas e "sombra" (shadow APIs, as que ninguém registrou). Fontes: gateway, DNS, logs de acesso, repositórios, WAF.</li>
+    <li><strong>Catálogo</strong>: o inventário com contrato (OpenAPI), dono, estágio do ciclo de vida, classificação de dados (contém PII? dado de saúde?), SLA, consumidores e link para a documentação. Pode ser o portal do API management, um catálogo de serviços (como o Backstage) ou até um repositório Git com um arquivo de metadados por API.</li>
+  </ul>
+<pre data-file="catalog-info.yaml (metadados mínimos, formato Backstage)"><code class="yaml">apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: agendamentos-api
+  description: Agendamento de consultas e exames
+  tags: [saude, pii]
+spec:
+  type: openapi
+  lifecycle: production        # experimental | production | deprecated
+  owner: time-agendamento
+  definition:
+    $text: ./openapi/agendamentos.yaml</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Catálogo preenchido uma vez e esquecido. Alimente-o <strong>automaticamente</strong> a partir do pipeline (publicar o OpenAPI é parte do build) e compare com o tráfego real do gateway para descobrir APIs sombra.</p></div>
+  <h3>Style guide</h3>
+  <p>Um guia de estilo responde às perguntas que se repetem em toda revisão, para que ninguém precise debatê-las de novo: nomes (plural, <code>kebab-case</code> ou <code>camelCase</code>), formato de erro (RFC 9457), paginação padrão, datas (ISO 8601 com fuso), IDs, filtros, idempotência, cabeçalhos obrigatórios, versionamento, o que é breaking. Parta de um guia público (Zalando, Microsoft e Google publicam os seus) e adapte; não escreva do zero.</p>
+  <h3>Lint automatizado</h3>
+  <p>Regra que está só em documento não é cumprida. Transforme o guia em <strong>regras executáveis</strong> sobre o OpenAPI, rodando no CI. A ferramenta mais comum é o Spectral.</p>
+<pre data-file=".spectral.yaml"><code class="yaml">extends: ["spectral:oas"]
+rules:
+  paths-sem-verbo:
+    description: Caminhos devem ser substantivos
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions: { notMatch: "/(criar|buscar|deletar|atualizar|get|set)" }
+  operacao-com-id:
+    description: Toda operação precisa de operationId
+    severity: error
+    given: "$.paths[*][*]"
+    then: { field: operationId, function: truthy }
+  erro-problem-json:
+    description: Respostas de erro devem usar application/problem+json
+    severity: warn
+    given: "$.paths[*][*].responses[?(@property &gt;= '400')]"
+    then:
+      field: "content.application/problem+json"
+      function: truthy</code></pre>
+<pre data-file="terminal"><code class="sh">npx @stoplight/spectral-cli lint openapi/agendamentos.yaml --ruleset .spectral.yaml</code></pre>
+  <h3>Revisão de design de API</h3>
+  <p>O lint pega o mecânico; a revisão humana pega o resto: o recurso está bem modelado? É a API de que o consumidor precisa? Faça a revisão <strong>antes do código</strong>, sobre o contrato (design-first, módulo 02).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Item do checklist</th><th>Pergunta</th></tr></thead>
+    <tbody>
+      <tr><td>Necessidade</td><td>Quem consome? Já existe API que resolve? Qual o caso de uso real?</td></tr>
+      <tr><td>Modelo de recursos</td><td>Substantivos, relações, granularidade. Expõe entidade do banco ou conceito de domínio?</td></tr>
+      <tr><td>Contrato</td><td>OpenAPI completo, exemplos, erros, enums abertos ou fechados, nulabilidade explícita</td></tr>
+      <tr><td>Evolução</td><td>Como será estendida? Algo aqui vira breaking com a próxima funcionalidade previsível?</td></tr>
+      <tr><td>Segurança e privacidade</td><td>Autenticação, escopos, autorização por objeto, dados pessoais mínimos (LGPD), logs sem PII</td></tr>
+      <tr><td>Confiabilidade</td><td>Idempotência, paginação, limites, timeouts, comportamento sob falha</td></tr>
+      <tr><td>Operação</td><td>Dono, SLO, métricas, alertas, runbook, plano de desligamento</td></tr>
+    </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como garantir consistência entre APIs de times diferentes?" Style guide curto, regras de lint no CI (Spectral), revisão de design de contrato antes do código e catálogo com dono. A ordem importa: <strong>automatize o que dá, revise o que exige julgamento</strong>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina <em>quem aprova</em>: um grupo pequeno e rotativo de "API champions" de diferentes times, com SLA de resposta (ex.: 2 dias úteis). Revisão que leva 3 semanas faz o time desviar do processo. Métricas: tempo médio de revisão e % de APIs no catálogo com contrato e dono.</p></div>
+</section>
+
+<section class="chap" id="api-produto-governanca">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>API como produto e governança</h2>
+  <h3>API como produto</h3>
+  <p>Tratar a API como produto significa ter <strong>consumidores como clientes</strong>, um dono com visão de roadmap, documentação mantida, suporte e métricas. A mudança de mentalidade: o objetivo não é "entregar o endpoint", é que os consumidores consigam fazer o que precisam de forma rápida e confiável.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Dimensão</th><th>O que existe numa API tratada como produto</th></tr></thead>
+    <tbody>
+      <tr><td>Consumidores</td><td>Mapeados (internos, parceiros, convênios, apps), com contato técnico e de negócio, e conversa regular com os principais</td></tr>
+      <tr><td>Documentação</td><td>Referência gerada do OpenAPI + guias de uso por caso (agendar, cancelar, consultar resultado) + exemplos executáveis + changelog</td></tr>
+      <tr><td>Onboarding</td><td>Sandbox com dados fictícios, chave de teste em minutos, collection pronta, status page</td></tr>
+      <tr><td>SLA/SLO</td><td>Disponibilidade e latência publicadas (módulo 08), suporte e canal de incidente definidos</td></tr>
+      <tr><td>Roadmap e mudanças</td><td>Changelog, avisos antecipados, política de depreciação conhecida</td></tr>
+      <tr><td>Métricas de produto</td><td>Consumidores ativos, volume e taxa de erro por consumidor, adoção de versão, tempo até a primeira chamada</td></tr>
+    </tbody></table></div>
+  <h3>Métricas de adoção</h3>
+  <ul>
+    <li><strong>Time to first hello world (TTFHW)</strong>: tempo entre o consumidor receber acesso e fazer a primeira chamada com sucesso. Meta realista: minutos num sandbox; se levar dias, o onboarding é o problema.</li>
+    <li><strong>Consumidores ativos</strong> (30 dias) e <strong>taxa de ativação</strong> (quantos dos que pediram acesso chegaram à produção).</li>
+    <li><strong>Taxa de erro 4xx por consumidor</strong>: muito 400/422 de um consumidor indica documentação ruim ou contrato confuso; é feedback de produto.</li>
+    <li><strong>Participação por versão</strong>: % do tráfego em cada versão, a métrica que dirige a depreciação.</li>
+    <li><strong>Chamados de suporte</strong> por consumidor e tempo de resolução.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Se um parceiro precisa de uma reunião com sua equipe para fazer a primeira chamada, a documentação e o sandbox ainda não são bons o bastante.</p></div>
+  <h3>Governança: centralizada vs federada</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Centralizada</th><th>Federada</th></tr></thead>
+    <tbody>
+      <tr><td>Quem decide</td><td>Um time (arquitetura/plataforma) aprova tudo</td><td>Times donos decidem dentro de guardrails comuns; um conselho cuida das regras compartilhadas</td></tr>
+      <tr><td>Consistência</td><td>Alta</td><td>Boa, se houver lint e padrões automatizados</td></tr>
+      <tr><td>Velocidade</td><td>Baixa: o time central vira fila</td><td>Alta: autonomia com responsabilidade</td></tr>
+      <tr><td>Risco</td><td>Burocracia e desvios "por baixo do pano"</td><td>Divergência se faltarem disciplina e ferramentas</td></tr>
+      <tr><td>Funciona bem</td><td>Empresas pequenas, APIs públicas críticas, setor muito regulado</td><td>Organizações com muitos times de produto</td></tr>
+    </tbody></table></div>
+  <h3>Como não virar burocracia</h3>
+  <ul>
+    <li><strong>Guardrails, não gates</strong>: o caminho certo deve ser o mais fácil (templates, geradores, lint no CI, pipeline pronto). Quem segue o padrão não pede autorização.</li>
+    <li><strong>Revisão proporcional ao risco</strong>: API pública ou com dado sensível, revisão completa; API interna de baixo risco, só o lint.</li>
+    <li><strong>SLA para o próprio processo</strong>: se a governança é lenta, será contornada.</li>
+    <li><strong>Regras com motivo e dono</strong>: toda regra do guia tem uma justificativa de uma linha; regra sem justificativa é cortada.</li>
+    <li><strong>Medir a governança</strong>: tempo de revisão, % de APIs conformes, exceções concedidas. Se ninguém mede, vira cerimônia.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Governança que só diz "não". Se o time aprova tudo no final, tarde demais, ou bloqueia sem oferecer alternativa, as equipes passam a subir APIs sem avisar. Cada "não" deve vir com um "faça assim".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Governança centralizada ou federada?" Resposta madura: federada com guardrails automatizados. Um grupo pequeno define padrões e ferramentas; cada time é dono das suas APIs e responde por elas; o mecânico vai para o CI e só o risco alto passa por revisão humana. Reconheça que em setor muito regulado ou API crítica pode valer mais centralização.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cada API precisa de <strong>um dono nomeado</strong> (um time, não "a empresa") e de um contato de plantão. Pergunta de auditoria trimestral: "quais APIs não têm dono, contrato ou consumidores conhecidos?". Em saúde, adicione ao cadastro de cada API a classificação dos dados e a base legal (LGPD).</p></div>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos</h2>
+  <h3>Cenário 1: desligar a v1 usada por um parceiro que não responde</h3>
+  <p><strong>Situação:</strong> a v2 está no ar há 14 meses. A v1 custa manutenção e tem uma falha de segurança conhecida e difícil de corrigir. Restam 3 consumidores; dois migraram. O terceiro, um laboratório parceiro, gera 8 % do tráfego da v1, não responde a e-mails e o contato técnico do contrato saiu da empresa.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol class="seq">
+    <li><div><strong>Confirme o dado.</strong> Consulte o log por <code>client_id</code>: quais endpoints, que volume, quais horários (batch noturno?). Entenda o que quebrará antes de agir.</div></li>
+    <li><div><strong>Escale pelo lado comercial.</strong> Vá além do técnico: gerente de contas, contrato, jurídico, canal de suporte do parceiro, responsável de negócio. Registre cada tentativa com data. A cláusula contratual de depreciação é sua base.</div></li>
+    <li><div><strong>Use o canal da API.</strong> Garanta <code>Deprecation</code>, <code>Sunset</code> e <code>Link</code> em todas as respostas deles. Alguém, em algum momento, vê isso num log.</div></li>
+    <li><div><strong>Brownout combinado e anunciado.</strong> Janelas de 15 min a 2 h, crescentes, em horário de baixo risco clínico. É frequente o contato "aparecer" na primeira. Evite horários de atendimento e rotinas críticas, como a entrega de resultados de exame.</div></li>
+    <li><div><strong>Reduza o risco do desligamento.</strong> Se o dado é crítico (resultados de exame), ofereça uma ponte: um adaptador temporário v1 para v2 só para esse consumidor, com data final e custo para o parceiro. Ou prorrogue por escrito, com data final e mitigação de segurança (WAF, restrição de IP).</div></li>
+    <li><div><strong>Desligue com saída reversível.</strong> Na data, devolva <code>410 Gone</code> com link de migração e mantenha o rollback no gateway por alguns dias (reabilitar só aquele <code>client_id</code>, se necessário). Registre no changelog e faça um post-mortem curto.</div></li>
+  </ol>
+  <div class="note rule"><b>Regra de bolso</b><p>O desligamento forçado é a <em>última</em> etapa, com dados e registro do esforço de contato. Se a segurança está em jogo, o contrato deve permitir o corte antecipado; se não permite, é lição para o próximo contrato.</p></div>
+
+  <h3>Cenário 2: o time quer renomear um campo "porque ficou feio"</h3>
+  <p><strong>Situação:</strong> o campo <code>dtAgd</code> será trocado por <code>inicio</code>, numa API com 6 consumidores externos.</p>
+  <p><strong>O que fazer:</strong> perguntar qual é o benefício real; se for só estética, a resposta é "não vale o custo". Se for necessário (por exemplo, consistência com o style guide), use expand/contract com os dois campos por um período, meça o uso do antigo, anuncie a data e só remova na próxima major. Nunca renomeie no lugar.</p>
+
+  <h3>Cenário 3: um bug de ordenação foi "corrigido" e três clientes reclamaram</h3>
+  <p><strong>Situação:</strong> a listagem de consultas passou a vir por <code>id</code> e não por <code>data</code> após um refactor. Ninguém documentou a ordem.</p>
+  <p><strong>O que fazer:</strong> reverter ao comportamento anterior de imediato (o contrato real é o observável), registrar a ordem padrão no OpenAPI, adicionar um teste de contrato que a verifique e oferecer <code>?ordenar=data</code> de forma explícita. Depois, em reunião sem culpados, ajuste o processo: mudanças de ordenação ou de default entram na lista de breaking changes do style guide.</p>
+
+  <h3>Cenário 4: ninguém sabe quantas APIs existem</h3>
+  <p><strong>Situação:</strong> uma auditoria pede a lista de APIs que tratam dados de pacientes. Cada time responde de um jeito.</p>
+  <p><strong>O que fazer:</strong> em 30 dias, monte o inventário a partir do tráfego (logs do gateway, DNS, load balancers) e dos repositórios; cruze com o que os times declaram; classifique por tipo de dado; atribua dono a cada uma. Depois, torne a publicação do OpenAPI no catálogo parte obrigatória do pipeline, para o inventário se manter sozinho. APIs sem dono e sem tráfego entram na lista de desligamento.</p>
+
+  <h3>Cenário 5: a empresa quer "uma v2 de tudo" para limpar dívida</h3>
+  <p><strong>Situação:</strong> o time propõe reescrever a API inteira como v2 e desligar a v1 em 6 meses.</p>
+  <p><strong>O que fazer:</strong> desafiar o escopo. Liste o que realmente quebra o contrato e o que é desejo de limpeza; priorize por valor para os consumidores. Muitas melhorias cabem de forma aditiva na v1. O que sobrar vai para a v2 com plano de migração, métricas de uso e orçamento de suporte da v1 já definidos. Uma v2 sem plano para a v1 vira "duas APIs para sempre".</p>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Lei de Hyrum</dt><dd>Com usuários suficientes, todo comportamento observável de uma API vira dependência de alguém, documentado ou não.</dd></div>
+    <div><dt>Breaking change</dt><dd>Mudança que pode quebrar um consumidor correto sem que ele altere seu código.</dd></div>
+    <div><dt>Expand / contract</dt><dd>Padrão de três passos (expandir, migrar, contrair) para fazer uma mudança incompatível de forma compatível.</dd></div>
+    <div><dt>Tolerant reader</dt><dd>Consumidor que lê só o que precisa e ignora o resto, tolerando campos e valores novos.</dd></div>
+    <div><dt>Versionamento por data</dt><dd>Cada consumidor fica fixado na data de sua integração; o provedor transforma respostas entre versões.</dd></div>
+    <div><dt>Deprecation (RFC 9745)</dt><dd>Cabeçalho que indica que o recurso está depreciado, ou será em data informada.</dd></div>
+    <div><dt>Sunset (RFC 8594)</dt><dd>Cabeçalho com a data em que o recurso deixa de responder.</dd></div>
+    <div><dt>Brownout</dt><dd>Indisponibilidade curta e combinada de uma versão antiga para forçar a atenção dos consumidores.</dd></div>
+    <div><dt>API gateway</dt><dd>Proxy que centraliza autenticação, limites, roteamento e observabilidade na frente das APIs.</dd></div>
+    <div><dt>API management</dt><dd>Plataforma de portal, planos, chaves, analytics e ciclo de vida ao redor do gateway.</dd></div>
+    <div><dt>Style guide</dt><dd>Conjunto de regras de design de API da organização, idealmente executável como lint.</dd></div>
+    <div><dt>Spectral</dt><dd>Ferramenta de lint para OpenAPI baseada em regras configuráveis.</dd></div>
+    <div><dt>Shadow API</dt><dd>API em produção que não consta no inventário nem no catálogo.</dd></div>
+    <div><dt>TTFHW</dt><dd>Time to first hello world: tempo até a primeira chamada bem-sucedida de um novo consumidor.</dd></div>
+    <div><dt>Governança federada</dt><dd>Padrões e ferramentas comuns, com decisões e responsabilidade nos times donos das APIs.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>O que é uma breaking change em API?</span></summary><div class="ans"><p>Uma mudança que pode quebrar um consumidor correto sem que ele altere o código: remover ou renomear campo, mudar tipo ou formato, tornar um campo de entrada obrigatório, remover valor de enum, mudar status code. Teste: um cliente que funcionava ontem continua funcionando hoje, sem redeploy?</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Adicionar um campo na resposta é breaking?</span></summary><div class="ans"><p>Em geral não, porque clientes bem escritos ignoram campos desconhecidos (tolerant reader). Mas se algum cliente usa desserialização estrita, quebra. Por isso o contrato deve dizer que campos novos podem aparecer. Novos valores de enum são mais perigosos que novos campos.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Tornar um campo opcional ou obrigatório: qual a diferença na requisição e na resposta?</span></summary><div class="ans"><p>Na requisição, afrouxar (obrigatório para opcional) é seguro; apertar quebra quem não envia. Na resposta é o contrário: garantir presença é seguro; passar a permitir nulo ou ausência quebra quem assumia presença. Regra: aceite mais, prometa menos.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Explique a lei de Hyrum com um exemplo.</span></summary><div class="ans"><p>Com muitos usuários, qualquer comportamento observável vira contrato de fato. Exemplo: a lista de agendamentos sempre vem ordenada por data, sem documentação; um parceiro exibe na ordem recebida; ao mudar o índice, a ordem muda e a tela dele quebra. Mitigação: expor pouco, documentar o que é garantido, aleatorizar o que não é.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Quais as estratégias de versionamento e quando usar cada uma?</span></summary><div class="ans"><p>URI (<code>/v2</code>): simples, visível, fácil de rotear e medir; padrão para parceiros. Cabeçalho: URL limpa, porém invisível e exige <code>Vary</code>. Media type: versiona a representação, mais purista e mais difícil de operar. Por data (Stripe): consumidor fixado numa data, mudanças pequenas, mas exige camada de transformação. Minha preferência: major na URI com evolução aditiva dentro dela.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Por que evitar versionar sempre que possível?</span></summary><div class="ans"><p>Cada versão em produção multiplica custo de manutenção, testes, segurança, documentação e suporte. Prefiro evoluir de forma aditiva e abrir nova versão só quando há quebra inevitável, com plano de desligamento da anterior já definido.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como renomear um campo sem derrubar os clientes?</span></summary><div class="ans"><p>Expand/contract. Passo 1: devolver campo antigo e novo. Passo 2: migrar consumidores, medindo o uso do antigo e comunicando o prazo. Passo 3: quando o uso zerar ou o prazo vencer, remover o antigo, de preferência numa nova major. Nunca renomear no lugar.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>O que é tolerant reader e por que importa para o provedor?</span></summary><div class="ans"><p>É o princípio de o consumidor ler apenas o que usa e ignorar o resto. Para o provedor, é a condição que torna as mudanças aditivas seguras; por isso ele deve exigir isso no contrato e no guia de integração, e testar com clientes de exemplo que tolerem campos novos.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Como funcionam os cabeçalhos Deprecation e Sunset?</span></summary><div class="ans"><p><code>Deprecation</code> (RFC 9745) avisa que o recurso está depreciado, com uma data em formato de structured field; continua funcionando. <code>Sunset</code> (RFC 8594) informa a data em que deixa de responder. Acompanham <code>Link</code> com <code>rel="deprecation"</code>, <code>sunset</code> e <code>successor-version</code>. Após a data, respondo <code>410 Gone</code> com problem+json apontando a migração.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como saber se é seguro desligar uma versão antiga?</span></summary><div class="ans"><p>Pela telemetria: requisições por versão, endpoint e <code>client_id</code>. Só desligo quando o uso é zero ou os consumidores restantes foram contatados e deram prazo. Antes, comunico por vários canais, uso cabeçalhos, brownouts e, se necessário, prorrogo por escrito com data final.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>O que é um brownout e quando usá-lo?</span></summary><div class="ans"><p>Indisponibilidade curta e anunciada da versão antiga (minutos a poucas horas) que força consumidores distraídos a perceber que ela vai sumir. Uso quando os avisos passivos não bastaram, em janelas de baixo risco, sempre comunicadas e crescentes.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que um API gateway deve e não deve fazer?</span></summary><div class="ans"><p>Deve cuidar do transversal: autenticação, rate limit, roteamento por versão, TLS, logs, métricas e propagação de trace. Não deve conter regra de negócio, orquestração complexa nem ser a única camada de autorização. Precisa de alta disponibilidade e de configuração versionada como código.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Qual a diferença entre inventário e catálogo de APIs?</span></summary><div class="ans"><p>Inventário é saber o que existe (inclusive APIs sombra descobertas pelo tráfego). Catálogo enriquece com contrato OpenAPI, dono, ciclo de vida, classificação de dados, SLA e consumidores. O ideal é alimentá-lo pelo pipeline e conferir com o tráfego real.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como manter consistência entre APIs de vários times sem travar a entrega?</span></summary><div class="ans"><p>Style guide curto, lint Spectral no CI, revisão de design sobre o contrato antes do código e catálogo com dono. Automatizo o mecânico e reservo revisão humana para risco alto. Governança federada com guardrails e SLA para a própria revisão.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>O que significa tratar a API como produto? Que métricas você acompanha?</span></summary><div class="ans"><p>Ter consumidores como clientes, dono, roadmap, documentação, sandbox, SLA e suporte. Métricas: consumidores ativos, ativação, time to first hello world, taxa de erro 4xx por consumidor, participação por versão e chamados de suporte. Elas orientam prioridades e a depreciação.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Governança centralizada ou federada? Como evitar burocracia?</span></summary><div class="ans"><p>Federada com guardrails: padrões e ferramentas comuns, times donos responsáveis. Evito burocracia com templates e lint, revisão proporcional ao risco, SLA para a revisão, regras com justificativa e medição (tempo de revisão, conformidade, exceções). Cada "não" vem com um "faça assim".</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Um parceiro crítico não responde e a v1 precisa sair. O que você faz?</span></summary><div class="ans"><p>Confirmo o uso por log, escalo pelo comercial e pelo jurídico além do contato técnico, uso cabeçalhos nas respostas, faço brownouts anunciados, ofereço ponte ou prorrogação por escrito com data final e, no prazo, devolvo 410 com link de migração mantendo rollback por consumidor. Tudo documentado, com a cláusula contratual como base.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como impedir que breaking changes cheguem à produção sem querer?</span></summary><div class="ans"><p>Contrato OpenAPI como fonte de verdade e diff automático no CI (oasdiff, por exemplo) que falha o build; testes de contrato com consumidores (módulo 08); política escrita do que é breaking; revisão obrigatória quando o diff acusa quebra; e telemetria por versão para detectar o que escapou.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

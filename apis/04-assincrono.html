@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APIs 04: Webhooks, eventos e tempo real</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha APIs — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#1c5f96; --accent-soft:#e2edf7;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#7ab8ee; --accent-soft:#132638;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#7ab8ee; --accent-soft:#132638;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>APIs</span></a>
+  <div class="topnote">Módulo 04 de 10 · Webhooks, eventos e tempo real</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-design-rest.html"><span class="n">01</span>Design de APIs REST</a></li>
+    <li><a href="02-contratos-openapi.html"><span class="n">02</span>Contratos e OpenAPI</a></li>
+    <li><a href="03-estilos.html"><span class="n">03</span>GraphQL, gRPC e outros estilos</a></li>
+    <li><a href="04-assincrono.html" aria-current="page"><span class="n">04</span>Webhooks, eventos e tempo real</a></li>
+    <li class="sub"><ol>
+        <li><a href="#sincrono-assincrono"><span class="n">1</span>Síncrono vs assíncrono e acoplamento temporal</a></li>
+        <li><a href="#comparativo"><span class="n">2</span>Polling, long polling, webhook, SSE e WebSocket</a></li>
+        <li><a href="#webhooks-envio"><span class="n">3</span>Webhooks: o lado de quem envia</a></li>
+        <li><a href="#webhooks-recebimento"><span class="n">4</span>Webhooks: o lado de quem recebe</a></li>
+        <li><a href="#mensageria"><span class="n">5</span>Mensageria: filas, tópicos, RabbitMQ, Kafka, SQS e SNS</a></li>
+        <li><a href="#garantias-dlq"><span class="n">6</span>Garantias de entrega, "exactly-once" e DLQ</a></li>
+        <li><a href="#outbox-inbox"><span class="n">7</span>Outbox transacional e Inbox</a></li>
+        <li><a href="#sagas-eventos"><span class="n">8</span>Sagas, tipos de evento, CloudEvents e AsyncAPI</a></li>
+        <li><a href="#tempo-real"><span class="n">9</span>WebSocket e SSE na prática</a></li>
+        <li><a href="#cenarios-glossario"><span class="n">10</span>Cenários práticos e glossário</a></li>
+        <li><a href="#perguntas"><span class="n">11</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="05-seguranca-api.html"><span class="n">05</span>Segurança de APIs</a></li>
+    <li><a href="06-confiabilidade.html"><span class="n">06</span>Confiabilidade e performance</a></li>
+    <li><a href="07-evolucao-governanca.html"><span class="n">07</span>Versionamento e governança</a></li>
+    <li><a href="08-testes-observabilidade.html"><span class="n">08</span>Testes e observabilidade</a></li>
+    <li><a href="09-saude-interoperabilidade.html"><span class="n">09</span>Interoperabilidade em saúde</a></li>
+    <li><a href="10-arquitetura-gestao.html"><span class="n">10</span>Arquitetura e gestão de APIs</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 04 · <span class="lvl l3">Avançado</span></div>
+  <h1>Webhooks, eventos e tempo real</h1>
+  <p class="lede">Nem toda integração cabe em pergunta e resposta. Este módulo cobre como sistemas se avisam: polling, webhooks, SSE, WebSocket, filas e streams, com as garantias, os padrões (outbox, inbox, saga) e os cuidados que separam um protótipo de uma integração confiável.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Escolher entre polling, long polling, webhook, SSE e WebSocket com critérios claros</li>
+    <li>Projetar e consumir webhooks com assinatura HMAC, anti-replay, retries, deduplicação e fila</li>
+    <li>Distinguir fila de tópico, e explicar partições, offsets e consumer groups do Kafka</li>
+    <li>Explicar at-most-once, at-least-once e por que "exactly-once" é, na prática, idempotência</li>
+    <li>Aplicar outbox transacional, inbox, DLQ e sagas com compensações</li>
+    <li>Documentar eventos com CloudEvents e AsyncAPI e operar WebSocket/SSE em escala</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="sincrono-assincrono">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Síncrono vs assíncrono e acoplamento temporal</h2>
+  <p>Numa chamada <b>síncrona</b> (REST, gRPC unário), quem chama espera a resposta, e o destino precisa estar no ar <i>naquele instante</i>. Isso é <b>acoplamento temporal</b>: a disponibilidade do seu fluxo vira o produto das disponibilidades de todos os serviços da cadeia. Se três serviços têm 99,9% cada, a cadeia cai para cerca de 99,7%; com dez, para cerca de 99%.</p>
+  <p>Numa interação <b>assíncrona</b>, quem avisa deposita uma mensagem (ou dispara um aviso) e segue a vida. O destino processa quando puder. Ganhos: isolamento de falhas, absorção de picos, evolução independente. Custos: consistência eventual, depuração mais difícil, ordem e duplicidade para tratar, e a pergunta "e se eu nunca receber resposta?".</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Aspecto</th><th>Síncrono (pedido/resposta)</th><th>Assíncrono (mensagem/evento)</th></tr></thead>
+    <tbody>
+      <tr><td>Acoplamento temporal</td><td>Alto: os dois precisam estar no ar</td><td>Baixo: o intermediário guarda a mensagem</td></tr>
+      <tr><td>Resposta</td><td>Imediata, com resultado</td><td>Confirmação de recebimento; resultado depois (ou nunca, se for só aviso)</td></tr>
+      <tr><td>Pico de carga</td><td>Propaga para o destino e pode derrubá-lo</td><td>Fila absorve; consumidores processam no seu ritmo</td></tr>
+      <tr><td>Consistência</td><td>Mais fácil de raciocinar (uma transação, um fluxo)</td><td>Eventual; requer compensações e idempotência</td></tr>
+      <tr><td>Depuração</td><td>Stack trace e um log</td><td>Precisa de correlação (<code>trace_id</code>, id do evento) entre sistemas</td></tr>
+      <tr><td>Quando usar</td><td>Consulta, validação que o usuário espera na hora (elegibilidade antes de agendar)</td><td>Notificações, integração entre domínios, trabalho demorado, fan-out</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>O exemplo que vai nos acompanhar: exame pronto</h3>
+  <p>O laboratório conclui o laudo de um exame. Precisam saber disso: o <b>prontuário</b> (anexar resultado), o <b>portal do paciente</b> (push "seu resultado saiu"), o <b>faturamento</b> (liberar cobrança), a <b>telemedicina</b> (avisar o médico solicitante) e, às vezes, um <b>sistema externo</b> (convênio, hospital parceiro). Em modo síncrono, o sistema do laboratório chamaria cinco APIs em sequência; se uma cair, o laudo fica "meio liberado". Em modo assíncrono, ele publica um fato único (<code>exame.resultado.liberado</code>) e cada interessado reage ao seu tempo. Esse exemplo aparece nas próximas seções.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Use síncrono quando o chamador <i>precisa</i> da resposta para continuar. Use assíncrono quando o chamador só precisa <i>avisar</i> ou quando o trabalho é demorado. "Posso continuar sem saber o resultado agora?" Se sim, assíncrono.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>"Assíncrono" em cima de uma API síncrona sem plano de falha: o endpoint devolve <code>202 Accepted</code>, o trabalho vai para uma thread em memória e se perde num deploy. Assíncrono sério significa mensagem <b>durável</b> num intermediário, status consultável e idempotência. Aliás: o padrão para trabalho longo em HTTP é <code>202</code> + <code>Location</code> de um recurso de status (visto no módulo 01 desta trilha).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Quando você prefere assíncrono?" Cite acoplamento temporal e isolamento de falhas, absorção de picos e fan-out. Em seguida mostre o custo: consistência eventual, duplicidade e ordem. Quem só enumera vantagens parece não ter operado o sistema.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Decisão de assíncrono é decisão de operação: alguém precisa monitorar profundidade de fila, atraso de consumidores e mensagens mortas. Pergunte em revisão de design: "quem é acionado quando a fila enche às duas da manhã?" e "qual o atraso máximo aceitável para esse evento (SLO de frescor)?".</p></div>
+</section>
+
+<section class="chap" id="comparativo">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Polling, long polling, webhook, SSE e WebSocket</h2>
+  <p>Cinco formas de um sistema descobrir que algo mudou em outro. A diferença está em <b>quem inicia</b> a comunicação, por quanto tempo a conexão fica aberta e em que direção os dados fluem.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 262" role="img" aria-label="Cinco padrões: polling, long polling, webhook, SSE e WebSocket, mostrando quem inicia e a direção das mensagens">
+      <defs>
+        <marker id="ah-cmp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ah-cmpa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="250" y="18" text-anchor="end">Cliente / consumidor</text>
+      <text class="ttl" x="560" y="18">Servidor / produtor</text>
+
+      <rect class="box" x="10" y="30" width="110" height="36" rx="5"/><text x="65" y="53" text-anchor="middle">Polling</text>
+      <text class="lbl" x="405" y="39" text-anchor="middle">GET /exames/42 (a cada N segundos)</text>
+      <line class="ln" x1="250" y1="42" x2="560" y2="42" marker-end="url(#ah-cmp)"/>
+      <text class="lbl" x="405" y="57" text-anchor="middle">200 "pendente" (repete até ficar pronto)</text>
+      <line class="ln" x1="560" y1="60" x2="250" y2="60" marker-end="url(#ah-cmp)"/>
+
+      <rect class="box" x="10" y="76" width="110" height="36" rx="5"/><text x="65" y="99" text-anchor="middle">Long polling</text>
+      <text class="lbl" x="405" y="85" text-anchor="middle">GET /exames/42/espera (fica aberta)</text>
+      <line class="ln" x1="250" y1="88" x2="560" y2="88" marker-end="url(#ah-cmp)"/>
+      <text class="lbl" x="405" y="103" text-anchor="middle">200 quando houver evento (ou 204 no prazo)</text>
+      <line class="ln" x1="560" y1="106" x2="250" y2="106" marker-end="url(#ah-cmp)"/>
+
+      <rect class="box-a" x="10" y="122" width="110" height="36" rx="5"/><text x="65" y="145" text-anchor="middle">Webhook</text>
+      <text class="lbl" x="405" y="131" text-anchor="middle">POST /hooks (o produtor chama você)</text>
+      <line class="ln-a" x1="560" y1="134" x2="250" y2="134" marker-end="url(#ah-cmpa)"/>
+      <text class="lbl" x="405" y="149" text-anchor="middle">2xx rápido (recebido)</text>
+      <line class="ln-a" x1="250" y1="152" x2="560" y2="152" marker-end="url(#ah-cmpa)"/>
+
+      <rect class="box" x="10" y="168" width="110" height="36" rx="5"/><text x="65" y="191" text-anchor="middle">SSE</text>
+      <text class="lbl" x="405" y="177" text-anchor="middle">GET /eventos (Accept: text/event-stream)</text>
+      <line class="ln" x1="250" y1="180" x2="560" y2="180" marker-end="url(#ah-cmp)"/>
+      <text class="lbl" x="405" y="195" text-anchor="middle">evento, evento, evento... (1 sentido)</text>
+      <line class="ln" x1="560" y1="198" x2="250" y2="198" marker-end="url(#ah-cmp)"/>
+
+      <rect class="box-m" x="10" y="214" width="110" height="36" rx="5"/><text x="65" y="237" text-anchor="middle">WebSocket</text>
+      <text class="lbl" x="405" y="229" text-anchor="middle">Upgrade (101), depois mensagens nos 2 sentidos</text>
+      <line class="ln" x1="250" y1="236" x2="560" y2="236" marker-start="url(#ah-cmp)" marker-end="url(#ah-cmp)"/>
+    </svg>
+    <figcaption>Só o webhook inverte quem inicia a conexão. SSE e WebSocket mantêm a conexão aberta; WebSocket é bidirecional.</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Polling</th><th>Long polling</th><th>Webhook</th><th>SSE</th><th>WebSocket</th></tr></thead>
+    <tbody>
+      <tr><td><b>Quem inicia</b></td><td>Cliente</td><td>Cliente</td><td>Produtor</td><td>Cliente (conexão); servidor envia</td><td>Cliente (handshake); ambos enviam</td></tr>
+      <tr><td><b>Latência</b></td><td>Até o intervalo de consulta</td><td>Baixa</td><td>Baixa</td><td>Baixa</td><td>Muito baixa</td></tr>
+      <tr><td><b>Custo de requisições</b></td><td>Alto (maioria vazia)</td><td>Médio</td><td>Mínimo (1 por evento)</td><td>Conexão longa por cliente</td><td>Conexão longa por cliente</td></tr>
+      <tr><td><b>Direção</b></td><td>Cliente → servidor</td><td>Cliente → servidor</td><td>Servidor → servidor</td><td>Servidor → cliente</td><td>Bidirecional</td></tr>
+      <tr><td><b>Cliente típico</b></td><td>Qualquer, até scripts</td><td>Navegador, legado</td><td>Outro <b>servidor</b> com URL pública</td><td>Navegador, apps</td><td>Navegador, apps</td></tr>
+      <tr><td><b>Atravessa firewall/NAT</b></td><td>Sim</td><td>Sim</td><td>Exige URL pública acessível ao produtor</td><td>Sim (HTTP)</td><td>Em geral sim; alguns proxies atrapalham</td></tr>
+      <tr><td><b>Reconexão</b></td><td>Natural</td><td>Natural</td><td>Retries do produtor</td><td>Automática no <code>EventSource</code>, com <code>Last-Event-ID</code></td><td>Você implementa</td></tr>
+      <tr><td><b>Escala</b></td><td>Fácil, mas cara</td><td>Segura muitas conexões abertas</td><td>Fácil para o receptor (HTTP comum)</td><td>Conexões abertas; HTTP/2 ajuda</td><td>Conexões com estado; mais difícil</td></tr>
+      <tr><td><b>Use para</b></td><td>Verificar status de poucos itens; fallback</td><td>Quando não há SSE/WS disponível</td><td>Integração entre sistemas; "avise-me quando mudar"</td><td>Notificações e painéis ao vivo, sem comandos do cliente</td><td>Chat, colaboração, jogos, dados em fluxo bidirecional</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Como escolher</h3>
+  <ul>
+    <li><b>O consumidor é um servidor com URL pública?</b> Webhook. É o mais barato para ambos. Se o consumidor não tem URL pública (atrás de firewall hospitalar, por exemplo), webhook não funciona: use polling, fila ou um conector de saída.</li>
+    <li><b>O consumidor é um navegador ou app e só precisa receber?</b> SSE. Simples, sobre HTTP, com reconexão pronta.</li>
+    <li><b>O consumidor também envia mensagens com baixa latência?</b> WebSocket.</li>
+    <li><b>Não há como manter conexão nem receber chamadas?</b> Polling com <code>ETag</code>/<code>If-None-Match</code> (resposta <code>304</code> barata) e intervalo com backoff.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Webhook sem rede de segurança. Webhooks se perdem (receptor fora do ar além do período de retries, erro de configuração). Os sistemas sérios oferecem <b>também</b> uma API de consulta/reconciliação (<code>GET /eventos?desde=...</code>) para o receptor recuperar o que perdeu. Projete os dois: o webhook é o aviso rápido, a API é a fonte de verdade.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Webhook, SSE ou WebSocket?" Pergunte quem é o consumidor e a direção. Webhook é servidor-para-servidor; SSE é servidor-para-navegador, unidirecional; WebSocket é bidirecional. Diga que por padrão você escolhe o mais simples que atende: SSE antes de WebSocket quando só precisa empurrar dados.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Polling parece barato até multiplicar: 5 mil clientes consultando a cada 5 segundos são 1 mil requisições por segundo, quase todas vazias. Peça a conta antes de aprovar. Em contrapartida, WebSocket cria um serviço com estado, que muda a forma de fazer deploy e escalar (seção 9).</p></div>
+</section>
+
+<section class="chap" id="webhooks-envio">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Webhooks: o lado de quem envia</h2>
+  <p>Webhook é uma chamada HTTP <code>POST</code> que o <b>produtor</b> faz ao <b>seu cliente</b> quando algo acontece. Parece trivial, mas o produtor assume responsabilidade de entrega: registrar destinos, assinar, repetir, observar e proteger a si mesmo. Se você publica webhooks, está operando um pequeno sistema de entrega de mensagens.</p>
+
+  <h3>Registro de endpoints</h3>
+<pre data-file="criar assinatura de webhook"><code class="http">POST /v1/webhooks HTTP/1.1
+Host: api.laboratorio.exemplo
+Authorization: Bearer eyJ...
+Content-Type: application/json
+
+{
+  "url": "https://prontuario.hospital.exemplo/hooks/exames",
+  "eventos": ["exame.resultado.liberado", "exame.cancelado"],
+  "descricao": "Prontuário - unidade central"
+}</code></pre>
+<pre data-file="resposta"><code class="http">HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "id": "wh_7Hq2",
+  "url": "https://prontuario.hospital.exemplo/hooks/exames",
+  "eventos": ["exame.resultado.liberado", "exame.cancelado"],
+  "segredo": "whsec_MfKQ9r8GKYqrTwjFVnMxl7aVBcz1+dKQ0n1UxJ0Dd0A=",
+  "status": "ativo"
+}</code></pre>
+  <ul>
+    <li>O <b>segredo de assinatura</b> é gerado pelo produtor e mostrado uma vez (ou recuperável apenas por quem tem permissão). Um segredo por endpoint, aleatório e longo.</li>
+    <li>Ofereça filtro por tipo de evento: receptor que só quer cancelamentos não deve ser inundado.</li>
+    <li>Ofereça <b>ping/teste</b> (<code>POST /v1/webhooks/{id}/testar</code>) e um painel/log de entregas com resposta e status, para o cliente depurar sozinho. Isso reduz muito o suporte.</li>
+    <li><b>Valide a URL</b> no cadastro: apenas HTTPS; e proteja-se de <b>SSRF</b>. O cliente controla a URL, então ele pode cadastrar <code>http://169.254.169.254/</code> ou um IP interno para fazer seu servidor atacar a rede interna. Bloqueie endereços privados, loopback e de metadados em nível de DNS/IP resolvido (e revalide no momento da entrega por causa de DNS rebinding), não siga redirecionamentos e envie por um proxy de saída isolado.</li>
+  </ul>
+
+  <h3>O formato da entrega</h3>
+  <p>Defina um envelope estável: id único do evento, tipo, momento, versão do schema e dados. O <b>mesmo id</b> é reenviado em todas as tentativas, é a chave de deduplicação do receptor.</p>
+<pre data-file="entrega"><code class="http">POST /hooks/exames HTTP/1.1
+Host: prontuario.hospital.exemplo
+Content-Type: application/json
+User-Agent: LaboratorioExemplo-Webhooks/1.0
+webhook-id: evt_01HXYZ9A
+webhook-timestamp: 1773144000
+webhook-signature: v1,3q2+7wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+{
+  "id": "evt_01HXYZ9A",
+  "tipo": "exame.resultado.liberado",
+  "ocorrido_em": "2026-03-10T14:32:05-03:00",
+  "versao": "1",
+  "dados": { "exame_id": "987", "paciente_ref": "p-123", "url": "https://api.laboratorio.exemplo/v1/exames/987" }
+}</code></pre>
+  <p>Repare no conteúdo: só <b>identificadores e um link</b>, não o laudo. Quem recebe busca o detalhe pela API autenticada. Isso evita trafegar dado sensível de saúde por um canal cuja segurança você não controla, e permite que o receptor sempre veja a versão mais atual (seção 8).</p>
+
+  <h3>Assinatura e a especificação Standard Webhooks</h3>
+  <p>A forma mais usada de provar autoria é uma assinatura <b>HMAC-SHA256</b> do corpo, com o segredo compartilhado, enviada em cabeçalho. Para evitar reenvio malicioso (<i>replay</i>), inclui-se um <b>timestamp</b> dentro do conteúdo assinado. A especificação aberta <b>Standard Webhooks</b> padroniza isso:</p>
+  <ul>
+    <li>Cabeçalhos <code>webhook-id</code>, <code>webhook-timestamp</code> (segundos Unix) e <code>webhook-signature</code>.</li>
+    <li>Conteúdo assinado: <code>{id}.{timestamp}.{corpo}</code>, com HMAC-SHA256 e resultado em base64, enviado como <code>v1,&lt;base64&gt;</code>.</li>
+    <li>O cabeçalho pode ter várias assinaturas separadas por espaço, o que permite <b>rotação de segredo sem parada</b>: assina-se com o segredo antigo e o novo durante a transição.</li>
+    <li>Segredos no formato <code>whsec_</code> + base64. Há também variante assimétrica (ed25519) com prefixo <code>v2a</code>, útil quando o produtor não quer que o receptor possa forjar assinaturas.</li>
+    <li>A especificação recomenda retries com backoff exponencial e jitter ao longo de dias, tratar <code>410 Gone</code> como pedido para desativar o endpoint, tratar redirecionamentos (<code>3xx</code>) como falha e usar timeout de 15 a 30 segundos.</li>
+  </ul>
+  <p>Adotar o padrão significa que bibliotecas de verificação prontas funcionam para o seu cliente. Se você já tem um formato próprio, ao menos replique o desenho: id, timestamp dentro do conteúdo assinado e suporte a múltiplas assinaturas.</p>
+
+  <h3>Política de entrega: retries, desativação e observabilidade</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Resposta do receptor</th><th>O que o produtor faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>2xx</code></td><td>Sucesso. Marca como entregue.</td></tr>
+      <tr><td><code>429</code> / <code>503</code> com <code>Retry-After</code></td><td>Respeita o cabeçalho e reduz a taxa para esse destino.</td></tr>
+      <tr><td><code>5xx</code>, timeout, erro de conexão</td><td>Retry com backoff exponencial + jitter (por exemplo 5 s, 30 s, 2 min, 15 min, 1 h, 6 h...), por horas ou dias.</td></tr>
+      <tr><td><code>4xx</code> (exceto 408/429)</td><td>Em geral falha definitiva para aquele evento (bug do receptor): registra e mostra no painel. Muitos produtores ainda repetem algumas vezes.</td></tr>
+      <tr><td><code>410 Gone</code></td><td>Desativa o endpoint.</td></tr>
+      <tr><td>Falhas consecutivas por muito tempo</td><td>Desativa o endpoint, avisa o dono por e-mail/painel e permite <b>reenviar</b> eventos depois que ele corrigir.</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Isolamento:</b> um destino lento não pode travar a entrega para os demais. Use filas e workers separados por endpoint (ou limitação de concorrência por destino) e circuit breaker.</li>
+    <li><b>Timeout curto</b> por tentativa e leitura limitada da resposta (não leia gigabytes do corpo de resposta).</li>
+    <li><b>Ordem:</b> não prometa ordem. Se um evento falha e é reenviado depois, ele chega depois do seguinte. Inclua <code>ocorrido_em</code> e, se fizer sentido, um número de versão/sequência por recurso.</li>
+    <li><b>Reenvio manual</b> e "replay" de um intervalo, para o cliente se recuperar de um incidente do lado dele.</li>
+    <li><b>Métricas:</b> taxa de sucesso por endpoint, latência de entrega, tamanho do backlog, idade do evento mais antigo pendente.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você desenharia um sistema de webhooks?" Estruture: registro com segredo por endpoint e validação de URL (SSRF), envelope com id estável, assinatura HMAC com timestamp, entrega em fila com retry exponencial e jitter, isolamento por destino, desativação automática com aviso, painel de entregas e API de reconciliação.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Publicar webhooks é compromisso de produto: documentação dos eventos, política de retries e de versionamento do payload, e suporte. Cobre do time: painel de entregas para o cliente (reduz tickets), SLO de latência de entrega, e uma regra clara para mudar payload (somente aditiva, com campo <code>versao</code>).</p></div>
+</section>
+
+<section class="chap" id="webhooks-recebimento">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Webhooks: o lado de quem recebe</h2>
+  <p>Seu endpoint de webhook é uma porta aberta para a internet. Qualquer um pode fazer <code>POST</code> nele. Quatro obrigações: <b>autenticar</b> a origem, <b>aceitar rápido</b>, <b>processar fora da requisição</b> e <b>tolerar duplicatas e desordem</b>.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Fluxo do webhook: produtor enfileira e assina; receptor verifica, deduplica, grava na fila, responde 2xx e processa em worker">
+      <defs><marker id="ah-wh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="10" y="20">Produtor</text>
+      <rect class="box" x="10" y="36" width="170" height="36" rx="5"/><text x="95" y="59" text-anchor="middle">Evento (id, tipo)</text>
+      <rect class="box" x="255" y="36" width="170" height="36" rx="5"/><text x="340" y="59" text-anchor="middle">Fila de entregas</text>
+      <rect class="box-a" x="500" y="36" width="170" height="36" rx="5"/><text x="585" y="59" text-anchor="middle">POST + HMAC</text>
+      <line class="ln" x1="180" y1="54" x2="253" y2="54" marker-end="url(#ah-wh)"/>
+      <line class="ln" x1="425" y1="54" x2="498" y2="54" marker-end="url(#ah-wh)"/>
+      <text class="ttl" x="10" y="130">Receptor</text>
+      <rect class="box-a" x="500" y="146" width="170" height="36" rx="5"/><text x="585" y="169" text-anchor="middle">Verifica HMAC+hora</text>
+      <rect class="box-w" x="255" y="146" width="170" height="36" rx="5"/><text x="340" y="169" text-anchor="middle">Dedup + grava fila</text>
+      <rect class="box" x="10" y="146" width="170" height="36" rx="5"/><text x="95" y="169" text-anchor="middle">Worker processa</text>
+      <line class="ln" x1="585" y1="72" x2="585" y2="144" marker-end="url(#ah-wh)"/>
+      <text class="lbl" x="593" y="112">HTTPS</text>
+      <line class="ln" x1="500" y1="164" x2="427" y2="164" marker-end="url(#ah-wh)"/>
+      <line class="ln" x1="255" y1="164" x2="182" y2="164" marker-end="url(#ah-wh)"/>
+      <line class="ln-a" x1="340" y1="144" x2="340" y2="74" marker-end="url(#ah-wh)"/>
+      <text class="lbl" x="348" y="112">2xx imediato</text>
+      <text class="lbl" x="10" y="208">Sem 2xx, o produtor repete com backoff. O trabalho lento acontece depois da resposta.</text>
+    </svg>
+    <figcaption>O receptor só valida, registra e responde. Processar na requisição é a causa nº 1 de timeouts e retries em cascata.</figcaption>
+  </figure>
+
+  <h3>Verificação da assinatura</h3>
+  <ol class="seq">
+    <li><div><strong>Leia o corpo bruto (bytes).</strong> A assinatura vale para os bytes exatos enviados. Se o framework já converteu para objeto e você re-serializa, espaços e ordem de chaves mudam e a verificação falha.</div></li>
+    <li><div><strong>Cheque o timestamp.</strong> Rejeite se estiver fora de uma janela (por exemplo, 5 minutos) do relógio atual. Isso limita <i>replay</i> de uma captura antiga. O timestamp precisa estar <b>dentro</b> do conteúdo assinado, senão o atacante o troca.</div></li>
+    <li><div><strong>Recalcule o HMAC</strong> sobre <code>id.timestamp.corpo</code> com o segredo.</div></li>
+    <li><div><strong>Compare em tempo constante.</strong> Comparação normal (<code>==</code>) vaza, pelo tempo de resposta, quantos bytes iniciais batem, o que em teoria permite descobrir a assinatura byte a byte. Use a função de comparação segura da linguagem.</div></li>
+    <li><div><strong>Aceite se qualquer assinatura do cabeçalho bater</strong> (rotação de segredo).</div></li>
+  </ol>
+<pre data-file="receptor.js (Node + Express)"><code class="js">import crypto from 'node:crypto';
+import express from 'express';
+
+const app = express();
+const JANELA_S = 300; // 5 minutos
+
+// segredos aceitos: o atual e, durante a rotação, o anterior
+const segredos = [process.env.WH_SEGREDO_ATUAL, process.env.WH_SEGREDO_ANTERIOR]
+  .filter(Boolean)
+  .map(s =&gt; Buffer.from(s.replace(/^whsec_/, ''), 'base64'));
+
+function assinaturaValida(id, ts, corpoBruto, cabecalho) {
+  const conteudo = `${id}.${ts}.${corpoBruto.toString('utf8')}`;
+  const recebidas = cabecalho.split(' ').map(p =&gt; p.split(','))
+    .filter(([v, b64]) =&gt; v === 'v1' &amp;&amp; b64)
+    .map(([, b64]) =&gt; Buffer.from(b64, 'base64'));
+  return segredos.some(seg =&gt; {
+    const esperada = crypto.createHmac('sha256', seg).update(conteudo).digest();
+    return recebidas.some(r =&gt; r.length === esperada.length &amp;&amp; crypto.timingSafeEqual(r, esperada));
+  });
+}
+
+// express.raw: NÃO usar express.json() nesta rota
+app.post('/hooks/exames', express.raw({ type: 'application/json', limit: '256kb' }), async (req, res) =&gt; {
+  const id = req.get('webhook-id');
+  const ts = Number(req.get('webhook-timestamp'));
+  const assin = req.get('webhook-signature') || '';
+
+  if (!id || !ts || Math.abs(Date.now() / 1000 - ts) &gt; JANELA_S) return res.sendStatus(400);
+  if (!assinaturaValida(id, ts, req.body, assin)) return res.sendStatus(401);
+
+  // idempotência + enfileiramento numa só operação
+  await db.query(
+    'INSERT INTO inbox (event_id, payload) VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING',
+    [id, req.body.toString('utf8')]
+  );
+  res.sendStatus(200); // rápido; o worker lê a inbox depois
+});</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Verificar a assinatura <i>depois</i> de processar, ou só quando "parece suspeito". Ou aceitar o evento "porque veio do IP certo": IP não é autenticação. Também é erro comparar a assinatura com <code>===</code> e logar o segredo ou a assinatura esperada em caso de falha.</p></div>
+
+  <h3>Responder 2xx rápido e processar em fila</h3>
+  <p>O produtor espera uma resposta em poucos segundos. Se você consulta banco, chama outra API e gera PDF antes de responder, vai estourar o timeout; o produtor interpreta como falha e reenvia, e você processa em dobro enquanto o primeiro ainda roda. Regra: no handler, <b>valide, grave (inbox ou fila) e responda 2xx</b>. Um worker separado processa. Se o gravar falhar, responda 5xx para o produtor repetir.</p>
+  <ul>
+    <li><b>Qual código devolver?</b> <code>200</code>/<code>202</code>/<code>204</code> para aceito. <code>4xx</code> só para "não consigo aceitar esse evento nunca" (assinatura inválida). Devolver <code>4xx</code> por erro seu (bug) faz o produtor descartar o evento definitivamente.</li>
+    <li>Duplicata já recebida: responda <code>2xx</code> também; para o produtor, "já tenho" é sucesso.</li>
+  </ul>
+
+  <h3>Entrega pelo menos uma vez, dedup e ordem não garantida</h3>
+  <p>Webhooks são <b>at-least-once</b>: o produtor repete até receber 2xx, e o 2xx pode se perder no caminho (você processou, mas a resposta não chegou). Logo, <b>duplicatas acontecem</b>. A defesa é a deduplicação pelo <code>id</code> do evento, com restrição de unicidade no banco (<code>PRIMARY KEY (event_id)</code>), mostrada no <code>INSERT ... ON CONFLICT DO NOTHING</code> acima. Guarde os ids por tempo maior que a janela de retries do produtor.</p>
+  <p>E a <b>ordem não é garantida</b>: <code>exame.cancelado</code> pode chegar antes de <code>exame.resultado.liberado</code>. Estratégias:</p>
+  <ul>
+    <li>Use <code>ocorrido_em</code> ou um número de versão por recurso: ignore evento mais antigo que o estado atual ("last write wins" controlado).</li>
+    <li>Trate o evento como <b>aviso</b> e <b>consulte a API</b> para obter o estado atual (busca o exame 987 de novo), em vez de confiar que o payload é o último.</li>
+    <li>Faça os handlers serem comutativos/idempotentes: aplicar duas vezes ou fora de ordem dá o mesmo resultado.</li>
+  </ul>
+
+  <h3>Rotação de segredo</h3>
+  <ol class="seq">
+    <li><div><strong>Produtor gera novo segredo</strong> e passa a assinar com os dois (cabeçalho com duas assinaturas).</div></li>
+    <li><div><strong>Receptor aceita ambos</strong> (lista de segredos, como no código acima).</div></li>
+    <li><div><strong>Receptor confirma</strong> que adotou o novo; produtor para de assinar com o antigo.</div></li>
+    <li><div><strong>Receptor remove o antigo.</strong> Sem janela de indisponibilidade. Rotacione também de imediato se houver vazamento suspeito, e periodicamente.</div></li>
+  </ol>
+
+  <h3>Outros cuidados</h3>
+  <ul>
+    <li>Limite o tamanho do corpo e use timeouts; o endpoint é público.</li>
+    <li>Considere allowlist de IPs do produtor como camada extra (nunca única) e mTLS se ele suportar.</li>
+    <li>Registre <code>webhook-id</code> em todos os logs para correlacionar com o painel de entregas do produtor.</li>
+    <li>Monitore: taxa de 4xx/5xx, idade do evento mais antigo na inbox, falhas de verificação (pico de falhas = ataque ou segredo errado).</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Como receber webhook com segurança?" Em ordem: corpo bruto, janela de timestamp, HMAC sobre id+timestamp+corpo, comparação em tempo constante, dedup por id com unicidade no banco, gravar numa fila e responder 2xx rápido, não depender da ordem. Mencionar rotação com múltiplas assinaturas fecha bem.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize um "receptor de webhook" reutilizável (biblioteca interna com verificação, dedup e inbox) em vez de cada time reescrever. Revise: quais segredos existem, onde estão guardados (cofre, não repositório), quem rotaciona e quanto tempo um evento fica na inbox. Pergunta de revisão: "o que acontece se o mesmo evento chegar três vezes e fora de ordem?".</p></div>
+</section>
+
+<section class="chap" id="mensageria">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Mensageria: filas, tópicos, RabbitMQ, Kafka, SQS e SNS</h2>
+  <p>Webhook serve para falar com <i>outros</i> sistemas pela internet. Dentro da sua empresa (e entre serviços na nuvem), o normal é um <b>intermediário de mensagens</b> (<i>broker</i>) durável entre produtor e consumidor. O módulo 06 da trilha web apresentou filas; aqui entram as diferenças que importam em design.</p>
+
+  <h3>Fila versus tópico (pub/sub)</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Fila (ponto a ponto)</th><th>Tópico / pub-sub</th></tr></thead>
+    <tbody>
+      <tr><td>Semântica</td><td>Cada mensagem vai para <b>um</b> consumidor entre vários (competição)</td><td>Cada mensagem vai para <b>todos</b> os assinantes (fan-out)</td></tr>
+      <tr><td>Uso</td><td>Distribuir trabalho: "gerar este PDF", "enviar este SMS"</td><td>Anunciar fatos: "exame liberado" para vários interessados</td></tr>
+      <tr><td>Quem decide quem recebe</td><td>O produtor mira numa fila (comando)</td><td>Os assinantes se inscrevem (evento); o produtor não sabe quem são</td></tr>
+      <tr><td>Combinação comum</td><td colspan="2">Um tópico por tipo de fato, e <b>uma fila (ou consumer group) por assinante</b>: cada serviço consome sua cópia em paralelo, com seus workers competindo dentro dele.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Distinção que ajuda no design: <b>comando</b> ("emitir guia", destinatário conhecido, espera que alguém faça) versus <b>evento</b> ("guia emitida", fato passado, quem publica não sabe quem escuta).</p>
+
+  <h3>RabbitMQ</h3>
+  <p>Broker de mensagens tradicional (protocolo AMQP). Conceitos: o produtor publica em uma <b>exchange</b>, que roteia por <b>bindings</b> para <b>filas</b>; consumidores leem das filas e fazem <b>ack</b>. Tipos de exchange: <code>direct</code> (chave exata), <code>topic</code> (padrões como <code>exame.*.liberado</code>), <code>fanout</code> (todas as filas ligadas) e <code>headers</code>.</p>
+  <ul>
+    <li>Mensagem é <b>removida</b> da fila depois do ack. Sem ack (consumidor caiu), volta para a fila.</li>
+    <li><b>Prefetch</b> limita quantas mensagens não confirmadas cada consumidor segura (controle de carga).</li>
+    <li><b>Dead-letter exchange</b>, TTL de mensagem e filas de retry com atraso estão disponíveis para tratar falhas.</li>
+    <li>Ótimo para roteamento flexível e distribuição de tarefas; não é feito para reler histórico antigo.</li>
+  </ul>
+
+  <h3>Kafka</h3>
+  <p>Kafka é um <b>log distribuído e durável</b>, não uma fila. Mensagens (registros) são anexadas a um <b>tópico</b> e <b>permanecem</b> pelo período de retenção, independentemente de terem sido lidas. Cada consumidor controla seu <b>offset</b>, a posição de leitura, e pode voltar atrás e reler.</p>
+  <ul>
+    <li><b>Partições:</b> um tópico é dividido em partições. Dentro de uma partição a ordem é garantida; <b>entre partições, não</b>.</li>
+    <li><b>Chave:</b> o produtor escolhe uma chave (por exemplo <code>paciente_id</code> ou <code>exame_id</code>); registros com a mesma chave vão para a mesma partição, logo <b>mantêm ordem entre si</b>. É assim que se obtém "ordem por entidade".</li>
+    <li><b>Consumer group:</b> consumidores de um mesmo grupo dividem as partições (cada partição é lida por um só consumidor do grupo). Grupos diferentes leem o mesmo tópico de forma independente, cada um com seus offsets: é o pub/sub do Kafka.</li>
+    <li><b>Paralelismo máximo = número de partições.</b> Mais consumidores que partições ficam ociosos. Escolher o número de partições é decisão de capacidade, difícil de desfazer.</li>
+    <li><b>Offset commit:</b> o consumidor registra até onde leu. Se commitar <i>antes</i> de processar e cair, perde mensagem (at-most-once); se commitar <i>depois</i> e cair antes de commitar, reprocessa (at-least-once).</li>
+    <li><b>Rebalance:</b> quando consumidores entram/saem do grupo, as partições são redistribuídas, com pausa breve e possível reprocessamento.</li>
+    <li><b>Replay:</b> reprocessar a história (novo consumidor, correção de bug) é só reposicionar o offset. É a grande diferença para filas tradicionais.</li>
+    <li><b>Durabilidade:</b> replicação entre brokers; produtor com <code>acks=all</code> e mínimo de réplicas sincronizadas evita perda em falha de nó.</li>
+  </ul>
+<pre data-file="consumidor (pseudocódigo)"><code class="text">consumer_group = "faturamento"
+loop:
+  registros = poll(topico="exame.eventos")        # partições atribuídas a este consumidor
+  para cada registro em registros:
+    se ja_processado(registro.chave_idempotencia): continuar
+    processar(registro)                           # idempotente!
+  commit_offsets()                                # depois de processar = at-least-once</code></pre>
+
+  <h3>SQS e SNS em resumo (AWS)</h3>
+  <ul>
+    <li><b>SQS:</b> fila gerenciada. <i>Standard</i>: vazão altíssima, entrega at-least-once, ordem sem garantia. <i>FIFO</i>: ordem por <b>message group id</b> e deduplicação por id numa janela curta (cerca de 5 minutos), com vazão menor. Mensagem lida fica invisível por um <b>visibility timeout</b>; se não for apagada até lá, reaparece. Suporta <b>DLQ</b> via limite de recebimentos.</li>
+    <li><b>SNS:</b> tópico pub/sub gerenciado. Padrão clássico: <b>SNS + várias SQS</b> (fan-out): o evento vai para o tópico e cada serviço tem sua fila assinante, com retry e DLQ próprios.</li>
+    <li>Equivalentes em outras nuvens: Azure Service Bus, Google Pub/Sub. Os conceitos se repetem.</li>
+  </ul>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Critério</th><th>RabbitMQ</th><th>Kafka</th><th>SQS (+SNS)</th></tr></thead>
+    <tbody>
+      <tr><td>Modelo</td><td>Broker de filas com exchanges</td><td>Log particionado, retido</td><td>Fila gerenciada (+ tópico)</td></tr>
+      <tr><td>Mensagem após ler</td><td>Removida no ack</td><td>Continua (retenção)</td><td>Removida ao apagar</td></tr>
+      <tr><td>Replay</td><td>Não nativo</td><td>Sim, por offset</td><td>Não</td></tr>
+      <tr><td>Ordem</td><td>Por fila (com limitações em múltiplos consumidores)</td><td>Por partição (use chave)</td><td>FIFO por group id</td></tr>
+      <tr><td>Melhor para</td><td>Roteamento, tarefas, RPC assíncrono</td><td>Streams, alto volume, vários consumidores, reprocessamento</td><td>Simplicidade e baixo esforço operacional na AWS</td></tr>
+      <tr><td>Esforço operacional</td><td>Médio</td><td>Alto (ou serviço gerenciado)</td><td>Baixo</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Precisa distribuir tarefas e quer o mais simples? Fila gerenciada. Vários serviços reagindo ao mesmo fato, com necessidade de reler histórico e alto volume? Kafka (ou equivalente). Não escolha Kafka por moda para 50 mensagens por minuto.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como o Kafka garante ordem?" Só dentro da partição; use uma chave (id da entidade) para que os eventos de uma mesma entidade caiam na mesma partição. Lembre que o paralelismo do grupo é limitado ao número de partições e que reprocessar é reposicionar offsets.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Kafka auto-hospedado é um produto a operar (cluster, upgrades, capacidade). Considere serviço gerenciado e conte horas de gente no custo. Métricas obrigatórias: <b>lag</b> do consumidor (atraso em mensagens/tempo), profundidade de fila, idade da mensagem mais antiga e taxa de mensagens mortas.</p></div>
+</section>
+
+<section class="chap" id="garantias-dlq">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Garantias de entrega, "exactly-once" e DLQ</h2>
+
+  <h3>As três garantias</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Garantia</th><th>Significa</th><th>Como acontece</th><th>Risco</th></tr></thead>
+    <tbody>
+      <tr><td><b>At-most-once</b> (no máximo uma)</td><td>Entrega 0 ou 1 vez</td><td>Confirma/commita antes de processar; sem retry</td><td><b>Perda</b> de mensagem se cair no meio</td></tr>
+      <tr><td><b>At-least-once</b> (pelo menos uma)</td><td>Entrega 1 ou mais vezes</td><td>Processa e só depois confirma; repete se não houver confirmação</td><td><b>Duplicata</b></td></tr>
+      <tr><td><b>Exactly-once</b> (exatamente uma)</td><td>Efeito uma única vez</td><td>At-least-once + deduplicação/idempotência (ou transações dentro de um sistema)</td><td>Custo e complexidade; só vale dentro de um limite bem definido</td></tr>
+    </tbody>
+  </table></div>
+  <p>Por quê? O problema dos "dois generais": se o consumidor processa e a confirmação (ack) se perde, o produtor não sabe se deve repetir. Repetir arrisca duplicar; não repetir arrisca perder. Uma rede não oferece um terceiro caminho. Para dados importantes (laudo, cobrança), escolhe-se <b>nunca perder</b>, ou seja, at-least-once, e lida-se com duplicatas.</p>
+
+  <h3>"Exactly-once" é, na prática, idempotência</h3>
+  <p>Alguns sistemas oferecem "exactly-once" (por exemplo, Kafka com produtor idempotente e transações no padrão ler-processar-gravar <i>dentro do Kafka</i>). A garantia vale dentro do limite do sistema. Assim que o efeito sai dele (enviar e-mail, chamar API de convênio, gravar em outro banco), você está de volta ao at-least-once, e o efeito precisa ser <b>idempotente</b>:</p>
+  <ul>
+    <li><b>Chave de idempotência:</b> id do evento/comando guardado com restrição de unicidade; segunda vez é ignorada (tabela <code>inbox</code>, seção 7).</li>
+    <li><b>Operações naturalmente idempotentes:</b> "definir status = LIBERADO" é idempotente; "incrementar contador" e "enviar SMS" não são.</li>
+    <li><b>Deduplicação na mesma transação do efeito:</b> grave o id processado e o resultado no mesmo commit.</li>
+    <li><b>Chave de idempotência para chamadas de saída</b> (<code>Idempotency-Key</code>), quando a API de destino aceitar (visto no módulo 08 da trilha web).</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Assuma at-least-once em qualquer integração e faça todo consumidor idempotente. "Exactly-once" é ao mesmo tempo marketing e uma propriedade real em fronteiras estreitas; nunca é um substituto para idempotência no seu código.</p></div>
+
+  <h3>Mensagens que falham: retry e DLQ</h3>
+  <p>Algumas mensagens nunca vão funcionar: JSON malformado, referência a um exame inexistente, bug no consumidor. Se o consumidor repete para sempre, ele trava a fila (<b>poison message</b>) e os eventos seguintes não andam. A solução é limitar tentativas e desviar a mensagem problemática para uma <b>Dead Letter Queue (DLQ)</b>.</p>
+  <ol class="seq">
+    <li><div><strong>Tentar de novo com backoff.</strong> Falhas transitórias (timeout, banco ocupado) se resolvem com retry exponencial. Use filas de retry com atraso para não bloquear o consumo.</div></li>
+    <li><div><strong>Distinguir o tipo de erro.</strong> Transitório: repete. Permanente (validação, dado inválido): vai direto para a DLQ, sem desperdiçar tentativas.</div></li>
+    <li><div><strong>Enviar à DLQ após N tentativas</strong>, preservando a mensagem original, o motivo do erro, o número de tentativas e os ids de correlação.</div></li>
+    <li><div><strong>Alertar e investigar.</strong> DLQ não vazia é incidente de baixa urgência; DLQ crescendo é alta.</div></li>
+    <li><div><strong>Reprocessar (redrive)</strong> depois de corrigir a causa: mova as mensagens de volta para a fila de origem, com limitador de taxa. Como o consumidor é idempotente, reprocessar é seguro.</div></li>
+  </ol>
+  <div class="note trap"><b>Armadilha comum</b><p>DLQ sem dono: ninguém olha, mensagens de laudo ficam semanas paradas e o paciente nunca é notificado. Outro erro: retry imediato e infinito, que gera tempestade de tentativas contra um serviço que já está caído (use backoff com jitter e circuit breaker). E: DLQ guardando dados sensíveis sem a mesma proteção da fila de origem (LGPD).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O broker garante exactly-once?" Responda: "garante dentro do próprio sistema em cenários específicos; de ponta a ponta eu assumo at-least-once e deixo o consumidor idempotente com chave de deduplicação". Isso é o que o entrevistador de nível sênior quer ouvir.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija runbook para DLQ: dono, alerta, SLA de análise, procedimento de redrive e quem aprova reprocessar eventos de impacto (cobrança, notificação a paciente). Métrica: idade da mensagem mais antiga na DLQ.</p></div>
+</section>
+
+<section class="chap" id="outbox-inbox">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Outbox transacional e Inbox</h2>
+  <h3>O problema da escrita dupla</h3>
+  <p>O laboratório marca o exame como liberado <b>no banco</b> e precisa <b>publicar o evento</b> no broker. São dois sistemas e não há transação distribuída barata entre eles. Qualquer ordem falha:</p>
+  <ul>
+    <li>Grava no banco e depois publica: se o processo cai entre os dois, o exame está liberado e <b>ninguém foi avisado</b> (evento perdido).</li>
+    <li>Publica e depois grava: se a gravação falha, avisaram sobre um exame que <b>não foi liberado</b> (evento fantasma).</li>
+  </ul>
+
+  <h3>Outbox: o evento vai no mesmo commit do dado</h3>
+  <p>No padrão <b>Transactional Outbox</b>, em vez de publicar direto, a aplicação grava o evento numa tabela <code>outbox</code> <b>na mesma transação</b> que altera o dado. Um processo separado (<b>relay</b>) lê a tabela e publica no broker, marcando como enviado. A atomicidade do banco garante: ou os dois existem, ou nenhum.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 218" role="img" aria-label="Outbox transacional: dado e evento gravados na mesma transação, relay lê a tabela e publica no broker, consumidor com inbox">
+      <defs><marker id="ah-ob" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="10" y="26" width="250" height="118" rx="8"/>
+      <text class="ttl" x="24" y="46">Banco: mesma transação</text>
+      <rect class="box" x="24" y="60" width="222" height="30" rx="5"/><text x="135" y="80" text-anchor="middle">UPDATE exame (LIBERADO)</text>
+      <rect class="box" x="24" y="100" width="222" height="30" rx="5"/><text x="135" y="120" text-anchor="middle">INSERT outbox (evento)</text>
+      <rect class="box-w" x="310" y="60" width="130" height="36" rx="5"/><text x="375" y="83" text-anchor="middle">Relay</text>
+      <rect class="box-m" x="490" y="60" width="180" height="36" rx="5"/><text x="580" y="83" text-anchor="middle">Broker (tópico)</text>
+      <rect class="box" x="490" y="150" width="180" height="36" rx="5"/><text x="580" y="173" text-anchor="middle">Consumidor + inbox</text>
+      <line class="ln" x1="262" y1="78" x2="308" y2="78" marker-end="url(#ah-ob)"/>
+      <line class="ln" x1="440" y1="78" x2="488" y2="78" marker-end="url(#ah-ob)"/>
+      <line class="ln" x1="580" y1="96" x2="580" y2="148" marker-end="url(#ah-ob)"/>
+      <text class="lbl" x="264" y="70">lê</text>
+      <text class="lbl" x="446" y="70">publica</text>
+      <text class="lbl" x="310" y="112">marca como enviado</text>
+      <text class="lbl" x="10" y="206">Se o processo cair após o commit, a linha da outbox continua pendente e o relay publica depois.</text>
+    </svg>
+    <figcaption>O relay publica pelo menos uma vez; por isso o consumidor precisa de inbox/dedup.</figcaption>
+  </figure>
+
+<pre data-file="outbox (PostgreSQL)"><code class="text">CREATE TABLE outbox (
+  seq            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id             UUID NOT NULL UNIQUE,          -- id do evento (vai no webhook-id / CloudEvent id)
+  aggregate_type TEXT NOT NULL,
+  aggregate_id   TEXT NOT NULL,                 -- chave de partição no broker
+  tipo           TEXT NOT NULL,
+  payload        JSONB NOT NULL,
+  criado_em      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  publicado_em   TIMESTAMPTZ
+);
+CREATE INDEX outbox_pendentes ON outbox (seq) WHERE publicado_em IS NULL;
+
+-- Na aplicação: UMA transação
+BEGIN;
+  UPDATE exame SET status = 'LIBERADO', liberado_em = now() WHERE id = :exame_id;
+  INSERT INTO outbox (id, aggregate_type, aggregate_id, tipo, payload)
+  VALUES (gen_random_uuid(), 'exame', :exame_id, 'exame.resultado.liberado',
+          jsonb_build_object('exame_id', :exame_id));
+COMMIT;
+
+-- No relay (laço): pega um lote sem brigar com outras instâncias
+BEGIN;
+  SELECT * FROM outbox
+   WHERE publicado_em IS NULL
+   ORDER BY seq
+   LIMIT 100
+   FOR UPDATE SKIP LOCKED;
+  -- publica cada linha no broker (chave = aggregate_id), aguardando confirmação
+  UPDATE outbox SET publicado_em = now() WHERE seq IN (...);
+COMMIT;</code></pre>
+  <p>Observações:</p>
+  <ul>
+    <li><code>FOR UPDATE SKIP LOCKED</code> permite várias instâncias do relay sem pegar as mesmas linhas (o Oracle também oferece <code>SKIP LOCKED</code>).</li>
+    <li>O relay pode ser um <b>poller</b> simples (consulta a cada X ms) ou <b>CDC</b> (Change Data Capture), que lê o log de transações do banco e publica as inserções na outbox, com menos carga e latência menor; ferramentas como o Debezium existem para isso.</li>
+    <li>Se o relay publica e cai antes de marcar <code>publicado_em</code>, vai republicar: <b>at-least-once</b>. Por isso o consumidor deduplica pelo <code>id</code>.</li>
+    <li>Use <code>aggregate_id</code> como chave no Kafka para manter a ordem por entidade.</li>
+    <li>Limpe linhas antigas (ou particione a tabela) para ela não crescer sem limite.</li>
+  </ul>
+
+  <h3>Inbox: o espelho do lado do consumidor</h3>
+  <p>No padrão <b>Inbox</b>, o consumidor grava o id da mensagem recebida numa tabela <code>inbox</code> com unicidade, <b>na mesma transação do efeito</b>. Se a mesma mensagem chegar de novo, a inserção falha e o efeito não se repete.</p>
+<pre data-file="inbox (PostgreSQL)"><code class="text">CREATE TABLE inbox (
+  event_id     TEXT PRIMARY KEY,
+  recebido_em  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  processado_em TIMESTAMPTZ
+);
+
+-- Consumidor, para cada mensagem:
+BEGIN;
+  INSERT INTO inbox (event_id) VALUES (:evento_id) ON CONFLICT DO NOTHING;
+  -- se 0 linhas inseridas: duplicata, apenas COMMIT e confirmar o ack
+  INSERT INTO anexo_prontuario (exame_id, ...) VALUES (...);   -- o efeito, na MESMA transação
+  UPDATE inbox SET processado_em = now() WHERE event_id = :evento_id;
+COMMIT;
+-- só depois: ack/commit de offset no broker</code></pre>
+  <p>Outbox + broker at-least-once + inbox = efeito <b>exatamente uma vez</b> do ponto de vista do negócio, sem depender de mágica do broker.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Fazer o <code>INSERT</code> na inbox e o efeito em transações separadas: se cair no meio, a mensagem fica marcada como "vista" sem o efeito aplicado (perdida). Também é comum esquecer que o efeito colateral externo (enviar e-mail) não participa da transação do banco: para esses, use chave de idempotência no provedor ou registre a intenção de envio e envie via worker idempotente.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como garante que o evento sai se o commit acontece?" Descreva a escrita dupla, depois a outbox: dado e evento no mesmo commit, relay (poller ou CDC) publicando, entrega at-least-once, consumidor idempotente com inbox. Cite <code>SKIP LOCKED</code> e que a ordem é por chave.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Outbox é o padrão que fecha o buraco silencioso "salvou mas não avisou". Cobre em qualquer serviço que publica eventos de domínio. Monitore a idade da linha pendente mais antiga na outbox; se cresce, o relay parou e ninguém está sendo avisado.</p></div>
+</section>
+
+<section class="chap" id="sagas-eventos">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Sagas, tipos de evento, CloudEvents e AsyncAPI</h2>
+
+  <h3>Sagas: transação distribuída sem 2PC</h3>
+  <p>Agendar uma cirurgia envolve vários serviços: reservar horário do médico, reservar sala, autorizar no convênio, gerar cobrança. Cada um tem seu banco. Não há uma transação única que cubra tudo. Uma <b>saga</b> quebra o processo em <b>transações locais</b> em sequência; se um passo falha, executa <b>compensações</b>, ações que desfazem semanticamente os passos anteriores (liberar a sala, cancelar a reserva).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 218" role="img" aria-label="Saga por orquestração com um coordenador central e saga por coreografia com serviços reagindo a eventos em um barramento">
+      <defs><marker id="ah-sg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="10" y="22">Orquestração</text>
+      <text class="ttl" x="360" y="22">Coreografia</text>
+      <rect class="box-a" x="100" y="46" width="130" height="36" rx="5"/><text x="165" y="69" text-anchor="middle">Orquestrador</text>
+      <rect class="box" x="10" y="140" width="90" height="36" rx="5"/><text x="55" y="163" text-anchor="middle">Agenda</text>
+      <rect class="box" x="110" y="140" width="90" height="36" rx="5"/><text x="155" y="163" text-anchor="middle">Sala</text>
+      <rect class="box" x="210" y="140" width="90" height="36" rx="5"/><text x="255" y="163" text-anchor="middle">Cobrança</text>
+      <line class="ln-a" x1="165" y1="82" x2="55" y2="138" marker-start="url(#ah-sg)" marker-end="url(#ah-sg)"/>
+      <line class="ln-a" x1="165" y1="82" x2="155" y2="138" marker-start="url(#ah-sg)" marker-end="url(#ah-sg)"/>
+      <line class="ln-a" x1="165" y1="82" x2="255" y2="138" marker-start="url(#ah-sg)" marker-end="url(#ah-sg)"/>
+      <rect class="box-m" x="360" y="46" width="310" height="36" rx="5"/><text x="515" y="69" text-anchor="middle">Barramento de eventos</text>
+      <rect class="box" x="365" y="140" width="90" height="36" rx="5"/><text x="410" y="163" text-anchor="middle">Agenda</text>
+      <rect class="box" x="470" y="140" width="90" height="36" rx="5"/><text x="515" y="163" text-anchor="middle">Sala</text>
+      <rect class="box" x="575" y="140" width="90" height="36" rx="5"/><text x="620" y="163" text-anchor="middle">Cobrança</text>
+      <line class="ln" x1="410" y1="82" x2="410" y2="138" marker-start="url(#ah-sg)" marker-end="url(#ah-sg)"/>
+      <line class="ln" x1="515" y1="82" x2="515" y2="138" marker-start="url(#ah-sg)" marker-end="url(#ah-sg)"/>
+      <line class="ln" x1="620" y1="82" x2="620" y2="138" marker-start="url(#ah-sg)" marker-end="url(#ah-sg)"/>
+      <text class="lbl" x="10" y="206">Falhou? O orquestrador manda compensar; na coreografia cada serviço reage ao evento de falha.</text>
+    </svg>
+    <figcaption>Orquestração centraliza a lógica do fluxo; coreografia a distribui entre os serviços via eventos.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Orquestração</th><th>Coreografia</th></tr></thead>
+    <tbody>
+      <tr><td>Controle</td><td>Um coordenador conhece o fluxo e chama cada passo</td><td>Cada serviço reage a eventos e publica o seguinte</td></tr>
+      <tr><td>Visibilidade</td><td>Alta: o estado da saga está num lugar</td><td>Baixa: o fluxo está espalhado; difícil ver "onde parou"</td></tr>
+      <tr><td>Acoplamento</td><td>Serviços acoplados ao orquestrador</td><td>Baixo, mas com dependências implícitas por eventos</td></tr>
+      <tr><td>Risco</td><td>Orquestrador vira ponto central e "deus" do domínio</td><td>Ciclos de eventos, fluxo incompreensível com o tempo</td></tr>
+      <tr><td>Bom para</td><td>Fluxos longos, com muitos passos e regras</td><td>Fluxos curtos, com poucos participantes</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Compensações não são rollback:</b> não apagam o que aconteceu, criam um fato novo (cancelamento de reserva, estorno). Há coisas que não se desfazem (e-mail enviado, procedimento realizado): ordene os passos para que os irreversíveis venham por último (o chamado passo pivô).</li>
+    <li><b>Compensações precisam ser idempotentes</b> e poder ser repetidas, e também precisam de retry; a compensação também pode falhar.</li>
+    <li><b>Estado da saga persistido</b> (qual passo, quais compensações pendentes), com timeouts para passos que nunca respondem.</li>
+    <li>Falta de isolamento: durante a saga, outros veem estados intermediários (sala reservada, cobrança ainda não). Modele estados como <code>PENDENTE</code> explicitamente.</li>
+  </ul>
+
+  <h3>Tipos de evento: notificação, estado transportado e event sourcing</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>O que o evento carrega</th><th>Vantagens</th><th>Desvantagens</th></tr></thead>
+    <tbody>
+      <tr><td><b>Event notification</b></td><td>Só o fato e ids: "exame 987 liberado"</td><td>Payload pequeno, sem dado sensível no canal, receptor busca o estado atual</td><td>Receptor precisa chamar a API (acoplamento, carga de volta)</td></tr>
+      <tr><td><b>Event-carried state transfer</b></td><td>O estado necessário vai no evento (dados do exame, paciente)</td><td>Receptor autônomo, sem chamada de volta, resiliente a queda do produtor</td><td>Payload grande, cópias de dado (inclusive sensível), versionamento do schema difícil</td></tr>
+      <tr><td><b>Event sourcing</b></td><td>Eventos são a <i>fonte de verdade</i> do estado; o estado atual é a soma dos eventos</td><td>Histórico completo e auditável, reconstrução de estado, replay</td><td>Complexidade alta (versionamento de eventos, projeções, consultas); não é "mensageria", é um modelo de persistência</td></tr>
+    </tbody>
+  </table></div>
+  <p>Em saúde, a escolha pesa: notificação com id é mais segura para dados clínicos (LGPD: minimização e base legal para cada cópia); transferência de estado serve quando o receptor precisa funcionar offline ou com baixa latência, mas então protege-se o canal e o armazenamento. Event sourcing é adequado a domínios com auditoria forte (histórico de prescrição, movimentação financeira), mas é caro; não adote por moda. Event sourcing se confunde com "eventos de integração": um serviço pode usar event sourcing internamente e publicar eventos de integração mais enxutos.</p>
+
+  <h3>CloudEvents: envelope padrão</h3>
+  <p><b>CloudEvents</b> (especificação da CNCF) define atributos comuns para descrever eventos, para que ferramentas e sistemas diferentes os entendam. Atributos obrigatórios: <code>id</code>, <code>source</code>, <code>specversion</code> e <code>type</code>; opcionais frequentes: <code>time</code>, <code>subject</code>, <code>datacontenttype</code>, <code>dataschema</code> e <code>data</code>.</p>
+<pre data-file="CloudEvent (modo estruturado, JSON)"><code class="json">{
+  "specversion": "1.0",
+  "id": "evt_01HXYZ9A",
+  "source": "/laboratorio/central",
+  "type": "br.exemplo.exame.resultado.liberado",
+  "time": "2026-03-10T14:32:05-03:00",
+  "subject": "exames/987",
+  "datacontenttype": "application/json",
+  "data": { "exame_id": "987", "paciente_ref": "p-123" }
+}</code></pre>
+  <p>Há "bindings" para HTTP, Kafka, AMQP e outros (os atributos podem viajar em cabeçalhos, o <i>modo binário</i>). O ganho é um vocabulário comum e roteamento por <code>type</code>/<code>source</code> sem inspecionar o payload.</p>
+
+  <h3>AsyncAPI: o OpenAPI dos eventos</h3>
+  <p><b>AsyncAPI</b> é uma especificação para descrever APIs orientadas a eventos: canais (tópicos/filas), mensagens, schemas e operações (publicar/assinar), em YAML ou JSON. Faz pelos eventos o que o OpenAPI faz por REST (módulo 02 desta trilha): documentação, geração de código e validação de contrato.</p>
+<pre data-file="asyncapi.yaml (esboço)"><code class="yaml">asyncapi: 3.0.0
+info:
+  title: Eventos de exames
+  version: 1.0.0
+channels:
+  exameResultadoLiberado:
+    address: exame.resultado.liberado
+    messages:
+      resultadoLiberado:
+        payload:
+          type: object
+          required: [exame_id]
+          properties:
+            exame_id: { type: string }
+            paciente_ref: { type: string }
+operations:
+  publicarResultado:
+    action: send
+    channel:
+      $ref: '#/channels/exameResultadoLiberado'</code></pre>
+  <p>Trate o contrato de eventos como o de uma API pública: mudança só aditiva, campo novo opcional, versão no tipo ou no payload, e teste de contrato do consumidor (o módulo 08 volta a isso).</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Coreografia "porque é desacoplada" para um fluxo com sete passos e compensações. O resultado é um emaranhado de eventos que ninguém consegue desenhar. Também: eventos com nomes de CRUD (<code>exame.atualizado</code>) em vez de fatos de negócio (<code>exame.resultado.liberado</code>); o consumidor precisa adivinhar o que mudou.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você faz uma transação entre serviços?" Saga: passos locais e compensações idempotentes, orquestrada se o fluxo for longo (visibilidade) ou coreografada se for curto, com outbox para publicar os eventos de forma confiável. Mencione estados pendentes e a limitação de isolamento.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Eventos são API: tenham catálogo, dono, schema versionado (AsyncAPI/CloudEvents), política de mudança e consumidores conhecidos. Para sagas, exija um painel que mostre o estado de cada instância (onde parou, qual compensação pendente) e um dono do fluxo de negócio, não só dos serviços.</p></div>
+</section>
+
+<section class="chap" id="tempo-real">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>WebSocket e SSE na prática</h2>
+  <p>Conexão longa é fácil de demonstrar e difícil de operar. O servidor passa a ter <b>estado por cliente</b> (milhares de sockets abertos), e tudo ao redor (balanceador, proxy, deploy, autenticação) precisa se adaptar.</p>
+
+  <h3>SSE em poucas linhas</h3>
+<pre data-file="SSE: resposta"><code class="http">GET /v1/eventos HTTP/1.1
+Host: api.clinica.exemplo
+Accept: text/event-stream
+Last-Event-ID: 4217
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+Cache-Control: no-cache
+
+retry: 5000
+
+id: 4218
+event: exame.resultado.liberado
+data: {"exame_id":"987"}
+
+: heartbeat</code></pre>
+<pre data-file="cliente.js"><code class="js">const es = new EventSource('/v1/eventos'); // reconecta sozinho, enviando Last-Event-ID
+es.addEventListener('exame.resultado.liberado', (e) =&gt; {
+  const { exame_id } = JSON.parse(e.data);
+  atualizarTela(exame_id);
+});
+es.onerror = () =&gt; { /* o navegador tenta reconectar; mostre "reconectando..." */ };</code></pre>
+  <ul>
+    <li>O servidor atribui <code>id</code> a cada evento; ao reconectar, o navegador manda <code>Last-Event-ID</code> e o servidor <b>reenvia o que o cliente perdeu</b>. Isso exige guardar uma janela de eventos recentes por tópico/usuário.</li>
+    <li>Linhas que começam com <code>:</code> são comentários: servem de <b>heartbeat</b> para manter a conexão viva através de proxies.</li>
+    <li>O <code>EventSource</code> nativo só faz <code>GET</code> e <b>não permite cabeçalhos customizados</b> (como <code>Authorization</code>). Opções: cookie de sessão, ou bibliotecas baseadas em <code>fetch</code> que leem o stream com cabeçalhos próprios.</li>
+    <li>Em HTTP/1.1, navegadores limitam conexões por domínio (em torno de 6); várias abas com SSE esgotam o limite. HTTP/2 multiplexa e elimina o problema na prática.</li>
+    <li>Buffering de proxies (por exemplo, compressão ou buffer do reverse proxy) pode segurar os eventos; desative buffering na rota de SSE.</li>
+  </ul>
+
+  <h3>WebSocket em poucas linhas</h3>
+  <p>O cliente faz um <code>GET</code> com <code>Upgrade: websocket</code>; o servidor responde <code>101 Switching Protocols</code> e dali em diante a conexão TCP troca <b>mensagens (frames)</b> nos dois sentidos, sem cabeçalhos HTTP por mensagem. O protocolo tem frames de controle <b>ping/pong</b> e <b>close</b> (com código).</p>
+<pre data-file="handshake"><code class="http">GET /ws HTTP/1.1
+Host: api.clinica.exemplo
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Origin: https://portal.clinica.exemplo
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</code></pre>
+  <p>O navegador não reconecta sozinho e o protocolo não define confirmação de mensagem. <b>Reconexão, ack, ressincronização e ordem são com você</b> (ou com uma biblioteca/serviço que ofereça isso).</p>
+
+  <h3>Operando em escala</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tema</th><th>O problema</th><th>O que fazer</th></tr></thead>
+    <tbody>
+      <tr><td><b>Escala de conexões</b></td><td>Cada conexão consome memória e descritor de arquivo; 100 mil conexões simultâneas exigem ajuste de SO e servidores orientados a eventos</td><td>Escalar horizontalmente; monitorar conexões por instância; limites por usuário; testes de carga com conexões ociosas</td></tr>
+      <tr><td><b>Entre instâncias</b></td><td>O evento é publicado na instância A, mas o cliente está conectado à B</td><td>Backplane de pub/sub (Redis, Kafka, NATS) para que cada instância entregue aos seus clientes conectados</td></tr>
+      <tr><td><b>Sticky sessions</b></td><td>O handshake e a conexão ficam presos a uma instância; com bibliotecas que alternam transportes (WebSocket, fallback para polling), requisições seguintes do mesmo cliente precisam cair na mesma instância</td><td>Afinidade no balanceador quando a biblioteca exige; conexão WebSocket pura, depois de estabelecida, já é fixa. Estado importante vai para fora da instância</td></tr>
+      <tr><td><b>Heartbeat</b></td><td>Balanceadores e proxies fecham conexões ociosas (timeout de ociosidade); NAT descarta mapeamentos; conexão "zumbi" parece aberta</td><td>Ping/pong (WS) ou comentário periódico (SSE) abaixo do timeout do balanceador; derrubar cliente sem pong</td></tr>
+      <tr><td><b>Reconexão</b></td><td>Deploy ou queda desconecta todos; reconexão simultânea derruba o servidor (<i>thundering herd</i>)</td><td>Backoff exponencial com <b>jitter</b> no cliente; <i>draining</i> gradual no deploy; limitar taxa de novas conexões</td></tr>
+      <tr><td><b>Mensagens perdidas</b></td><td>Durante a queda o cliente perde eventos</td><td>Ids de evento/sequência; no reconnect, o cliente informa o último id e o servidor reenvia, ou o cliente busca o estado por API REST</td></tr>
+      <tr><td><b>Autenticação</b></td><td>O token expira com a conexão aberta; navegador não coloca <code>Authorization</code> no handshake WS</td><td>Cookie de sessão; ou <b>ticket de uso único e curtíssima duração</b> obtido por REST e passado na conexão; reautenticar/renovar por mensagem; fechar quando expirar</td></tr>
+      <tr><td><b>Origem</b></td><td>Qualquer página pode abrir WebSocket para o seu servidor com o cookie do usuário (CSWSH, o "CSRF" do WebSocket)</td><td>Validar o cabeçalho <code>Origin</code> no handshake e usar token, não só cookie</td></tr>
+      <tr><td><b>Autorização</b></td><td>O usuário se inscreve em canais que não são dele</td><td>Checar permissão em <b>cada inscrição</b> e na entrega, não só no login</td></tr>
+      <tr><td><b>Contrapressão</b></td><td>Cliente lento acumula buffer no servidor e estoura a memória</td><td>Limite de fila por conexão; descartar/agregar eventos ou desconectar clientes lentos</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Passar o token em query string (<code>/ws?token=...</code>) de longa duração: ele cai em logs de acesso e histórico. Se for obrigatório por limitação do navegador, use tickets de uso único, curtos e invalide-os depois do uso. Outra: assumir que "conectado" significa "recebendo": sem heartbeat, conexões meio-mortas escondem perda de eventos.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Trate a conexão longa como um <i>hint</i> de baixa latência, não como a fonte de verdade. Tudo que o cliente precisa deve poder ser recuperado por uma chamada REST normal quando ele reconectar.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como escalar WebSocket?" Servidores horizontais, backplane pub/sub entre instâncias, balanceador com timeouts e afinidade quando exigido, heartbeat, reconexão com backoff e jitter, ressincronização por id, limites por conexão e autenticação por ticket. Dizer "uso Redis pub/sub entre as instâncias" mostra que você já passou por isso.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tempo real tem custo contínuo: conexões abertas = capacidade reservada, deploys mais cuidadosos e um novo tipo de incidente (reconexão em massa). Pergunte se o negócio realmente precisa de segundos ou se um atraso de 30 segundos com polling cacheado basta. Para notificação de resultado de exame, em geral basta push/e-mail + consulta.</p></div>
+</section>
+
+<section class="chap" id="cenarios-glossario">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos e glossário</h2>
+
+  <h3>Exemplo completo: resultado de exame pronto notificando sistemas</h3>
+  <ol class="seq">
+    <li><div><strong>Laboratório libera o laudo.</strong> Na mesma transação: <code>UPDATE exame ... LIBERADO</code> e <code>INSERT INTO outbox (tipo = 'exame.resultado.liberado', ...)</code>.</div></li>
+    <li><div><strong>Relay publica</strong> no tópico <code>exame.eventos</code> do broker (chave = <code>exame_id</code>), em formato CloudEvents, só com ids (notification).</div></li>
+    <li><div><strong>Consumidores internos</strong> (prontuário, faturamento, portal do paciente, telemedicina) têm cada um sua fila/consumer group, com inbox e DLQ. Cada um busca o laudo pela API autenticada, aplicando as regras de acesso.</div></li>
+    <li><div><strong>Um adaptador de webhooks</strong> consome o mesmo tópico e entrega, para parceiros externos (outro hospital, convênio), um webhook assinado (HMAC + timestamp), com retries, painel de entregas e API de reconciliação.</div></li>
+    <li><div><strong>O portal web</strong> do médico recebe a notificação via SSE, com reconexão por <code>Last-Event-ID</code>; o app móvel recebe push.</div></li>
+    <li><div><strong>Observabilidade:</strong> mesmo <code>evento_id</code> e <code>trace_id</code> em todos os logs; alertas em lag, idade da outbox e DLQ.</div></li>
+  </ol>
+  <p>Padrões presentes: acoplamento temporal removido, fan-out por tópico, outbox, inbox, at-least-once com idempotência, webhook assinado, DLQ e SSE. O módulo 09 desta trilha mostra como padrões de saúde (FHIR Subscriptions, HL7) tratam notificações parecidas.</p>
+
+  <h3>Cenários</h3>
+  <div class="note"><b>Cenário 1: o convênio relata que recebeu a mesma notificação 3 vezes</b><p>O receptor deles demora 20 s para responder e seu timeout é 10 s; você repete. <b>O que fazer:</b> explicar que a entrega é at-least-once e que o <code>webhook-id</code> é a chave de dedup; orientar a responder 2xx rápido e processar em fila; verificar no painel as latências de resposta; considerar timeout maior e backoff para esse endpoint, mas mantendo o isolamento dos demais.</p></div>
+  <div class="note"><b>Cenário 2: o consumidor de faturamento está 4 horas atrasado no Kafka</b><p>O lag cresce desde um deploy. <b>O que fazer:</b> ver se há rebalances em loop, consumidores abaixo do número de partições, uma mensagem lenta ou venenosa bloqueando uma partição. Corrigir a causa, escalar consumidores até o limite de partições e verificar que o processamento é idempotente antes de reprocessar. Alertar por lag em tempo, não só em contagem.</p></div>
+  <div class="note"><b>Cenário 3: laudos "liberados" que nunca notificaram o portal</b><p>O código gravava no banco e depois publicava no broker; em picos de falha do broker, parte dos eventos se perdeu. <b>O que fazer:</b> adotar outbox transacional; fazer uma varredura para identificar exames liberados sem evento publicado e republicá-los (o consumidor deduplica); criar alerta na idade da linha mais antiga pendente na outbox.</p></div>
+  <div class="note"><b>Cenário 4: reconexão em massa derruba o servidor de tempo real após um deploy</b><p>Todos os clientes WebSocket reconectaram no mesmo segundo. <b>O que fazer:</b> backoff exponencial com jitter no cliente, drenagem gradual das instâncias no deploy, limite de novas conexões por segundo, e ressincronização por API REST em vez de reenviar todo o histórico pelo socket.</p></div>
+  <div class="note"><b>Cenário 5: o fluxo de agendar cirurgia (agenda, sala, convênio, cobrança) deixa reservas órfãs</b><p>Quando o convênio nega, a sala e o horário continuam reservados. <b>O que fazer:</b> modelar como saga com orquestrador e estado persistido; definir compensações idempotentes (liberar sala, liberar horário); colocar a autorização do convênio antes dos passos caros; timeout para estado <code>PENDENTE</code> que expira e dispara compensação.</p></div>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>Acoplamento temporal</dt><dd>Dependência de que dois sistemas estejam disponíveis ao mesmo tempo.</dd></div>
+    <div><dt>Webhook</dt><dd>Chamada HTTP que o produtor faz ao consumidor quando ocorre um evento.</dd></div>
+    <div><dt>HMAC</dt><dd>Código de autenticação de mensagem com hash e segredo compartilhado; prova autoria e integridade.</dd></div>
+    <div><dt>Replay</dt><dd>Reenvio malicioso de uma requisição legítima capturada; mitigado por timestamp assinado.</dd></div>
+    <div><dt>SSE</dt><dd>Server-Sent Events: stream unidirecional servidor → cliente sobre HTTP.</dd></div>
+    <div><dt>Backplane</dt><dd>Barramento pub/sub que conecta as instâncias de um servidor de tempo real.</dd></div>
+    <div><dt>Partição (Kafka)</dt><dd>Subdivisão de um tópico com ordem garantida internamente.</dd></div>
+    <div><dt>Offset</dt><dd>Posição de leitura de um consumidor numa partição.</dd></div>
+    <div><dt>Consumer group</dt><dd>Conjunto de consumidores que dividem as partições de um tópico.</dd></div>
+    <div><dt>At-least-once</dt><dd>Garantia de entrega que admite duplicatas e nunca perde mensagem.</dd></div>
+    <div><dt>Idempotência</dt><dd>Aplicar a mesma operação várias vezes tem o mesmo efeito de aplicar uma.</dd></div>
+    <div><dt>DLQ</dt><dd>Dead Letter Queue: destino de mensagens que falharam repetidamente.</dd></div>
+    <div><dt>Outbox</dt><dd>Tabela onde o evento é gravado na mesma transação do dado, para publicação posterior.</dd></div>
+    <div><dt>Saga</dt><dd>Sequência de transações locais com compensações para desfazer em caso de falha.</dd></div>
+    <div><dt>CloudEvents</dt><dd>Especificação de envelope padrão para eventos.</dd></div>
+    <div><dt>AsyncAPI</dt><dd>Especificação para documentar APIs orientadas a eventos.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre comunicação síncrona e assíncrona? Quando usar cada uma?</span></summary><div class="ans"><p>Síncrona: o chamador espera a resposta e depende da disponibilidade do destino (acoplamento temporal). Assíncrona: a mensagem é depositada num intermediário durável e processada depois. Uso síncrono quando preciso do resultado para continuar; assíncrono para avisos, trabalho demorado, picos e fan-out, aceitando consistência eventual.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Compare polling, long polling, webhook, SSE e WebSocket.</span></summary><div class="ans"><p>Polling: cliente consulta periodicamente (simples, caro). Long polling: a requisição fica aberta até haver evento. Webhook: o produtor chama a URL do consumidor (servidor para servidor). SSE: stream unidirecional servidor para cliente sobre HTTP, com reconexão automática. WebSocket: canal bidirecional persistente. Escolho o mais simples que atende à direção e ao tipo de cliente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Como um receptor deve verificar um webhook?</span></summary><div class="ans"><p>Ler o corpo bruto, checar o timestamp numa janela curta, recalcular o HMAC-SHA256 sobre id, timestamp e corpo com o segredo, comparar em tempo constante e aceitar se alguma das assinaturas do cabeçalho bater. Só então deduplicar por id, gravar numa fila e responder 2xx.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Por que o timestamp entra no conteúdo assinado e por que a comparação deve ser em tempo constante?</span></summary><div class="ans"><p>O timestamp dentro da assinatura impede que um atacante reenvie uma captura antiga ou altere a data sem invalidá-la (anti-replay). A comparação em tempo constante evita que o tempo de resposta revele quantos bytes iniciais da assinatura estão corretos, o que permitiria adivinhá-la por tentativa.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Seu endpoint de webhook recebe o mesmo evento duas vezes. O que acontece e como evitar efeitos duplicados?</span></summary><div class="ans"><p>É esperado: webhooks são at-least-once (o produtor repete se não recebe 2xx, e o 2xx pode se perder). Deduplico pelo id do evento com restrição de unicidade no banco (inbox), na mesma transação do efeito, e respondo 2xx também para a duplicata.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Por que responder 2xx rápido e processar em fila?</span></summary><div class="ans"><p>Porque o produtor tem timeout curto; se o processamento é lento, ele considera falha e reenvia, gerando duplicatas e carga em cascata. No handler eu valido, gravo e respondo; um worker processa depois, com retry próprio.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Como tratar eventos fora de ordem?</span></summary><div class="ans"><p>Não assumo ordem. Uso timestamp/versão por recurso para ignorar o mais antigo, trato o evento como aviso e consulto o estado atual pela API, e escrevo handlers idempotentes. Se preciso de ordem por entidade num broker, uso chave de partição (Kafka) ou group id (SQS FIFO).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Como fazer rotação de segredo de webhook sem indisponibilidade?</span></summary><div class="ans"><p>O produtor passa a assinar com o segredo antigo e o novo ao mesmo tempo (várias assinaturas no cabeçalho); o receptor aceita ambos; depois da confirmação, o antigo é aposentado. A especificação Standard Webhooks prevê múltiplas assinaturas no cabeçalho exatamente para isso.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que protege um serviço que aceita URLs de webhook cadastradas por clientes?</span></summary><div class="ans"><p>Proteção contra SSRF: só HTTPS, bloquear IPs privados, loopback e endereços de metadados (revalidando no envio por causa de DNS rebinding), não seguir redirecionamentos, timeout curto, limitar tamanho de resposta e enviar por um proxy de saída isolado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Qual a diferença entre fila e tópico? E entre RabbitMQ e Kafka?</span></summary><div class="ans"><p>Fila: cada mensagem vai para um consumidor (distribuição de trabalho). Tópico: cada assinante recebe uma cópia (fan-out). RabbitMQ é um broker de filas com roteamento flexível em que a mensagem some após o ack; Kafka é um log particionado e retido, onde consumidores controlam offsets e podem reler.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Explique partições, offsets e consumer groups no Kafka e como se garante ordem.</span></summary><div class="ans"><p>Um tópico é dividido em partições, com ordem só dentro de cada uma. Registros com a mesma chave vão para a mesma partição, dando ordem por entidade. Um consumer group divide as partições entre seus consumidores (no máximo um consumidor por partição) e guarda offsets por partição; grupos distintos leem independentemente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Explique at-most-once, at-least-once e exactly-once.</span></summary><div class="ans"><p>At-most-once pode perder mensagens (confirma antes de processar). At-least-once não perde, mas pode duplicar (confirma depois). "Exactly-once" é o efeito uma só vez, obtido com at-least-once mais deduplicação/idempotência, ou transações dentro de um único sistema. De ponta a ponta, na prática, é idempotência.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>O que é uma DLQ e como operar uma?</span></summary><div class="ans"><p>É onde caem mensagens que falharam depois de N tentativas ou com erro permanente, para não bloquear a fila. Operação: alerta, dono, análise da causa, correção e reprocessamento controlado (redrive), seguro porque o consumidor é idempotente. Cuidado com dados sensíveis na DLQ.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Qual o problema da escrita dupla e como o outbox resolve?</span></summary><div class="ans"><p>Gravar no banco e publicar no broker não é atômico: uma falha entre os dois perde ou inventa eventos. No outbox, o evento é gravado numa tabela na mesma transação do dado, e um relay (poller ou CDC) publica depois, pelo menos uma vez. O consumidor deduplica com inbox.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Saga: orquestração versus coreografia, e o que são compensações?</span></summary><div class="ans"><p>Saga divide uma transação distribuída em passos locais. Na orquestração, um coordenador comanda os passos e tem visibilidade; na coreografia, cada serviço reage a eventos, com menos acoplamento central, porém fluxo disperso. Compensações são ações idempotentes que desfazem semanticamente passos já feitos quando um posterior falha.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Notification event ou event-carried state transfer? Como decide em dados de saúde?</span></summary><div class="ans"><p>Notificação leva só ids e o receptor busca o dado pela API autenticada: payload pequeno, menos dado sensível circulando e sempre o estado atual, mas gera chamadas de volta. Transferência de estado dá autonomia ao receptor, ao custo de cópias de dados e versionamento. Em saúde, começo por notificação por minimização e controle de acesso (LGPD).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Como escalar e proteger um serviço WebSocket?</span></summary><div class="ans"><p>Instâncias horizontais com backplane pub/sub, heartbeat abaixo do timeout do balanceador, reconexão com backoff e jitter, ressincronização por id ou REST, limites por conexão e contrapressão. Segurança: validar Origin, autenticar por cookie ou ticket de uso único, reautenticar na expiração e autorizar cada inscrição.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como documenta e governa eventos numa empresa com vários times?</span></summary><div class="ans"><p>Trato eventos como API: catálogo com dono, schemas versionados (AsyncAPI para os canais, CloudEvents como envelope), mudanças só aditivas, testes de contrato com consumidores, métricas de lag, DLQ e idade da outbox, e revisão de design para cada novo evento de domínio, com nome de fato de negócio.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha APIs · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-apis-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>
