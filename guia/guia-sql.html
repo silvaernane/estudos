@@ -1,0 +1,1307 @@
+<title>Trilha SQL: do SELECT ao plano</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: índice fixo à esquerda + coluna de leitura de ~72ch; no celular o índice vira um menu recolhível. */
+:root{
+  --bg:#f4f7f8; --surface:#ffffff; --ink:#14212a; --muted:#55636f; --line:#d9e1e6;
+  --accent:#0c6a7e; --accent-soft:#e0eff2;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1c23; --code-fg:#dbe6ec; --code-line:#1f313b;
+  --kw:#7ccfe1; --fn:#efc46e; --str:#a6d697; --num:#f2a079; --com:#7f909c; --hint:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d151a; --surface:#132027; --ink:#e2e9ee; --muted:#98a9b5; --line:#23343e;
+    --accent:#5cc0d4; --accent-soft:#14313a;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#081015; --code-fg:#dbe6ec; --code-line:#1b2a33;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d151a; --surface:#132027; --ink:#e2e9ee; --muted:#98a9b5; --line:#23343e;
+  --accent:#5cc0d4; --accent-soft:#14313a;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#081015; --code-fg:#dbe6ec; --code-line:#1b2a33;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* topo */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
+.brand span{color:var(--accent)}
+.dbswitch{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:600 .82rem var(--f-body);border:0;background:transparent;color:var(--muted);padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+
+/* casca */
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc details{border:0}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px;display:flex;align-items:center;gap:8px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:78ch}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3.1rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.88rem;color:var(--muted);margin-bottom:8px}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+strong{font-weight:700}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.h{color:var(--hint)}
+pre.plan{font-size:.78rem}
+pre.plan .hot{background:rgba(240,138,128,.22);color:#ffd6d1;border-radius:3px}
+
+.dual{margin:0 0 18px}
+.dual-tabs{display:flex;gap:4px;margin-bottom:-1px}
+.dual-tabs button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);
+  padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.dual-tabs button[aria-pressed="true"]{background:var(--code-bg);color:var(--code-fg)}
+.dual pre{border-top-left-radius:0;margin:0}
+body[data-db="oracle"] .dual [data-db="pg"],
+body[data-db="pg"] .dual [data-db="oracle"]{display:none}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.ora > b:first-child{color:var(--warn)}
+.note p:last-child,.note ul:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+/* ordem lógica */
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;padding:0;list-style:none;counter-reset:st}
+.flow li{counter-increment:st;margin:0;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:600 .85rem var(--f-mono)}
+.flow li::before{content:counter(st);font:600 .7rem var(--f-body);color:var(--bg);background:var(--accent);border-radius:50%;width:18px;height:18px;display:grid;place-items:center}
+.flow li.sel{border-color:var(--accent)}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:520px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+
+/* exercícios */
+.ex{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 14px;padding:14px 16px}
+.ex .q{margin-bottom:8px}
+.ex .q b{font-family:var(--f-display)}
+.ex details summary{cursor:pointer;font-weight:600;color:var(--accent);font-size:.92rem;padding:4px 0}
+.ex details[open] summary{margin-bottom:8px}
+
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px;font-size:.9rem;color:var(--muted)}
+.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.checklist{list-style:none;padding:0;counter-reset:ck}
+.checklist li{counter-increment:ck;display:grid;grid-template-columns:2em minmax(0,1fr);gap:4px;padding:10px 0;border-bottom:1px solid var(--line);margin:0}
+.checklist li::before{content:counter(ck);font:600 .85rem var(--f-mono);color:var(--accent);padding-top:2px}
+.checklist li:last-child{border-bottom:0}
+
+footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+}
+</style>
+
+<header class="topbar">
+  <div class="brand">Trilha <span>SQL</span></div>
+  <div class="dbswitch">
+    <span id="dblabel">Exemplos em</span>
+    <div class="seg" role="group" aria-labelledby="dblabel">
+      <button type="button" id="db-oracle" data-set-db="oracle" aria-pressed="true">Oracle</button>
+      <button type="button" id="db-pg" data-set-db="pg" aria-pressed="false">PostgreSQL</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Ponto de partida</div>
+  <ol>
+    <li><a href="#esquema"><span class="n">00</span>O esquema de exemplo</a></li>
+  </ol>
+  <div class="toc-group"><span class="lvl l1">Básico</span></div>
+  <ol>
+    <li><a href="#ordem"><span class="n">01</span>Ordem lógica de execução</a></li>
+    <li><a href="#null"><span class="n">02</span>NULL e a lógica de 3 valores</a></li>
+    <li><a href="#joins"><span class="n">03</span>JOINs sem surpresas</a></li>
+    <li><a href="#agregacao"><span class="n">04</span>Agregação</a></li>
+  </ol>
+  <div class="toc-group"><span class="lvl l2">Intermediário</span></div>
+  <ol>
+    <li><a href="#subq"><span class="n">05</span>Subconsultas e CTEs</a></li>
+    <li><a href="#janela"><span class="n">06</span>Funções de janela</a></li>
+    <li><a href="#paginacao"><span class="n">07</span>Conjuntos, top-N e paginação</a></li>
+    <li><a href="#escrita"><span class="n">08</span>Escrita e transações</a></li>
+  </ol>
+  <div class="toc-group"><span class="lvl l3">Avançado</span></div>
+  <ol>
+    <li><a href="#motor"><span class="n">09</span>Como o banco executa</a></li>
+    <li><a href="#indices"><span class="n">10</span>Índices por dentro</a></li>
+    <li><a href="#sargavel"><span class="n">11</span>Anti-padrões que matam índices</a></li>
+    <li><a href="#planos"><span class="n">12</span>Lendo planos de execução</a></li>
+    <li><a href="#binds"><span class="n">13</span>Bind variables e cache</a></li>
+    <li><a href="#estatisticas"><span class="n">14</span>Estatísticas e estimativas</a></li>
+    <li><a href="#concorrencia"><span class="n">15</span>Concorrência e locks</a></li>
+    <li><a href="#escala"><span class="n">16</span>Partições, MVs e hints</a></li>
+  </ol>
+  <div class="toc-group">Prática</div>
+  <ol>
+    <li><a href="#diagnostico"><span class="n">17</span>Roteiro de diagnóstico</a></li>
+    <li><a href="#exercicios"><span class="n">18</span>Exercícios</a></li>
+    <li><a href="#proximos"><span class="n">19</span>Para ir além</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt">0 de 20 capítulos estudados</span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <h1>Do SELECT ao plano de execução</h1>
+  <p class="lede">Uma trilha para quem já escreve SELECT e JOIN e quer entender o que o banco faz com a consulta, por que ela fica lenta e como deixá-la rápida. Os exemplos usam um esquema de clínica e mostram Oracle e PostgreSQL lado a lado.</p>
+  <div class="legend">
+    <span><span class="lvl l1">Básico</span> consolida o que você já usa</span>
+    <span><span class="lvl l2">Intermediário</span> recursos que substituem muito código</span>
+    <span><span class="lvl l3">Avançado</span> desempenho e funcionamento interno</span>
+  </div>
+  <p style="font-size:.92rem;color:var(--muted)">Use o seletor no topo para escolher o banco dos exemplos. Ao terminar um capítulo, marque como estudado: o progresso fica salvo neste navegador.</p>
+</div>
+
+<!-- 00 -->
+<section class="chap" id="esquema">
+  <div class="chap-head"><span class="num">00</span></div>
+  <h2>O esquema de exemplo</h2>
+  <p>Todos os exemplos usam quatro tabelas. Vale ler com atenção, porque os nomes voltam em todos os capítulos.</p>
+<pre><code class="sql">paciente     (id_paciente PK, nome, cpf VARCHAR(11), dt_nascimento, cidade)
+medico       (id_medico PK, nome, especialidade)
+convenio     (id_convenio PK, nome)
+atendimento  (id_atendimento PK,
+              id_paciente  FK → paciente,
+              id_medico    FK → medico,
+              id_convenio  FK → convenio  -- NULL = particular
+              dt_atendimento  TIMESTAMP,
+              tipo    -- 'CONSULTA' | 'EXAME' | 'RETORNO'
+              status  -- 'AGENDADO' | 'REALIZADO' | 'CANCELADO'
+              valor   NUMERIC(10,2))</code></pre>
+  <p>Pense em <code>atendimento</code> como a tabela grande (milhões de linhas, cresce todo dia) e nas outras como tabelas de cadastro (milhares de linhas). Essa diferença de tamanho é o que torna a otimização interessante.</p>
+</section>
+
+<!-- 01 -->
+<section class="chap" id="ordem">
+  <div class="chap-head"><span class="num">01</span><span class="lvl l1">Básico</span></div>
+  <h2>A ordem lógica de execução</h2>
+  <p>Você escreve <code>SELECT</code> primeiro, mas o banco o avalia quase por último. Entender essa ordem explica metade dos erros que parecem misteriosos.</p>
+  <ol class="flow" aria-label="Ordem lógica">
+    <li>FROM / JOIN</li><li>WHERE</li><li>GROUP BY</li><li>HAVING</li><li class="sel">SELECT</li><li>DISTINCT</li><li>ORDER BY</li><li>FETCH / LIMIT</li>
+  </ol>
+  <p>Consequências práticas:</p>
+  <ul>
+    <li><strong>Um alias do SELECT não existe no WHERE.</strong> O WHERE roda antes. Repita a expressão ou use uma subconsulta/CTE.</li>
+    <li><strong>O ORDER BY enxerga os aliases</strong>, porque roda depois do SELECT.</li>
+    <li><strong>WHERE filtra linhas; HAVING filtra grupos.</strong> Um filtro que não depende de agregação deve ir no WHERE, para descartar linhas antes de agrupar.</li>
+    <li><strong>Funções de janela</strong> (capítulo 6) são calculadas na etapa do SELECT, por isso não podem aparecer no WHERE.</li>
+  </ul>
+<pre><code class="sql">-- (sintaxe Oracle; no PostgreSQL a idade seria date_part('year', age(dt_nascimento)))
+-- ERRO: o alias "idade" ainda não existe quando o WHERE é avaliado
+SELECT nome, TRUNC(MONTHS_BETWEEN(SYSDATE, dt_nascimento) / 12) AS idade
+FROM paciente
+WHERE idade &gt;= 60;
+
+-- Certo: calcule numa subconsulta e filtre por fora
+SELECT *
+FROM (SELECT nome, TRUNC(MONTHS_BETWEEN(SYSDATE, dt_nascimento) / 12) AS idade
+      FROM paciente) p
+WHERE p.idade &gt;= 60;</code></pre>
+  <div class="note rule"><b>Ordem lógica não é ordem física</b><p>Essa é a ordem de <em>significado</em>. O otimizador pode executar em outra ordem física (aplicar um filtro dentro de um join, usar um índice para evitar o sort), desde que o resultado seja o mesmo. Os capítulos avançados tratam dessa ordem física.</p></div>
+</section>
+
+<!-- 02 -->
+<section class="chap" id="null">
+  <div class="chap-head"><span class="num">02</span><span class="lvl l1">Básico</span></div>
+  <h2>NULL e a lógica de três valores</h2>
+  <p>NULL significa "valor desconhecido". Qualquer comparação com NULL resulta em <strong>UNKNOWN</strong>, que não é verdadeiro nem falso, e o WHERE só devolve linhas em que a condição é verdadeira.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Expressão</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td><code>NULL = NULL</code></td><td>UNKNOWN (não é verdadeiro)</td></tr>
+      <tr><td><code>NULL &lt;&gt; 5</code></td><td>UNKNOWN</td></tr>
+      <tr><td><code>col IS NULL</code></td><td>a forma certa de testar</td></tr>
+      <tr><td><code>TRUE OR UNKNOWN</code></td><td>TRUE</td></tr>
+      <tr><td><code>FALSE AND UNKNOWN</code></td><td>FALSE</td></tr>
+      <tr><td><code>NOT UNKNOWN</code></td><td>UNKNOWN</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Onde isso morde</h3>
+<pre><code class="sql">-- Quer os atendimentos que NÃO são do convênio 10.
+-- Os particulares (id_convenio NULL) somem do resultado!
+SELECT * FROM atendimento WHERE id_convenio &lt;&gt; 10;
+
+-- Correto
+SELECT * FROM atendimento
+WHERE id_convenio &lt;&gt; 10 OR id_convenio IS NULL;</code></pre>
+  <ul>
+    <li><code>COUNT(*)</code> conta linhas. <code>COUNT(id_convenio)</code> conta só os valores não nulos. <code>COUNT(DISTINCT x)</code> ignora nulos.</li>
+    <li><code>SUM</code>, <code>AVG</code>, <code>MIN</code> e <code>MAX</code> ignoram NULL. Um <code>AVG</code> sobre uma coluna com nulos divide apenas pelos não nulos.</li>
+    <li>Para trocar NULL por um valor padrão, use <code>COALESCE(id_convenio, 0)</code> (padrão SQL, funciona nos dois bancos). No Oracle existe também <code>NVL</code>.</li>
+  </ul>
+  <div class="note trap ora"><b>Particularidade do Oracle</b><p>No Oracle, string vazia <code>''</code> <strong>é</strong> NULL. <code>WHERE nome = ''</code> nunca retorna nada; use <code>WHERE nome IS NULL</code>. No PostgreSQL, <code>''</code> e NULL são coisas diferentes.</p></div>
+</section>
+
+<!-- 03 -->
+<section class="chap" id="joins">
+  <div class="chap-head"><span class="num">03</span><span class="lvl l1">Básico</span></div>
+  <h2>JOINs sem surpresas</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Devolve</th></tr></thead>
+    <tbody>
+      <tr><td><code>INNER JOIN</code></td><td>só os pares que casam dos dois lados</td></tr>
+      <tr><td><code>LEFT JOIN</code></td><td>todas as linhas da esquerda; a direita vem NULL quando não casa</td></tr>
+      <tr><td><code>FULL JOIN</code></td><td>todas as linhas dos dois lados</td></tr>
+      <tr><td><code>CROSS JOIN</code></td><td>todas as combinações (produto cartesiano)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Filtro no ON ou no WHERE?</h3>
+  <p>Em INNER JOIN tanto faz. Em LEFT JOIN, muda o resultado. Um filtro sobre a tabela da direita colocado no WHERE elimina as linhas que vieram com NULL, e o LEFT JOIN vira um INNER JOIN disfarçado.</p>
+<pre><code class="sql">-- Objetivo: todos os médicos, com o total de consultas realizadas (zero se não tiver)
+
+-- ERRADO: médicos sem atendimento somem, pois a.status é NULL para eles
+SELECT m.nome, COUNT(a.id_atendimento) AS qtd
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+WHERE a.status = 'REALIZADO'
+GROUP BY m.nome;
+
+-- CERTO: o filtro da tabela da direita vai no ON
+SELECT m.nome, COUNT(a.id_atendimento) AS qtd
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+                       AND a.status = 'REALIZADO'
+GROUP BY m.nome;</code></pre>
+
+  <h3>Semi-join e anti-join: EXISTS e NOT EXISTS</h3>
+  <p>Quando você só quer saber <em>se existe</em> correspondência, sem trazer colunas do outro lado, não faça JOIN. O JOIN multiplica linhas; o EXISTS para no primeiro registro encontrado.</p>
+<pre><code class="sql">-- Pacientes que tiveram pelo menos um exame (semi-join)
+SELECT p.id_paciente, p.nome
+FROM paciente p
+WHERE EXISTS (SELECT 1 FROM atendimento a
+              WHERE a.id_paciente = p.id_paciente
+                AND a.tipo = 'EXAME');
+
+-- Pacientes que NUNCA foram atendidos (anti-join)
+SELECT p.id_paciente, p.nome
+FROM paciente p
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a
+                  WHERE a.id_paciente = p.id_paciente);</code></pre>
+  <div class="note trap"><b>Armadilha clássica: NOT IN com NULL</b><p><code>WHERE x NOT IN (SELECT id_convenio FROM atendimento)</code> devolve <strong>zero linhas</strong> se a subconsulta tiver um único NULL, porque <code>x &lt;&gt; NULL</code> é UNKNOWN. Para anti-join, prefira sempre <code>NOT EXISTS</code>.</p></div>
+
+  <h3>Fan-out: o JOIN que multiplica linhas</h3>
+  <p>Ao juntar uma tabela "um" com uma tabela "muitos", cada linha do lado "um" se repete. Se você juntar duas tabelas "muitos" ao mesmo pai, as linhas se multiplicam entre si e as somas ficam erradas. O sintoma típico é alguém colocar <code>DISTINCT</code> para "consertar". A correção real é agregar antes de juntar:</p>
+<pre><code class="sql">-- Total faturado por paciente, já agregado, depois juntado ao cadastro
+WITH fat AS (
+  SELECT id_paciente, SUM(valor) AS total
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+  GROUP BY id_paciente
+)
+SELECT p.nome, f.total
+FROM paciente p
+JOIN fat f ON f.id_paciente = p.id_paciente;</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Se você precisou de DISTINCT para o resultado "ficar certo", desconfie do JOIN. Quase sempre há um join faltando condição ou uma tabela que deveria ser EXISTS.</p></div>
+</section>
+
+<!-- 04 -->
+<section class="chap" id="agregacao">
+  <div class="chap-head"><span class="num">04</span><span class="lvl l1">Básico</span></div>
+  <h2>Agregação</h2>
+  <p>Toda coluna do SELECT precisa estar no GROUP BY ou dentro de uma função de agregação. HAVING filtra depois de agrupar.</p>
+<pre><code class="sql">-- Médicos com mais de 100 consultas realizadas em 2026
+SELECT id_medico, COUNT(*) AS qtd, SUM(valor) AS faturado
+FROM atendimento
+WHERE status = 'REALIZADO'                         -- filtra linhas (antes)
+  AND dt_atendimento &gt;= DATE '2026-01-01'
+  AND dt_atendimento &lt;  DATE '2027-01-01'
+GROUP BY id_medico
+HAVING COUNT(*) &gt; 100;                             -- filtra grupos (depois)</code></pre>
+
+  <h3>Agregação condicional: várias contagens numa passada</h3>
+  <p>Em vez de três consultas (uma por status), leia a tabela uma vez só:</p>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">SELECT id_medico,
+       COUNT(*)                                              AS total,
+       SUM(CASE WHEN status = 'REALIZADO' THEN 1 ELSE 0 END) AS realizados,
+       SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END) AS cancelados,
+       SUM(CASE WHEN status = 'REALIZADO' THEN valor END)    AS faturado
+FROM atendimento
+GROUP BY id_medico;</code></pre>
+<pre data-db="pg"><code class="sql">-- O PostgreSQL tem a cláusula FILTER, mais legível (CASE também funciona)
+SELECT id_medico,
+       COUNT(*)                                       AS total,
+       COUNT(*)   FILTER (WHERE status = 'REALIZADO') AS realizados,
+       COUNT(*)   FILTER (WHERE status = 'CANCELADO') AS cancelados,
+       SUM(valor) FILTER (WHERE status = 'REALIZADO') AS faturado
+FROM atendimento
+GROUP BY id_medico;</code></pre>
+  </div>
+  <p>Esse padrão também resolve "pivotar" linhas em colunas (um mês por coluna, por exemplo) sem precisar de PIVOT.</p>
+  <h3>Subtotais com ROLLUP</h3>
+<pre><code class="sql">-- Totais por médico e tipo, com subtotal por médico e total geral
+SELECT id_medico, tipo, SUM(valor) AS total
+FROM atendimento
+GROUP BY ROLLUP (id_medico, tipo);
+-- As linhas de subtotal vêm com tipo = NULL; GROUPING(tipo) = 1 as identifica.</code></pre>
+</section>
+
+<!-- 05 -->
+<section class="chap" id="subq">
+  <div class="chap-head"><span class="num">05</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Subconsultas e CTEs</h2>
+  <p>Há três lugares onde uma subconsulta pode morar, e cada um tem um custo diferente:</p>
+  <ul>
+    <li><strong>No FROM</strong> (tabela derivada): vira uma tabela temporária lógica. Ótimo para quebrar o problema em etapas.</li>
+    <li><strong>No WHERE</strong> (<code>IN</code>, <code>EXISTS</code>): o otimizador costuma reescrever como semi-join. Bom.</li>
+    <li><strong>No SELECT</strong> (subconsulta escalar): pode rodar <em>uma vez por linha</em>. Em consultas grandes, reescreva como JOIN.</li>
+  </ul>
+<pre><code class="sql">-- Lento em tabelas grandes: uma subconsulta por paciente
+SELECT p.nome,
+       (SELECT MAX(a.dt_atendimento) FROM atendimento a
+         WHERE a.id_paciente = p.id_paciente) AS ultimo
+FROM paciente p;
+
+-- Normalmente melhor: agrega uma vez e junta
+SELECT p.nome, u.ultimo
+FROM paciente p
+LEFT JOIN (SELECT id_paciente, MAX(dt_atendimento) AS ultimo
+           FROM atendimento GROUP BY id_paciente) u
+       ON u.id_paciente = p.id_paciente;</code></pre>
+  <div class="note"><b>Depende</b><p>Se você vai trazer só 20 pacientes (com paginação), a subconsulta escalar com um bom índice em <code>(id_paciente, dt_atendimento)</code> pode ser mais rápida que agregar a tabela inteira. Otimização é sempre sobre volume. Meça.</p></div>
+
+  <h3>CTE (WITH): legibilidade</h3>
+  <p>A CTE dá nome a uma etapa. Ela torna consultas longas legíveis de cima para baixo.</p>
+<pre><code class="sql">WITH realizados AS (
+  SELECT * FROM atendimento WHERE status = 'REALIZADO'
+),
+por_medico AS (
+  SELECT id_medico, COUNT(*) AS qtd, SUM(valor) AS total
+  FROM realizados GROUP BY id_medico
+)
+SELECT m.nome, pm.qtd, pm.total, pm.total / pm.qtd AS ticket_medio
+FROM por_medico pm
+JOIN medico m ON m.id_medico = pm.id_medico
+ORDER BY pm.total DESC;</code></pre>
+  <div class="note ora"><b>CTE e desempenho</b><ul>
+    <li><strong>PostgreSQL 12+</strong>: a CTE é "embutida" na consulta principal, a menos que seja referenciada mais de uma vez. Para forçar que seja calculada uma vez só: <code>WITH x AS MATERIALIZED (...)</code>. Antes do 12, toda CTE era materializada, o que impedia otimizações.</li>
+    <li><strong>Oracle</strong>: decide sozinho entre embutir ou materializar numa tabela temporária. Os hints <code>/*+ MATERIALIZE */</code> e <code>/*+ INLINE */</code> forçam um dos dois.</li>
+  </ul></div>
+
+  <h3>CTE recursiva: hierarquias</h3>
+<pre><code class="sql">-- Gerar um calendário com todos os dias de novembro (útil para "dias sem atendimento")
+WITH RECURSIVE dias (dia) AS (         -- no Oracle, omita a palavra RECURSIVE
+  SELECT DATE '2026-11-01' FROM dual   -- no PostgreSQL, sem "FROM dual"
+  UNION ALL
+  SELECT dia + 1 FROM dias WHERE dia &lt; DATE '2026-11-30'
+)
+SELECT d.dia, COUNT(a.id_atendimento) AS qtd
+FROM dias d
+LEFT JOIN atendimento a
+       ON a.dt_atendimento &gt;= d.dia AND a.dt_atendimento &lt; d.dia + 1
+GROUP BY d.dia
+ORDER BY d.dia;</code></pre>
+  <p>No PostgreSQL, <code>generate_series(DATE '2026-11-01', DATE '2026-11-30', INTERVAL '1 day')</code> faz o calendário diretamente. No Oracle há também <code>CONNECT BY LEVEL &lt;= 30</code>.</p>
+</section>
+
+<!-- 06 -->
+<section class="chap" id="janela">
+  <div class="chap-head"><span class="num">06</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Funções de janela</h2>
+  <p>É o recurso que mais economiza código. Uma função de janela calcula algo sobre um grupo de linhas <strong>sem colapsar</strong> as linhas, como faria o GROUP BY.</p>
+<pre><code class="sql">funcao() OVER (PARTITION BY grupo   -- divide em grupos (opcional)
+               ORDER BY coluna      -- ordem dentro do grupo (opcional)
+               ROWS BETWEEN ...)    -- moldura (opcional)</code></pre>
+
+  <h3>Top-1 por grupo: o último atendimento de cada paciente</h3>
+<pre><code class="sql">SELECT *
+FROM (
+  SELECT a.*,
+         ROW_NUMBER() OVER (PARTITION BY id_paciente
+                            ORDER BY dt_atendimento DESC) AS rn
+  FROM atendimento a
+) x
+WHERE rn = 1;</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Função</th><th>Empates (mesma data)</th></tr></thead>
+    <tbody>
+      <tr><td><code>ROW_NUMBER()</code></td><td>1, 2, 3, 4: numeração única, desempate arbitrário</td></tr>
+      <tr><td><code>RANK()</code></td><td>1, 1, 3, 4: empatados dividem a posição e pulam a seguinte</td></tr>
+      <tr><td><code>DENSE_RANK()</code></td><td>1, 1, 2, 3: empatados dividem, sem pular</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Comparar com a linha anterior: LAG e LEAD</h3>
+<pre><code class="sql">-- Intervalo em dias entre atendimentos consecutivos do mesmo paciente
+SELECT id_paciente, dt_atendimento,
+       LAG(dt_atendimento) OVER (PARTITION BY id_paciente
+                                 ORDER BY dt_atendimento) AS anterior,
+       CAST(dt_atendimento AS DATE)
+         - CAST(LAG(dt_atendimento) OVER (PARTITION BY id_paciente
+                                          ORDER BY dt_atendimento) AS DATE) AS dias
+FROM atendimento;</code></pre>
+  <p>Útil para achar retornos em menos de 30 dias, gaps em sequências e variações mês a mês.</p>
+
+  <h3>Totais acumulados e médias móveis</h3>
+<pre><code class="sql">WITH mensal AS (
+  SELECT TRUNC(dt_atendimento, 'MM') AS mes, SUM(valor) AS total   -- PG: DATE_TRUNC('month', dt_atendimento)
+  FROM atendimento WHERE status = 'REALIZADO'
+  GROUP BY TRUNC(dt_atendimento, 'MM')
+)
+SELECT mes, total,
+       SUM(total) OVER (ORDER BY mes)                                  AS acumulado,
+       AVG(total) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING
+                                          AND CURRENT ROW)             AS media_3m,
+       total / SUM(total) OVER ()                                      AS pct_do_total
+FROM mensal
+ORDER BY mes;</code></pre>
+  <div class="note trap"><b>A moldura padrão</b><p>Com <code>ORDER BY</code> e sem moldura explícita, o padrão é <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>. Com RANGE, linhas com o mesmo valor de ordenação entram juntas no cálculo, o que surpreende em acumulados com datas repetidas. Escreva <code>ROWS BETWEEN ...</code> quando quiser linha a linha.</p></div>
+</section>
+
+<!-- 07 -->
+<section class="chap" id="paginacao">
+  <div class="chap-head"><span class="num">07</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Conjuntos, top-N e paginação</h2>
+  <h3>UNION ou UNION ALL</h3>
+  <p><code>UNION</code> remove duplicatas, o que exige ordenar ou fazer hash de todo o resultado. <code>UNION ALL</code> só concatena. Se você sabe que as partes não se sobrepõem, ou se duplicatas não importam, use <code>UNION ALL</code>. Os outros operadores são <code>INTERSECT</code> e <code>EXCEPT</code> (no Oracle, <code>MINUS</code>; o 21c aceita os dois).</p>
+
+  <h3>Top-N</h3>
+<pre><code class="sql">-- Padrão SQL: Oracle 12c+ e PostgreSQL
+SELECT * FROM atendimento
+ORDER BY valor DESC
+FETCH FIRST 10 ROWS ONLY;      -- PG também aceita LIMIT 10</code></pre>
+  <div class="note trap ora"><b>Oracle legado: ROWNUM</b><p><code>ROWNUM</code> é atribuído <em>antes</em> do ORDER BY. <code>WHERE ROWNUM &lt;= 10 ORDER BY valor DESC</code> pega 10 linhas quaisquer e depois as ordena. O jeito certo com ROWNUM é ordenar numa subconsulta e filtrar por fora.</p></div>
+
+  <h3>Paginação: OFFSET fica mais lento a cada página</h3>
+  <p><code>OFFSET 100000</code> obriga o banco a ler e descartar 100 mil linhas. A página 5000 é muito mais lenta que a página 1. A alternativa é a paginação por chave (<em>keyset</em>, ou "seek"): guarde a última linha vista e peça "as próximas depois dela".</p>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">-- Índice ideal: (dt_atendimento, id_atendimento)
+-- :dt e :id são os valores da última linha da página anterior
+SELECT *
+FROM atendimento
+WHERE dt_atendimento &lt; :dt
+   OR (dt_atendimento = :dt AND id_atendimento &lt; :id)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+FETCH FIRST 50 ROWS ONLY;</code></pre>
+<pre data-db="pg"><code class="sql">-- Índice ideal: (dt_atendimento, id_atendimento)
+-- O PostgreSQL aceita comparação de tuplas, que usa o índice diretamente
+SELECT *
+FROM atendimento
+WHERE (dt_atendimento, id_atendimento) &lt; ($1, $2)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+LIMIT 50;</code></pre>
+  </div>
+  <p>O <code>id_atendimento</code> serve de desempate, para a ordenação ser única e nenhuma linha se perder entre páginas. O custo da página 5000 fica igual ao da página 1. A desvantagem é não dar para pular direto para "página 37".</p>
+</section>
+
+<!-- 08 -->
+<section class="chap" id="escrita">
+  <div class="chap-head"><span class="num">08</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Escrita de dados e transações</h2>
+  <h3>Upsert: inserir ou atualizar</h3>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">MERGE INTO paciente p
+USING (SELECT :cpf AS cpf, :nome AS nome FROM dual) s
+   ON (p.cpf = s.cpf)
+WHEN MATCHED THEN
+  UPDATE SET p.nome = s.nome
+WHEN NOT MATCHED THEN
+  INSERT (id_paciente, cpf, nome)
+  VALUES (seq_paciente.NEXTVAL, s.cpf, s.nome);</code></pre>
+<pre data-db="pg"><code class="sql">-- Requer um índice UNIQUE em cpf
+INSERT INTO paciente (cpf, nome)
+VALUES ($1, $2)
+ON CONFLICT (cpf)
+DO UPDATE SET nome = EXCLUDED.nome;
+-- O PostgreSQL 15+ também tem MERGE.</code></pre>
+  </div>
+  <h3>UPDATE com base em outra tabela</h3>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">-- Cancela agendamentos de médicos inativos
+UPDATE atendimento a
+SET status = 'CANCELADO'
+WHERE a.status = 'AGENDADO'
+  AND EXISTS (SELECT 1 FROM medico m
+              WHERE m.id_medico = a.id_medico
+                AND m.ativo = 'N');</code></pre>
+<pre data-db="pg"><code class="sql">UPDATE atendimento a
+SET status = 'CANCELADO'
+FROM medico m
+WHERE m.id_medico = a.id_medico
+  AND m.ativo = false
+  AND a.status = 'AGENDADO';</code></pre>
+  </div>
+
+  <h3>Transações e ACID</h3>
+  <p>Uma transação agrupa comandos que precisam acontecer juntos. Ou tudo é gravado (<code>COMMIT</code>) ou nada (<code>ROLLBACK</code>).</p>
+  <ul>
+    <li><strong>Atomicidade</strong>: tudo ou nada.</li>
+    <li><strong>Consistência</strong>: constraints (PK, FK, CHECK, NOT NULL) valem ao final.</li>
+    <li><strong>Isolamento</strong>: transações concorrentes não enxergam o trabalho incompleto umas das outras. O padrão dos dois bancos é <code>READ COMMITTED</code>: cada comando vê o que já estava commitado quando ele começou.</li>
+    <li><strong>Durabilidade</strong>: depois do COMMIT, sobrevive a uma queda do servidor.</li>
+  </ul>
+  <div class="note trap ora"><b>Diferenças que pegam</b><ul>
+    <li><strong>Oracle</strong>: todo DDL (<code>CREATE</code>, <code>ALTER</code>, <code>TRUNCATE</code>) faz <strong>COMMIT implícito</strong> antes e depois. Um <code>CREATE INDEX</code> no meio de um script grava o que estava pendente.</li>
+    <li><strong>PostgreSQL</strong>: DDL é transacional. Dá para criar uma tabela e desfazer com ROLLBACK.</li>
+    <li>Ferramentas mudam o comportamento: muitos clientes PostgreSQL trabalham em <em>autocommit</em>; SQL Developer e SQL*Plus não. Saiba em qual modo você está antes de rodar um UPDATE.</li>
+  </ul></div>
+  <div class="note rule"><b>Hábito de segurança</b><p>Antes de um UPDATE ou DELETE, rode o mesmo WHERE como <code>SELECT COUNT(*)</code>. Se o número não for o esperado, não execute.</p></div>
+</section>
+
+<!-- 09 -->
+<section class="chap" id="motor">
+  <div class="chap-head"><span class="num">09</span><span class="lvl l3">Avançado</span></div>
+  <h2>Como o banco executa uma consulta</h2>
+  <p>SQL é declarativo: você diz <em>o que</em> quer, e o <strong>otimizador</strong> decide <em>como</em> buscar. Otimizar consultas é, em grande parte, entender e influenciar essa decisão.</p>
+  <ol>
+    <li><strong>Parse</strong>: verifica sintaxe e permissões e resolve nomes de tabelas e colunas.</li>
+    <li><strong>Otimização</strong>: gera planos candidatos (qual índice, qual ordem de join, qual algoritmo) e estima o custo de cada um.</li>
+    <li><strong>Execução</strong>: roda o plano escolhido.</li>
+  </ol>
+  <h3>Custo vem de estimativa de linhas</h3>
+  <p>O otimizador não sabe quantas linhas sua consulta vai retornar: ele <strong>estima</strong> a partir de estatísticas (número de linhas, valores distintos, histogramas). A estimativa de linhas em cada etapa se chama <strong>cardinalidade</strong>. Ela decide tudo:</p>
+  <ul>
+    <li>Se estimar que o filtro retorna 5 linhas, escolhe índice e nested loops.</li>
+    <li>Se estimar 2 milhões, escolhe full scan e hash join.</li>
+  </ul>
+  <div class="note rule"><b>A ideia central desta trilha</b><p>Quase todo plano ruim nasce de uma <strong>estimativa de cardinalidade errada</strong>. Ao investigar uma consulta lenta, a pergunta principal é "onde o banco achou que viriam N linhas e vieram 1000×N?".</p></div>
+  <h3>Seletividade</h3>
+  <p>Seletividade é a fração de linhas que um filtro deixa passar. <code>id_atendimento = 123</code> é muito seletivo (1 linha). <code>status = 'REALIZADO'</code> pode ser pouco seletivo (80% da tabela). Índice compensa para filtros seletivos. Para filtros pouco seletivos, ler a tabela inteira de forma sequencial costuma ser mais barato que milhões de leituras aleatórias via índice.</p>
+  <p>Não existe um número mágico. Dependendo de como os dados estão dispostos no disco, o ponto de virada fica entre menos de 1% e uns 20% das linhas.</p>
+</section>
+
+<!-- 10 -->
+<section class="chap" id="indices">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Índices por dentro</h2>
+  <p>O índice padrão nos dois bancos é a <strong>B-tree</strong>: uma árvore balanceada cujas folhas guardam os valores indexados em ordem, cada um com um ponteiro para a linha na tabela (ROWID no Oracle, TID no PostgreSQL). As folhas são ligadas entre si, o que permite percorrer um intervalo em ordem.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 640 230" role="img" aria-label="Diagrama de uma B-tree com raiz, ramos, folhas encadeadas e tabela">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>
+      <rect x="250" y="10" width="140" height="30" rx="5" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+      <text x="320" y="30" text-anchor="middle">raiz: 40 | 80</text>
+      <g style="stroke:var(--muted)" fill="none">
+        <line x1="275" y1="40" x2="95" y2="75"/><line x1="320" y1="40" x2="320" y2="75"/><line x1="365" y1="40" x2="545" y2="75"/>
+      </g>
+      <rect x="20" y="75" width="150" height="30" rx="5" style="fill:var(--surface);stroke:var(--line)"/>
+      <text x="95" y="95" text-anchor="middle">ramo: 10 | 25</text>
+      <rect x="245" y="75" width="150" height="30" rx="5" style="fill:var(--surface);stroke:var(--line)"/>
+      <text x="320" y="95" text-anchor="middle">ramo: 50 | 65</text>
+      <rect x="470" y="75" width="150" height="30" rx="5" style="fill:var(--surface);stroke:var(--line)"/>
+      <text x="545" y="95" text-anchor="middle">ramo: 90 | 120</text>
+      <g style="stroke:var(--muted)" fill="none">
+        <line x1="95" y1="105" x2="70" y2="140"/><line x1="320" y1="105" x2="250" y2="140"/><line x1="320" y1="105" x2="400" y2="140"/><line x1="545" y1="105" x2="570" y2="140"/>
+      </g>
+      <g>
+        <rect x="10" y="140" width="120" height="30" rx="5" style="fill:var(--good-soft);stroke:var(--good)"/><text x="70" y="160" text-anchor="middle">10 11 14 …</text>
+        <rect x="190" y="140" width="120" height="30" rx="5" style="fill:var(--good-soft);stroke:var(--good)"/><text x="250" y="160" text-anchor="middle">50 52 57 …</text>
+        <rect x="340" y="140" width="120" height="30" rx="5" style="fill:var(--good-soft);stroke:var(--good)"/><text x="400" y="160" text-anchor="middle">65 66 71 …</text>
+        <rect x="510" y="140" width="120" height="30" rx="5" style="fill:var(--good-soft);stroke:var(--good)"/><text x="570" y="160" text-anchor="middle">90 94 99 …</text>
+      </g>
+      <g style="stroke:var(--good)" fill="none" marker-end="url(#ar)">
+        <line x1="132" y1="155" x2="186" y2="155"/><line x1="312" y1="155" x2="336" y2="155"/><line x1="462" y1="155" x2="506" y2="155"/>
+      </g>
+      <text class="lbl" x="10" y="200">folhas: valores ordenados + ROWID/TID, encadeadas (→) para varrer intervalos</text>
+      <text class="lbl" x="10" y="220">busca por 57: raiz → ramo → folha = 3 leituras, mesmo com milhões de linhas</text>
+    </svg>
+    <figcaption>A profundidade cresce muito devagar: uma B-tree com 3 ou 4 níveis aguenta centenas de milhões de linhas.</figcaption>
+  </figure>
+  <p>Uma busca com índice tem até três partes. Só a primeira é sempre barata:</p>
+  <ol>
+    <li><strong>Descer a árvore</strong> até a primeira folha: poucas leituras.</li>
+    <li><strong>Percorrer as folhas</strong> do intervalo: proporcional a quantas entradas casam.</li>
+    <li><strong>Ir à tabela</strong> buscar as colunas que não estão no índice: <em>uma leitura aleatória por linha</em>. Com 200 mil linhas, essa etapa domina o custo.</li>
+  </ol>
+
+  <h3>Índice composto: a ordem das colunas importa</h3>
+  <p>Um índice em <code>(id_medico, dt_atendimento)</code> está ordenado primeiro por médico e, dentro de cada médico, por data, como uma lista telefônica ordenada por sobrenome e depois por nome.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Filtro</th><th>Usa bem o índice (id_medico, dt_atendimento)?</th></tr></thead>
+    <tbody>
+      <tr><td><code>id_medico = 7</code></td><td>Sim, pelo prefixo</td></tr>
+      <tr><td><code>id_medico = 7 AND dt_atendimento &gt;= :ini</code></td><td>Sim, o caso ideal</td></tr>
+      <tr><td><code>id_medico = 7 ORDER BY dt_atendimento</code></td><td>Sim, e dispensa o sort</td></tr>
+      <tr><td><code>dt_atendimento &gt;= :ini</code></td><td>Mal. Seria como procurar todos os "João" numa lista ordenada por sobrenome.</td></tr>
+      <tr><td><code>id_medico IN (7, 9) AND dt_atendimento &gt;= :ini</code></td><td>Sim, uma busca por valor do IN</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra para montar índices compostos</b><ol style="margin-bottom:0">
+    <li>Colunas filtradas por <strong>igualdade</strong> primeiro.</li>
+    <li>Depois, <strong>uma</strong> coluna de intervalo (<code>&gt;</code>, <code>BETWEEN</code>, <code>LIKE 'abc%'</code>) ou de ORDER BY.</li>
+    <li>Colunas depois de um intervalo ajudam pouco a navegar, mas ainda servem para filtrar dentro do índice ou cobrir a consulta.</li>
+  </ol></div>
+  <p>O Oracle (<em>index skip scan</em>) e o PostgreSQL 18+ conseguem às vezes usar um índice sem a primeira coluna, quando ela tem poucos valores distintos. É uma rede de segurança; não projete contando com isso.</p>
+
+  <h3>Índice que cobre a consulta</h3>
+  <p>Se todas as colunas que a consulta usa estão no índice, o banco não precisa visitar a tabela (etapa 3 some). No Oracle aparece como só <code>INDEX RANGE SCAN</code>, sem <code>TABLE ACCESS</code>; no PostgreSQL, como <code>Index Only Scan</code>.</p>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">-- Consulta frequente: faturamento de um médico num período
+CREATE INDEX ix_atend_med_dt_valor
+  ON atendimento (id_medico, dt_atendimento, status, valor);</code></pre>
+<pre data-db="pg"><code class="sql">-- INCLUDE guarda colunas só na folha, sem fazer parte da chave de busca
+CREATE INDEX ix_atend_med_dt
+  ON atendimento (id_medico, dt_atendimento)
+  INCLUDE (status, valor);
+-- Index Only Scan depende do visibility map: tabelas com VACUUM em dia.</code></pre>
+  </div>
+
+  <h3>Índices de expressão e índices parciais</h3>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">-- Busca por nome sem diferenciar maiúsculas
+CREATE INDEX ix_pac_nome_up ON paciente (UPPER(nome));
+-- usado por: WHERE UPPER(nome) = UPPER(:nome)
+
+-- Índice "parcial": o Oracle não guarda entradas totalmente NULL.
+-- Só os agendados entram no índice, que fica pequeno.
+CREATE INDEX ix_atend_agendado
+  ON atendimento (CASE WHEN status = 'AGENDADO' THEN id_medico END);
+-- usado por (a expressão precisa ser idêntica):
+-- WHERE CASE WHEN status = 'AGENDADO' THEN id_medico END = :med</code></pre>
+<pre data-db="pg"><code class="sql">-- Busca por nome sem diferenciar maiúsculas
+CREATE INDEX ix_pac_nome_up ON paciente (upper(nome));
+-- usado por: WHERE upper(nome) = upper($1)
+
+-- Índice parcial: só os agendados entram no índice
+CREATE INDEX ix_atend_agendado
+  ON atendimento (id_medico, dt_atendimento)
+  WHERE status = 'AGENDADO';
+-- usado quando a consulta inclui WHERE status = 'AGENDADO'</code></pre>
+  </div>
+  <div class="note trap ora"><b>Oracle: IS NULL e índice</b><p>Como entradas totalmente nulas não entram em B-tree no Oracle, <code>WHERE id_convenio IS NULL</code> não usa um índice só em <code>id_convenio</code>. Truque conhecido: <code>CREATE INDEX ... ON atendimento (id_convenio, 0)</code>. A constante garante que toda linha tenha entrada. O PostgreSQL indexa NULLs normalmente.</p></div>
+
+  <h3>Outros tipos de índice</h3>
+  <ul>
+    <li><strong>Bitmap</strong> (Oracle): bom para colunas de poucos valores em data warehouse. Em tabelas com muitas escritas concorrentes causa bloqueios sérios; evite em OLTP.</li>
+    <li><strong>GIN + pg_trgm</strong> (PostgreSQL): acelera <code>LIKE '%texto%'</code> e buscas em JSONB e arrays.</li>
+    <li><strong>BRIN</strong> (PostgreSQL): minúsculo, para tabelas enormes cuja ordem física acompanha a coluna (datas de inserção).</li>
+    <li><strong>Oracle Text</strong>: busca textual em documentos.</li>
+  </ul>
+
+  <h3>Índice tem custo</h3>
+  <ul>
+    <li>Todo INSERT, DELETE e UPDATE de coluna indexada precisa atualizar cada índice. Dez índices numa tabela = onze escritas por linha.</li>
+    <li>Antes de criar um índice novo, veja se dá para estender um existente. <code>(id_medico)</code> e <code>(id_medico, dt_atendimento)</code> juntos são redundantes: o segundo atende os dois casos.</li>
+    <li><strong>Indexe as chaves estrangeiras</strong> usadas em joins e deletes. No Oracle, uma FK sem índice causa bloqueio da tabela filha inteira quando a PK da mãe é alterada ou excluída, e cada DELETE na mãe vira full scan na filha.</li>
+    <li>Em produção, crie índices sem travar escritas: <code>CREATE INDEX ... ONLINE</code> (Oracle) ou <code>CREATE INDEX CONCURRENTLY</code> (PostgreSQL).</li>
+  </ul>
+</section>
+
+<!-- 11 -->
+<section class="chap" id="sargavel">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Avançado</span></div>
+  <h2>Anti-padrões que matam índices</h2>
+  <p>Uma condição é <em>sargável</em> (de <em>Search ARGument ABLE</em>) quando o banco consegue usá-la para navegar no índice. A regra geral: <strong>deixe a coluna "nua" de um lado da comparação</strong>. Qualquer transformação sobre a coluna obriga o banco a calcular a expressão para cada linha.</p>
+
+  <h3>1. Função sobre a coluna</h3>
+<pre><code class="sql">-- Ruim: TRUNC é aplicado a todas as linhas, o índice em dt_atendimento não é usado
+WHERE TRUNC(dt_atendimento) = DATE '2026-11-10'
+WHERE TO_CHAR(dt_atendimento, 'YYYY-MM') = '2026-11'
+WHERE EXTRACT(YEAR FROM dt_atendimento) = 2026
+
+-- Bom: intervalo semiaberto [início, fim)
+WHERE dt_atendimento &gt;= DATE '2026-11-10'
+  AND dt_atendimento &lt;  DATE '2026-11-11'</code></pre>
+  <p>Use sempre <code>&gt;= início AND &lt; fim</code>. <code>BETWEEN '2026-11-01' AND '2026-11-30'</code> perde tudo o que aconteceu depois de 00:00 do dia 30.</p>
+
+  <h3>2. Conversão implícita de tipo</h3>
+<pre><code class="sql">-- cpf é VARCHAR2. Comparar com número faz o Oracle aplicar TO_NUMBER(cpf)
+-- em cada linha: full scan (e erro ORA-01722 se houver um cpf não numérico)
+WHERE cpf = 12345678901
+
+-- Bom: mesmo tipo dos dois lados
+WHERE cpf = '12345678901'</code></pre>
+  <p>Acontece muito com parâmetros vindos da aplicação (número passado para coluna texto, TIMESTAMP comparado com DATE). O PostgreSQL é mais rígido e costuma dar erro em vez de converter em silêncio. No Oracle, procure <code>INTERNAL_FUNCTION</code> ou <code>TO_NUMBER</code> na seção de predicados do plano.</p>
+
+  <h3>3. Curinga no início do LIKE</h3>
+<pre><code class="sql">WHERE nome LIKE 'MARIA%'      -- usa índice (prefixo conhecido)
+WHERE nome LIKE '%SILVA%'     -- B-tree não ajuda: precisa de pg_trgm/Oracle Text</code></pre>
+
+  <h3>4. Aritmética sobre a coluna</h3>
+<pre><code class="sql">WHERE valor * 1.1 &gt; 500       -- ruim
+WHERE valor &gt; 500 / 1.1       -- bom: a conta fica do lado da constante
+WHERE dt_atendimento + 30 &gt; SYSDATE   -- ruim
+WHERE dt_atendimento &gt; SYSDATE - 30   -- bom</code></pre>
+
+  <h3>5. OR entre colunas diferentes</h3>
+<pre><code class="sql">-- Difícil para um índice só
+WHERE id_medico = :m OR id_paciente = :p
+
+-- Os bancos podem combinar dois índices (BitmapOr no PG, OR-expansion no Oracle).
+-- Se não fizerem, reescreva:
+SELECT * FROM atendimento WHERE id_medico = :m
+UNION ALL
+SELECT * FROM atendimento WHERE id_paciente = :p
+                            AND (id_medico &lt;&gt; :m OR id_medico IS NULL);</code></pre>
+
+  <h3>6. NVL/COALESCE "para cobrir parâmetro opcional"</h3>
+<pre><code class="sql">-- Padrão comum em telas de busca, péssimo para o otimizador
+WHERE id_medico = NVL(:medico, id_medico)
+  AND (:dt_ini IS NULL OR dt_atendimento &gt;= :dt_ini)</code></pre>
+  <p>Um único plano precisa servir tanto para "filtrou por médico" quanto para "não filtrou". Quando a tela tem muitos filtros opcionais, monte o SQL dinamicamente na aplicação, incluindo só os filtros preenchidos, <strong>sempre com bind variables</strong> (capítulo 13).</p>
+
+  <h3>7. SELECT *</h3>
+  <p>Traz colunas que você não usa, impede índices de cobrir a consulta e trafega mais dados pela rede. Liste as colunas.</p>
+
+  <h3>8. N+1 na aplicação</h3>
+  <p>Buscar 500 atendimentos e depois fazer 500 consultas, uma para o nome de cada paciente, custa 501 idas e voltas ao banco. Faça um JOIN, ou busque os 500 nomes com um <code>IN</code>. A consulta pode ser rápida e o sistema lento por causa da latência repetida.</p>
+
+  <h3>9. COUNT para verificar existência</h3>
+<pre><code class="sql">-- Conta tudo só para saber se é maior que zero
+SELECT COUNT(*) FROM atendimento WHERE id_paciente = :p;
+
+-- Para no primeiro
+SELECT 1 FROM atendimento WHERE id_paciente = :p FETCH FIRST 1 ROWS ONLY;</code></pre>
+
+  <h3>10. Negações e diferente</h3>
+  <p><code>status &lt;&gt; 'CANCELADO'</code> e <code>NOT IN (...)</code> costumam ser pouco seletivos e não navegam no índice. Se a lista de valores desejados é pequena e conhecida, prefira a forma positiva: <code>status IN ('AGENDADO','REALIZADO')</code>.</p>
+</section>
+
+<!-- 12 -->
+<section class="chap" id="planos">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Lendo planos de execução</h2>
+  <p>O plano é a resposta do otimizador à pergunta "como você vai buscar isso?". Há dois tipos, e a diferença importa:</p>
+  <ul>
+    <li><strong>Plano estimado</strong>: o que o otimizador <em>pretende</em> fazer, com números estimados. Não executa a consulta.</li>
+    <li><strong>Plano real</strong>: o que aconteceu, com linhas e tempos medidos. Executa a consulta. É o que você quer para diagnosticar.</li>
+  </ul>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">-- Estimado
+EXPLAIN PLAN FOR
+SELECT ... ;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+-- Real: rode a consulta com o hint e, na mesma sessão, peça o plano do último cursor
+SELECT /*+ GATHER_PLAN_STATISTICS */ ... ;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(NULL, NULL, 'ALLSTATS LAST'));
+-- Compare E-Rows (estimado) com A-Rows (real) linha a linha</code></pre>
+<pre data-db="pg"><code class="sql">-- Estimado
+EXPLAIN SELECT ... ;
+
+-- Real: ANALYZE executa de verdade, BUFFERS mostra leituras de páginas
+EXPLAIN (ANALYZE, BUFFERS) SELECT ... ;
+
+-- Para UPDATE/DELETE, proteja-se: ANALYZE executa a alteração!
+BEGIN;
+EXPLAIN (ANALYZE, BUFFERS) DELETE FROM ... ;
+ROLLBACK;</code></pre>
+  </div>
+  <h3>Como ler</h3>
+  <p>O plano é uma árvore. Os nós mais internos (mais indentados) produzem linhas para os nós de cima. Leia de dentro para fora: comece pelas folhas (os acessos a tabelas) e suba até a raiz.</p>
+  <div class="dual">
+<pre class="plan" data-db="oracle"><code>-- Exemplo ilustrativo
+-----------------------------------------------------------------------------------
+| Id | Operation                     | Name           | Starts | E-Rows | A-Rows |
+-----------------------------------------------------------------------------------
+|  0 | SELECT STATEMENT              |                |      1 |        |    120 |
+|  1 |  NESTED LOOPS                 |                |      1 |      3 |    120 |
+|  2 |   TABLE ACCESS BY INDEX ROWID | MEDICO         |      1 |      1 |      1 |
+|* 3 |    INDEX UNIQUE SCAN          | PK_MEDICO      |      1 |      1 |      1 |
+|* 4 |   TABLE ACCESS FULL           | ATENDIMENTO    |      1 |      3 |    120 |
+-----------------------------------------------------------------------------------
+Predicate Information:
+   3 - access("M"."ID_MEDICO"=7)
+   4 - filter(TRUNC("A"."DT_ATENDIMENTO")=TO_DATE('2026-11-10'...)
+              AND "A"."ID_MEDICO"=7)</code></pre>
+<pre class="plan" data-db="pg"><code>-- Exemplo ilustrativo
+Nested Loop  (cost=0.29..48211.40 rows=3 width=64)
+             (actual time=0.05..812.33 rows=120 loops=1)
+  -&gt;  Index Scan using medico_pkey on medico m
+        (actual time=0.02..0.02 rows=1 loops=1)
+        Index Cond: (id_medico = 7)
+  -&gt;  Seq Scan on atendimento a
+        (actual time=0.03..812.20 rows=120 loops=1)
+        Filter: ((id_medico = 7) AND (date_trunc('day', dt_atendimento) = '2026-11-10'))
+        Rows Removed by Filter: 4812330
+Buffers: shared hit=1204 read=61877
+Execution Time: 812.51 ms</code></pre>
+  </div>
+  <p>O que esse plano diz: a tabela grande foi lida inteira (full scan / Seq Scan) e quase 5 milhões de linhas foram descartadas para sobrar 120. Pela seção de predicados, o motivo é a função sobre a data (anti-padrão 1). Reescrevendo com intervalo e tendo um índice em <code>(id_medico, dt_atendimento)</code>, o acesso vira range scan.</p>
+
+  <h3>Operações de acesso</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Oracle</th><th>PostgreSQL</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td><code>TABLE ACCESS FULL</code></td><td><code>Seq Scan</code></td><td>lê a tabela toda. Ótimo se você precisa de boa parte dela; suspeito se o filtro é seletivo</td></tr>
+      <tr><td><code>INDEX UNIQUE SCAN</code></td><td><code>Index Scan</code></td><td>busca um valor exato numa chave única</td></tr>
+      <tr><td><code>INDEX RANGE SCAN</code> + <code>TABLE ACCESS BY INDEX ROWID</code></td><td><code>Index Scan</code></td><td>percorre um trecho do índice e vai à tabela</td></tr>
+      <tr><td><code>INDEX RANGE SCAN</code> sozinho</td><td><code>Index Only Scan</code></td><td>o índice cobre a consulta</td></tr>
+      <tr><td><code>INDEX FAST FULL SCAN</code></td><td>—</td><td>lê o índice inteiro como se fosse uma tabela menor</td></tr>
+      <tr><td><code>BITMAP CONVERSION</code></td><td><code>Bitmap Index/Heap Scan</code></td><td>junta ponteiros de um ou mais índices e lê a tabela na ordem física</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Algoritmos de JOIN</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Algoritmo</th><th>Como funciona</th><th>Bom quando</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nested Loops</strong></td><td>para cada linha de fora, busca as correspondentes dentro (de preferência por índice)</td><td>o lado de fora tem poucas linhas e o de dentro tem índice na coluna do join</td></tr>
+      <tr><td><strong>Hash Join</strong></td><td>monta uma tabela hash com o lado menor e varre o maior consultando o hash</td><td>muitas linhas dos dois lados, junção por igualdade</td></tr>
+      <tr><td><strong>Merge Join</strong></td><td>ordena os dois lados pela chave e anda em paralelo</td><td>dados já ordenados (por índice) ou junções por desigualdade</td></tr>
+    </tbody>
+  </table></div>
+  <p>O desastre clássico: o otimizador estima 1 linha no lado de fora, escolhe nested loops, e vêm 500 mil. O lado de dentro roda 500 mil vezes. No Oracle, veja a coluna <code>Starts</code>; no PostgreSQL, <code>loops</code>.</p>
+  <div class="note trap"><b>PostgreSQL: rows é por loop</b><p>Em <code>actual ... rows=40 loops=10000</code>, o total de linhas é 400 mil, não 40. O tempo também é por loop.</p></div>
+
+  <h3>O que procurar num plano real</h3>
+  <ol>
+    <li><strong>Diferença grande entre estimado e real</strong> (E-Rows vs A-Rows; <code>rows=</code> estimado vs <code>actual rows</code>). O primeiro nó, de baixo para cima, onde a diferença passa de 10× é geralmente a causa raiz.</li>
+    <li><strong>Muitas linhas descartadas</strong> (<code>Rows Removed by Filter</code>, ou A-Rows alto num acesso seguido de filtro que derruba quase tudo): falta índice ou a condição não é sargável.</li>
+    <li><strong>Nested loops com muitas iterações</strong> (Starts/loops altos).</li>
+    <li><strong>Sort ou hash usando disco</strong>: <code>Sort Method: external merge Disk</code> no PG (aumente <code>work_mem</code> só para a sessão, ou reduza o volume); uso de TEMP no Oracle.</li>
+    <li><strong>Onde está o tempo</strong>: A-Time (Oracle) ou actual time (PG) mostram o nó mais caro. Ataque esse primeiro.</li>
+  </ol>
+</section>
+
+<!-- 13 -->
+<section class="chap" id="binds">
+  <div class="chap-head"><span class="num">13</span><span class="lvl l3">Avançado</span></div>
+  <h2>Bind variables e cache de planos</h2>
+  <p>Otimizar uma consulta custa CPU. Por isso os bancos guardam planos para reaproveitar. Mas só reaproveitam se o texto do SQL for idêntico.</p>
+<pre><code class="sql">-- Literal: cada paciente gera um SQL diferente, e cada um passa pelo otimizador
+SELECT * FROM atendimento WHERE id_paciente = 1001;
+SELECT * FROM atendimento WHERE id_paciente = 1002;
+
+-- Bind: um texto só, otimizado uma vez e reaproveitado
+SELECT * FROM atendimento WHERE id_paciente = :id;    -- Oracle
+SELECT * FROM atendimento WHERE id_paciente = $1;     -- PostgreSQL (prepared statement)</code></pre>
+  <ul>
+    <li><strong>Oracle</strong>: SQL com literais gera <em>hard parse</em> a cada execução, enche a shared pool e, em sistemas com muitos usuários, causa contenção que trava o banco inteiro. Em Oracle, binds são obrigatórios em OLTP.</li>
+    <li><strong>PostgreSQL</strong>: cada conexão tem seu cache. Um prepared statement usa planos "custom" nas 5 primeiras execuções e depois pode passar para um plano "genérico", se ele não parecer pior.</li>
+    <li><strong>Segurança</strong>: binds são também a proteção principal contra SQL injection. Nunca concatene entrada do usuário no texto do SQL.</li>
+  </ul>
+  <h3>O lado ruim: dados desbalanceados</h3>
+  <p>Se 95% dos atendimentos são <code>'REALIZADO'</code> e 0,1% são <code>'AGENDADO'</code>, o plano ideal para cada valor é diferente: full scan para um, índice para o outro. Com bind, um plano só serve aos dois.</p>
+  <ul>
+    <li>O Oracle olha o valor do bind na primeira execução (<em>bind peeking</em>) e, desde o 11g, pode manter planos diferentes por faixa de valores (<em>adaptive cursor sharing</em>), se houver histograma na coluna.</li>
+    <li>O PostgreSQL controla esse comportamento com <code>plan_cache_mode</code> (<code>auto</code>, <code>force_custom_plan</code>, <code>force_generic_plan</code>).</li>
+    <li>Colunas com poucos valores fixos e muito desbalanceados podem ficar como literal (ex.: <code>status = 'AGENDADO'</code>), mantendo os binds nos valores que variam por usuário.</li>
+  </ul>
+</section>
+
+<!-- 14 -->
+<section class="chap" id="estatisticas">
+  <div class="chap-head"><span class="num">14</span><span class="lvl l3">Avançado</span></div>
+  <h2>Estatísticas e estimativas</h2>
+  <p>As estatísticas são o "mapa" que o otimizador usa para estimar cardinalidade. Mapa desatualizado gera plano ruim.</p>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">-- Quando foram coletadas?
+SELECT table_name, num_rows, last_analyzed
+FROM user_tables WHERE table_name = 'ATENDIMENTO';
+
+-- Coletar manualmente (ex.: depois de uma carga grande)
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'ATENDIMENTO');
+
+-- Colunas correlacionadas (tipo e status não são independentes)
+SELECT DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'ATENDIMENTO', '(TIPO,STATUS)')
+FROM dual;</code></pre>
+<pre data-db="pg"><code class="sql">-- Quando foram coletadas?
+SELECT relname, n_live_tup, last_analyze, last_autoanalyze
+FROM pg_stat_user_tables WHERE relname = 'atendimento';
+
+-- Coletar manualmente
+ANALYZE atendimento;
+
+-- Colunas correlacionadas
+CREATE STATISTICS st_atend_tipo_status (dependencies, mcv)
+  ON tipo, status FROM atendimento;
+ANALYZE atendimento;</code></pre>
+  </div>
+  <h3>Por que as estimativas erram</h3>
+  <ul>
+    <li><strong>Estatísticas velhas</strong>: a tabela tinha 10 mil linhas na coleta e agora tem 10 milhões. É comum em tabelas carregadas por ETL logo antes de serem consultadas.</li>
+    <li><strong>Datas além do máximo conhecido</strong>: a estatística diz que a maior data é ontem; o filtro pede "hoje", e o otimizador estima quase zero linhas.</li>
+    <li><strong>Distribuição desigual</strong> sem histograma: o banco assume que todos os valores têm a mesma frequência.</li>
+    <li><strong>Colunas correlacionadas</strong>: o otimizador multiplica as seletividades como se fossem independentes (cidade = 'BH' e estado = 'MG' vira uma estimativa pequena demais). Estatísticas estendidas resolvem.</li>
+    <li><strong>Expressões e funções</strong>: o banco não sabe estimar <code>UPPER(nome) = ...</code> sem estatística sobre a expressão. Criar um índice de expressão gera essa estatística no PostgreSQL; no Oracle, use estatísticas estendidas sobre a expressão.</li>
+  </ul>
+  <div class="note trap"><b>Cuidado em produção</b><p>Coletar estatísticas muda planos de <em>todas</em> as consultas da tabela, para melhor ou para pior. Os dois bancos já coletam automaticamente (job noturno no Oracle, autovacuum/autoanalyze no PG). Coleta manual em produção é algo para combinar com o DBA.</p></div>
+</section>
+
+<!-- 15 -->
+<section class="chap" id="concorrencia">
+  <div class="chap-head"><span class="num">15</span><span class="lvl l3">Avançado</span></div>
+  <h2>Concorrência, locks e MVCC</h2>
+  <p>Oracle e PostgreSQL usam <strong>MVCC</strong> (controle de concorrência por múltiplas versões): quem lê vê uma "foto" consistente dos dados e <strong>leitura não bloqueia escrita, nem escrita bloqueia leitura</strong>. Só escritas na mesma linha esperam uma pela outra.</p>
+  <h3>Bloqueios e deadlocks</h3>
+  <ul>
+    <li>UPDATE e DELETE travam as linhas afetadas até o COMMIT ou ROLLBACK. Transação aberta esquecida = linhas travadas para todo mundo.</li>
+    <li><strong>Deadlock</strong>: a sessão A trava a linha 1 e espera a 2; a sessão B trava a 2 e espera a 1. O banco detecta e cancela uma delas (ORA-00060 / <code>deadlock detected</code>). A prevenção é sempre alterar linhas na mesma ordem (por exemplo, por id crescente).</li>
+    <li>Transações curtas: não deixe uma transação aberta enquanto espera o usuário ou uma API externa.</li>
+  </ul>
+  <h3>Fila de processamento com SKIP LOCKED</h3>
+  <p>Para vários workers consumindo a mesma tabela de tarefas (fila de notificações, por exemplo) sem pegar o mesmo item:</p>
+<pre><code class="sql">-- Cada worker pega até 10 itens que ninguém está processando
+SELECT id, payload
+FROM fila_notificacao
+WHERE status = 'PENDENTE'
+ORDER BY id
+FETCH FIRST 10 ROWS ONLY
+FOR UPDATE SKIP LOCKED;
+-- processa, faz UPDATE status = 'ENVIADO' e COMMIT</code></pre>
+  <div class="note ora"><b>Oracle: FETCH FIRST com FOR UPDATE</b><p>No Oracle, <code>FETCH FIRST</code> junto com <code>FOR UPDATE</code> gera erro (ORA-02014), e <code>ROWNUM &lt;= 10</code> é aplicado <em>antes</em> de pular as linhas travadas, então pode trazer menos itens que o pedido. O padrão no Oracle é abrir um cursor <code>FOR UPDATE SKIP LOCKED</code> e fazer fetch de N linhas (ou usar Advanced Queuing). No PostgreSQL a consulta acima funciona como está, ou com <code>LIMIT 10</code>.</p></div>
+  <h3>O custo do MVCC</h3>
+  <ul>
+    <li><strong>PostgreSQL</strong>: UPDATE grava uma versão nova da linha e deixa a antiga como "morta". O <strong>VACUUM</strong> (normalmente o autovacuum) recicla esse espaço. Uma transação aberta por horas impede essa limpeza, e as tabelas incham (<em>bloat</em>). Fique de olho em sessões <code>idle in transaction</code> em <code>pg_stat_activity</code>.</li>
+    <li><strong>Oracle</strong>: as versões antigas ficam no <strong>UNDO</strong>. Uma consulta muito longa pode precisar de uma versão que já foi sobrescrita e falhar com <strong>ORA-01555 snapshot too old</strong>. Fazer COMMIT dentro de um loop que lê o mesmo cursor é uma causa clássica.</li>
+  </ul>
+</section>
+
+<!-- 16 -->
+<section class="chap" id="escala">
+  <div class="chap-head"><span class="num">16</span><span class="lvl l3">Avançado</span></div>
+  <h2>Particionamento, views materializadas e hints</h2>
+  <h3>Particionamento</h3>
+  <p>Divide uma tabela grande em pedaços físicos, por exemplo uma partição por mês de <code>dt_atendimento</code>. Os ganhos:</p>
+  <ul>
+    <li><strong>Partition pruning</strong>: uma consulta de novembro lê só a partição de novembro. Só funciona se o filtro for sobre a <em>chave de partição</em> e sargável.</li>
+    <li><strong>Manutenção</strong>: apagar dados antigos vira <code>DROP PARTITION</code> (instantâneo) em vez de um DELETE de milhões de linhas.</li>
+  </ul>
+  <p>Particionamento não é acelerador universal: consultas que não filtram pela chave de partição podem ficar <em>mais</em> lentas, porque visitam todas as partições. No Oracle, é uma opção paga da edição Enterprise.</p>
+
+  <h3>Views materializadas</h3>
+  <p>Guardam o <em>resultado</em> de uma consulta pesada, como um painel de faturamento mensal. Leitura instantânea, mas os dados ficam tão atualizados quanto o último refresh.</p>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">CREATE MATERIALIZED VIEW mv_fat_mensal
+  BUILD IMMEDIATE REFRESH COMPLETE ON DEMAND AS
+SELECT TRUNC(dt_atendimento, 'MM') AS mes, id_medico, SUM(valor) AS total
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY TRUNC(dt_atendimento, 'MM'), id_medico;
+
+EXEC DBMS_MVIEW.REFRESH('MV_FAT_MENSAL');</code></pre>
+<pre data-db="pg"><code class="sql">CREATE MATERIALIZED VIEW mv_fat_mensal AS
+SELECT date_trunc('month', dt_atendimento) AS mes, id_medico, SUM(valor) AS total
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY 1, 2;
+
+CREATE UNIQUE INDEX ON mv_fat_mensal (mes, id_medico);
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fat_mensal;  -- não bloqueia leitores</code></pre>
+  </div>
+
+  <h3>Hints: último recurso</h3>
+  <p>Hints forçam uma decisão do otimizador. São tentadores e perigosos: congelam um plano que pode ficar ruim quando os dados mudarem. Antes de usar, corrija a causa (estatística, índice, SQL não sargável).</p>
+  <div class="dual">
+<pre data-db="oracle"><code class="sql">SELECT /*+ INDEX(a ix_atend_med_dt) LEADING(m a) USE_NL(a) */ ...
+FROM medico m JOIN atendimento a ON ...
+-- Um hint com erro de sintaxe é ignorado em silêncio.
+-- Para fixar planos de forma gerenciada, existem SQL Plan Baselines e SQL Profiles.</code></pre>
+<pre data-db="pg"><code class="sql">-- O PostgreSQL não tem hints nativos (é uma decisão do projeto).
+-- Existe a extensão pg_hint_plan. Para testes de sessão, dá para desligar estratégias:
+SET enable_nestloop = off;   -- só para investigar, nunca em produção global
+EXPLAIN (ANALYZE) SELECT ... ;
+RESET enable_nestloop;</code></pre>
+  </div>
+
+  <h3>Paralelismo</h3>
+  <p>Os dois bancos podem dividir um scan grande entre vários processos (<code>PARALLEL</code> no Oracle, <code>Gather</code> e <code>Parallel Seq Scan</code> no PG). Ajuda relatórios pesados; em sistemas OLTP com muitos usuários, paralelismo demais disputa CPU com todo mundo.</p>
+</section>
+
+<!-- 17 -->
+<section class="chap" id="diagnostico">
+  <div class="chap-head"><span class="num">17</span><span class="lvl">Prática</span></div>
+  <h2>Roteiro de diagnóstico de uma consulta lenta</h2>
+  <p>Na ordem em que costuma dar resultado:</p>
+  <ol class="checklist">
+    <li><div><strong>Defina "lento" com números.</strong> Quanto tempo leva, quantas linhas devolve, quantas vezes por dia roda. Uma consulta de 50 ms executada 2 milhões de vezes pesa mais que um relatório de 2 minutos.</div></li>
+    <li><div><strong>Ache as consultas que mais custam.</strong> Oracle: <code>V$SQL</code> ordenado por <code>elapsed_time</code> ou <code>buffer_gets</code> (AWR/ASH se licenciado). PostgreSQL: extensão <code>pg_stat_statements</code> ordenada por <code>total_exec_time</code>.</div></li>
+    <li><div><strong>Pegue o plano real</strong> (<code>ALLSTATS LAST</code> / <code>EXPLAIN (ANALYZE, BUFFERS)</code>), com valores de parâmetros realistas.</div></li>
+    <li><div><strong>Ache o nó mais caro</strong> e o primeiro ponto onde estimado e real divergem mais de 10×.</div></li>
+    <li><div><strong>Se a estimativa está errada</strong>: verifique a data das estatísticas, histogramas, colunas correlacionadas, funções na coluna e conversões implícitas.</div></li>
+    <li><div><strong>Se a estimativa está certa mas o acesso é ruim</strong>: falta um índice, ou a ordem das colunas do índice não serve, ou a condição não é sargável.</div></li>
+    <li><div><strong>Reduza o trabalho, não só o acesso</strong>: menos colunas, agregar antes de juntar, EXISTS no lugar de JOIN+DISTINCT, paginação por chave, UNION ALL no lugar de UNION.</div></li>
+    <li><div><strong>Meça de novo</strong>, no mesmo ambiente, e compare leituras lógicas (Buffers / buffer_gets), não só tempo: tempo varia com o cache, leituras são mais estáveis.</div></li>
+    <li><div><strong>Considere o efeito colateral</strong>: índice novo pesa nas escritas; mudar estatísticas muda outros planos. Teste antes em homologação.</div></li>
+  </ol>
+</section>
+
+<!-- 18 -->
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">18</span><span class="lvl">Prática</span></div>
+  <h2>Exercícios</h2>
+  <p>Tente resolver antes de abrir a resposta. Todos usam o esquema do capítulo 00.</p>
+
+  <div class="ex"><div class="q"><span class="lvl l1">Básico</span> <b>1.</b> Liste os pacientes que nunca tiveram um atendimento <em>realizado</em> (podem ter agendados ou cancelados).</div>
+  <details><summary>Ver resposta</summary>
+<pre><code class="sql">SELECT p.id_paciente, p.nome
+FROM paciente p
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a
+                  WHERE a.id_paciente = p.id_paciente
+                    AND a.status = 'REALIZADO');</code></pre>
+  <p>Note que o filtro de status fica <em>dentro</em> do NOT EXISTS. Fora, mudaria o significado.</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l1">Básico</span> <b>2.</b> Por que esta consulta retorna zero linhas, mesmo havendo convênios sem atendimento?
+<pre><code class="sql">SELECT * FROM convenio
+WHERE id_convenio NOT IN (SELECT id_convenio FROM atendimento);</code></pre></div>
+  <details><summary>Ver resposta</summary>
+  <p>Os atendimentos particulares têm <code>id_convenio</code> NULL. <code>x NOT IN (1, 2, NULL)</code> equivale a <code>x&lt;&gt;1 AND x&lt;&gt;2 AND x&lt;&gt;NULL</code>, e o último termo é sempre UNKNOWN. Correção:</p>
+<pre><code class="sql">SELECT c.* FROM convenio c
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a
+                  WHERE a.id_convenio = c.id_convenio);</code></pre></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l1">Básico</span> <b>3.</b> Em uma linha por médico, mostre: total de atendimentos, quantos foram cancelados e a taxa de cancelamento em %.</div>
+  <details><summary>Ver resposta</summary>
+<pre><code class="sql">SELECT id_medico,
+       COUNT(*) AS total,
+       SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END) AS cancelados,
+       ROUND(100.0 * SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END)
+             / COUNT(*), 1) AS taxa_pct
+FROM atendimento
+GROUP BY id_medico;</code></pre>
+  <p>O <code>100.0</code> evita divisão inteira no PostgreSQL, que trunca <code>1/3</code> para <code>0</code> quando os dois lados são inteiros.</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l2">Intermediário</span> <b>4.</b> Traga, para cada paciente, apenas o atendimento mais recente, com o nome do médico.</div>
+  <details><summary>Ver resposta</summary>
+<pre><code class="sql">SELECT x.id_paciente, x.dt_atendimento, m.nome AS medico
+FROM (
+  SELECT a.*,
+         ROW_NUMBER() OVER (PARTITION BY a.id_paciente
+                            ORDER BY a.dt_atendimento DESC, a.id_atendimento DESC) AS rn
+  FROM atendimento a
+) x
+JOIN medico m ON m.id_medico = x.id_medico
+WHERE x.rn = 1;</code></pre>
+  <p>O <code>id_atendimento DESC</code> desempata atendimentos no mesmo horário e torna o resultado determinístico.</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l2">Intermediário</span> <b>5.</b> Encontre os retornos: atendimentos do mesmo paciente que aconteceram até 30 dias depois do atendimento anterior.</div>
+  <details><summary>Ver resposta</summary>
+<pre><code class="sql">SELECT *
+FROM (
+  SELECT id_paciente, id_atendimento, dt_atendimento,
+         LAG(dt_atendimento) OVER (PARTITION BY id_paciente
+                                   ORDER BY dt_atendimento) AS anterior
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+) x
+WHERE x.anterior IS NOT NULL
+  AND x.dt_atendimento &lt; x.anterior + INTERVAL '30' DAY;
+-- PostgreSQL também aceita INTERVAL '30 days'</code></pre>
+  <p>O LAG precisa estar numa subconsulta, porque funções de janela não podem aparecer no WHERE (capítulo 1).</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l3">Avançado</span> <b>6.</b> Reescreva para que um índice em <code>dt_atendimento</code> possa ser usado:
+<pre><code class="sql">SELECT COUNT(*) FROM atendimento
+WHERE TO_CHAR(dt_atendimento, 'YYYY-MM') = '2026-10';</code></pre></div>
+  <details><summary>Ver resposta</summary>
+<pre><code class="sql">SELECT COUNT(*) FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2026-10-01'
+  AND dt_atendimento &lt;  DATE '2026-11-01';</code></pre>
+  <p>Com um índice em <code>dt_atendimento</code>, o COUNT pode ser resolvido só no índice, sem tocar na tabela.</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l3">Avançado</span> <b>7.</b> A tela da agenda roda esta consulta milhares de vezes por dia. Qual índice você criaria, e em que ordem de colunas?
+<pre><code class="sql">SELECT dt_atendimento, id_paciente, tipo
+FROM atendimento
+WHERE id_medico = :med
+  AND status = 'AGENDADO'
+  AND dt_atendimento &gt;= :ini AND dt_atendimento &lt; :fim
+ORDER BY dt_atendimento;</code></pre></div>
+  <details><summary>Ver resposta</summary>
+  <p>Igualdades primeiro, depois o intervalo, que também atende o ORDER BY:</p>
+<pre><code class="sql">CREATE INDEX ix_agenda ON atendimento (id_medico, status, dt_atendimento);
+-- Para cobrir a consulta e evitar ir à tabela:
+--   Oracle: (id_medico, status, dt_atendimento, id_paciente, tipo)
+--   PG:     (id_medico, status, dt_atendimento) INCLUDE (id_paciente, tipo)
+-- No PG, um índice parcial WHERE status = 'AGENDADO' fica bem menor.</code></pre>
+  <p>Com <code>dt_atendimento</code> antes de <code>status</code>, o banco percorreria todos os status do período e filtraria depois. Funciona, mas lê mais.</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l3">Avançado</span> <b>8.</b> No plano real, um <code>NESTED LOOPS</code> tem o lado de fora com <code>E-Rows = 1</code> e <code>A-Rows = 480.000</code>, e a consulta leva 6 minutos. O filtro desse lado é <code>dt_atendimento &gt;= TRUNC(SYSDATE)</code>, e a tabela é carregada toda madrugada. O que provavelmente está acontecendo, e o que você verificaria?</div>
+  <details><summary>Ver resposta</summary>
+  <p>Estatísticas desatualizadas com o problema da "data além do máximo": na última coleta, a maior data da tabela era anterior a hoje, então o otimizador estimou ~1 linha para "a partir de hoje". Com 1 linha, nested loops parece ótimo; com 480 mil, o lado de dentro roda 480 mil vezes.</p>
+  <ul>
+    <li>Confira <code>last_analyzed</code> / <code>last_autoanalyze</code> da tabela.</li>
+    <li>Colete estatísticas logo após a carga diária, como passo final do ETL.</li>
+    <li>Rode de novo e confira se E-Rows ficou próximo de A-Rows e se o join virou hash join.</li>
+  </ul>
+  <p>Forçar <code>USE_HASH</code> com hint resolveria hoje e esconderia a causa.</p></details></div>
+
+  <div class="ex"><div class="q"><span class="lvl l3">Avançado</span> <b>9.</b> Uma busca de pacientes usa <code>WHERE UPPER(nome) LIKE UPPER(:txt) || '%'</code> e faz full scan numa tabela de 3 milhões de pacientes. Como acelerar?</div>
+  <details><summary>Ver resposta</summary>
+  <p>Crie um índice na mesma expressão: <code>CREATE INDEX ix_pac_nome_up ON paciente (UPPER(nome))</code>. Como o curinga está só no final, o LIKE vira range scan nesse índice. No PostgreSQL com collation diferente de "C", pode ser preciso criar o índice com <code>text_pattern_ops</code> para o LIKE com prefixo usar a B-tree: <code>CREATE INDEX ON paciente (upper(nome) text_pattern_ops)</code>. Se a busca precisar achar o texto no meio do nome (<code>'%' || :txt || '%'</code>), a B-tree não resolve: use pg_trgm (GIN) no PostgreSQL ou Oracle Text.</p></details></div>
+</section>
+
+<!-- 19 -->
+<section class="chap" id="proximos">
+  <div class="chap-head"><span class="num">19</span><span class="lvl">Prática</span></div>
+  <h2>Para ir além</h2>
+  <ul>
+    <li><strong>Use The Index, Luke</strong> (use-the-index-luke.com), de Markus Winand: o melhor material gratuito sobre índices e desempenho, com exemplos para Oracle e PostgreSQL. Aprofunda os capítulos 10 a 12.</li>
+    <li><strong>Documentação do PostgreSQL</strong>, capítulo "Using EXPLAIN" e "Performance Tips".</li>
+    <li><strong>Oracle Database SQL Tuning Guide</strong>, na documentação oficial da Oracle: a referência de planos, estatísticas e otimizador.</li>
+    <li><strong>Modern SQL</strong> (modern-sql.com), também de Winand: funções de janela, CTEs e recursos do padrão SQL e qual banco suporta cada um.</li>
+  </ul>
+  <h3>Como praticar</h3>
+  <ol>
+    <li>Escolha uma consulta real e lenta do seu dia a dia, num banco de homologação.</li>
+    <li>Tire o plano real e anote tempo, linhas e leituras.</li>
+    <li>Aplique o roteiro do capítulo 17 e mude uma coisa de cada vez.</li>
+    <li>Compare os planos antes e depois e anote o que mudou e por quê.</li>
+  </ol>
+  <p>Fazer isso com dez consultas reais ensina mais que qualquer livro.</p>
+</section>
+
+<footer>Os planos de execução mostrados são ilustrativos. Detalhes de sintaxe variam com a versão: os exemplos assumem Oracle 12c+ e PostgreSQL 12+.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  /* ---------- realce de sintaxe SQL ---------- */
+  var KW = 'SELECT FROM WHERE JOIN LEFT RIGHT FULL INNER OUTER CROSS ON AND OR NOT IN EXISTS IS NULL AS GROUP BY HAVING ORDER ASC DESC LIMIT OFFSET FETCH FIRST NEXT ROWS ROW ONLY UNION ALL INTERSECT EXCEPT MINUS DISTINCT CASE WHEN THEN ELSE END WITH RECURSIVE OVER PARTITION INSERT INTO VALUES UPDATE SET DELETE MERGE USING MATCHED CREATE INDEX TABLE VIEW MATERIALIZED CONFLICT DO BEGIN COMMIT ROLLBACK FOR SKIP LOCKED EXPLAIN PLAN ANALYZE BUFFERS LIKE BETWEEN DATE INTERVAL DAY PRIMARY KEY FOREIGN REFERENCES INCLUDE UNIQUE ROLLUP PRECEDING FOLLOWING CURRENT UNBOUNDED RANGE EXEC TRUE FALSE CONCURRENTLY BUILD IMMEDIATE REFRESH COMPLETE DEMAND RESET VARCHAR VARCHAR2 TIMESTAMP NUMERIC EXCLUDED'.split(' ');
+  var FN = 'COUNT SUM AVG MIN MAX ROW_NUMBER RANK DENSE_RANK LAG LEAD COALESCE NVL TRUNC UPPER LOWER TO_CHAR TO_DATE TO_NUMBER ROUND CAST EXTRACT MONTHS_BETWEEN GROUPING DATE_TRUNC GENERATE_SERIES SYSDATE'.split(' ');
+  var kwSet = {}, fnSet = {};
+  KW.forEach(function(w){kwSet[w]=1}); FN.forEach(function(w){fnSet[w]=1});
+  var re = /(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function hl(src){
+    var out = '', last = 0, m;
+    re.lastIndex = 0;
+    while ((m = re.exec(src))){
+      out += esc(src.slice(last, m.index));
+      var t = m[0], cls = '';
+      if (m[1]) cls = 'h';
+      else if (m[2]) cls = 'c';
+      else if (m[3]) cls = 's';
+      else if (m[4]) cls = 'd';
+      else { var u = t.toUpperCase(); if (kwSet[u]) cls = 'k'; else if (fnSet[u]) cls = 'f'; }
+      out += cls ? '<span class="'+cls+'">'+esc(t)+'</span>' : esc(t);
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  document.querySelectorAll('code.sql').forEach(function(el){ el.innerHTML = hl(el.textContent); });
+
+  /* ---------- seletor Oracle / PostgreSQL ---------- */
+  var KEY_DB = 'trilha-sql-db', KEY_DONE = 'trilha-sql-done';
+  function get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function put(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  var LBL = {oracle:'Oracle', pg:'PostgreSQL'};
+
+  document.querySelectorAll('.dual').forEach(function(d, i){
+    var tabs = document.createElement('div');
+    tabs.className = 'dual-tabs';
+    ['oracle','pg'].forEach(function(db){
+      var b = document.createElement('button');
+      b.type = 'button'; b.id = 'dual-'+i+'-'+db; b.textContent = LBL[db]; b.dataset.setDb = db;
+      tabs.appendChild(b);
+    });
+    d.insertBefore(tabs, d.firstChild);
+  });
+  function setDb(db){
+    document.body.dataset.db = db;
+    document.querySelectorAll('[data-set-db]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.dataset.setDb === db ? 'true' : 'false');
+    });
+    put(KEY_DB, db);
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-set-db]');
+    if (b){
+      var rect = b.getBoundingClientRect().top;
+      setDb(b.dataset.setDb);
+      // mantém o botão clicado no mesmo lugar da tela
+      var delta = b.getBoundingClientRect().top - rect;
+      if (delta) window.scrollBy(0, delta);
+    }
+  });
+  setDb(get(KEY_DB) === 'pg' ? 'pg' : 'oracle');
+
+  /* ---------- progresso ---------- */
+  var done = {};
+  try { done = JSON.parse(get(KEY_DONE) || '{}') || {}; } catch(e){ done = {}; }
+  var chaps = Array.prototype.slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n = 0;
+    chaps.forEach(function(s){
+      var on = !!done[s.id]; if (on) n++;
+      var a = document.querySelector('nav.toc a[href="#'+s.id+'"]');
+      if (a) a.classList.toggle('done', on);
+      var b = s.querySelector('.mark button');
+      if (b){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Estudado ✓' : 'Marcar como estudado'; }
+    });
+    document.getElementById('progtxt').textContent = n + ' de ' + chaps.length + ' capítulos estudados';
+    document.getElementById('progbar').style.width = (100 * n / chaps.length) + '%';
+  }
+  chaps.forEach(function(s){
+    var wrap = document.createElement('div'); wrap.className = 'mark';
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'mark-' + s.id;
+    b.addEventListener('click', function(){
+      if (done[s.id]) delete done[s.id]; else done[s.id] = 1;
+      put(KEY_DONE, JSON.stringify(done)); render();
+    });
+    wrap.appendChild(b); s.appendChild(wrap);
+  });
+  render();
+
+  /* ---------- sumário recolhido no celular ---------- */
+  var det = document.getElementById('tocdetails');
+  var mq = window.matchMedia('(max-width: 900px)');
+  function syncToc(){ if (mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  syncToc();
+  if (mq.addEventListener) mq.addEventListener('change', syncToc);
+  document.querySelectorAll('nav.toc a').forEach(function(a){
+    a.addEventListener('click', function(){ if (mq.matches) det.removeAttribute('open'); });
+  });
+})();
+</script>
