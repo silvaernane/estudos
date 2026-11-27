@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 06: Escrita, transações e modelagem</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 06 de 12 · Escrita, transações e modelagem</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html" aria-current="page"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li class="sub"><ol>
+      <li><a href="#escrita"><span class="n">1</span>Escrever dados: INSERT, UPDATE, DELETE, MERGE e RETURNING</a></li>
+      <li><a href="#transacoes"><span class="n">2</span>Transações: ACID, COMMIT, ROLLBACK, SAVEPOINT e DDL</a></li>
+      <li><a href="#constraints-chaves"><span class="n">3</span>Constraints, chaves, sequências e índices em chaves estrangeiras</a></li>
+      <li><a href="#normalizacao"><span class="n">4</span>Normalização: 1FN a 3FN e quando desnormalizar</a></li>
+      <li><a href="#tipos-dados"><span class="n">5</span>Tipos de dados certos: dinheiro, datas, fuso e texto</a></li>
+      <li><a href="#exclusao-lgpd"><span class="n">6</span>Exclusão lógica vs física, retenção e LGPD</a></li>
+      <li><a href="#cargas-lote"><span class="n">7</span>Cargas em lote e commits por bloco</a></li>
+      <li><a href="#migracoes"><span class="n">8</span>Migrações de esquema seguras: expandir e contrair</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 06 · <span class="lvl l2">Intermediário</span> <span class="lvl l3">Avançado</span></div>
+  <h1>Escrita, transações e modelagem</h1>
+  <p class="lede">Como gravar dados sem corrompê-los: DML, upsert, transações, constraints, tipos e normalização, mais o que muda em produção (LGPD, cargas em lote, migrações sem parada).</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Usar INSERT, UPDATE com join, DELETE, MERGE, ON CONFLICT e RETURNING nos dois bancos, evitando as armadilhas de cada sintaxe</li>
+    <li>Explicar ACID, COMMIT/ROLLBACK/SAVEPOINT, autocommit e as diferenças de DDL e isolamento entre Oracle e PostgreSQL</li>
+    <li>Desenhar constraints, chaves, identity e índices em FKs, e normalizar até a 3FN sabendo quando desnormalizar</li>
+    <li>Escolher tipos certos para dinheiro, datas e fuso, e tratar exclusão lógica e retenção sob a LGPD</li>
+    <li>Conduzir cargas em lote e migrações de esquema com expandir/contrair, sem derrubar produção</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="escrita">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Escrever dados: INSERT, UPDATE, DELETE, MERGE e RETURNING</h2>
+  <p>Consulta errada devolve resposta errada, e dá para refazer. Escrita errada <strong>altera o dado</strong>, e o dado errado já foi lido, replicado e faturado quando alguém percebe. Por isso este módulo trata escrita com mais cuidado que leitura: o raio de ação de cada comando, o que o banco garante (transações) e como o desenho das tabelas (constraints, tipos) impede o erro antes que ele aconteça.</p>
+
+  <h3>INSERT</h3>
+<pre><code class="sql">-- Sempre liste as colunas: o INSERT sobrevive a uma coluna nova na tabela
+INSERT INTO atendimento (id_paciente, id_medico, id_setor, dt_atendimento, tipo, status, valor)
+VALUES (7, 12, 3, TIMESTAMP '2025-03-10 08:30:00', 'CONSULTA', 'AGENDADO', 180.00);
+
+-- INSERT ... SELECT: copia o resultado de uma consulta (arquivar, popular, materializar)
+INSERT INTO atendimento_hist (id_atendimento, id_paciente, dt_atendimento, valor)
+SELECT id_atendimento, id_paciente, dt_atendimento, valor
+FROM atendimento
+WHERE dt_atendimento &lt; TIMESTAMP '2020-01-01 00:00:00';</code></pre>
+  <p>Várias linhas de uma vez: <code>VALUES (...), (...), (...)</code> no PostgreSQL (e no Oracle 23ai); em versões anteriores do Oracle, <code>INSERT ALL INTO t (...) VALUES (...) INTO t (...) VALUES (...) SELECT 1 FROM dual</code>. Menos idas e vindas à rede é o ganho principal (seção 7). Colunas omitidas recebem o <code>DEFAULT</code> (ou <code>NULL</code>). Colunas de <em>identity</em> e sequências geram a chave (seção 3).</p>
+
+  <h3>UPDATE com base em outra tabela</h3>
+  <p>A sintaxe do join dentro do UPDATE <strong>não é portável</strong>. O exemplo cancela agendamentos de convênios inativos:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Subconsulta correlacionada: o EXISTS é obrigatório (veja a armadilha)
+UPDATE atendimento a
+SET a.status = 'CANCELADO'
+WHERE a.status = 'AGENDADO'
+  AND EXISTS (SELECT 1 FROM convenio c
+              WHERE c.id_convenio = a.id_convenio AND c.ativo = 'N');
+
+-- Para copiar valores de outra tabela, MERGE é o mais legível:
+MERGE INTO atendimento a
+USING (SELECT id_atendimento, valor_tabela FROM tabela_preco_dia) s
+   ON (a.id_atendimento = s.id_atendimento)
+WHEN MATCHED THEN UPDATE SET a.valor = s.valor_tabela;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- UPDATE ... FROM: junta a outra tabela direto
+UPDATE atendimento a
+SET status = 'CANCELADO'
+FROM convenio c
+WHERE c.id_convenio = a.id_convenio
+  AND c.ativo = false
+  AND a.status = 'AGENDADO';
+
+-- Copiar valores:
+UPDATE atendimento a
+SET valor = s.valor_tabela
+FROM tabela_preco_dia s
+WHERE s.id_atendimento = a.id_atendimento;</code></pre>
+  </div>
+  <div class="note trap"><b>Armadilhas do UPDATE com outra tabela</b><ul>
+    <li><strong>Oracle</strong>: <code>SET valor = (SELECT valor_tabela FROM ... WHERE ...)</code> <em>sem</em> o <code>EXISTS</code> no WHERE atualiza <strong>todas</strong> as linhas, gravando <code>NULL</code> onde a subconsulta não acha nada. Se a subconsulta devolve mais de uma linha: erro <code>ORA-01427</code>.</li>
+    <li><strong>PostgreSQL</strong>: se o <code>FROM</code> casa <em>mais de uma</em> linha para a mesma linha do alvo, o UPDATE não dá erro: aplica <strong>uma delas, sem garantia de qual</strong>. Garanta a unicidade da junção.</li>
+    <li>No MERGE, o mesmo problema vira erro (<code>ORA-30926</code> no Oracle, "cannot affect row a second time" no PostgreSQL): é melhor assim, porque o erro avisa.</li>
+  </ul></div>
+
+  <h3>DELETE e TRUNCATE</h3>
+<pre><code class="sql">-- Oracle e PostgreSQL: use EXISTS/IN para filtrar por outra tabela
+DELETE FROM atendimento a
+WHERE a.status = 'CANCELADO'
+  AND a.dt_atendimento &lt; TIMESTAMP '2023-01-01 00:00:00'
+  AND NOT EXISTS (SELECT 1 FROM atendimento_item i WHERE i.id_atendimento = a.id_atendimento);
+-- PostgreSQL também aceita DELETE ... USING outra_tabela WHERE ...</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>DELETE</th><th>TRUNCATE</th></tr></thead>
+    <tbody>
+      <tr><td>Tipo</td><td>DML: linha a linha, aceita <code>WHERE</code></td><td>DDL: esvazia a tabela inteira</td></tr>
+      <tr><td>Velocidade</td><td>Proporcional às linhas (gera undo/WAL por linha)</td><td>Quase instantâneo, independente do tamanho</td></tr>
+      <tr><td>Transação</td><td>Reversível até o COMMIT</td><td>Oracle: faz COMMIT implícito, <strong>não volta</strong>. PostgreSQL: transacional, volta com ROLLBACK</td></tr>
+      <tr><td>Tabela referenciada por FK</td><td>Funciona se não violar a FK</td><td>Falha enquanto outra tabela tiver FK para ela (a menos que desabilite/cascateie)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Upsert: MERGE e INSERT ... ON CONFLICT</h3>
+  <p>"Se existe, atualiza; se não, insere" é tão comum que tem comando próprio. Fazer <code>SELECT</code> para checar e depois <code>INSERT</code> ou <code>UPDATE</code> tem uma <strong>condição de corrida</strong>: duas sessões checam ao mesmo tempo, as duas não acham, as duas inserem.</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">MERGE INTO paciente p
+USING (SELECT :cpf AS cpf, :nome AS nome FROM dual) s
+   ON (p.cpf = s.cpf)
+WHEN MATCHED THEN
+  UPDATE SET p.nome = s.nome
+WHEN NOT MATCHED THEN
+  INSERT (id_paciente, cpf, nome)
+  VALUES (seq_paciente.NEXTVAL, s.cpf, s.nome);
+-- Também aceita DELETE WHERE dentro do WHEN MATCHED (apaga as linhas atualizadas que satisfazem a condição)</code></pre>
+<pre data-label="PostgreSQL (INSERT ... ON CONFLICT)"><code class="sql">-- Requer UNIQUE (ou índice único) em cpf. Atômico: sem corrida.
+INSERT INTO paciente (cpf, nome)
+VALUES ($1, $2)
+ON CONFLICT (cpf)
+DO UPDATE SET nome = EXCLUDED.nome;     -- EXCLUDED = a linha que tentou entrar
+
+-- Só ignorar duplicatas:
+INSERT INTO paciente (cpf, nome) VALUES ($1, $2) ON CONFLICT (cpf) DO NOTHING;</code></pre>
+<pre data-label="PostgreSQL 15+ (MERGE)"><code class="sql">MERGE INTO paciente p
+USING (SELECT $1::varchar AS cpf, $2::varchar AS nome) s
+   ON p.cpf = s.cpf
+WHEN MATCHED THEN UPDATE SET nome = s.nome
+WHEN NOT MATCHED THEN INSERT (cpf, nome) VALUES (s.cpf, s.nome);</code></pre>
+  </div>
+  <p>No PostgreSQL, <code>ON CONFLICT</code> é a escolha para upsert de uma linha ou poucas, concorrente: o banco garante que um dos dois caminhos vence, sem erro, mesmo com duas sessões simultâneas. O <code>MERGE</code> (15+) é mais geral (várias cláusulas, <code>DELETE</code>, condições) e serve melhor a cargas de uma tabela de staging inteira, mas sob concorrência pode falhar com violação de unicidade se outra sessão inserir a mesma chave entre a checagem e a inserção: trate com retry. Versões mais recentes do PostgreSQL acrescentaram mais recursos ao <code>MERGE</code> (por exemplo, <code>RETURNING</code> na 17); confira a documentação da sua versão.</p>
+
+  <h3>RETURNING: devolver o que foi gravado</h3>
+  <p>Depois de inserir, você quase sempre precisa do <code>id</code> gerado. Reconsultar (<code>SELECT MAX(id)</code>) é errado sob concorrência. O banco devolve na mesma operação:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- RETURNING ... INTO: variável de PL/SQL ou bind de saída do driver
+INSERT INTO paciente (id_paciente, cpf, nome)
+VALUES (seq_paciente.NEXTVAL, :cpf, :nome)
+RETURNING id_paciente INTO :id_novo;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- RETURNING devolve linhas como um SELECT (também em UPDATE e DELETE)
+INSERT INTO paciente (cpf, nome) VALUES ($1, $2)
+RETURNING id_paciente;
+
+UPDATE atendimento SET status = 'CANCELADO' WHERE id_atendimento = $1
+RETURNING id_atendimento, status;</code></pre>
+  </div>
+  <p>É também a forma de ver <em>exatamente</em> quais linhas um <code>UPDATE</code> ou <code>DELETE</code> atingiu (útil em auditoria e para encadear comandos). No Oracle, o <code>RETURNING INTO</code> de várias linhas usa <code>BULK COLLECT INTO</code>.</p>
+  <div class="note rule"><b>Hábito de segurança para quem escreve em produção</b><ol>
+    <li>Rode o mesmo <code>WHERE</code> como <code>SELECT COUNT(*)</code>. Se o número não for o esperado, pare.</li>
+    <li>Abra transação explícita (<code>BEGIN</code> no PostgreSQL; no Oracle, a transação já está aberta, e saiba que o cliente não está em autocommit).</li>
+    <li>Execute, confira o número de linhas afetadas, confira por amostra com <code>SELECT</code>.</li>
+    <li>Só então <code>COMMIT</code>. Na dúvida, <code>ROLLBACK</code>.</li>
+  </ol></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como fazer upsert com segurança?" Em PostgreSQL, <code>INSERT ... ON CONFLICT</code> (atômico, exige índice único); em Oracle, <code>MERGE</code>. Explique por que <em>SELECT-depois-INSERT</em> falha sob concorrência e que o <code>UNIQUE</code> é quem garante a regra, não o código da aplicação.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina o processo de <strong>alteração manual em produção</strong>: ticket, script revisado por outra pessoa, contagem prévia, transação explícita, registro de quem executou. "UPDATE sem WHERE" é o incidente clássico, e o resto da conversa (backup, restauração parcial) fica muito mais caro que a revisão que o teria evitado. Dê ao time um caminho feliz e rápido para correções legítimas, para que ninguém seja tentado a atalhos.</p></div>
+</section>
+
+<section class="chap" id="transacoes">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Transações: ACID, COMMIT, ROLLBACK, SAVEPOINT e DDL</h2>
+  <p>Uma <strong>transação</strong> agrupa comandos que precisam acontecer juntos: ao dar baixa numa guia você grava o pagamento, atualiza o status do atendimento e lança o item de faturamento. Ou tudo vira realidade (<code>COMMIT</code>) ou nada (<code>ROLLBACK</code>). Sem isso, uma queda no meio deixa o banco com um pagamento sem guia.</p>
+  <ul>
+    <li><strong>Atomicidade</strong>: tudo ou nada.</li>
+    <li><strong>Consistência</strong>: ao final, as constraints (PK, FK, CHECK, NOT NULL, UNIQUE) valem. É a garantia do banco sobre o <em>dado</em>, que só é tão boa quanto as regras que você declarou (seção 3).</li>
+    <li><strong>Isolamento</strong>: transações concorrentes não enxergam o trabalho incompleto umas das outras. O padrão dos dois bancos é <code>READ COMMITTED</code>. Detalhes no módulo 10.</li>
+    <li><strong>Durabilidade</strong>: depois do <code>COMMIT</code>, sobrevive a uma queda do servidor (o log de transações, redo no Oracle e WAL no PostgreSQL, foi gravado em disco antes de confirmar).</li>
+  </ul>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 210" role="img" aria-label="Linha do tempo de uma transação: BEGIN, UPDATE 1, SAVEPOINT sp1, UPDATE 2 com erro, ROLLBACK TO sp1, UPDATE 3, COMMIT. Só os efeitos do UPDATE 1 e do UPDATE 3 ficam gravados">
+      <defs><marker id="ah-t1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Uma transação com SAVEPOINT</text>
+      <line class="ln" x1="20" y1="80" x2="660" y2="80" marker-end="url(#ah-t1)"/>
+      <rect class="box" x="20" y="56" width="74" height="40" rx="5"/><text x="57" y="80" text-anchor="middle">BEGIN</text>
+      <rect class="box-a" x="110" y="56" width="90" height="40" rx="5"/><text x="155" y="80" text-anchor="middle">UPDATE 1</text>
+      <rect class="box-w" x="216" y="56" width="104" height="40" rx="5"/><text x="268" y="80" text-anchor="middle">SAVEPOINT sp1</text>
+      <rect class="box-b" x="336" y="56" width="90" height="40" rx="5"/><text x="381" y="80" text-anchor="middle">UPDATE 2</text>
+      <rect class="box-w" x="442" y="56" width="104" height="40" rx="5"/><text x="494" y="80" text-anchor="middle">ROLLBACK TO</text>
+      <rect class="box-a" x="562" y="56" width="98" height="40" rx="5"/><text x="611" y="80" text-anchor="middle">UPDATE 3</text>
+      <text class="lbl" x="336" y="116">falhou: desfeito até o savepoint</text>
+      <text class="lbl" x="20" y="144">COMMIT ao final grava UPDATE 1 e UPDATE 3. UPDATE 2 nunca existiu para os outros.</text>
+      <text class="lbl" x="20" y="172">PostgreSQL: sem o savepoint, o erro do UPDATE 2 deixa a transação inteira "abortada".</text>
+      <text class="lbl" x="20" y="196">Oracle: só o comando que falhou é desfeito; a transação continua aberta.</text>
+    </svg>
+    <figcaption>O savepoint é um ponto de retorno dentro da transação: permite desfazer só parte dela.</figcaption>
+  </figure>
+
+<pre data-file="PostgreSQL e Oracle (mesmos comandos)"><code class="sql">-- PostgreSQL: BEGIN abre a transação. Oracle: ela já está aberta (no SQL*Plus/SQL Developer).
+BEGIN;
+UPDATE atendimento SET status = 'REALIZADO' WHERE id_atendimento = 5001;
+SAVEPOINT sp1;
+INSERT INTO atendimento_item (id_atendimento, cod_procedimento, qtd, valor_unit)
+VALUES (5001, '10101012', 1, 150.00);          -- suponha que falhe
+ROLLBACK TO SAVEPOINT sp1;                      -- desfaz só o INSERT
+COMMIT;                                         -- grava o UPDATE</code></pre>
+
+  <h3>Autocommit: saiba em que modo você está</h3>
+  <p>Em <strong>autocommit</strong>, cada comando é uma transação que se confirma sozinha: não há como desfazer. Muitos clientes de PostgreSQL (<code>psql</code>, por padrão) trabalham em autocommit; SQL*Plus e SQL Developer, no Oracle, não: o <code>UPDATE</code> fica pendente até o <code>COMMIT</code>, <strong>segurando locks</strong> para os outros. Drivers e ORMs variam: confira a configuração do <em>pool</em>. A sessão esquecida com transação aberta é um dos causadores mais comuns de bloqueio em produção (módulo 10).</p>
+
+  <h3>DDL: Oracle confirma, PostgreSQL desfaz</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>CREATE / ALTER / DROP / TRUNCATE</td><td><strong>COMMIT implícito</strong> antes e depois do comando. O que estava pendente é gravado e o DDL não volta.</td><td><strong>Transacional</strong>: dá para criar tabela, alterar coluna e desfazer com ROLLBACK (com exceções como <code>CREATE INDEX CONCURRENTLY</code>).</td></tr>
+      <tr><td>Consequência prática</td><td>Um <code>CREATE INDEX</code> no meio de um script grava o DML anterior. Scripts de migração precisam ser idempotentes e verificáveis passo a passo.</td><td>Migração inteira pode ser atômica: ou aplica tudo ou nada.</td></tr>
+      <tr><td>Erro em um comando</td><td>Desfaz só o comando; a transação segue.</td><td>A transação fica <strong>abortada</strong> (<code>current transaction is aborted</code>): só <code>ROLLBACK</code> (ou <code>ROLLBACK TO</code> um savepoint) destrava.</td></tr>
+      <tr><td>Hora "agora" dentro da transação</td><td><code>SYSDATE</code>/<code>SYSTIMESTAMP</code>: hora real a cada chamada</td><td><code>now()</code>/<code>CURRENT_TIMESTAMP</code>: hora do <em>início da transação</em>; <code>clock_timestamp()</code> dá a hora real</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Níveis de isolamento: visão geral</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Nível</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td><code>READ COMMITTED</code></td><td><strong>Padrão.</strong> Cada comando vê o que estava commitado quando ele começou.</td><td><strong>Padrão.</strong> Idem.</td></tr>
+      <tr><td><code>REPEATABLE READ</code></td><td>Não oferece</td><td>Toda a transação vê o mesmo "instantâneo" (snapshot)</td></tr>
+      <tr><td><code>SERIALIZABLE</code></td><td>Instantâneo da transação; conflito gera <code>ORA-08177</code> ("can't serialize access")</td><td>Serializável de verdade (SSI); conflito gera erro <code>40001</code>: a aplicação deve <strong>repetir a transação</strong></td></tr>
+      <tr><td><code>READ UNCOMMITTED</code></td><td>Não oferece (nunca há leitura suja)</td><td>Aceito na sintaxe, mas se comporta como <code>READ COMMITTED</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Em nenhum dos dois bancos uma leitura comum bloqueia escritores, nem o contrário (MVCC, módulo 10). O que as transações concorrentes podem sofrer (atualização perdida, <em>write skew</em>, bloqueios, deadlock) e como se defender (<code>SELECT ... FOR UPDATE</code>, <code>SKIP LOCKED</code>, versionamento otimista) é assunto do módulo 10.</p>
+  <div class="note trap"><b>Transação longa é custo para todo mundo</b><p>Uma transação aberta por minutos ou horas (um script que pede confirmação, uma tela esquecida, um job que processa tudo de uma vez) segura locks, impede o aproveitamento de undo/espaço (no PostgreSQL, atrasa o <em>vacuum</em>), aumenta o risco de deadlock e, se cair, faz um rollback demorado. Transação curta, só com o que precisa ser atômico; trabalho demorado em blocos (seção 7).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que acontece se você der um <code>CREATE TABLE</code> no meio de uma transação?" No Oracle, ela é confirmada implicitamente. No PostgreSQL, o DDL entra na transação e pode ser desfeito. Quem sabe essa diferença já foi vítima dela: cite um script que gravou pela metade.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize: transações curtas, nunca com interação humana no meio, <em>timeouts</em> configurados (de comando, de ocioso em transação, de lock) e retry com idempotência para os erros que o banco manda repetir. Monitore sessões "idle in transaction" (PostgreSQL) ou transações antigas (Oracle): são o alerta precoce de bloqueios futuros.</p></div>
+</section>
+
+<section class="chap" id="constraints-chaves">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Constraints, chaves, sequências e índices em chaves estrangeiras</h2>
+  <p>Uma <strong>constraint</strong> é uma regra que o banco verifica em <em>toda</em> escrita, de qualquer aplicação, script ou correção manual. Ela é, ao mesmo tempo, <strong>documentação</strong> (quem lê o esquema entende as regras) e <strong>proteção</strong> (dado inválido não entra). Validação só na aplicação falha no dia em que existir um segundo sistema, uma carga ou um <code>UPDATE</code> manual.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Constraint</th><th>Garante</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><code>PRIMARY KEY</code></td><td>Identifica a linha: único e não nulo. Cria índice.</td><td><code>id_atendimento</code></td></tr>
+      <tr><td><code>FOREIGN KEY</code></td><td>Integridade referencial: o valor existe na tabela pai (ou é NULL).</td><td><code>atendimento.id_paciente → paciente</code></td></tr>
+      <tr><td><code>UNIQUE</code></td><td>Sem repetição (NULL é caso especial). Cria índice.</td><td><code>paciente.cpf</code>, <code>medico.crm</code></td></tr>
+      <tr><td><code>CHECK</code></td><td>Condição sobre a linha.</td><td><code>status IN ('AGENDADO','REALIZADO','CANCELADO')</code>, <code>valor &gt;= 0</code></td></tr>
+      <tr><td><code>NOT NULL</code></td><td>Obrigatoriedade.</td><td><code>dt_atendimento</code></td></tr>
+      <tr><td><code>DEFAULT</code></td><td>Valor quando omitido (não é constraint, mas faz parte do contrato).</td><td><code>status DEFAULT 'AGENDADO'</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">CREATE TABLE atendimento (
+  id_atendimento  NUMBER GENERATED ALWAYS AS IDENTITY,
+  id_paciente     NUMBER        NOT NULL,
+  id_medico       NUMBER        NOT NULL,
+  id_convenio     NUMBER,                              -- NULL = particular
+  id_setor        NUMBER        NOT NULL,
+  dt_atendimento  TIMESTAMP     NOT NULL,
+  tipo            VARCHAR2(10)  NOT NULL,
+  status          VARCHAR2(10)  DEFAULT 'AGENDADO' NOT NULL,
+  valor           NUMBER(10,2)  DEFAULT 0 NOT NULL,
+  CONSTRAINT pk_atendimento PRIMARY KEY (id_atendimento),
+  CONSTRAINT fk_atend_paciente FOREIGN KEY (id_paciente) REFERENCES paciente (id_paciente),
+  CONSTRAINT fk_atend_convenio FOREIGN KEY (id_convenio) REFERENCES convenio (id_convenio),
+  CONSTRAINT ck_atend_tipo   CHECK (tipo   IN ('CONSULTA','EXAME','RETORNO')),
+  CONSTRAINT ck_atend_status CHECK (status IN ('AGENDADO','REALIZADO','CANCELADO')),
+  CONSTRAINT ck_atend_valor  CHECK (valor &gt;= 0)
+);</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">CREATE TABLE atendimento (
+  id_atendimento  bigint GENERATED ALWAYS AS IDENTITY,
+  id_paciente     bigint        NOT NULL,
+  id_medico       bigint        NOT NULL,
+  id_convenio     bigint,                              -- NULL = particular
+  id_setor        bigint        NOT NULL,
+  dt_atendimento  timestamptz   NOT NULL,
+  tipo            varchar(10)   NOT NULL,
+  status          varchar(10)   NOT NULL DEFAULT 'AGENDADO',
+  valor           numeric(10,2) NOT NULL DEFAULT 0,
+  CONSTRAINT pk_atendimento PRIMARY KEY (id_atendimento),
+  CONSTRAINT fk_atend_paciente FOREIGN KEY (id_paciente) REFERENCES paciente (id_paciente),
+  CONSTRAINT fk_atend_convenio FOREIGN KEY (id_convenio) REFERENCES convenio (id_convenio),
+  CONSTRAINT ck_atend_tipo   CHECK (tipo   IN ('CONSULTA','EXAME','RETORNO')),
+  CONSTRAINT ck_atend_status CHECK (status IN ('AGENDADO','REALIZADO','CANCELADO')),
+  CONSTRAINT ck_atend_valor  CHECK (valor &gt;= 0)
+);</code></pre>
+  </div>
+  <p>Dê <strong>nomes</strong> às constraints (<code>pk_</code>, <code>fk_</code>, <code>ck_</code>, <code>ux_</code>): a mensagem de erro dirá qual regra foi violada, em vez de um nome gerado automaticamente.</p>
+
+  <h3>Detalhes que pegam</h3>
+  <ul>
+    <li><strong>FK e <code>ON DELETE</code></strong>: o padrão (<code>NO ACTION</code>/<code>RESTRICT</code>) impede apagar um pai que tem filhos. <code>CASCADE</code> apaga os filhos junto (perigoso em prontuário: apagar um paciente apagaria o histórico); <code>SET NULL</code> zera a referência. Escolha de propósito, e prefira <code>RESTRICT</code> em dados clínicos e financeiros.</li>
+    <li><strong>UNIQUE e NULL</strong>: no PostgreSQL, dois <code>NULL</code> não violam <code>UNIQUE</code> (cada NULL é "diferente"); a partir da versão 15, <code>UNIQUE NULLS NOT DISTINCT</code> muda isso. No Oracle, uma coluna única aceita vários NULL; em índice <em>composto</em>, linhas com todas as colunas nulas não colidem, mas uma combinação parcialmente nula é comparada como valor.</li>
+    <li><strong>CHECK só vê a própria linha</strong>: não consulta outras tabelas nem outras linhas. Regra entre linhas ("não pode haver dois atendimentos do mesmo médico no mesmo horário") pede <code>UNIQUE</code>, índice de exclusão (PostgreSQL, <code>EXCLUDE</code>) ou lógica transacional.</li>
+    <li><strong>Constraint em tabela grande já populada</strong>: criar com validação varre a tabela inteira sob lock. PostgreSQL: <code>ADD CONSTRAINT ... NOT VALID</code> e depois <code>VALIDATE CONSTRAINT</code>. Oracle: <code>ENABLE NOVALIDATE</code> e depois <code>VALIDATE</code>. Veja a seção 8.</li>
+    <li><strong>Constraints diferidas</strong> (<code>DEFERRABLE INITIALLY DEFERRED</code>, nos dois) verificam no <code>COMMIT</code>, e não a cada comando: útil para carregar tabelas com FKs circulares.</li>
+  </ul>
+
+  <h3>Índice na chave estrangeira</h3>
+  <p>A PK e a UNIQUE ganham índice automaticamente. A <strong>FK, não</strong>, em nenhum dos dois bancos. Sem índice em <code>atendimento.id_paciente</code>, duas coisas ficam lentas:</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Sem índice na chave estrangeira, apagar um paciente obriga o banco a varrer toda a tabela atendimento para verificar filhos. Com índice, uma busca localiza os filhos diretamente">
+      <defs>
+        <marker id="ah-f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ah-f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="22">Sem índice na FK</text>
+      <rect class="box-w" x="20" y="38" width="140" height="40" rx="5"/><text x="90" y="63" text-anchor="middle">DELETE paciente</text>
+      <line class="ln-b" x1="160" y1="58" x2="216" y2="58" marker-end="url(#ah-f1)"/>
+      <rect class="box-b" x="220" y="38" width="120" height="40" rx="5"/><text x="280" y="63" text-anchor="middle">varre tudo</text>
+      <text class="lbl" x="20" y="100">80 milhões de linhas lidas para confirmar</text>
+      <text class="lbl" x="20" y="116">que nenhum atendimento aponta para ele.</text>
+      <line class="ln" x1="360" y1="14" x2="360" y2="190"/>
+      <text class="ttl" x="380" y="22">Com índice em id_paciente</text>
+      <rect class="box-w" x="380" y="38" width="140" height="40" rx="5"/><text x="450" y="63" text-anchor="middle">DELETE paciente</text>
+      <line class="ln-a" x1="520" y1="58" x2="556" y2="58" marker-end="url(#ah-f2)"/>
+      <rect class="box-a" x="560" y="38" width="100" height="40" rx="5"/><text x="610" y="63" text-anchor="middle">1 busca</text>
+      <text class="lbl" x="380" y="100">O índice responde "há filho?" em ms.</text>
+      <text class="lbl" x="20" y="150">Vale também para o JOIN pai-filho (atendimento por paciente) e para ON DELETE CASCADE.</text>
+      <text class="lbl" x="20" y="174">No Oracle, sem o índice a operação ainda pode segurar locks mais fortes na tabela filha.</text>
+    </svg>
+    <figcaption>O problema aparece em apagar ou alterar a chave do pai, e também no join mais comum do sistema: buscar os filhos de um pai.</figcaption>
+  </figure>
+  <p>Regra: <strong>toda FK de tabela grande ganha índice</strong>, em geral com a coluna da FK na frente (<code>(id_paciente, dt_atendimento)</code> serve à FK e às consultas por paciente ordenadas por data). Exceções raras: FK para tabela de domínio minúscula que nunca é apagada, ou coluna já coberta pelo prefixo de outro índice. Para achar as FKs sem índice: no PostgreSQL, compare <code>pg_constraint</code> com <code>pg_index</code>; no Oracle, consulte <code>DBA_CONSTRAINTS</code> e <code>DBA_IND_COLUMNS</code>. Índices a fundo no módulo 08.</p>
+
+  <h3>Sequências e identity</h3>
+<pre><code class="sql">-- Oracle 12c+ e PostgreSQL 10+: coluna de identidade (padrão SQL)
+id_atendimento bigint GENERATED ALWAYS AS IDENTITY            -- recusa valor informado à mão
+id_atendimento bigint GENERATED BY DEFAULT AS IDENTITY        -- aceita valor informado (útil em cargas)
+
+-- Clássico: sequência separada
+CREATE SEQUENCE seq_paciente START WITH 1 INCREMENT BY 1 CACHE 100;   -- Oracle: seq_paciente.NEXTVAL
+-- PostgreSQL: nextval('seq_paciente')   (e o tipo legado serial usa isso por baixo)</code></pre>
+  <ul>
+    <li><strong>Sequência não é transacional</strong>: um <code>ROLLBACK</code> não devolve o número. <strong>Buracos são normais</strong> (rollbacks, falhas, <code>CACHE</code>, queda). Número de guia ou de protocolo "sem buracos" por exigência legal não é tarefa para sequência: precisa de tabela de controle com lock (e custo de concorrência).</li>
+    <li>Depois de carregar dados com ids explícitos, <strong>reposicione a sequência</strong> (PostgreSQL: <code>setval</code>; Oracle: ajuste da sequência/identity), ou o próximo <code>INSERT</code> colide com uma chave existente.</li>
+    <li>Ordem da sequência não é ordem cronológica estrita sob concorrência (e no Oracle RAC com <code>CACHE</code>). Para "o mais recente", ordene por data, não por id.</li>
+  </ul>
+
+  <h3>Chave natural vs chave substituta</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Natural (CPF, CRM, código TUSS)</th><th>Substituta (identity, UUID)</th></tr></thead>
+    <tbody>
+      <tr><td>Origem</td><td>Existe no mundo real</td><td>Gerada pelo banco, sem significado</td></tr>
+      <tr><td>Estabilidade</td><td>Pode mudar, vir errada, faltar (estrangeiro, recém-nascido sem CPF), ser compartilhada</td><td>Imutável</td></tr>
+      <tr><td>Tamanho / joins</td><td>Maior, composta às vezes</td><td>Pequena, uniforme, joins simples</td></tr>
+      <tr><td>Risco</td><td>Dado pessoal na chave espalha-se por todas as tabelas filhas e logs (LGPD)</td><td>Não identifica ninguém, mas não impede duplicata real</td></tr>
+    </tbody>
+  </table></div>
+  <p>Prática comum e saudável: <strong>chave substituta como PK</strong> e a chave natural com <code>UNIQUE</code> (CPF único quando informado). Em UUID: <code>gen_random_uuid()</code> está disponível no núcleo do PostgreSQL a partir da 13 (antes, extensão); no Oracle, <code>SYS_GUID()</code>. UUID aleatório espalha as inserções pelo índice (menos localidade, mais páginas divididas) e pesa 16 bytes; use quando precisa gerar ids fora do banco ou expor um identificador que não revele volume. UUIDs ordenados por tempo reduzem o problema; confira o suporte na sua versão.</p>
+  <div class="note trap"><b>CPF como PK, ou como número</b><p>CPF guardado como número perde zeros à esquerda (<code>00123456789</code> vira <code>123456789</code>); guarde como <code>VARCHAR(11)</code> (e valide o dígito verificador na aplicação ou em <code>CHECK</code>). Usar CPF como PK trava o cadastro de quem não tem, mistura pessoas quando o CPF é de um responsável e espalha dado pessoal por todas as tabelas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que criar índice em chave estrangeira?" Porque o banco não cria sozinho, e sem ele o <code>DELETE</code>/<code>UPDATE</code> no pai e o join pai-filho varrem a tabela filha. "Chave natural ou substituta?" Substituta como PK, natural como UNIQUE, com a justificativa de estabilidade e de LGPD.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Constraint é o controle de qualidade mais barato que existe: roda sempre, em todo sistema. Quando o time argumenta "a aplicação já valida", pergunte quantas aplicações, scripts e cargas escrevem na tabela. Revise esquemas novos procurando o oposto: tabela sem PK, FK sem índice, coluna de status sem CHECK, datas como texto.</p></div>
+</section>
+
+<section class="chap" id="normalizacao">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Normalização: 1FN a 3FN e quando desnormalizar</h2>
+  <p>Normalizar é organizar as tabelas para que <strong>cada fato esteja em um lugar só</strong>. O objetivo não é elegância, é evitar três defeitos: a <em>anomalia de atualização</em> (o nome do médico está em 40 mil linhas; corrigir um erro exige mudar todas, e as que sobram ficam inconsistentes), a <em>de inserção</em> (não dá para cadastrar um médico sem atendimento) e a <em>de exclusão</em> (apagar o último atendimento de um paciente apaga o cadastro dele junto).</p>
+<pre data-file="ponto de partida: tudo numa tabela só (ilustrativo)"><code class="text">atendimento_flat
+id  dt_atendimento  nome_paciente  cpf          cidade      uf  nome_medico  crm      procedimentos
+ 1  2025-03-10      Ana Souza      11122233344  Salvador    BA  Dr. Lima     BA-1234  10101012 Consulta; 40304361 Hemograma
+ 2  2025-03-11      Ana Souza      11122233344  Salvador    BA  Dra. Reis    BA-5678  10101012 Consulta</code></pre>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Uma tabela atendimento_flat com dados de paciente, médico e procedimentos repetidos é decomposta em paciente, médico, procedimento, atendimento e atendimento_item, ligados por chaves estrangeiras">
+      <defs><marker id="ah-n1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Antes: uma tabela só</text>
+      <rect class="box-b" x="20" y="36" width="206" height="124" rx="6"/>
+      <text x="123" y="58" text-anchor="middle">atendimento_flat</text>
+      <text class="lbl" x="34" y="80">id, dt, valor</text>
+      <text class="lbl" x="34" y="98">nome_paciente, cpf, cidade, uf</text>
+      <text class="lbl" x="34" y="116">nome_medico, crm, especialidade</text>
+      <text class="lbl" x="34" y="134">procedimentos (lista em texto)</text>
+      <line class="ln-a" x1="226" y1="98" x2="270" y2="98" marker-end="url(#ah-n1)"/>
+      <text class="ttl" x="290" y="22">Depois: cada fato no seu lugar</text>
+      <rect class="box-a" x="290" y="36" width="120" height="34" rx="5"/><text x="350" y="58" text-anchor="middle">paciente</text>
+      <rect class="box-a" x="290" y="80" width="120" height="34" rx="5"/><text x="350" y="102" text-anchor="middle">medico</text>
+      <rect class="box-a" x="290" y="124" width="120" height="34" rx="5"/><text x="350" y="146" text-anchor="middle">procedimento</text>
+      <rect class="box-w" x="480" y="58" width="180" height="34" rx="5"/><text x="570" y="80" text-anchor="middle">atendimento</text>
+      <rect class="box-w" x="480" y="108" width="180" height="34" rx="5"/><text x="570" y="130" text-anchor="middle">atendimento_item</text>
+      <line class="ln" x1="410" y1="53" x2="480" y2="68"/>
+      <line class="ln" x1="410" y1="97" x2="480" y2="82"/>
+      <line class="ln" x1="570" y1="92" x2="570" y2="108"/>
+      <line class="ln" x1="410" y1="141" x2="480" y2="128"/>
+      <text class="lbl" x="20" y="196">Antes: o nome do paciente repete em cada atendimento (anomalia de atualização).</text>
+      <text class="lbl" x="20" y="216">Depois: corrigir o nome do médico é um UPDATE em uma linha; a FK liga tudo.</text>
+    </svg>
+    <figcaption>Linhas ligam cada tabela a quem a referencia por chave estrangeira. As caixas laranja são os fatos; as azuis, os cadastros.</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Forma</th><th>Regra</th><th>Violação típica e correção</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1FN</strong></td><td>Valores atômicos: uma coluna, um valor; sem listas nem grupos repetidos.</td><td><code>procedimentos = '10101012; 40304361'</code>, ou <code>telefone1, telefone2, telefone3</code>. Correção: uma linha por item (<code>atendimento_item</code>), tabela filha de telefones.</td></tr>
+      <tr><td><strong>2FN</strong></td><td>Já em 1FN, e cada coluna não-chave depende da chave <em>inteira</em> (importa só para chave composta).</td><td><code>item(id_atendimento, cod_procedimento, nome_procedimento)</code>: o nome depende só de <code>cod_procedimento</code>. Correção: tabela <code>procedimento</code>.</td></tr>
+      <tr><td><strong>3FN</strong></td><td>Já em 2FN, e nenhuma coluna não-chave depende de outra coluna não-chave (<em>dependência transitiva</em>).</td><td><code>atendimento(id_medico, especialidade_medico)</code>: a especialidade é do médico, não do atendimento. <code>paciente(cidade, uf)</code> repetindo o par para todos os pacientes: <code>cidade</code> determina <code>uf</code>. Correção: tabela de cidades (ou aceitar a redundância por pragmatismo).</td></tr>
+    </tbody>
+  </table></div>
+  <p>Resumo clássico: cada coluna depende "da chave, de toda a chave e só da chave". A 3FN costuma ser o ponto de parada em sistemas transacionais (OLTP). Existem formas superiores (Boyce-Codd, 4FN, 5FN), raramente discutidas na prática.</p>
+
+  <h3>Quando desnormalizar (e quando não é desnormalização)</h3>
+  <ul>
+    <li><strong>Histórico congelado não é redundância</strong>. <code>atendimento_item.valor_unit</code> guarda o preço <em>no dia do atendimento</em>. O preço da tabela muda; o valor cobrado, não. Do mesmo modo, o endereço do paciente <em>no momento do faturamento</em>. Isso é um fato histórico, não cópia a sincronizar.</li>
+    <li><strong>Leitura intensiva</strong>: relatórios sobre milhões de linhas, painéis. Soluções: tabela de resumo (por dia, convênio), visão materializada (módulo 11), modelo dimensional em <em>data warehouse</em>. Preserve o modelo normalizado como fonte da verdade e derive o resto.</li>
+    <li><strong>Contadores e totais</strong> (<code>qtd_atendimentos</code> no paciente) trazem a obrigação de manter o valor em dia, em trigger, job ou na aplicação. Faça só quando medir ganho e saiba quem é responsável pela consistência.</li>
+    <li><strong>Atributos variáveis ou documentos externos</strong> (recursos FHIR, respostas de formulários) podem ir em coluna <code>JSONB</code> (PostgreSQL) ou <code>JSON</code> (Oracle 21c+ tipo nativo; antes, <code>CLOB</code>/<code>VARCHAR2</code> com <code>IS JSON</code>) quando a estrutura não é consultada com frequência. Coluna JSON para <em>tudo</em> vira esquema sem constraints e SQL ilegível. Interoperabilidade em saúde: trilha de APIs, módulo 09.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Normalize até a 3FN no modelo transacional. Desnormalize <strong>depois de medir</strong>, em estruturas derivadas (resumo, visão materializada, réplica de leitura), com dono e mecanismo de atualização definidos. Desnormalizar "por desempenho" sem medição costuma trocar um problema barato (join) por um caro (inconsistência).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é 3FN?" Dê a frase da chave e um exemplo seu (especialidade no atendimento em vez de no médico). Depois mostre maturidade: "em relatório eu desnormalizo numa estrutura derivada, e valor histórico como o preço do procedimento no dia não é redundância".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A maioria das tabelas "monstro" nasce de pressa: uma coluna a mais para entregar a tela. Cada coluna que repete dado de outra tabela é uma dívida de consistência. No design review, pergunte "onde mora a verdade deste dado?" e exija uma resposta única.</p></div>
+</section>
+
+<section class="chap" id="tipos-dados">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Tipos de dados certos: dinheiro, datas, fuso e texto</h2>
+  <p>Tipo errado é dívida que cresce com o volume: não dá para corrigir uma coluna <code>VARCHAR</code> de datas com 200 milhões de linhas sem migração, e cada consulta convive com conversões, ordenação errada e índice sem uso. Escolha o tipo pelo que o dado <strong>é</strong>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Dado</th><th>Oracle</th><th>PostgreSQL</th><th>Evite</th></tr></thead>
+    <tbody>
+      <tr><td>Dinheiro</td><td><code>NUMBER(10,2)</code></td><td><code>numeric(10,2)</code></td><td><code>FLOAT</code>/<code>REAL</code>/<code>BINARY_DOUBLE</code> (imprecisos: 0,1 + 0,2 não dá 0,3); o tipo <code>money</code> do PostgreSQL (depende de configuração regional)</td></tr>
+      <tr><td>Chave numérica</td><td><code>NUMBER</code> / <code>NUMBER(19)</code></td><td><code>bigint</code> (ou <code>integer</code> se nunca passa de 2 bilhões)</td><td><code>integer</code> em tabela que cresce todo dia, sem fazer a conta</td></tr>
+      <tr><td>Texto curto</td><td><code>VARCHAR2(n)</code></td><td><code>varchar(n)</code> ou <code>text</code></td><td><code>CHAR(n)</code> com preenchimento, exceto para campos de tamanho fixo como <code>uf CHAR(2)</code></td></tr>
+      <tr><td>Texto longo (evolução clínica)</td><td><code>CLOB</code></td><td><code>text</code></td><td>Colocar em coluna lida em toda listagem (<code>SELECT *</code>)</td></tr>
+      <tr><td>Verdadeiro/falso</td><td>Tradicionalmente <code>CHAR(1)</code> ou <code>NUMBER(1)</code> com <code>CHECK</code>; <code>BOOLEAN</code> em SQL a partir da 23ai</td><td><code>boolean</code></td><td>Texto <code>'SIM'/'S'/'1'</code> misturado na mesma coluna</td></tr>
+      <tr><td>Data (só dia)</td><td><code>DATE</code> (<strong>guarda hora também</strong>)</td><td><code>date</code></td><td>Texto <code>'10/03/2025'</code></td></tr>
+      <tr><td>Instante no tempo</td><td><code>TIMESTAMP WITH TIME ZONE</code> ou <code>TIMESTAMP WITH LOCAL TIME ZONE</code></td><td><code>timestamptz</code></td><td><code>TIMESTAMP</code> sem fuso para eventos de quem pode estar em outro fuso</td></tr>
+      <tr><td>CPF, CNS, CEP, telefone</td><td><code>VARCHAR2</code></td><td><code>varchar</code></td><td>Tipo numérico (perde zeros à esquerda; ninguém soma CPFs)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Fuso horário: TIMESTAMP WITH TIME ZONE</h3>
+  <p>Um <strong>instante</strong> ("a consulta começou às 08:30 em Salvador") é uma coisa; uma <strong>hora de relógio</strong> ("o consultório abre às 08:00") é outra. Para instantes, use <code>TIMESTAMP WITH TIME ZONE</code>. No PostgreSQL, o <code>timestamptz</code> guarda o instante normalizado (em UTC) e <em>converte para o fuso da sessão</em> ao exibir; o fuso informado na entrada é usado na conversão e não é guardado. No Oracle, <code>TIMESTAMP WITH TIME ZONE</code> guarda o instante <em>com o fuso informado</em>; <code>TIMESTAMP WITH LOCAL TIME ZONE</code> normaliza para o fuso do banco e converte para o da sessão na leitura, como o <code>timestamptz</code>. O <code>TIMESTAMP</code> simples, sem fuso, guarda só a hora de relógio: ambíguo assim que um servidor, um usuário ou um sistema integrado esteja em outro fuso.</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">SELECT SYSTIMESTAMP AT TIME ZONE 'America/Sao_Paulo' AS agora_sp,
+       SYSTIMESTAMP AT TIME ZONE 'UTC'               AS agora_utc
+FROM dual;
+
+-- Constante com fuso explícito
+SELECT TIMESTAMP '2025-03-10 08:30:00 -03:00' FROM dual;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">SELECT now() AT TIME ZONE 'America/Sao_Paulo' AS agora_sp_sem_fuso,   -- timestamp sem fuso, em SP
+       now()                                  AS agora_na_sessao;     -- timestamptz, exibido no fuso da sessão
+
+SET TIME ZONE 'America/Sao_Paulo';
+SELECT '2025-03-10 08:30:00-03'::timestamptz;</code></pre>
+  </div>
+  <div class="note trap"><b>O Brasil tem fusos e já teve horário de verão</b><ul>
+    <li><strong>Sem horário de verão desde 2019</strong>: foi abolido por decreto federal em 2019 (o último período terminou em fevereiro de 2019). Mesmo assim, <strong>dados anteriores a 2019</strong> têm as transições: a diferença entre duas datas de janeiro e de março de 2018 deve considerar a hora a mais ou a menos. Bancos com tabelas de fuso (<code>tzdata</code>, arquivo de fusos do Oracle) desatualizadas calculam errado e exigem aplicação de patch ao banco quando as regras mudam.</li>
+    <li><strong>Mais de um fuso</strong>: Brasília (UTC-3), Amazonas e Mato Grosso (UTC-4), Acre (UTC-5), Fernando de Noronha (UTC-2). Guarde o instante com fuso e use o <em>nome da região</em> (<code>America/Sao_Paulo</code>), não um deslocamento fixo como <code>-03:00</code>, para o banco aplicar a regra histórica correta.</li>
+    <li><strong>"Dia" depende do fuso</strong>: um atendimento às 22:30 em Brasília é do dia seguinte em UTC. Relatório por dia converte para o fuso de negócio antes de truncar.</li>
+    <li><strong>Filtro por dia</strong>: use intervalo semiaberto (<code>dt &gt;= :dia AND dt &lt; :dia + 1</code>), e não <code>TRUNC(dt) = :dia</code> nem <code>BETWEEN</code> com 23:59:59: o primeiro derruba o índice (módulo 08) e o segundo perde frações de segundo.</li>
+  </ul></div>
+  <div class="note trap"><b>Oracle: string vazia é NULL</b><p>No Oracle, <code>''</code> é tratado como <code>NULL</code>: <code>WHERE nome = ''</code> nunca é verdadeiro, e <code>LENGTH('')</code> devolve <code>NULL</code>. No PostgreSQL, <code>''</code> é um texto de tamanho zero, diferente de <code>NULL</code>. Código e testes portáveis não devem depender dessa diferença: defina na modelagem se "sem valor" é <code>NULL</code> e proíba o resto com <code>CHECK</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como guardar dinheiro?" <code>NUMERIC/NUMBER</code> com escala fixa, nunca ponto flutuante; alternativa de inteiro em centavos quando o ecossistema da aplicação prefere. "E datas?" Instante em <code>timestamp with time zone</code>, comparações por intervalo semiaberto, fuso de negócio explícito, e ciência de que o Brasil teve horário de verão até 2019.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize no guia de modelagem: tipo de dinheiro, tipo de data/hora e de identificadores, nomes e convenções. Erros de tipo aparecem anos depois como "o relatório de março de 2018 está uma hora diferente" ou "o CPF perdeu um zero", e custam migração de dados em tabela grande.</p></div>
+</section>
+
+<section class="chap" id="exclusao-lgpd">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>Exclusão lógica vs física, retenção e LGPD</h2>
+  <p>Apagar uma linha de verdade (<strong>exclusão física</strong>, <code>DELETE</code>) é irreversível sem backup e pode violar a integridade (filhos órfãos, histórico perdido). A <strong>exclusão lógica</strong> marca a linha como excluída e a mantém: uma coluna <code>dt_exclusao TIMESTAMP</code> (ou <code>ativo</code>). Em saúde, quase sempre é a escolha certa: atendimento cancelado, cadastro duplicado inativado e paciente que pede o encerramento do cadastro deixam rastro, e o prontuário tem prazo legal de guarda.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Exclusão lógica</th><th>Exclusão física</th></tr></thead>
+    <tbody>
+      <tr><td>Reversível</td><td>Sim</td><td>Só por backup</td></tr>
+      <tr><td>Histórico e auditoria</td><td>Preservados</td><td>Perdidos (a menos que haja tabela de auditoria)</td></tr>
+      <tr><td>Consultas</td><td>Todas precisam filtrar <code>dt_exclusao IS NULL</code> (esquecer é bug clássico)</td><td>Nada a filtrar</td></tr>
+      <tr><td>UNIQUE</td><td>Pede índice parcial/funcional (abaixo)</td><td>Simples</td></tr>
+      <tr><td>Tabela cresce</td><td>Sim: índices e estatísticas incluem o lixo</td><td>Não (mas a área só é reaproveitada após limpeza)</td></tr>
+      <tr><td>LGPD</td><td>Por si só <strong>não elimina</strong> dado pessoal</td><td>Elimina (e os backups, logs e réplicas também precisam seguir a política)</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="UNIQUE só entre ativos + visão que esconde os excluídos"><code class="sql">-- PostgreSQL: índice parcial
+CREATE UNIQUE INDEX ux_paciente_cpf_ativo ON paciente (cpf) WHERE dt_exclusao IS NULL;
+
+-- Oracle: índice funcional (B-tree não indexa linhas em que todas as colunas são NULL)
+CREATE UNIQUE INDEX ux_paciente_cpf_ativo
+  ON paciente (CASE WHEN dt_exclusao IS NULL THEN cpf END);
+
+-- Nos dois: a aplicação consulta a visão, não a tabela
+CREATE VIEW paciente_ativo AS SELECT * FROM paciente WHERE dt_exclusao IS NULL;</code></pre>
+
+  <h3>LGPD: eliminar, anonimizar, reter</h3>
+  <p>A Lei Geral de Proteção de Dados (Lei 13.709/2018) trata dados de saúde como <strong>dados pessoais sensíveis</strong>. Três regras de partida para quem modela e opera o banco (esta seção é orientação técnica, não parecer jurídico: confirme prazos e bases legais com o jurídico e o encarregado/DPO):</p>
+  <ul>
+    <li><strong>Término do tratamento = eliminação</strong>, <em>salvo</em> as hipóteses de conservação previstas na lei, como o cumprimento de obrigação legal ou regulatória. No prontuário do paciente há guarda obrigatória por prazo definido em norma (a legislação sobre prontuário eletrônico e as resoluções do CFM fixam o mínimo, hoje de 20 anos a partir do último registro; <strong>confirme a norma vigente</strong>). Um pedido de eliminação do titular não apaga o prontuário durante esse prazo; os dados que <em>não</em> têm obrigação de guarda (marketing, contatos extras) podem e devem ser eliminados.</li>
+    <li><strong>Anonimização</strong>: dado que não permite identificar o titular por meios razoáveis deixa de ser dado pessoal. É <strong>irreversível</strong>. Substituir o nome por "ANONIMIZADO" não basta se data de nascimento + cidade + sexo ainda identificam a pessoa: generalize (ano de nascimento, UF, faixa etária) ou remova.</li>
+    <li><strong>Pseudonimização</strong>: troca o identificador por um código, e a tabela de correspondência fica separada e protegida. O dado <strong>continua pessoal</strong>, com risco reduzido. Serve a análise e a pesquisa.</li>
+  </ul>
+<pre data-file="anonimização de um paciente cuja guarda legal já expirou (exemplo)"><code class="sql">UPDATE paciente
+SET nome          = 'ANONIMIZADO',
+    cpf           = NULL,
+    dt_nascimento = DATE '1900-01-01',        -- ou generalizar para o ano
+    cidade        = NULL
+WHERE id_paciente = :id
+  AND dt_exclusao IS NOT NULL;
+-- + registrar na tabela de auditoria QUEM executou e QUANDO, sem gravar o dado apagado
+-- + tratar tabelas relacionadas (contatos, endereços, anexos) e as cópias em backup e logs</code></pre>
+  <div class="note trap"><b>Onde o dado pessoal se esconde</b><ul>
+    <li><strong>Backups, réplicas e exportações</strong>: o <code>DELETE</code> não os alcança. A política de retenção de backup precisa estar alinhada com a de eliminação.</li>
+    <li><strong>Logs e mensagens de erro</strong>: <code>log_statement</code>, planos com parâmetros, traces de ORM e erros de constraint (o PostgreSQL mostra o <em>valor</em> duplicado no <code>DETAIL</code>) podem registrar CPF e nome.</li>
+    <li><strong>Ambientes de teste e homologação</strong>: cópia de produção sem mascaramento é um vazamento esperando acontecer. Mascare ou gere dados sintéticos.</li>
+    <li><strong>Chaves naturais</strong>: CPF como chave primária ou em índices/colunas filhas multiplica os lugares a anonimizar (seção 3).</li>
+    <li><strong>Acesso</strong>: privilégios mínimos, visões para telas que não precisam do CPF completo, auditoria de leitura de prontuário (PostgreSQL: <em>row-level security</em>; Oracle: VPD e Data Redaction, que podem exigir licença/edição específica).</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Exclusão lógica ou física?" Lógica por padrão em dados que têm histórico e guarda obrigatória, com índice parcial/visão para as regras de unicidade e consultas; física quando o dado deve realmente sumir, após prazo de retenção e em todas as cópias. Aponte a tensão com a LGPD: soft delete não é eliminação.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Crie, com o DPO, um <strong>mapa de retenção por tipo de dado</strong> (prazo, base legal, forma de eliminação) e um job auditável que o execute. Sem isso, a empresa guarda tudo para sempre (risco de vazamento maior, custo de armazenamento) ou apaga o que não podia. Responda a uma solicitação de titular com um procedimento testado, não com a criatividade do dia.</p></div>
+</section>
+
+<section class="chap" id="cargas-lote">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cargas em lote e commits por bloco</h2>
+  <p>Inserir ou apagar milhões de linhas em um único comando e uma única transação parece simples, e é uma das formas mais comuns de derrubar um banco. A transação grande segura locks por muito tempo, enche o espaço de undo (Oracle) ou de WAL e de linhas mortas (PostgreSQL), e, se falhar na hora 3 de 4, o rollback leva quase o mesmo tempo. O outro extremo também é ruim: um <code>COMMIT</code> por linha obriga uma gravação síncrona do log a cada linha e a carga demora dez vezes mais.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Estratégia</th><th>Efeito</th></tr></thead>
+    <tbody>
+      <tr><td>Um comando, uma transação gigante</td><td>Rápido se der certo; locks e undo/WAL enormes; rollback lento; sem ponto de retomada</td></tr>
+      <tr><td>Um commit por linha</td><td>Seguro, mas lento: espera de gravação do log a cada linha, mais idas e vindas pela rede</td></tr>
+      <tr><td><strong>Commit por bloco</strong> (milhares de linhas)</td><td>Equilíbrio: locks curtos, undo/WAL limitados, retomável a partir do último bloco confirmado</td></tr>
+    </tbody>
+  </table></div>
+  <p>O tamanho do bloco (de mil a algumas dezenas de milhares de linhas) é medido, não chutado: cresça enquanto o tempo por linha cai e pare quando locks, memória ou latência dos demais começarem a sofrer. A carga em blocos precisa ser <strong>idempotente e retomável</strong>: se parar no meio, reexecutar não duplica nem pula nada (chave de controle, <code>ON CONFLICT</code>/<code>MERGE</code>, marca de lote processado).</p>
+
+  <h3>Apagar ou atualizar em blocos</h3>
+  <div class="tabs">
+<pre data-label="Oracle (PL/SQL)"><code class="sql">BEGIN
+  LOOP
+    DELETE FROM atendimento_hist
+    WHERE dt_atendimento &lt; TIMESTAMP '2015-01-01 00:00:00'
+      AND ROWNUM &lt;= 10000;
+    EXIT WHEN SQL%ROWCOUNT = 0;
+    COMMIT;
+  END LOOP;
+  COMMIT;
+END;
+/</code></pre>
+<pre data-label="PostgreSQL 11+ (procedimento)"><code class="sql">CREATE OR REPLACE PROCEDURE limpar_hist() LANGUAGE plpgsql AS $$
+DECLARE n integer;
+BEGIN
+  LOOP
+    DELETE FROM atendimento_hist
+    WHERE id_atendimento IN (SELECT id_atendimento FROM atendimento_hist
+                             WHERE dt_atendimento &lt; '2015-01-01'
+                             LIMIT 10000);
+    GET DIAGNOSTICS n = ROW_COUNT;
+    EXIT WHEN n = 0;
+    COMMIT;                       -- só em CALL de procedimento, fora de transação externa
+  END LOOP;
+END $$;
+CALL limpar_hist();</code></pre>
+  </div>
+  <p>Nem <code>DELETE</code> nem <code>UPDATE</code> têm <code>LIMIT</code> nos dois bancos, daí o <code>ROWNUM</code> no Oracle e a subconsulta com <code>LIMIT</code> no PostgreSQL. A condição precisa continuar <em>achando</em> linhas só enquanto houver trabalho, e ser apoiada por índice, ou cada bloco varre a tabela inteira.</p>
+
+  <h3>Carregar rápido</h3>
+  <ul>
+    <li><strong>Lote em vez de linha</strong>: <code>INSERT</code> de várias linhas, <code>FORALL</code>/<code>executemany</code> com array no Oracle, <code>COPY</code> no PostgreSQL (o caminho mais rápido para arquivo CSV; <code>\copy</code> no psql lê do cliente). Reduz idas e vindas ao servidor, que dominam o tempo em cargas por linha.</li>
+    <li><strong>Direct-path (Oracle)</strong>: <code>INSERT /*+ APPEND */ ... SELECT</code> e SQL*Loader gravam acima da marca d'água, gerando pouco undo; a tabela fica bloqueada até o commit, e o uso de <code>NOLOGGING</code> afeta a recuperação (backup logo depois). Saiba o que sua política de backup exige.</li>
+    <li><strong>Staging</strong>: carregue o arquivo bruto numa tabela de passagem (sem constraints, só <code>VARCHAR</code>), valide e transforme com SQL, e só então grave nas tabelas finais com <code>INSERT ... SELECT</code> ou <code>MERGE</code>. Registros rejeitados vão para uma tabela de erros, com o motivo.</li>
+    <li><strong>Índices e constraints</strong>: numa carga inicial enorme, criar os índices <em>depois</em> é mais rápido que mantê-los linha a linha. Em tabela viva, não desative: use blocos.</li>
+    <li><strong>Estatísticas</strong>: depois de mudar muito a tabela, atualize-as (<code>ANALYZE</code> no PostgreSQL; <code>DBMS_STATS</code> no Oracle) para o otimizador não planejar com números velhos (módulo 07).</li>
+    <li><strong>Particionamento</strong>: apagar um mês de dados antigo é <code>DROP PARTITION</code>/<code>DETACH</code> (instantâneo) em vez de milhões de DELETEs. No Oracle, particionamento é uma opção paga da Enterprise Edition; no PostgreSQL é nativo (módulo 11).</li>
+  </ul>
+  <div class="note trap"><b>Carga em produção no horário de pico</b><p>Mesmo em blocos, a carga compete por I/O, CPU, locks e log com os usuários. Rode em janela de baixa carga, com pausas entre blocos (<code>sleep</code>), acompanhando atraso de réplica e tamanho do WAL/undo, e com um botão de parar que não deixe nada pela metade.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como apagar 50 milhões de linhas de uma tabela em uso?" Em blocos com commit a cada N mil linhas apoiados por índice, com monitoramento; ou, se os dados são por período, particionar e descartar a partição. Cite undo/WAL e rollback, e o fato de a operação ser retomável.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Toda carga ou limpeza grande em produção deve ter: plano de ensaio com volume real, janela aprovada, critério de parada, plano de retomada e responsável acompanhando. O custo desses cuidados é pequeno perto de uma lentidão geral num dia de movimento.</p></div>
+</section>
+
+<section class="chap" id="migracoes">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Migrações de esquema seguras: expandir e contrair</h2>
+  <p>Mudar a estrutura de uma tabela viva é mais perigoso que mudar o código, porque o banco é compartilhado: durante um deploy convivem versões antigas e novas da aplicação, e um <code>ALTER TABLE</code> pode pedir um lock exclusivo que enfileira <em>todas</em> as consultas atrás dele. A técnica <strong>expandir e contrair</strong> (<em>expand/contract</em>) divide a mudança em passos pequenos, cada um compatível com o código anterior e o seguinte.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Quatro etapas: expandir (adicionar sem quebrar), migrar (duplicar escrita e preencher em lotes), trocar (ler do novo) e contrair (remover o antigo)">
+      <defs><marker id="ah-m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="30" width="140" height="44" rx="5"/><text x="90" y="57" text-anchor="middle">1 Expandir</text>
+      <rect class="box-w" x="188" y="30" width="140" height="44" rx="5"/><text x="258" y="57" text-anchor="middle">2 Migrar</text>
+      <rect class="box-w" x="356" y="30" width="140" height="44" rx="5"/><text x="426" y="57" text-anchor="middle">3 Trocar</text>
+      <rect class="box-m" x="524" y="30" width="140" height="44" rx="5"/><text x="594" y="57" text-anchor="middle">4 Contrair</text>
+      <line class="ln" x1="160" y1="52" x2="184" y2="52" marker-end="url(#ah-m1)"/>
+      <line class="ln" x1="328" y1="52" x2="352" y2="52" marker-end="url(#ah-m1)"/>
+      <line class="ln" x1="496" y1="52" x2="520" y2="52" marker-end="url(#ah-m1)"/>
+      <text class="lbl" x="20" y="98">Cria coluna/tabela nova,</text><text class="lbl" x="20" y="114">nullable. Código velho</text><text class="lbl" x="20" y="130">nem percebe.</text>
+      <text class="lbl" x="188" y="98">App grava nos dois;</text><text class="lbl" x="188" y="114">backfill em lotes do</text><text class="lbl" x="188" y="130">dado antigo.</text>
+      <text class="lbl" x="356" y="98">App lê do novo.</text><text class="lbl" x="356" y="114">Antigo ainda existe</text><text class="lbl" x="356" y="130">(volta fácil).</text>
+      <text class="lbl" x="524" y="98">Para de escrever no</text><text class="lbl" x="524" y="114">antigo e, passado um</text><text class="lbl" x="524" y="130">tempo seguro, remove.</text>
+      <text class="lbl" x="20" y="170">Cada etapa é um deploy separado e reversível. O passo destrutivo (DROP) é o último.</text>
+    </svg>
+    <figcaption>Exemplo: trocar <code>paciente.telefone</code> (texto livre) por uma tabela <code>paciente_contato</code>, sem parada.</figcaption>
+  </figure>
+
+  <h3>Mudanças comuns e como fazê-las sem derrubar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Mudança</th><th>Risco</th><th>Forma segura</th></tr></thead>
+    <tbody>
+      <tr><td>Adicionar coluna com default</td><td>Reescrever a tabela inteira sob lock</td><td>PostgreSQL 11+: <code>ADD COLUMN ... DEFAULT constante</code> é só metadados (default <em>volátil</em> reescreve). Oracle: nas versões atuais, adicionar coluna com default também é, em geral, só metadados; confirme para a sua versão.</td></tr>
+      <tr><td>Criar índice</td><td>Bloquear escrita durante a construção</td><td>PostgreSQL: <code>CREATE INDEX CONCURRENTLY</code> (mais lento, não pode ficar dentro de transação, deixa índice inválido se falhar: dropar e refazer). Oracle: <code>CREATE INDEX ... ONLINE</code> (construção online pode depender da edição).</td></tr>
+      <tr><td>Adicionar FK/CHECK em tabela grande</td><td>Varredura completa sob lock</td><td>PostgreSQL: <code>ADD CONSTRAINT ... NOT VALID</code> e depois <code>VALIDATE CONSTRAINT</code> (lock mais leve). Oracle: <code>ENABLE NOVALIDATE</code> e depois <code>VALIDATE</code>.</td></tr>
+      <tr><td><code>SET NOT NULL</code></td><td>Varredura sob lock</td><td>PostgreSQL 12+: com um <code>CHECK (col IS NOT NULL)</code> já validado, o <code>SET NOT NULL</code> dispensa a varredura. Preencha os nulos antes, em lotes.</td></tr>
+      <tr><td>Mudar tipo de coluna</td><td>Reescrita completa e incompatibilidade de leitura</td><td>Coluna nova do tipo certo, backfill em lotes, troca e remoção (expandir/contrair).</td></tr>
+      <tr><td>Renomear coluna ou tabela</td><td>Quebra o código antigo no mesmo instante</td><td>Não renomeie no lugar: crie a nova, migre, remova a velha. Ou use uma visão com o nome antigo durante a transição.</td></tr>
+      <tr><td>Remover coluna</td><td>Irreversível; código antigo ainda pode lê-la</td><td>Só depois de nenhuma versão em produção usar a coluna (confirme em logs/estatísticas). Antes, pare de escrever e, se preciso, torne-a opcional.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>O lock que enfileira o mundo</h3>
+  <p>Um <code>ALTER TABLE</code> precisa de lock forte, mas só por um instante, se conseguir <em>entrar</em>. Se há uma transação longa tocando a tabela, o ALTER espera; e todas as consultas que chegam depois dele <strong>esperam atrás dele</strong>: em segundos, a aplicação inteira parece travada por causa de um DDL "inofensivo". Defesas: no PostgreSQL, <code>SET lock_timeout = '3s'</code> antes do DDL (falha rápido, tenta de novo depois); no Oracle, o <code>DDL</code> sem espera dá <code>ORA-00054</code>, e a espera é controlada por <code>DDL_LOCK_TIMEOUT</code>. Rode migrações fora de picos e verifique transações longas antes.</p>
+  <p>Outras práticas: migrações <strong>versionadas e em git</strong> (Flyway, Liquibase ou equivalente), executadas pelo pipeline e não à mão; ensaio num ambiente com <strong>volume de produção</strong>; reverter por "rolar para frente" com uma nova migração, não por scripts de desfazer nunca testados; no Oracle, para mudanças complexas existem a redefinição online (<code>DBMS_REDEFINITION</code>) e a <em>Edition-Based Redefinition</em>, esta última com requisitos próprios. Aproveite o DDL transacional do PostgreSQL: a migração aplica inteira ou nada (com a exceção de comandos como <code>CONCURRENTLY</code>).</p>
+  <div class="note trap"><b>Backfill de uma vez só</b><p>Um <code>UPDATE paciente SET nova_coluna = f(antiga)</code> sem lotes é a transação gigante da seção anterior, com locks em todas as linhas e crescimento da tabela por versões mortas (PostgreSQL). Faça o backfill em blocos, com índice no critério de progresso, e com pausas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como renomear uma coluna sem downtime?" Não se renomeia no lugar: expande (coluna nova), escreve nos dois, preenche em lotes, troca a leitura, contrai (remove a antiga). Cite o <code>lock_timeout</code> e o ensaio com volume real.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija que toda mudança de esquema tenha: migração versionada, ensaio com volume, análise de lock, plano de volta e janela. Evite a combinação "DDL manual + sexta à tarde + transação longa em aberto". O time que domina expandir/contrair faz deploys no meio do dia sem avisar ninguém, o que vale mais que qualquer ferramenta.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Use o esquema do estudo. Escreva antes de abrir a resolução, e rode num banco de prática se tiver um.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Copie para <code>atendimento_hist</code> (mesmas colunas) os atendimentos <code>REALIZADO</code> anteriores a 2023 e confira se a contagem bate com a origem antes de apagá-los.</span></summary><div class="ans">
+<pre><code class="sql">SELECT COUNT(*) FROM atendimento
+WHERE status = 'REALIZADO' AND dt_atendimento &lt; TIMESTAMP '2023-01-01 00:00:00';   -- n origem
+
+INSERT INTO atendimento_hist (id_atendimento, id_paciente, dt_atendimento, valor)
+SELECT id_atendimento, id_paciente, dt_atendimento, valor
+FROM atendimento
+WHERE status = 'REALIZADO' AND dt_atendimento &lt; TIMESTAMP '2023-01-01 00:00:00';
+
+-- confira: a contagem copiada deve igualar n; só então apague (em blocos, seção 7)
+SELECT COUNT(*) FROM atendimento_hist WHERE dt_atendimento &lt; TIMESTAMP '2023-01-01 00:00:00';</code></pre>
+    <p>Pontos: lista de colunas explícita, mesmo <code>WHERE</code> nas duas pontas, transação explícita, e <code>NOT EXISTS</code> contra o histórico para a rotina ser <strong>repetível</strong> sem duplicar.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Cancele os atendimentos <code>AGENDADO</code> cujo convênio está inativo, em Oracle e em PostgreSQL. Que erro silencioso acontece no Oracle se você esquecer o <code>EXISTS</code>?</span></summary><div class="ans"><p>É o exemplo da seção 1. PostgreSQL: <code>UPDATE ... FROM convenio c WHERE c.id_convenio = a.id_convenio AND c.ativo = false AND a.status = 'AGENDADO'</code>. Oracle: <code>UPDATE ... SET status = 'CANCELADO' WHERE status = 'AGENDADO' AND EXISTS (SELECT 1 FROM convenio c WHERE c.id_convenio = a.id_convenio AND c.ativo = 'N')</code>. Num <code>SET coluna = (subconsulta)</code> sem <code>EXISTS</code>, o Oracle atualiza <strong>todas</strong> as linhas do filtro e grava <code>NULL</code> onde a subconsulta não acha nada. Antes de executar: <code>SELECT COUNT(*)</code> com o mesmo <code>WHERE</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Escreva um upsert de paciente por CPF seguro para duas sessões simultâneas e diga o que garante a segurança.</span></summary><div class="ans"><p>PostgreSQL: <code>INSERT INTO paciente (cpf, nome) VALUES ($1, $2) ON CONFLICT (cpf) DO UPDATE SET nome = EXCLUDED.nome RETURNING id_paciente;</code>. Oracle: <code>MERGE</code> da seção 1 (com <code>UNIQUE</code> em <code>cpf</code>; se duas sessões inserirem a mesma chave ao mesmo tempo, uma recebe <code>ORA-00001</code> e deve repetir). Quem garante a regra é a <strong>constraint <code>UNIQUE</code></strong>: sem ela, nenhum dos dois comandos impede duplicata. O <code>RETURNING</code> devolve o id sem nova consulta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Em PostgreSQL, a sequência <code>BEGIN; UPDATE a; INSERT b (viola FK); UPDATE c; COMMIT;</code> o que grava? E no Oracle, com autocommit desligado? Como proteger só o INSERT?</span></summary><div class="ans"><p><strong>PostgreSQL</strong>: o erro do <code>INSERT</code> aborta a transação; o <code>UPDATE c</code> responde "current transaction is aborted" e o <code>COMMIT</code> equivale a <code>ROLLBACK</code>: <strong>nada</strong> é gravado. <strong>Oracle</strong>: só o <code>INSERT</code> é desfeito; o <code>UPDATE a</code> e o <code>UPDATE c</code> continuam pendentes e o <code>COMMIT</code> os grava (possivelmente um estado incoerente, se a regra de negócio os queria juntos). Para tratar só o INSERT, use <code>SAVEPOINT sp1</code> antes e <code>ROLLBACK TO SAVEPOINT sp1</code> depois do erro: nos dois bancos a transação segue consistente. Na aplicação, trate o erro e decida entre repetir e abortar tudo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>A tabela <code>guia(id_guia, id_paciente, nome_paciente, cpf_paciente, cod_proc, nome_proc, valor_proc, id_operadora, nome_operadora, telefone_operadora)</code> tem PK composta <code>(id_guia, cod_proc)</code>. Indique as violações de 1FN a 3FN e proponha as tabelas.</span></summary><div class="ans"><p><strong>2FN</strong>: <code>nome_proc</code> depende só de <code>cod_proc</code> (parte da chave); <code>id_paciente</code>, <code>nome_paciente</code>, <code>cpf_paciente</code>, <code>id_operadora</code> dependem só de <code>id_guia</code>. <strong>3FN</strong>: <code>nome_paciente</code> e <code>cpf_paciente</code> dependem de <code>id_paciente</code> (não-chave); <code>nome_operadora</code> e <code>telefone_operadora</code> dependem de <code>id_operadora</code>. <strong>1FN</strong>: se <code>telefone_operadora</code> guardar vários números, viola. Resultado: <code>paciente(id_paciente, nome, cpf)</code>, <code>operadora(id_operadora, nome)</code> + <code>operadora_telefone</code>, <code>procedimento(cod_proc, nome)</code>, <code>guia(id_guia, id_paciente, id_operadora)</code> e <code>guia_item(id_guia, cod_proc, valor_proc)</code>. O <code>valor_proc</code> fica no item porque é o valor <em>cobrado naquela guia</em> (histórico), e não redundância.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>Você precisa trocar <code>paciente.telefone VARCHAR(50)</code> (texto livre) por <code>paciente_contato(id_paciente, tipo, numero)</code> numa tabela de 8 milhões de linhas, sem parada. Descreva os passos.</span></summary><div class="ans"><ol>
+    <li><strong>Expandir</strong>: criar <code>paciente_contato</code> com PK, FK para <code>paciente</code> e <strong>índice na FK</strong>. Deploy da aplicação que ainda usa só <code>telefone</code>.</li>
+    <li><strong>Migrar</strong>: aplicação passa a gravar nos dois lugares; <em>backfill</em> em lotes de 10 mil, com commit por bloco, pausa entre eles e tratamento dos textos sujos (vários números em um campo, formatos), registrando os rejeitados.</li>
+    <li><strong>Validar</strong>: comparar contagens e amostras entre o campo antigo e a tabela nova.</li>
+    <li><strong>Trocar</strong>: aplicação lê da tabela nova (com feature flag, para voltar rápido).</li>
+    <li><strong>Contrair</strong>: parar de escrever em <code>telefone</code>; depois de um período sem leituras, remover a coluna em migração separada, com <code>lock_timeout</code> (PostgreSQL) ou <code>DDL_LOCK_TIMEOUT</code> (Oracle).</li>
+  </ol></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>Cenário 1: um UPDATE sem WHERE rodou em produção</h3>
+  <p>Um analista rodou <code>UPDATE atendimento SET status = 'CANCELADO'</code> sem o <code>WHERE</code>, com autocommit ligado. Dez minutos depois, a recepção percebe agendamentos "sumindo".</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Parar o dano</strong>: comunicar o incidente, pausar fluxos que consomem o status (integrações, envio de mensagens), impedir novas escritas se preciso.</li>
+    <li><strong>Avaliar a recuperação</strong>: no Oracle, consulta ao passado (<code>AS OF TIMESTAMP</code>, via undo) pode recuperar os valores antigos se o undo ainda os guarda; no PostgreSQL, não existe "desfazer": restaurar backup em instância separada (recuperação até um ponto no tempo) e comparar. Nos dois, <strong>corrigir só as linhas afetadas</strong>, em lotes, sem restaurar o banco todo.</li>
+    <li><strong>Reconciliar</strong> o que mudou depois do erro (atendimentos legitimamente cancelados nesse intervalo) para não sobrescrever o correto.</li>
+    <li><strong>Prevenir</strong>: acesso de escrita manual restrito, transação explícita por padrão nos clientes, revisão por segunda pessoa, contagem prévia, e um postmortem sem culpa.</li>
+  </ul></div>
+
+  <h3>Cenário 2: pacientes duplicados mesmo com "validação" no cadastro</h3>
+  <p>O cadastro verifica "CPF já existe?" antes de inserir, e aparecem duplicatas a cada semana, principalmente em horários de pico.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Diagnóstico</strong>: é a condição de corrida do SELECT-depois-INSERT (duas recepções em paralelo). Confirme pela diferença de milissegundos entre os <code>dt_cadastro</code> duplicados.</li>
+    <li><strong>Correção</strong>: limpar e mesclar as duplicatas existentes (módulo 05, deduplicação com FKs reapontadas), criar <code>UNIQUE</code> em <code>cpf</code> (índice parcial se houver exclusão lógica ou CPF opcional) e trocar o fluxo para <code>INSERT ... ON CONFLICT</code>/<code>MERGE</code> e tratar o erro de unicidade na tela ("já cadastrado: abrir o registro").</li>
+    <li><strong>Atenção a dados reais</strong>: pessoas sem CPF, CPF do responsável em criança e CPF digitado errado: o <code>UNIQUE</code> expõe o caso, e a regra de negócio precisa dizer o que fazer.</li>
+  </ul></div>
+
+  <h3>Cenário 3: a migração de sexta travou o sistema por 4 minutos</h3>
+  <p>Um <code>ALTER TABLE atendimento ADD CONSTRAINT ... FOREIGN KEY</code> foi aplicado às 17h. A aplicação inteira ficou sem resposta, e voltou sozinha.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Causa provável</strong>: o DDL esperou por uma transação longa e a fila de consultas formou-se atrás dele; depois, a validação varreu a tabela de 80 milhões de linhas sob lock.</li>
+    <li><strong>Refazer certo</strong>: PostgreSQL com <code>NOT VALID</code> e <code>VALIDATE CONSTRAINT</code> depois; Oracle com <code>ENABLE NOVALIDATE</code> e <code>VALIDATE</code>; <code>lock_timeout</code>/<code>DDL_LOCK_TIMEOUT</code> curtos e nova tentativa; horário de baixa carga; verificar transações longas antes.</li>
+    <li><strong>Processo</strong>: ensaio com volume real, checklist de lock na revisão de migração e migrações aplicadas pelo pipeline, não à mão.</li>
+  </ul></div>
+
+  <h3>Cenário 4: pedido de eliminação de dados de um paciente</h3>
+  <p>Um paciente pede, por e-mail, "apague todos os meus dados". Ele foi atendido há 3 anos e tem prontuário.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Não apagar às cegas</strong>: acionar o encarregado (DPO) e o jurídico; o prontuário tem guarda obrigatória, então a resposta ao titular explica o que será eliminado e o que será mantido, e por quê (base legal).</li>
+    <li><strong>Eliminar o que não tem obrigação de guarda</strong>: contatos de marketing, consentimentos revogados, cópias em sistemas secundários; <strong>restringir acesso</strong> ao que fica.</li>
+    <li><strong>Executar com procedimento</strong>: script revisado, em transação, com registro de auditoria sem o dado apagado, e verificação em réplicas, backups (política de retenção) e logs.</li>
+    <li><strong>Responder no prazo</strong> e guardar a evidência. Para o futuro, o mapa de retenção por tipo de dado (seção 6) transforma isso em rotina.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>ACID</dt><dd>Atomicidade, Consistência, Isolamento, Durabilidade: as garantias de uma transação.</dd></div>
+    <div><dt>Autocommit</dt><dd>Modo em que cada comando se confirma sozinho, sem possibilidade de desfazer.</dd></div>
+    <div><dt>SAVEPOINT</dt><dd>Ponto de retorno dentro de uma transação, para desfazer só uma parte.</dd></div>
+    <div><dt>Upsert</dt><dd>Inserir ou, se já existe, atualizar: <code>MERGE</code> ou <code>ON CONFLICT</code>.</dd></div>
+    <div><dt>RETURNING</dt><dd>Devolve as linhas gravadas (por exemplo, o id gerado) na própria operação.</dd></div>
+    <div><dt>Constraint</dt><dd>Regra verificada pelo banco em toda escrita: PK, FK, UNIQUE, CHECK, NOT NULL.</dd></div>
+    <div><dt>Chave substituta</dt><dd>Identificador técnico sem significado de negócio (identity, UUID), em contraste com a chave natural (CPF).</dd></div>
+    <div><dt>Identity / sequência</dt><dd>Gerador de números de chave; não é transacional, então aceita buracos.</dd></div>
+    <div><dt>Normalização</dt><dd>Organizar tabelas para que cada fato esteja em um lugar só (1FN, 2FN, 3FN).</dd></div>
+    <div><dt>Desnormalização</dt><dd>Redundância deliberada, em geral em estruturas derivadas, para ganhar leitura.</dd></div>
+    <div><dt>timestamptz</dt><dd>Tipo PostgreSQL de instante com fuso: guarda em UTC e exibe no fuso da sessão.</dd></div>
+    <div><dt>Exclusão lógica</dt><dd>Marcar a linha como excluída em vez de apagá-la.</dd></div>
+    <div><dt>Anonimização</dt><dd>Tornar o dado irreversivelmente não identificável; sai do alcance da LGPD.</dd></div>
+    <div><dt>Pseudonimização</dt><dd>Trocar o identificador por um código com tabela de correspondência separada; o dado segue pessoal.</dd></div>
+    <div><dt>Expandir/contrair</dt><dd>Mudança de esquema em etapas compatíveis: adicionar, migrar, trocar, remover.</dd></div>
+    <div><dt>Backfill</dt><dd>Preenchimento em lotes de uma coluna ou tabela nova com dados existentes.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é uma transação e o que significa ACID?</span></summary><div class="ans"><p>Grupo de comandos que se confirma ou se desfaz como uma unidade. Atomicidade (tudo ou nada), Consistência (constraints valem ao final), Isolamento (transações concorrentes não veem o trabalho incompleto umas das outras) e Durabilidade (após o COMMIT, sobrevive a uma queda).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre DELETE e TRUNCATE?</span></summary><div class="ans"><p><code>DELETE</code> é DML, linha a linha, aceita <code>WHERE</code> e pode ser desfeito. <code>TRUNCATE</code> é DDL, esvazia a tabela quase instantaneamente; no Oracle faz commit implícito e não volta, no PostgreSQL é transacional. Falha se houver FK de outra tabela apontando para ela.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Como fazer UPDATE com dados de outra tabela em Oracle e PostgreSQL?</span></summary><div class="ans"><p>PostgreSQL: <code>UPDATE ... SET ... FROM outra WHERE ...</code>. Oracle: subconsulta correlacionada com <code>EXISTS</code> ou <code>MERGE</code>. Cuidados: sem <code>EXISTS</code>, o Oracle grava <code>NULL</code> nas linhas sem correspondência; no PostgreSQL, junção com mais de uma correspondência aplica uma delas sem aviso.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>O que é upsert e como fazer com segurança?</span></summary><div class="ans"><p>Inserir ou atualizar se existir. PostgreSQL: <code>INSERT ... ON CONFLICT DO UPDATE</code> (atômico, exige índice único); Oracle e PostgreSQL 15+: <code>MERGE</code>. O padrão SELECT-depois-INSERT tem condição de corrida; quem garante a unicidade é a constraint.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Para que serve o RETURNING?</span></summary><div class="ans"><p>Devolver as linhas afetadas (por exemplo, o id gerado) na mesma operação, sem nova consulta e sem corrida. PostgreSQL: <code>RETURNING</code> em INSERT/UPDATE/DELETE; Oracle: <code>RETURNING ... INTO</code> variáveis, com <code>BULK COLLECT</code> para várias linhas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Diferença de DDL e transações entre Oracle e PostgreSQL?</span></summary><div class="ans"><p>No Oracle, todo DDL faz commit implícito antes e depois. No PostgreSQL, DDL é transacional e pode ser desfeito. Também: no PostgreSQL um erro aborta a transação inteira até um ROLLBACK (ou ROLLBACK TO SAVEPOINT); no Oracle só o comando que falhou é desfeito.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Qual o nível de isolamento padrão e como Oracle e PostgreSQL diferem?</span></summary><div class="ans"><p>Os dois usam READ COMMITTED por padrão. O Oracle não oferece REPEATABLE READ (tem SERIALIZABLE por snapshot e READ ONLY); o PostgreSQL tem REPEATABLE READ por snapshot e SERIALIZABLE verdadeiro (SSI), com erro de serialização a repetir. Nenhum dos dois faz leitura suja. Detalhes no módulo 10.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Por que criar índice em chave estrangeira?</span></summary><div class="ans"><p>O banco não o cria sozinho. Sem ele, apagar ou alterar o pai e o join pai-filho varrem a tabela filha (e, no Oracle, podem exigir locks mais fortes). A regra é indexar toda FK de tabela grande, com a coluna da FK à frente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Chave natural ou substituta?</span></summary><div class="ans"><p>Substituta (identity/UUID) como PK, pela estabilidade, tamanho e por não espalhar dado pessoal; natural (CPF, CRM) com <code>UNIQUE</code>, que também previne duplicatas. Em saúde, CPF pode faltar, ser errado ou ser do responsável, o que o desqualifica como PK.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Uma sequência pode ter buracos? Por quê?</span></summary><div class="ans"><p>Sim. Sequências não são transacionais: rollback não devolve o número, e <code>CACHE</code> e quedas perdem valores. Numeração legal sem buracos exige tabela de controle com lock, não sequência.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Explique 1FN, 2FN e 3FN com um exemplo.</span></summary><div class="ans"><p>1FN: valores atômicos (não guardar lista de procedimentos numa coluna). 2FN: cada coluna depende da chave inteira (nome do procedimento não fica no item da guia). 3FN: nenhuma coluna depende de outra não-chave (especialidade pertence ao médico, não ao atendimento). "Da chave, de toda a chave e só da chave."</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Quando desnormalizar?</span></summary><div class="ans"><p>Depois de medir, em estruturas derivadas (tabelas de resumo, visões materializadas, data warehouse), com um dono e um mecanismo de atualização. Valor histórico (preço do procedimento no dia do atendimento) não é redundância, é fato. Coluna JSON só para atributos variáveis, não para fugir da modelagem.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Como guardar dinheiro e datas?</span></summary><div class="ans"><p>Dinheiro em <code>NUMERIC/NUMBER</code> com escala fixa (nunca float). Instantes em <code>timestamp with time zone</code> usando nome de região (<code>America/Sao_Paulo</code>), filtros por intervalo semiaberto, e atenção ao fato de o Brasil não ter horário de verão desde 2019, mas os dados anteriores terem. CPF e CEP em texto.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Exclusão lógica ou física? E a LGPD?</span></summary><div class="ans"><p>Lógica quando há histórico e guarda obrigatória (índice parcial/visão para unicidade e consultas); física quando o dado deve sumir após o prazo de retenção, inclusive em backups, réplicas e logs. Soft delete não é eliminação para a LGPD. Anonimização é irreversível e tira o dado do alcance da lei; pseudonimização continua sendo dado pessoal. Prazos e bases legais, com jurídico e DPO.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Como apagar 50 milhões de linhas de uma tabela em uso?</span></summary><div class="ans"><p>Em blocos (milhares de linhas) com commit por bloco, apoiados por índice, com pausas e monitoramento de undo/WAL e de atraso de réplica, de forma retomável; ou, se os dados são por período, particionar e descartar a partição. Evitar a transação gigante e o commit por linha.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como mudar o tipo de uma coluna grande sem parada?</span></summary><div class="ans"><p>Expandir/contrair: coluna nova, escrita nos dois lados, backfill em lotes, troca da leitura e só depois remoção da antiga. Cada etapa é um deploy reversível, com <code>lock_timeout</code> nos DDLs e ensaio em volume de produção.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Um ALTER TABLE simples travou a aplicação inteira. Por quê e como evitar?</span></summary><div class="ans"><p>O DDL esperou por uma transação longa e as consultas que chegaram depois ficaram na fila atrás dele. Evitar com <code>lock_timeout</code> (PostgreSQL) ou <code>DDL_LOCK_TIMEOUT</code> (Oracle) e nova tentativa, checar transações longas antes, usar <code>NOT VALID</code>/<code>NOVALIDATE</code> para constraints e <code>CONCURRENTLY</code>/<code>ONLINE</code> para índices, e rodar fora do pico.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como você estrutura o processo de mudanças de dados e de esquema no seu time?</span></summary><div class="ans"><p>Esquema por migrações versionadas no git, aplicadas pelo pipeline, ensaiadas em volume real, com análise de locks e plano de volta (rolar para frente). Alterações manuais em produção só por ticket, script revisado, contagem prévia, transação explícita e registro. Constraints e tipos certos no desenho como controle de qualidade; mapa de retenção com o DPO; e postmortem sem culpa quando algo escapa.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

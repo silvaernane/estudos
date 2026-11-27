@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 08: Registry, CI/CD e supply chain</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 08 de 10 · Registry, CI/CD e supply chain</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html" aria-current="page"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li class="sub"><ol>
+      <li><a href="#registries"><span class="n">1</span>Registries: onde as imagens vivem</a></li>
+      <li><a href="#login-mirror"><span class="n">2</span>Login, credenciais e mirrors</a></li>
+      <li><a href="#tags-promocao"><span class="n">3</span>Tags, digest e promoção: build once, deploy many</a></li>
+      <li><a href="#pipeline-gha"><span class="n">4</span>Pipeline completo no GitHub Actions</a></li>
+      <li><a href="#sbom-proveniencia"><span class="n">5</span>SBOM e proveniência: provar o que há dentro e como foi feito</a></li>
+      <li><a href="#assinatura-verificacao"><span class="n">6</span>Assinatura com cosign e verificação no deploy</a></li>
+      <li><a href="#varredura-cves"><span class="n">7</span>Varredura de vulnerabilidades e tratamento de CVEs</a></li>
+      <li><a href="#retencao-custos"><span class="n">8</span>Retenção, limpeza e custos do registry</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 08 · <span class="lvl l3">Avançado</span></div>
+  <h1>Registry, CI/CD e supply chain</h1>
+  <p class="lede">A imagem só vale o que o caminho entre o commit e o servidor garante. Este módulo cobre onde as imagens vivem (registries), como se nomeia e promove cada versão, um pipeline completo no GitHub Actions e a cadeia de suprimentos: SBOM, proveniência, assinatura, verificação no deploy e tratamento de vulnerabilidades.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Escolher um registry (Docker Hub, GHCR, ECR, ACR, Artifact Registry, Harbor), autenticar com segurança e reduzir dependência do Docker Hub com mirror e pull-through cache.</li>
+    <li>Definir estratégia de tags, usar digest no deploy e promover a mesma imagem entre ambientes (build once, deploy many).</li>
+    <li>Montar um pipeline no GitHub Actions com buildx, cache <code>gha</code>, multi-arch, varredura antes do push, SBOM, proveniência e assinatura.</li>
+    <li>Assinar com cosign (Sigstore) e verificar a assinatura e a identidade na hora do deploy.</li>
+    <li>Tratar CVEs com critério (severidade, exploitabilidade, correção disponível), manter imagens base atualizadas, e definir retenção, limpeza e custos do registry.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="registries">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Registries: onde as imagens vivem</h2>
+  <p>Um <strong>registry</strong> é um servidor HTTP que guarda e serve imagens segundo a especificação de distribuição da OCI. O <code>docker push</code> e o <code>docker pull</code> falam com ele. Entender o que ele guarda explica tags, digests, assinaturas e limpeza adiante.</p>
+<pre><code class="text">ghcr.io/equipe/agenda/api:1.4.2
+└─ host ─┘└─── repositório ──┘└tag┘
+
+ghcr.io/equipe/agenda/api@sha256:9f2c4e…        ← pelo digest (imutável)
+123456789012.dkr.ecr.sa-east-1.amazonaws.com/agenda-api:sha-3f9c2e1   ← ECR
+southamerica-east1-docker.pkg.dev/meu-projeto/agenda/api:1.4.2                   ← Artifact Registry</code></pre>
+  <ul>
+    <li>Um <strong>repositório</strong> agrupa as versões de uma imagem. Uma <strong>tag</strong> é um ponteiro <em>móvel</em> para um manifesto. O <strong>digest</strong> (<code>sha256:…</code>) é o hash do conteúdo do manifesto: identifica exatamente uma imagem, para sempre.</li>
+    <li>O registry guarda <strong>blobs</strong> (camadas e config) endereçados por digest, e <strong>manifestos</strong> que listam esses blobs. Camadas iguais são guardadas uma vez, mesmo entre repositórios.</li>
+    <li>Uma imagem multi-arch é um <strong>índice</strong> (<em>image index</em>) que aponta para um manifesto por plataforma. A mesma tag serve <code>amd64</code> e <code>arm64</code>.</li>
+    <li>Assinaturas, SBOM e atestados também ficam no registry, como manifestos ou artefatos associados (seções 5 e 6).</li>
+  </ul>
+
+  <h3>Comparativo de registries</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Registry</th><th>Host / formato</th><th>Pontos fortes</th><th>Atenção</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Docker Hub</strong></td><td><code>docker.io/ns/img</code> (oficiais em <code>library/</code>)</td><td>origem das imagens oficiais; padrão do <code>docker pull</code></td><td>limite de pulls (abaixo); planos pagos para uso intenso e repositórios privados</td></tr>
+      <tr><td><strong>GHCR</strong> (GitHub)</td><td><code>ghcr.io/owner/img</code></td><td>integrado ao GitHub Actions (<code>GITHUB_TOKEN</code>), permissões por repositório/organização, público gratuito</td><td>nome em minúsculas; controle de retenção e lifecycle menos rico que o do ECR/Harbor; confira limites do seu plano</td></tr>
+      <tr><td><strong>Amazon ECR</strong></td><td><code>&lt;conta&gt;.dkr.ecr.&lt;região&gt;.amazonaws.com/repo</code></td><td>IAM, lifecycle policies, tags imutáveis, replicação entre regiões, scan (nativo e via Inspector), pull-through cache</td><td>um repositório por imagem; custo de armazenamento e de saída de dados; autenticação por token de ~12 h</td></tr>
+      <tr><td><strong>Azure ACR</strong></td><td><code>&lt;nome&gt;.azurecr.io/img</code></td><td>Entra ID/RBAC, ACR Tasks (build no registry), geo-replicação e private link nos tiers superiores</td><td>recursos variam por tier (Basic, Standard, Premium)</td></tr>
+      <tr><td><strong>Google Artifact Registry</strong></td><td><code>&lt;região&gt;-docker.pkg.dev/proj/repo/img</code></td><td>IAM, políticas de limpeza, repositórios virtuais/remotos (cache de upstream)</td><td>sucessor do antigo Container Registry (GCR, <code>gcr.io</code>), que foi descontinuado: confirme como o seu projeto está migrado</td></tr>
+      <tr><td><strong>Harbor</strong> (self-hosted)</td><td>seu domínio</td><td>projeto CNCF; RBAC, replicação, proxy cache, scan com Trivy, tags imutáveis, retenção, quotas, robot accounts, suporte a assinaturas</td><td>você opera: alta disponibilidade, backup, patch, armazenamento (o objeto vai em S3 ou similar)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Escolha o registry <strong>mais perto de onde a imagem roda</strong> e do sistema de identidade que você já usa: ECR para AWS, ACR para Azure, Artifact Registry para GCP, GHCR para código no GitHub. Harbor quando há exigência de controle total, ambiente isolado ou vários provedores. Evite o Docker Hub como única fonte de produção.</p></div>
+
+  <h3>Docker Hub e os limites de pull</h3>
+  <p>O Docker Hub limita os pulls para proteger o serviço. Valores publicados na documentação oficial (confirmados na redação deste módulo, mas sujeitos a revisão do Docker, então verifique a página de uso antes de dimensionar):</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Quem puxa</th><th>Limite por janela de 6 horas</th></tr></thead>
+    <tbody>
+      <tr><td>Sem autenticação</td><td><strong>100</strong> pulls por endereço IPv4 ou sub-rede IPv6 /64</td></tr>
+      <tr><td>Conta Personal autenticada</td><td><strong>200</strong> pulls</td></tr>
+      <tr><td>Pro, Team, Business</td><td>sem limite de pulls, sujeito a uso justo (<em>fair use</em>)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>O que conta é o <em>pull</em> (a verificação de versão sozinha não conta). Uma imagem multi-arch conta um pull <strong>por arquitetura</strong> baixada. Ao estourar, vem <strong>HTTP 429</strong> e a mensagem <code>toomanyrequests: You have reached your unauthenticated pull rate limit</code>.</li>
+    <li>Sem autenticação, o contador é <strong>por IP</strong>. Runners de CI e saídas NAT compartilhadas somam o tráfego de muita gente e estouram rápido, como se fosse um incidente "aleatório".</li>
+    <li>Soluções, em ordem de custo: <strong>autenticar</strong> o CI; usar uma <strong>conta paga</strong> para o time; colocar um <strong>pull-through cache</strong> (seção 2); ou <strong>copiar</strong> as imagens base para o seu registry e referenciá-las de lá.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Tratar um build que falhou com 429 como "instabilidade do Docker Hub" e dar <em>retry</em>. É um problema estrutural: cada reexecução consome mais cota. Autentique ou use cache.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uma tag é um ponteiro móvel e o digest identifica o conteúdo. O registry guarda blobs por digest e manifestos que os listam. No Docker Hub há limite de pulls (100 por 6 h sem autenticação, 200 autenticado no plano gratuito), então CI precisa autenticar ou usar cache/mirror."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O registry é infraestrutura crítica: se ele cai, nenhum deploy novo acontece e nenhum nó recupera uma imagem. Pergunte: onde fica, quem tem permissão de push em produção, há réplica ou cache, o time depende de imagens públicas sem cópia interna? Dependência única do Docker Hub é risco de disponibilidade e de cadeia de suprimentos.</p></div>
+</section>
+
+<section class="chap" id="login-mirror">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Login, credenciais e mirrors</h2>
+  <h3>Autenticação no dia a dia</h3>
+<pre><code class="sh">echo "$TOKEN" | docker login ghcr.io -u meu-usuario --password-stdin   # nunca -p na linha de comando
+docker logout ghcr.io
+
+# ECR: o token dura cerca de 12 horas
+aws ecr get-login-password --region sa-east-1 \
+  | docker login --username AWS --password-stdin 123456789012.dkr.ecr.sa-east-1.amazonaws.com
+
+az acr login --name meuacr                              # Azure
+gcloud auth configure-docker southamerica-east1-docker.pkg.dev    # Google Artifact Registry</code></pre>
+  <p><code>--password-stdin</code> evita que a senha apareça no histórico do shell e na lista de processos (<code>ps</code>).</p>
+
+  <h3>Onde as credenciais ficam: credential helpers</h3>
+  <p>O <code>docker login</code> grava em <code>~/.docker/config.json</code>. Sem um <em>credential helper</em>, a credencial fica ali apenas codificada em base64, <strong>que não é criptografia</strong>: qualquer um que leia o arquivo a obtém. Com um helper, o segredo vai para o cofre do sistema (Keychain, Credential Manager, <code>pass</code>) ou é gerado sob demanda.</p>
+<pre data-file="~/.docker/config.json"><code class="json">{
+  "credsStore": "desktop",
+  "credHelpers": {
+    "123456789012.dkr.ecr.sa-east-1.amazonaws.com": "ecr-login",
+    "southamerica-east1-docker.pkg.dev": "gcloud"
+  }
+}</code></pre>
+  <ul>
+    <li><code>credsStore</code>: helper padrão para todos os registries (<code>desktop</code>, <code>osxkeychain</code>, <code>wincred</code>, <code>pass</code>, <code>secretservice</code>).</li>
+    <li><code>credHelpers</code>: helper por registry. O <code>docker-credential-ecr-login</code> (Amazon ECR Credential Helper) obtém tokens do ECR a partir das credenciais AWS, sem <code>docker login</code> periódico.</li>
+  </ul>
+
+  <h3>Credenciais em CI: curtas e mínimas</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Destino</th><th>Recomendado</th><th>Evite</th></tr></thead>
+    <tbody>
+      <tr><td>GHCR no GitHub Actions</td><td><code>GITHUB_TOKEN</code> com <code>permissions: packages: write</code></td><td>PAT pessoal de alguém que sai da empresa</td></tr>
+      <tr><td>ECR</td><td>OIDC do GitHub assumindo um papel IAM de menor privilégio (sem chave de acesso guardada)</td><td>chaves IAM de longa duração em secret</td></tr>
+      <tr><td>ACR / Artifact Registry</td><td>identidade federada (OIDC) com papel que só faz push no repositório</td><td>conta de serviço com acesso amplo ao projeto</td></tr>
+      <tr><td>Docker Hub</td><td>access token do Docker Hub com escopo mínimo, em secret</td><td>a senha da conta</td></tr>
+    </tbody>
+  </table></div>
+  <p>Separe quem <strong>publica</strong> de quem <strong>consome</strong>: o servidor de produção precisa de pull, nunca de push. Em ambientes de produção, o nó puxa com uma credencial somente leitura.</p>
+
+  <h3>Mirrors e pull-through cache</h3>
+  <p>Um <strong>pull-through cache</strong> é um registry que, ao receber um pull de uma imagem que não tem, busca no upstream (Docker Hub, GHCR...), guarda a cópia e passa a servir dela. Ganhos: reduz a contagem de pulls no Hub, acelera builds, e mantém imagens base disponíveis se o upstream cair.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Como funciona</th></tr></thead>
+    <tbody>
+      <tr><td><code>registry-mirrors</code> no Docker daemon</td><td><code>/etc/docker/daemon.json</code> com <code>"registry-mirrors": ["https://mirror.interno"]</code>. <strong>Só vale para o Docker Hub</strong> e cai no upstream se o mirror falhar.</td></tr>
+      <tr><td>ECR pull-through cache</td><td>regra que mapeia um prefixo do ECR a um upstream (Docker Hub, GHCR, Quay, ECR público...). As imagens são puxadas como <code>&lt;conta&gt;.dkr.ecr...amazonaws.com/&lt;prefixo&gt;/library/nginx</code>; o ECR as atualiza periodicamente. Para o Docker Hub é preciso configurar credenciais no upstream.</td></tr>
+      <tr><td>Harbor (projeto proxy cache)</td><td>um projeto Harbor aponta para um registry de origem; as imagens são servidas pelo Harbor, com scan e política próprias.</td></tr>
+      <tr><td>Artifact Registry (repositório remoto)</td><td>repositório que faz cache de um upstream.</td></tr>
+      <tr><td><code>registry:2</code> com <code>proxy.remoteurl</code></td><td>o registry de referência da OCI em modo proxy; simples, sem UI e sem permissões finas.</td></tr>
+      <tr><td>Artifactory, Nexus</td><td>repositórios universais com proxy de containers e de pacotes (npm, Maven).</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><b>Saiba mais</b><p>O cache também é <strong>controle de supply chain</strong>: você decide o que entra (listas permitidas), faz o scan antes de liberar e deixa de depender de um repositório público. Uma imagem copiada para o seu registry com a tag original pode ficar defasada: defina quem a atualiza (Renovate/Dependabot e rebuild periódico, seção 7).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Credencial em CI deve ser de curta duração e menor privilégio: OIDC para ECR/ACR/GAR, <code>GITHUB_TOKEN</code> para GHCR. No cliente uso credential helper em vez de base64 em <code>config.json</code>. Para os limites do Docker Hub, autentico e uso pull-through cache."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Audite quem tem permissão de push e quais chaves de longa duração existem em CI. Troque por federação OIDC: não há segredo para vazar nem para rotacionar. Pergunte também se o servidor de produção consegue baixar imagens se o Docker Hub estiver indisponível.</p></div>
+</section>
+
+<section class="chap" id="tags-promocao">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Tags, digest e promoção: build once, deploy many</h2>
+  <p>Uma tag aponta hoje para uma imagem e amanhã pode apontar para outra. Para operar com segurança é preciso decidir <strong>o que cada tag promete</strong> e quando o deploy deve se amarrar ao digest.</p>
+<pre><code class="sh">docker build -t ghcr.io/equipe/api:1.4.2 -t ghcr.io/equipe/api:sha-3f9c2e1 .
+docker push ghcr.io/equipe/api:1.4.2
+docker push ghcr.io/equipe/api:sha-3f9c2e1
+docker tag api:dev ghcr.io/equipe/api:1.4.2     # dá outro nome à MESMA imagem local</code></pre>
+  <h3>Estratégia de tags</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tag</th><th>Promessa</th><th>Mutável?</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><code>sha-3f9c2e1</code> (commit)</td><td>este commit, este build</td><td>não (por convenção)</td><td>rastreio e deploy em homologação/produção</td></tr>
+      <tr><td><code>1.4.2</code> (semver completo)</td><td>release exata</td><td><strong>não</strong> (regra de ouro)</td><td>release; pode ser o que a equipe lê e o deploy referencia (idealmente com digest)</td></tr>
+      <tr><td><code>1.4</code>, <code>1</code></td><td>"o último patch/minor"</td><td>sim, segue os lançamentos</td><td>consumo por terceiros que aceitam atualização automática</td></tr>
+      <tr><td><code>main</code>, <code>edge</code></td><td>o último build do branch</td><td>sim</td><td>ambientes de teste contínuo</td></tr>
+      <tr><td><code>latest</code></td><td>"o que alguém publicou por último"</td><td>sim, sem regra</td><td>só em demonstração; <strong>evite em produção</strong></td></tr>
+      <tr><td><code>prod</code>, <code>stg</code> (ambiente)</td><td>o que está em cada ambiente</td><td>sim, é o ponteiro de promoção</td><td>opcional, como atalho legível; o deploy real usa digest</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p><code>latest</code> não significa "mais recente" nem "estável": é só o nome da tag quando nenhuma é informada. Dois servidores que fizeram <code>pull</code> em momentos diferentes têm "<code>latest</code>" diferentes, e um rollback para "a versão anterior" é impossível porque ela não tem nome. Em Compose, <code>image: agenda/api</code> sem tag é <code>latest</code>.</p></div>
+  <ul>
+    <li><strong>Imutabilidade.</strong> Nunca republique uma tag de versão. Se algo estiver errado em <code>1.4.2</code>, publique <code>1.4.3</code>. Ative <strong>tag imutável</strong> no registry onde existir (ECR e Harbor oferecem; confira no seu): ele recusa o <code>push</code> sobre uma tag já usada.</li>
+    <li><strong>Rollback</strong> é subir a tag (ou o digest) anterior: por isso as imagens antigas precisam existir (retenção, seção 8).</li>
+  </ul>
+
+  <h3>Digest no deploy</h3>
+  <p>Mesmo com tags "imutáveis por convenção", só o digest é uma garantia técnica: o conteúdo foi hasheado. Quando o deploy referencia <code>@sha256:…</code>, o que se testou e o que roda são <em>bit a bit</em> a mesma coisa, e uma tag adulterada no registry não muda nada.</p>
+<pre><code class="sh">docker buildx imagetools inspect ghcr.io/equipe/api:1.4.2
+docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/equipe/api:1.4.2   # imagem já puxada
+crane digest ghcr.io/equipe/api:1.4.2                                          # sem baixar a imagem</code></pre>
+<pre><code class="text">Name:      ghcr.io/equipe/api:1.4.2
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:9f2c4e1ab7d3c85e0f6a1b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f
+
+Manifests:
+  Name:      ghcr.io/equipe/api:1.4.2@sha256:1a2b3c…
+  Platform:  linux/amd64
+  Name:      ghcr.io/equipe/api:1.4.2@sha256:4d5e6f…
+  Platform:  linux/arm64</code></pre>
+<pre data-file="compose.yaml (produção)"><code class="yaml">services:
+  api:
+    # tag para humanos + digest para a máquina: se o digest não bater, o pull falha
+    image: ghcr.io/equipe/api:1.4.2@sha256:9f2c4e1ab7d3c85e0f6a1b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f</code></pre>
+  <p>Para imagem multi-arch, referencie o digest do <strong>índice</strong> (o que o <code>imagetools inspect</code> mostra no topo): cada arquitetura resolve o seu manifesto. Digests ficam ilegíveis, então o pipeline os gera e o Renovate (seção 7) os atualiza.</p>
+
+  <h3>Promoção: construa uma vez, implante muitas</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Uma imagem construída uma vez no CI, guardada no registry com tag de commit e digest, e promovida sem rebuild para dev, staging e produção">
+      <defs><marker id="ah-prm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="40" width="130" height="54" rx="5"/>
+      <text x="85" y="63" text-anchor="middle">CI: build</text><text class="lbl" x="85" y="81" text-anchor="middle">uma vez por commit</text>
+      <line class="ln-a" x1="150" y1="67" x2="188" y2="67" marker-end="url(#ah-prm)"/>
+      <rect class="box" x="190" y="24" width="210" height="86" rx="5"/>
+      <text class="ttl" x="205" y="44">registry</text>
+      <text x="205" y="64">api@sha256:9f2c…</text>
+      <text class="lbl" x="205" y="82">tags: sha-3f9c2e1</text>
+      <text class="lbl" x="205" y="98">1.4.2 (quando é release)</text>
+      <line class="ln" x1="400" y1="55" x2="468" y2="39" marker-end="url(#ah-prm)"/>
+      <line class="ln" x1="400" y1="67" x2="468" y2="94" marker-end="url(#ah-prm)"/>
+      <line class="ln" x1="400" y1="80" x2="468" y2="149" marker-end="url(#ah-prm)"/>
+      <rect class="box-w" x="470" y="20" width="190" height="40" rx="5"/><text x="565" y="45" text-anchor="middle">dev / homologação</text>
+      <rect class="box-w" x="470" y="75" width="190" height="40" rx="5"/><text x="565" y="100" text-anchor="middle">staging</text>
+      <rect class="box-m" x="470" y="130" width="190" height="40" rx="5"/><text x="565" y="155" text-anchor="middle">produção</text>
+      <text class="lbl" x="190" y="130">Promoção = apontar o ambiente para o MESMO digest</text>
+      <text class="lbl" x="190" y="146">(nova tag ou nova referência), sem rebuild.</text>
+      <rect class="box-b" x="20" y="190" width="640" height="44" rx="5"/>
+      <text class="lbl" x="34" y="209">Anti-padrão: rebuild por ambiente. Entre um build e outro mudam a imagem base, uma dependência</text>
+      <text class="lbl" x="34" y="225">ou o cache: o que foi testado deixa de ser o que roda em produção.</text>
+    </svg>
+    <figcaption>Os testes e a aprovação valem para um digest. Promover é mover esse digest adiante.</figcaption>
+  </figure>
+<pre><code class="sh"># promoção dentro do mesmo registry: cria a tag "prod" apontando para o digest já testado
+docker buildx imagetools create \
+  --tag ghcr.io/equipe/api:1.4.2 \
+  ghcr.io/equipe/api@sha256:9f2c4e1ab7d3c85e0f6a1b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f
+
+crane tag ghcr.io/equipe/api@sha256:9f2c4e1ab7d3… 1.4.2           # alternativa com crane
+skopeo copy --all docker://hml.registry/api@sha256:9f2c4e1ab7d3… \
+                  docker://prod.registry/api:1.4.2                # entre registries (todas as plataformas)</code></pre>
+  <ul>
+    <li>As cópias entre registries preservam o digest quando o manifesto não é convertido: confirme comparando com <code>imagetools inspect</code> dos dois lados.</li>
+    <li>A diferença entre ambientes fica na <strong>configuração</strong> (variáveis, secrets, arquivos de config) e nunca na imagem. É o mesmo princípio de "12 factors": configuração separada do artefato.</li>
+    <li>Aprovação em produção pode virar um gate no pipeline (aprovação manual do ambiente), com o digest registrado no ticket de mudança: o que auditoria pergunta é "qual versão exatamente estava rodando em tal data".</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>CI publica <code>sha-&lt;commit&gt;</code> em todo build. Release cria <code>X.Y.Z</code> <strong>apontando para o mesmo digest</strong>. O deploy usa <code>tag@digest</code>. Ninguém sobrescreve tag. <code>latest</code> não existe em produção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Build once, deploy many: o artefato é construído uma vez, testado, e a promoção só move uma referência para o mesmo digest. Reconstruir por ambiente quebra a garantia de que o testado é o implantado. No deploy uso o digest, porque tag é mutável."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Registre em cada deploy o digest implantado (changelog, ticket). Em um incidente, a primeira pergunta é "o que mudou?"; com tags móveis ninguém consegue responder com certeza. Em saúde, isso também é rastreabilidade para auditoria e validação de sistemas.</p></div>
+</section>
+
+<section class="chap" id="pipeline-gha">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Pipeline completo no GitHub Actions</h2>
+  <p>Um bom pipeline de imagem faz sempre a mesma sequência: constrói com cache, <strong>varre antes de publicar</strong>, publica para as plataformas necessárias, anexa SBOM e proveniência e assina o resultado. O fluxo abaixo faz isso, e o resto da seção explica cada decisão.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Etapas do pipeline: checkout, buildx e qemu, login, metadata, build local, scan, build e push multi-arch, SBOM e proveniência, assinatura">
+      <defs><marker id="ah-pip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="15" y="30" width="140" height="44" rx="5"/><text x="85" y="56" text-anchor="middle">checkout</text>
+      <rect class="box" x="185" y="30" width="140" height="44" rx="5"/><text x="255" y="56" text-anchor="middle">qemu + buildx</text>
+      <rect class="box" x="355" y="30" width="140" height="44" rx="5"/><text x="425" y="56" text-anchor="middle">login</text>
+      <rect class="box" x="525" y="30" width="140" height="44" rx="5"/><text x="595" y="56" text-anchor="middle">metadata-action</text>
+      <line class="ln" x1="155" y1="52" x2="183" y2="52" marker-end="url(#ah-pip)"/>
+      <line class="ln" x1="325" y1="52" x2="353" y2="52" marker-end="url(#ah-pip)"/>
+      <line class="ln" x1="495" y1="52" x2="523" y2="52" marker-end="url(#ah-pip)"/>
+      <path class="ln" d="M595,74 L595,102 L85,102 L85,128" marker-end="url(#ah-pip)"/>
+      <rect class="box-a" x="15" y="130" width="140" height="44" rx="5"/><text x="85" y="156" text-anchor="middle">build + load</text>
+      <rect class="box-b" x="185" y="130" width="140" height="44" rx="5"/><text x="255" y="156" text-anchor="middle">scan (gate)</text>
+      <rect class="box-a" x="355" y="130" width="140" height="44" rx="5"/><text x="425" y="150" text-anchor="middle">push</text><text class="lbl" x="425" y="166" text-anchor="middle">amd64 + arm64</text>
+      <rect class="box-m" x="525" y="130" width="140" height="44" rx="5"/><text x="595" y="150" text-anchor="middle">sbom + prov.</text><text class="lbl" x="595" y="166" text-anchor="middle">e assinatura</text>
+      <line class="ln" x1="155" y1="152" x2="183" y2="152" marker-end="url(#ah-pip)"/>
+      <line class="ln" x1="325" y1="152" x2="353" y2="152" marker-end="url(#ah-pip)"/>
+      <line class="ln" x1="495" y1="152" x2="523" y2="152" marker-end="url(#ah-pip)"/>
+      <text class="lbl" x="15" y="198">cache type=gha reaproveita camadas entre os dois builds e entre execuções.</text>
+      <text class="lbl" x="15" y="216">Se o scan falhar, nada foi publicado. Em pull request, as etapas de push e assinatura são puladas.</text>
+    </svg>
+    <figcaption>A varredura vem antes do push; o segundo build é quase todo cache.</figcaption>
+  </figure>
+<pre data-file=".github/workflows/imagem.yml"><code class="yaml">name: imagem
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+
+permissions:
+  contents: read                # padrão mínimo; cada job pede o que precisa
+
+concurrency:
+  group: imagem-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write           # push no GHCR
+      id-token: write           # token OIDC para assinatura sem chave (cosign)
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Nome da imagem em minúsculas (GHCR exige)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/api" &gt;&gt; "$GITHUB_ENV"
+
+      - uses: docker/setup-qemu-action@v4          # emulação para arm64
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false                      # nunca gera "latest"
+          tags: |
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build (amd64) para varredura
+        uses: docker/build-push-action@v7
+        with:
+          context: ./api
+          target: prod
+          load: true                                # fica no daemon local, sem push
+          tags: scan-local:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Varredura de vulnerabilidades (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: scan-local:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true                      # só falha se há correção disponível
+          exit-code: "1"
+
+      - name: Build e push (multi-arch, com SBOM e proveniência)
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./api
+          target: prod
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          sbom: true
+          provenance: mode=max
+
+      - uses: sigstore/cosign-installer@v4
+        if: github.event_name != 'pull_request'
+
+      - name: Assinar pelo digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"</code></pre>
+  <p>Notas de versão: os números de versão das actions mudam. Os usados aqui eram os mais recentes na redação deste módulo (<code>docker/build-push-action</code> v7, <code>docker/setup-buildx-action</code> v4, <code>docker/login-action</code> v4, <code>docker/metadata-action</code> v6, <code>docker/setup-qemu-action</code> v4, <code>sigstore/cosign-installer</code> v4, <code>aquasecurity/trivy-action</code> v0.36.0). Confira a página de releases de cada uma e deixe o Dependabot ou o Renovate mantê-las (seção 7). Para segurança máxima, fixe por <strong>SHA do commit</strong> (<code>uses: org/acao@&lt;sha&gt;</code> com a versão em comentário), porque tags de actions também são móveis.</p>
+
+  <h3>O que cada decisão resolve</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Trecho</th><th>Por quê</th></tr></thead>
+    <tbody>
+      <tr><td><code>permissions</code> mínimas</td><td>o <code>GITHUB_TOKEN</code> nasce com o mínimo e cada job eleva só o necessário. <code>id-token: write</code> permite o OIDC da assinatura sem chave.</td></tr>
+      <tr><td><code>concurrency</code></td><td>cancela execuções antigas do mesmo ref: poupa minutos e evita publicar um build mais velho depois de um mais novo.</td></tr>
+      <tr><td>metadata-action</td><td>gera tags e labels OCI (inclui <code>org.opencontainers.image.source</code>, que liga o pacote ao repositório no GHCR). Com <code>flavor: latest=false</code>, nunca produz <code>latest</code>.</td></tr>
+      <tr><td><code>load: true</code> + scan</td><td>com <code>load</code>, o resultado vai para o daemon local e o Trivy o escaneia sem que nada tenha sido publicado. <code>load</code> só funciona para <strong>uma plataforma</strong>; por isso o build de scan é <code>amd64</code>.</td></tr>
+      <tr><td><code>ignore-unfixed</code></td><td>falha apenas quando há versão corrigida. Falhar por CVE sem correção deixa o pipeline vermelho sem ação possível (seção 7).</td></tr>
+      <tr><td><code>cache-to type=gha,mode=max</code></td><td><code>mode=max</code> guarda as camadas de <em>todos</em> os estágios, não só do estágio final. Em multi-stage, é o que faz o cache de <code>deps</code> e <code>build</code> funcionar.</td></tr>
+      <tr><td><code>push: ${{ ... != 'pull_request' }}</code></td><td>PRs (inclusive de forks, sem acesso a secrets) constroem e escaneiam, mas não publicam.</td></tr>
+      <tr><td><code>sbom</code> e <code>provenance</code></td><td>anexam atestados à imagem (seção 5). <code>mode=max</code> traz mais detalhe, inclusive argumentos de build: não use com segredo em <code>ARG</code> (nem deveria existir).</td></tr>
+      <tr><td>assinar pelo <strong>digest</strong></td><td>assinar uma tag é assinar um ponteiro móvel. O digest vem de <code>steps.push.outputs.digest</code>.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Backends de cache de build</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Backend</th><th>Onde guarda</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td><code>type=gha</code></td><td>serviço de cache do GitHub Actions</td><td>pipeline no GitHub; simples; o cache tem limite de tamanho por repositório e expira (confirme os limites atuais)</td></tr>
+      <tr><td><code>type=registry,ref=…:buildcache,mode=max</code></td><td>uma tag no registry</td><td>vários provedores de CI, runners efêmeros, cache compartilhado entre pipelines</td></tr>
+      <tr><td><code>type=inline</code></td><td>dentro da própria imagem</td><td>só camadas finais (<code>mode=min</code>); não serve bem para multi-stage</td></tr>
+      <tr><td><code>type=local</code></td><td>diretório</td><td>runner persistente, desenvolvimento</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Multi-arch: custos e alternativas</h3>
+  <p>Com <code>platforms: linux/amd64,linux/arm64</code>, o BuildKit gera um manifesto por plataforma e um índice. No runner <code>amd64</code>, o <code>arm64</code> roda por <strong>emulação QEMU</strong>, que pode ser de 5 a 10 vezes mais lenta em passos pesados de CPU (<code>npm ci</code> com módulos nativos, compilação). Três saídas:</p>
+  <ul>
+    <li><strong>Cross-compilation</strong> no Dockerfile: o estágio de build roda na arquitetura do runner e só o resultado muda de alvo (linguagens que suportam, como Go, Rust e .NET).</li>
+    <li><strong>Runners nativos arm64</strong> (disponíveis no GitHub e em outros provedores; confira o plano), com um build por arquitetura e <code>imagetools create</code> para juntá-las num índice.</li>
+    <li>Publicar só a arquitetura em que o ambiente roda, se ninguém executa <code>arm64</code>.</li>
+  </ul>
+<pre data-file="Dockerfile (cross-compilation em Go)"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM --platform=$BUILDPLATFORM golang:1.23 AS build
+ARG TARGETOS TARGETARCH
+WORKDIR /src
+COPY . .
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/api ./cmd/api
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/api /api
+ENTRYPOINT ["/api"]</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p><code>pull_request_target</code> e workflows que rodam código de PR com acesso a secrets. Um fork malicioso pode exfiltrar tokens. Use <code>pull_request</code> (sem secrets) para build e scan, e publique só em <code>push</code> para branches e tags protegidos.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Checkout, buildx, login, metadata para tags e labels, build com cache gha, scan antes do push, push multi-arch com SBOM e proveniência, e assinatura pelo digest com cosign sem chave. Permissões mínimas por job, nada publicado em PR, e <code>latest</code> desligado."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O pipeline é o único caminho para produção: ninguém publica da própria máquina. Proteja o branch <code>main</code> e as tags <code>v*</code>, exija revisão para mexer em <code>.github/workflows</code> (CODEOWNERS) e acompanhe o tempo do pipeline: cache e multi-arch bem feitos fazem a diferença entre 3 e 25 minutos.</p></div>
+</section>
+
+<section class="chap" id="sbom-proveniencia">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>SBOM e proveniência: provar o que há dentro e como foi feito</h2>
+  <p>Duas perguntas aparecem em toda auditoria e em todo incidente de segurança: <strong>"o que tem dentro desta imagem?"</strong> e <strong>"quem a construiu, a partir de quê?"</strong>. O SBOM responde à primeira; a proveniência, à segunda.</p>
+
+  <h3>SBOM: lista de ingredientes</h3>
+  <p>O <em>Software Bill of Materials</em> lista pacotes do sistema operacional e bibliotecas da aplicação com versões. Formatos: <strong>SPDX</strong> (Linux Foundation) e <strong>CycloneDX</strong> (OWASP). Quando sai uma CVE nova, o SBOM guardado permite responder "quais das minhas imagens usam essa biblioteca?" sem baixar e reescanear tudo.</p>
+<pre><code class="sh"># 1) pelo BuildKit, no build (anexa como atestado à imagem)
+docker buildx build --sbom=true --provenance=mode=max \
+  --platform linux/amd64,linux/arm64 -t ghcr.io/equipe/api:1.4.2 --push ./api
+
+# ler o que ficou anexado
+docker buildx imagetools inspect ghcr.io/equipe/api:1.4.2 --format '{{ json .SBOM }}'
+docker buildx imagetools inspect ghcr.io/equipe/api:1.4.2 --format '{{ json .Provenance }}'
+
+# 2) com o Syft, sobre uma imagem pronta
+syft ghcr.io/equipe/api@sha256:9f2c… -o spdx-json=sbom.spdx.json -o cyclonedx-json=sbom.cdx.json
+
+# 3) varrer o SBOM depois, sem a imagem
+grype sbom:sbom.spdx.json --fail-on high</code></pre>
+  <p>No caso 1, o BuildKit usa um scanner (baseado no Syft) como parte do build. No Docker Desktop e no Docker Scout também é possível consultar o SBOM de uma imagem (<code>docker scout sbom</code>).</p>
+
+  <h3>Proveniência e SLSA</h3>
+  <p>A <strong>proveniência</strong> é um atestado, no formato <em>in-toto</em>, descrevendo como o artefato foi produzido: repositório e commit de origem, workflow e plataforma de build, imagens base usadas (com digest), parâmetros e horário. <strong>SLSA</strong> (<em>Supply-chain Levels for Software Artifacts</em>, "salsa") é o modelo que gradua essa garantia. Em resumo, na trilha de build:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Nível</th><th>Garantia</th><th>Na prática</th></tr></thead>
+    <tbody>
+      <tr><td>L1</td><td>a proveniência existe</td><td>pipeline emite o atestado, mesmo sem assinatura robusta</td></tr>
+      <tr><td>L2</td><td>proveniência gerada e assinada por uma plataforma de build hospedada</td><td>GitHub Actions emitindo e assinando; difícil de forjar a partir do seu código</td></tr>
+      <tr><td>L3</td><td>build isolado e endurecido; a proveniência não pode ser forjada pelo código do projeto</td><td>workflows reutilizáveis e runners isolados; exige disciplina de pipeline</td></tr>
+    </tbody>
+  </table></div>
+  <p>O <code>provenance: mode=max</code> do buildx gera o atestado com bastante detalhe (<code>mode=min</code> traz o essencial). Existe ainda o caminho nativo do GitHub, com a action <code>actions/attest-build-provenance</code> e a verificação por <code>gh attestation verify</code>. Confira a documentação para a versão atual.</p>
+
+  <h3>Onde os atestados ficam</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Um índice de imagem com dois manifestos de plataforma e dois atestados, SBOM e proveniência">
+      <defs><marker id="ah-att" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="170" y="12" width="340" height="56" rx="5"/>
+      <text x="340" y="34" text-anchor="middle">tag 1.4.2 → image index</text>
+      <text class="lbl" x="340" y="52" text-anchor="middle">digest sha256:9f2c…  (é este que se assina)</text>
+      <line class="ln" x1="260" y1="68" x2="92" y2="118" marker-end="url(#ah-att)"/>
+      <line class="ln" x1="310" y1="68" x2="257" y2="118" marker-end="url(#ah-att)"/>
+      <line class="ln" x1="370" y1="68" x2="422" y2="118" marker-end="url(#ah-att)"/>
+      <line class="ln" x1="420" y1="68" x2="587" y2="118" marker-end="url(#ah-att)"/>
+      <rect class="box" x="20" y="120" width="145" height="56" rx="5"/>
+      <text x="92" y="143" text-anchor="middle">linux/amd64</text><text class="lbl" x="92" y="161" text-anchor="middle">imagem executável</text>
+      <rect class="box" x="185" y="120" width="145" height="56" rx="5"/>
+      <text x="257" y="143" text-anchor="middle">linux/arm64</text><text class="lbl" x="257" y="161" text-anchor="middle">imagem executável</text>
+      <rect class="box-m" x="350" y="120" width="145" height="56" rx="5"/>
+      <text x="422" y="143" text-anchor="middle">unknown/unknown</text><text class="lbl" x="422" y="161" text-anchor="middle">SBOM (SPDX)</text>
+      <rect class="box-m" x="515" y="120" width="145" height="56" rx="5"/>
+      <text x="587" y="143" text-anchor="middle">unknown/unknown</text><text class="lbl" x="587" y="161" text-anchor="middle">proveniência (SLSA)</text>
+      <text class="lbl" x="20" y="204">Os atestados são manifestos extras no índice; cada um aponta para o digest que descreve.</text>
+    </svg>
+    <figcaption>O digest do índice cobre tudo o que está nele. Assinar o índice assina, indiretamente, os atestados.</figcaption>
+  </figure>
+  <ul>
+    <li>As entradas <code>unknown/unknown</code> não são lixo: aparecem assim em algumas UIs de registry porque não são imagens executáveis.</li>
+    <li>Outra via, a do cosign: <code>cosign attest --type spdxjson --predicate sbom.spdx.json IMAGE@DIGEST</code> assina e guarda o SBOM como atestado, verificável com <code>cosign verify-attestation</code>.</li>
+    <li>Políticas de limpeza que apagam "manifestos sem tag" podem destruir atestados e assinaturas. Revise a política depois de ligar <code>sbom</code> e <code>provenance</code> (seção 8).</li>
+    <li>SBOM não é um relatório de vulnerabilidades: é o inventário. As vulnerabilidades mudam todo dia; o inventário não. Reavalie o SBOM contra bases novas.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Gerar SBOM e guardar em um bucket que ninguém consulta. O valor está em poder <strong>buscar</strong>: "quais imagens em produção contêm <code>log4j-core</code> 2.14?". Decida onde o SBOM vive, quem consulta e com que ferramenta (Dependency-Track, Grype, Scout) antes de gerar milhares deles.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"SBOM é o inventário de componentes da imagem (SPDX ou CycloneDX); proveniência é o atestado de como e onde foi construída, no modelo SLSA. Gero ambos no build com buildx, e assino o digest do índice para que a assinatura cubra os atestados."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Regulação e contratos já exigem SBOM em vários setores. Para sistemas que tratam dados de saúde, a pergunta de auditoria "o que roda e a partir de que código" é rotina. Tenha uma resposta que não dependa de alguém lembrar: SBOM e proveniência guardados por versão, com retenção igual à da imagem.</p></div>
+</section>
+
+<section class="chap" id="assinatura-verificacao">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Assinatura com cosign e verificação no deploy</h2>
+  <p>Hash garante integridade, não <strong>autoria</strong>. Quem escreve no registry pode publicar uma imagem com o digest dele. A assinatura liga a imagem a uma <em>identidade</em> ("este workflow deste repositório"), e a verificação, feita <strong>no momento do deploy</strong>, recusa o que não vier dela.</p>
+
+  <h3>Sigstore e o modo sem chave (keyless)</h3>
+  <p>Assinar com chave privada exige guardá-la, protegê-la e rotacioná-la, e é aí que a maioria das iniciativas morre. O <strong>Sigstore</strong> propõe assinar <em>sem chave de longa duração</em>:</p>
+  <ul>
+    <li><strong>Cosign</strong>: a ferramenta de linha de comando que assina e verifica imagens (e atestados).</li>
+    <li><strong>Fulcio</strong>: autoridade certificadora que troca um token de identidade OIDC (o do GitHub Actions, por exemplo) por um <strong>certificado de vida curta</strong> (minutos) que carrega a identidade do workflow.</li>
+    <li><strong>Rekor</strong>: log de transparência público e imutável, onde fica registrado que a assinatura aconteceu enquanto o certificado era válido.</li>
+  </ul>
+  <figure class="figure">
+    <svg viewBox="0 0 680 260" role="img" aria-label="Fluxo de assinatura sem chave: pipeline obtém certificado no Fulcio, registra no Rekor, publica a assinatura no registry; no deploy o cosign verify confere identidade e só então executa a imagem">
+      <defs><marker id="ah-sig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="44" width="150" height="52" rx="5"/>
+      <text x="95" y="66" text-anchor="middle">Pipeline (CI)</text><text class="lbl" x="95" y="84" text-anchor="middle">cosign sign @digest</text>
+      <rect class="box-w" x="260" y="44" width="150" height="52" rx="5"/>
+      <text x="335" y="66" text-anchor="middle">Fulcio</text><text class="lbl" x="335" y="84" text-anchor="middle">certificado de minutos</text>
+      <rect class="box-m" x="510" y="44" width="150" height="52" rx="5"/>
+      <text x="585" y="66" text-anchor="middle">Rekor</text><text class="lbl" x="585" y="84" text-anchor="middle">log de transparência</text>
+      <line class="ln" x1="170" y1="70" x2="258" y2="70" marker-end="url(#ah-sig)"/>
+      <text class="lbl" x="180" y="62">token OIDC</text>
+      <path class="ln" d="M95,44 L95,26 L585,26 L585,42" marker-end="url(#ah-sig)"/>
+      <text class="lbl" x="250" y="20">registro da assinatura no log</text>
+      <line class="ln" x1="95" y1="96" x2="95" y2="168" marker-end="url(#ah-sig)"/>
+      <text class="lbl" x="104" y="136">push da imagem e da assinatura</text>
+      <rect class="box" x="20" y="170" width="190" height="52" rx="5"/>
+      <text x="115" y="192" text-anchor="middle">Registry</text><text class="lbl" x="115" y="210" text-anchor="middle">imagem @digest + assinatura</text>
+      <line class="ln" x1="210" y1="196" x2="258" y2="196" marker-end="url(#ah-sig)"/>
+      <rect class="box-a" x="260" y="170" width="190" height="52" rx="5"/>
+      <text x="355" y="192" text-anchor="middle">Deploy: cosign verify</text><text class="lbl" x="355" y="210" text-anchor="middle">identidade + emissor + digest</text>
+      <line class="ln" x1="450" y1="196" x2="498" y2="196" marker-end="url(#ah-sig)"/>
+      <rect class="box" x="500" y="170" width="160" height="52" rx="5"/>
+      <text x="580" y="192" text-anchor="middle">executa a imagem</text><text class="lbl" x="580" y="210" text-anchor="middle">só se a verificação passar</text>
+      <line class="ln" x1="420" y1="170" x2="540" y2="98" stroke-dasharray="4 3" marker-end="url(#ah-sig)"/>
+      <text class="lbl" x="470" y="148">confere a cadeia e o log</text>
+    </svg>
+    <figcaption>Não existe chave para vazar: a identidade do workflow é a prova. A verificação confere quem assinou, não apenas que há uma assinatura.</figcaption>
+  </figure>
+
+  <h3>Assinar e verificar</h3>
+<pre><code class="sh"># no pipeline (com id-token: write); assinar o DIGEST, nunca a tag
+cosign sign --yes ghcr.io/equipe/agenda/api@sha256:9f2c4e1ab7d3…
+
+# no deploy: exigir QUEM assinou e por qual emissor de identidade
+cosign verify ghcr.io/equipe/agenda/api@sha256:9f2c4e1ab7d3… \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/equipe/agenda/\.github/workflows/imagem\.yml@refs/(heads/main|tags/v.*)$'
+
+# atestados (SBOM, proveniência) assinados à parte
+cosign attest --yes --type spdxjson --predicate sbom.spdx.json ghcr.io/equipe/agenda/api@sha256:9f2c…
+cosign verify-attestation --type spdxjson \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/equipe/agenda/' \
+  ghcr.io/equipe/agenda/api@sha256:9f2c…</code></pre>
+<pre><code class="text">Verification for ghcr.io/equipe/agenda/api@sha256:9f2c4e1ab7d3… --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The code-signing certificate was verified using trusted certificate authority certificates</code></pre>
+  <ul>
+    <li>Verificar <em>sem</em> <code>--certificate-identity</code> e <code>--certificate-oidc-issuer</code> aceitaria a assinatura de <strong>qualquer</strong> pessoa com uma conta no GitHub. A identidade esperada é parte da política.</li>
+    <li>O cosign 3.x (instalado pela action <code>cosign-installer</code> v4) mudou formatos e padrões em relação ao 2.x. A sintaxe dos exemplos é a de uso corrente; confirme com <code>cosign sign --help</code> na sua versão.</li>
+    <li>Alternativa com chave: <code>cosign generate-key-pair</code>, ou chaves em KMS (<code>--key awskms://…</code>, <code>gcpkms://…</code>, <code>azurekms://…</code>), útil em ambientes isolados sem OIDC. O custo é gerir a chave.</li>
+    <li>Outras ferramentas: <strong>Notation</strong> (projeto Notary v2, usado no ecossistema Azure/AWS) e o antigo <strong>Docker Content Trust</strong> (Notary v1, <code>DOCKER_CONTENT_TRUST=1</code>), hoje pouco adotado.</li>
+  </ul>
+
+  <h3>Verificar na hora do deploy: onde fazer cumprir</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ambiente</th><th>Como impor</th></tr></thead>
+    <tbody>
+      <tr><td>Host único com Compose</td><td>o script de deploy roda <code>cosign verify</code> antes do <code>docker compose up</code> e aborta se falhar; o Compose então usa o mesmo digest já verificado.</td></tr>
+      <tr><td>Kubernetes</td><td>controlador de admissão: <strong>Kyverno</strong> (<code>verifyImages</code>), <strong>Sigstore policy-controller</strong> ou <strong>Connaisseur</strong>, recusando o Pod cuja imagem não tenha a assinatura e a identidade esperadas.</td></tr>
+      <tr><td>Serviços gerenciados</td><td>recursos próprios de política de imagem (ECR/ACR/Binary Authorization) conforme o provedor.</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="scripts/deploy.sh"><code class="sh">#!/bin/sh
+set -eu
+IMAGE="ghcr.io/equipe/agenda/api"
+DIGEST="$1"      # sha256:... vindo do pipeline/aprovação
+
+cosign verify "$IMAGE@$DIGEST" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/equipe/agenda/\.github/workflows/imagem\.yml@refs/(heads/main|tags/v.*)$' \
+  &gt;/dev/null
+
+# o compose.yaml de produção referencia image: ${API_IMAGE}
+API_IMAGE="$IMAGE@$DIGEST" docker compose -f compose.yaml up -d --remove-orphans --wait
+echo "deploy OK: $IMAGE@$DIGEST" | tee -a /var/log/deploys.log</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Assinar sem verificar é teatro. O ciclo só fecha quando algo <strong>bloqueia</strong> a execução de imagem sem assinatura válida da identidade esperada.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Cosign com Sigstore assina sem chave: o pipeline troca o token OIDC por um certificado curto no Fulcio, a assinatura vai ao registry e o evento ao log Rekor. No deploy verifico a assinatura, o emissor e a identidade do workflow, e o admission controller ou o script de deploy bloqueia o que não passar."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Assinatura responde a ameaças reais: credencial de registry vazada, pipeline comprometido, imagem trocada. Mas só protege se a verificação for obrigatória. Comece em modo de auditoria (registra o que não estaria assinado), depois imponha, ambiente por ambiente.</p></div>
+</section>
+
+<section class="chap" id="varredura-cves">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Varredura de vulnerabilidades e tratamento de CVEs</h2>
+  <p>Um scanner compara os pacotes da imagem (do SO e das bibliotecas da aplicação) com bases de vulnerabilidades conhecidas. Toda imagem tem CVEs listadas; o trabalho é separar as que importam, corrigir o que é corrigível e não parar o time por ruído.</p>
+
+  <h3>Ferramentas</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ferramenta</th><th>Características</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Trivy</strong> (Aqua)</td><td>código aberto; imagens, sistemas de arquivos, repositórios, IaC (<code>trivy config</code>), SBOM; saída em tabela, JSON, SARIF, CycloneDX</td><td>gate no CI; também é o scanner embutido do Harbor</td></tr>
+      <tr><td><strong>Grype</strong> (Anchore)</td><td>código aberto; escaneia imagens e SBOMs (<code>grype sbom:...</code>); par do Syft</td><td>reavaliar SBOMs guardados contra a base nova</td></tr>
+      <tr><td><strong>Docker Scout</strong></td><td>integrado ao Docker Desktop/CLI e ao Docker Hub; comparação entre imagens, recomendação de base image melhor</td><td>visão por desenvolvedor, política por organização (planos e limites variam)</td></tr>
+      <tr><td>Do registry</td><td>ECR (básico e avançado, com Inspector), ACR (Defender), Artifact Registry (Artifact Analysis), Harbor (Trivy)</td><td>escaneamento contínuo das imagens já publicadas</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sh">trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 ghcr.io/equipe/api:1.4.2
+trivy image --format cyclonedx -o sbom.cdx.json ghcr.io/equipe/api:1.4.2
+trivy config .                       # erros de configuração em Dockerfile/Compose/Kubernetes
+trivy fs --scanners vuln,secret .    # dependências e segredos no repositório
+
+grype ghcr.io/equipe/api:1.4.2 --fail-on high --only-fixed
+
+docker scout quickview ghcr.io/equipe/api:1.4.2
+docker scout cves --only-severity critical,high ghcr.io/equipe/api:1.4.2
+docker scout recommendations ghcr.io/equipe/api:1.4.2     # sugere imagem base melhor
+docker scout compare --to ghcr.io/equipe/api:prod ghcr.io/equipe/api:1.4.2</code></pre>
+<pre><code class="text">ghcr.io/equipe/api:1.4.2 (alpine 3.20)        Total: 0
+Node.js (node-pkg)
+
+Total: 1 (HIGH: 1, CRITICAL: 0)
+┌─────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┐
+│   Library   │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │
+├─────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┤
+│ exemplo-lib │ CVE-2099-12345 │ HIGH     │ fixed  │ 4.17.20           │ 4.17.21       │
+└─────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┘</code></pre>
+  <p>(Saída ilustrativa, com biblioteca e CVE fictícias. Duas leituras importantes: o <em>status</em> <code>fixed</code> diz que existe versão corrigida; <code>will_not_fix</code> ou ausência de versão corrigida significa que atualizar não resolve.)</p>
+
+  <h3>Como priorizar: severidade não é risco</h3>
+  <p>A severidade (CVSS: baixa, média, alta, crítica) mede o <em>impacto potencial</em> da falha em abstrato. O risco para <strong>o seu</strong> sistema depende de outros fatores:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Fator</th><th>Pergunta</th><th>Fonte</th></tr></thead>
+    <tbody>
+      <tr><td>Exploitabilidade</td><td>Há exploração conhecida? Qual a chance de ser explorada?</td><td>catálogo <strong>KEV</strong> da CISA (explorada de fato), <strong>EPSS</strong> (probabilidade estimada), exploits públicos</td></tr>
+      <tr><td>Correção disponível</td><td>Existe versão corrigida que eu possa adotar?</td><td>campo <em>Fixed Version</em> do scanner; <code>--ignore-unfixed</code> / <code>--only-fixed</code></td></tr>
+      <tr><td>Alcançabilidade</td><td>O código vulnerável é executado no meu uso? O pacote está no runtime ou só no build?</td><td>análise do time; multi-stage tira muito do build da imagem final</td></tr>
+      <tr><td>Exposição</td><td>O serviço está na internet? Processa entrada não confiável?</td><td>arquitetura (proxy, redes do módulo 07)</td></tr>
+      <tr><td>Dados</td><td>O que um invasor alcançaria? (dados de pacientes?)</td><td>classificação de dados da empresa</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Situação (exemplo de política; ajuste ao apetite de risco da empresa)</th><th>Resposta</th></tr></thead>
+    <tbody>
+      <tr><td>Explorada ativamente (KEV) ou crítica com correção, em serviço exposto</td><td>corrigir em horas/dias; fora do ciclo normal de releases</td></tr>
+      <tr><td>Alta, com correção, no runtime</td><td>corrigir na janela de 1 a 2 semanas; o gate do CI bloqueia novas ocorrências</td></tr>
+      <tr><td>Média ou baixa, com correção</td><td>agrupar no ciclo regular de atualização de dependências</td></tr>
+      <tr><td>Sem correção disponível</td><td>mitigar (configuração, rede, WAF), registrar a exceção com <strong>prazo de revisão</strong> e dono</td></tr>
+      <tr><td>Falso positivo ou não alcançável</td><td>documentar com VEX/ignore com justificativa e validade</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>VEX</strong> (<em>Vulnerability Exploitability eXchange</em>): documento que declara, por CVE e produto, se está <code>not_affected</code>, <code>affected</code>, <code>fixed</code> ou <code>under_investigation</code>, com justificativa. Scanners como Trivy e Grype aceitam VEX para suprimir achados já avaliados.</li>
+    <li>Exceções (<code>.trivyignore</code>, <code>.grype.yaml</code>) devem ter <strong>justificativa, dono e data de validade</strong> (o Trivy aceita validade na própria linha em versões recentes; confira). Exceção sem validade vira dívida invisível.</li>
+    <li>O resultado do scan muda sem que o código mude: uma imagem "limpa" ontem pode ter uma CVE crítica hoje. Escaneie também o que <strong>já está no registry e em produção</strong>, em agenda (varredura contínua).</li>
+  </ul>
+
+  <h3>Atualizando imagens base</h3>
+  <p>A maior parte das CVEs de uma imagem vem da <strong>camada base</strong> (distribuição, OpenSSL, glibc/musl, runtime). Três práticas resolvem a maioria:</p>
+  <ul>
+    <li><strong>Imagem mínima</strong>: <code>-slim</code>, <code>alpine</code> ou distroless reduzem a quantidade de pacotes e, portanto, de achados (módulo 04).</li>
+    <li><strong>Rebuild periódico</strong> mesmo sem mudança de código, com <code>--pull</code> (e sem cache para a camada base). Um workflow agendado reconstrói semanalmente e publica uma nova versão (patch) que atravessa o pipeline normal, com scan e assinatura.</li>
+    <li><strong>Atualização automática</strong> da referência da base por bot (Renovate ou Dependabot), com a base fixada por digest: o bot abre um PR a cada nova versão, o CI valida e a revisão aprova.</li>
+  </ul>
+<pre data-file="renovate.json"><code class="json">{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "docker:pinDigests", "helpers:pinGitHubActionDigests"],
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ]
+}</code></pre>
+<pre data-file=".github/dependabot.yml"><code class="yaml">version: 2
+updates:
+  - package-ecosystem: docker            # lê FROM dos Dockerfiles
+    directory: /api
+    schedule: { interval: weekly }
+  - package-ecosystem: docker-compose    # lê image: dos arquivos Compose
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions    # atualiza as actions do pipeline
+    directory: /
+    schedule: { interval: weekly }</code></pre>
+<pre data-file=".github/workflows/rebuild-semanal.yml (esqueleto)"><code class="yaml">on:
+  schedule:
+    - cron: "0 5 * * 1"       # segunda-feira, 05:00 UTC
+  workflow_dispatch:
+# ... mesmo job de build/scan/push do pipeline principal, com:
+#   build-push-action: pull: true e no-cache-filters para a camada base,
+#   e uma tag de patch nova (ex.: 1.4.2-r1) apontando para o novo digest</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Fixar a base por digest e <strong>nunca atualizar</strong>. A imagem fica reproduzível e cheia de CVEs antigas. O digest é para <em>controle</em>, não para esquecimento: sempre acompanhado de um bot que propõe a atualização.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Severidade CVSS não é risco. Priorizo por exploitabilidade (KEV, EPSS), existência de correção, se o código é alcançável e se o serviço está exposto. O gate falha em HIGH/CRITICAL com correção; o resto vira backlog com dono e prazo. Mantenho as bases atualizadas com Renovate e rebuild semanal."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina uma política escrita com prazos por classe de risco e um dono para exceções. "Zero vulnerabilidades" é uma meta que gera maquiagem; "nenhuma explorada ativamente em produção e correções críticas em X dias" é uma meta que se mede. Acompanhe tempo médio de correção, não contagem bruta de CVEs.</p></div>
+</section>
+
+<section class="chap" id="retencao-custos">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Retenção, limpeza e custos do registry</h2>
+  <p>Todo build cria imagem nova; sem limpeza, o registry cresce para sempre e a conta junto. Apagar demais, porém, quebra rollback e auditoria. A política equilibra os dois.</p>
+  <h3>O que guardar e por quanto tempo</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Categoria</th><th>Sugestão de retenção</th><th>Motivo</th></tr></thead>
+    <tbody>
+      <tr><td>Releases (<code>X.Y.Z</code>)</td><td>conforme a exigência de auditoria e suporte (muitos meses ou anos); nunca por contagem curta</td><td>rollback, reprodução de incidente, validação</td></tr>
+      <tr><td>Digests em produção (atual e N anteriores)</td><td>proteger sempre, independente da idade</td><td>rollback imediato</td></tr>
+      <tr><td><code>sha-…</code> de <code>main</code></td><td>últimas 20 a 50, ou 30 a 90 dias</td><td>rastreio de builds recentes</td></tr>
+      <tr><td>Imagens de PR/branch</td><td>7 dias (ou nem publicar)</td><td>só servem durante a revisão</td></tr>
+      <tr><td>Sem tag (<em>untagged</em>)</td><td>7 a 14 dias, <strong>com cuidado com atestados</strong></td><td>sobras de re-tag; mas atestados e assinaturas também podem ficar sem tag</td></tr>
+      <tr><td>Bases espelhadas</td><td>as versões em uso</td><td>reconstrução e auditoria</td></tr>
+      <tr><td>SBOM e proveniência</td><td>mesmo prazo da imagem</td><td>responder a auditorias e a CVEs novas</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="ECR: lifecycle policy"><code class="json">{
+  "rules": [
+    {
+      "rulePriority": 1,
+      "description": "manter só as 30 imagens sha- mais recentes",
+      "selection": {
+        "tagStatus": "tagged",
+        "tagPrefixList": ["sha-"],
+        "countType": "imageCountMoreThan",
+        "countNumber": 30
+      },
+      "action": { "type": "expire" }
+    },
+    {
+      "rulePriority": 2,
+      "description": "apagar imagens sem tag com mais de 14 dias",
+      "selection": {
+        "tagStatus": "untagged",
+        "countType": "sinceImagePushed",
+        "countUnit": "days",
+        "countNumber": 14
+      },
+      "action": { "type": "expire" }
+    }
+  ]
+}</code></pre>
+  <p>A política acima não toca nas tags de release (<code>1.4.2</code>), que não têm prefixo <code>sha-</code>. Outros registries têm o equivalente com nomes diferentes:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Registry</th><th>Como limpar</th></tr></thead>
+    <tbody>
+      <tr><td>ECR</td><td>lifecycle policies (acima); simule antes com a opção de pré-visualização do console</td></tr>
+      <tr><td>GHCR</td><td>exclusão de versões de pacote por API ou por action de limpeza; o GitHub não tem lifecycle declarativo tão completo</td></tr>
+      <tr><td>ACR</td><td>comando <code>acr purge</code> agendado em ACR Tasks; políticas de retenção para untagged em tiers superiores</td></tr>
+      <tr><td>Artifact Registry</td><td>políticas de limpeza (<em>cleanup policies</em>) por tag, idade e versões a manter, com modo de teste (<em>dry run</em>)</td></tr>
+      <tr><td>Harbor</td><td>regras de retenção por projeto (manter as últimas N, ou as puxadas nos últimos N dias), <strong>mais</strong> coleta de lixo (GC) para liberar os blobs</td></tr>
+      <tr><td><code>registry:2</code></td><td><code>registry garbage-collect</code> depois de apagar manifestos (de preferência com o registry em modo somente leitura durante a coleta)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Política de "apagar o que não tem tag" que remove <strong>assinaturas e atestados</strong> (SBOM, proveniência) por serem manifestos sem tag. A imagem continua lá, mas a verificação de assinatura no deploy passa a falhar. Teste a política em um repositório de teste e confirme com <code>cosign verify</code> depois.</p></div>
+
+  <h3>Custos: de onde vem a conta</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>O que pesa</th><th>Como reduzir</th></tr></thead>
+    <tbody>
+      <tr><td>Armazenamento</td><td>GB por mês de camadas únicas retidas (camadas iguais são contadas uma vez)</td><td>retenção, imagens menores, camadas bem reaproveitadas, base comum entre serviços</td></tr>
+      <tr><td>Saída de dados (<em>egress</em>)</td><td>pull entre regiões, para a internet ou para outro provedor; <strong>número de nós × tamanho da imagem × frequência de deploy</strong></td><td>registry na mesma região do consumo, replicação regional, cache nos nós, imagens menores</td></tr>
+      <tr><td>Rede de acesso</td><td>em nuvem, pulls passando por NAT gateway podem gerar cobrança por GB; endpoints privados evitam isso (conforme o provedor)</td><td>VPC endpoints/Private Link para o registry</td></tr>
+      <tr><td>Planos e assentos</td><td>Docker Hub pago, ACR por tier, GHCR por plano do GitHub</td><td>espelhar as bases em registry próprio; dimensionar assentos</td></tr>
+      <tr><td>Scanners e licenças</td><td>varredura avançada tem preço por imagem ou por execução em alguns provedores</td><td>escopo (só o que roda), varredura contínua só em produção</td></tr>
+      <tr><td>Operar Harbor</td><td>VMs/cluster, banco, armazenamento de objetos, backup e horas de quem opera</td><td>só se o controle justificar; senão, serviço gerenciado</td></tr>
+    </tbody>
+  </table></div>
+  <p>Um exemplo de ordem de grandeza: numa imagem de 400 MB implantada em 50 nós, cada deploy move cerca de <strong>20 GB</strong> de dados (400 MB × 50). Com vários deploys por dia e dezenas de serviços, o tráfego de pull pode custar mais que o armazenamento. Os valores de preço por GB variam por provedor, região e plano e mudam com o tempo: use a calculadora do provedor e meça seu consumo real antes de decidir.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Reduza o <strong>tamanho da imagem</strong> antes de mexer no plano do registry: ele reduz armazenamento, tempo de deploy, egress e superfície de ataque ao mesmo tempo (módulos 03 e 04).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Retenção por categoria: releases e digests em produção protegidos; <code>sha-</code> por contagem; PR curto. Cuido para a limpeza não apagar atestados e assinaturas. O custo vem de armazenamento e, mais, de egress; o remédio é imagem menor e registry na mesma região."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça o custo do registry por serviço (tags de custo no provedor) e o tempo de deploy. Imagens de 1 GB por serviço são sinal de dívida técnica que custa dinheiro e velocidade. Defina a retenção junto com compliance: quanto tempo precisamos conseguir reproduzir o que rodou em produção?</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Prática</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios graduados. Nos primeiros, use um registry local; os demais podem ser feitos num repositório de teste do GitHub.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span><strong>Registry local:</strong> suba um registry, publique uma imagem, liste o catálogo e puxe a imagem pelo digest.</span></summary><div class="ans">
+<pre><code class="sh">docker run -d --name registry -p 5000:5000 registry:2
+
+docker pull alpine:3.20
+docker tag alpine:3.20 localhost:5000/lab/alpine:1.0
+docker push localhost:5000/lab/alpine:1.0
+
+curl -s http://localhost:5000/v2/_catalog                    # {"repositories":["lab/alpine"]}
+curl -s http://localhost:5000/v2/lab/alpine/tags/list        # {"name":"lab/alpine","tags":["1.0"]}
+
+docker rmi localhost:5000/lab/alpine:1.0
+docker buildx imagetools inspect localhost:5000/lab/alpine:1.0    # pega o Digest: sha256:...
+docker pull localhost:5000/lab/alpine@sha256:&lt;digest&gt;            # pull pelo digest</code></pre>
+    <p><strong>O que observar.</strong> O registry guarda o repositório <code>lab/alpine</code> com a tag <code>1.0</code>; o pull por digest funciona sem tag nenhuma, e é a referência estável. <code>localhost</code> é tratado como registry sem TLS pelo Docker; outros hosts HTTP exigem configuração de <em>insecure registry</em>.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span><strong>Tags e promoção:</strong> construa uma imagem, publique com <code>sha-&lt;n&gt;</code>, promova para <code>1.0.0</code> e depois para <code>prod</code> sem rebuild, provando que o digest é o mesmo. Depois mostre o que acontece se alguém republicar <code>1.0.0</code> com outro conteúdo.</span></summary><div class="ans">
+<pre><code class="sh">printf 'FROM alpine:3.20\nRUN echo v1 &gt; /versao\n' &gt; Dockerfile
+docker build -t localhost:5000/lab/app:sha-aaa111 . &amp;&amp; docker push localhost:5000/lab/app:sha-aaa111
+D=$(docker buildx imagetools inspect localhost:5000/lab/app:sha-aaa111 | awk '/^Digest:/ {print $2}')
+
+docker buildx imagetools create --tag localhost:5000/lab/app:1.0.0 localhost:5000/lab/app@$D
+docker buildx imagetools create --tag localhost:5000/lab/app:prod  localhost:5000/lab/app@$D
+for t in sha-aaa111 1.0.0 prod; do docker buildx imagetools inspect localhost:5000/lab/app:$t | grep ^Digest; done
+# os três imprimem o MESMO digest
+
+# sobrescrita (o anti-padrão)
+printf 'FROM alpine:3.20\nRUN echo v2 &gt; /versao\n' &gt; Dockerfile
+docker build -t localhost:5000/lab/app:1.0.0 . &amp;&amp; docker push localhost:5000/lab/app:1.0.0
+docker buildx imagetools inspect localhost:5000/lab/app:1.0.0 | grep ^Digest   # digest DIFERENTE</code></pre>
+    <p><strong>Conclusão.</strong> O registry aceitou a sobrescrita e a tag <code>1.0.0</code> agora aponta para outro conteúdo, enquanto <code>prod</code> e <code>sha-aaa111</code> continuam no digest antigo. Quem implantou "<code>1.0.0</code>" ontem e hoje roda coisas diferentes. Tag imutável no registry (ECR, Harbor) recusaria o <code>push</code>, e o deploy por <code>tag@digest</code> falharia no pull.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span><strong>Revisão de pipeline:</strong> liste os problemas do workflow abaixo (há pelo menos 8) e diga como corrigir.</span></summary><div class="ans">
+<pre><code class="yaml">on: pull_request_target
+permissions: write-all
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with: { ref: "${{ github.event.pull_request.head.sha }}" }
+      - run: docker login ghcr.io -u me -p ${{ secrets.GHCR_PAT }}
+      - uses: docker/build-push-action@v7
+        with: { push: true, tags: "ghcr.io/Equipe/api:latest" }
+      - run: trivy image ghcr.io/Equipe/api:latest</code></pre>
+    <ol>
+      <li><code>pull_request_target</code> com checkout do código do PR executa código não confiável <strong>com acesso a secrets</strong>. Use <code>pull_request</code>.</li>
+      <li><code>permissions: write-all</code>: dê o mínimo (<code>contents: read</code>, <code>packages: write</code> só no job que publica).</li>
+      <li>Senha na linha de comando (<code>-p</code>) e PAT pessoal: use <code>docker/login-action</code> com <code>GITHUB_TOKEN</code>.</li>
+      <li>Nome com maiúscula (<code>Equipe</code>): o GHCR exige minúsculas.</li>
+      <li>Só a tag <code>latest</code>: sem rastreio nem rollback. Use <code>metadata-action</code> com <code>sha-</code> e semver.</li>
+      <li>Publica <strong>antes</strong> de escanear, e o Trivy roda sem <code>--exit-code 1</code>, então nunca falha: o scan é decorativo. Escaneie antes do push e falhe em HIGH/CRITICAL com correção.</li>
+      <li>Publica em todo PR (inclusive de fork): <code>push: ${{ github.event_name != 'pull_request' }}</code>.</li>
+      <li>Sem <code>setup-buildx</code>, cache (<code>type=gha</code>), SBOM, proveniência e assinatura; sem usar o digest. Sem <code>concurrency</code>.</li>
+    </ol>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span><strong>SBOM e scan:</strong> gere o SBOM de <code>node:22-alpine</code> com o Syft, escaneie o SBOM com o Grype e defina um critério de falha para o CI.</span></summary><div class="ans">
+<pre><code class="sh">syft node:22-alpine -o spdx-json=sbom.spdx.json
+jq '.packages | length' sbom.spdx.json                       # quantos componentes
+
+grype sbom:sbom.spdx.json                                     # tudo
+grype sbom:sbom.spdx.json --only-fixed                        # só o que tem correção
+grype sbom:sbom.spdx.json --fail-on high --only-fixed; echo "saída: $?"   # critério do CI</code></pre>
+    <p><strong>O que observar.</strong> O SBOM lista pacotes do Alpine e do Node (e módulos globais do npm); o Grype consegue trabalhar só com ele, sem a imagem. Com <code>--only-fixed</code> a lista encolhe bastante, e a saída é diferente de zero apenas se houver achado HIGH ou pior <em>com correção</em>. Esse é o critério defensável para quebrar o pipeline; o resto vai para o backlog. Resultados variam com a base de vulnerabilidades do dia.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span><strong>Assinatura:</strong> com um registry local e um par de chaves, assine uma imagem pelo digest, verifique, e mostre que a verificação falha para uma imagem diferente.</span></summary><div class="ans">
+<pre><code class="sh">cosign generate-key-pair                                   # cosign.key e cosign.pub (peça uma senha)
+
+D=$(docker buildx imagetools inspect localhost:5000/lab/app:1.0.0 | awk '/^Digest:/ {print $2}')
+cosign sign --key cosign.key localhost:5000/lab/app@$D     # assina o digest
+cosign verify --key cosign.pub localhost:5000/lab/app@$D   # passa
+
+# outra imagem, sem assinatura (a do E1)
+D2=$(docker buildx imagetools inspect localhost:5000/lab/alpine:1.0 | awk '/^Digest:/ {print $2}')
+cosign verify --key cosign.pub localhost:5000/lab/alpine@$D2   # falha: no signatures found</code></pre>
+    <p><strong>Observações.</strong> Com chave, o cosign pode tentar registrar a assinatura no log público Rekor; num laboratório local, desative esse envio com a opção da sua versão (por exemplo, <code>--tlog-upload=false</code>) e ajuste a verificação de acordo. As flags mudaram entre o cosign 2.x e o 3.x: confira <code>cosign sign --help</code>. A assinatura fica no registry, em uma tag/artefato ligado ao digest (veja com <code>crane ls</code>); no modo sem chave, a verificação usaria <code>--certificate-identity</code> e <code>--certificate-oidc-issuer</code> em vez de <code>--key</code>.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span><strong>Retenção:</strong> escreva a política do ECR para: manter as 20 imagens <code>sha-</code> mais recentes, apagar sem tag com mais de 7 dias, e <strong>nunca</strong> tocar nas tags de release. Aponte o risco da regra de "sem tag".</span></summary><div class="ans">
+<pre><code class="json">{
+  "rules": [
+    { "rulePriority": 1, "description": "20 mais recentes com prefixo sha-",
+      "selection": { "tagStatus": "tagged", "tagPrefixList": ["sha-"],
+                     "countType": "imageCountMoreThan", "countNumber": 20 },
+      "action": { "type": "expire" } },
+    { "rulePriority": 2, "description": "sem tag há mais de 7 dias",
+      "selection": { "tagStatus": "untagged", "countType": "sinceImagePushed",
+                     "countUnit": "days", "countNumber": 7 },
+      "action": { "type": "expire" } }
+  ]
+}</code></pre>
+    <p>Tags de release (<code>1.4.2</code>) não casam com nenhuma regra, então não expiram. <strong>Risco:</strong> manifestos de assinatura e atestados de SBOM/proveniência que fiquem sem tag podem ser tratados como "sem tag" e apagados, quebrando a verificação do deploy. Mitigue testando em um repositório de teste, validando com <code>cosign verify</code> depois da limpeza e, se necessário, aumentando o prazo da regra 2. Teste primeiro em modo de pré-visualização.</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Prática</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <div class="note"><b>Cenário 1: "O CI está quebrando com toomanyrequests"</b>
+    <p><strong>O que fazer.</strong> Confirme na mensagem de erro que é o limite de pulls do Docker Hub (HTTP 429). Verifique se o pipeline está <em>autenticado</em> (<code>docker/login-action</code> com token do Hub): sem login, o limite é por IP e o runner compartilhado estoura rápido. Depois, reduza a dependência: espelhe as imagens base (ECR pull-through cache, Harbor proxy ou cópia para o registry interno) e referencie-as de lá; use cache de build para não rebaixar bases a cada execução. Não faça retry em loop: gasta mais cota. Avalie conta paga para o time se o uso for legítimo e alto.</p></div>
+
+  <div class="note"><b>Cenário 2: "Subiu a versão errada em produção depois de um reinício"</b>
+    <p><strong>O que fazer.</strong> Veja se o Compose/manifesto usa <code>latest</code> ou uma tag móvel: o <code>pull</code> no reinício trouxe uma imagem nova. Descubra o que roda agora (<code>docker inspect</code> → digest) e volte para o digest anterior conhecido (do registro de deploy). Correção estrutural: tags semânticas imutáveis, deploy por <code>tag@digest</code>, <code>latest</code> desligado no <code>metadata-action</code>, política de "sem <code>latest</code>" revisada no PR (um lint como <code>hadolint</code> ou uma regra de política no CI). Anote o digest implantado em cada deploy.</p></div>
+
+  <div class="note"><b>Cenário 3: "Saiu uma CVE crítica em uma biblioteca amplamente usada. Estamos afetados?"</b>
+    <p><strong>O que fazer.</strong> (1) Consulte os SBOMs guardados por versão: "quais imagens contêm a biblioteca na versão afetada?" (Grype sobre os SBOMs, Dependency-Track ou busca no Scout), sem baixar tudo. (2) Cruze com o que <strong>roda em produção</strong> (digests implantados) e com a exposição (internet, dados de pacientes). (3) Verifique exploração ativa (KEV, avisos do fornecedor). (4) Corrija: atualize a dependência/base, rode o pipeline completo (scan, assinatura) e implante por digest, na ordem de risco. (5) Mitigações temporárias (WAF, flag, regra de rede) enquanto o deploy não chega. (6) Registre o incidente, o tempo até a correção e o que melhorar (inventário ausente? bases desatualizadas?).</p></div>
+
+  <div class="note"><b>Cenário 4: "Alguém republicou a tag 1.4.2 com outro conteúdo"</b>
+    <p><strong>O que fazer.</strong> Contenha: bloqueie o push no repositório (permissões) e avalie credenciais usadas (token vazado? pipeline comprometido?); rotacione. Descubra qual digest cada ambiente roda e compare com o digest legítimo do registro de deploy e com a assinatura (<code>cosign verify</code>): se o deploy é por digest e verifica a assinatura, o impacto tende a ser nulo. Restaure a tag legítima ou, melhor, abandone-a e publique <code>1.4.3</code>. Corrija o que permitiu: tag imutável no registry, push só pelo pipeline (a identidade do pipeline é a única com permissão), verificação obrigatória no deploy.</p></div>
+
+  <div class="note"><b>Cenário 5: "A fatura do registry triplicou"</b>
+    <p><strong>O que fazer.</strong> Separe armazenamento de transferência. No armazenamento, liste repositórios por tamanho e idade e aplique retenção (sha- por contagem, PR curto, sem tag cuidadoso). Na transferência, descubra quem faz pull: nós em outra região, CI baixando base repetidamente, deploys frequentes em muitos nós. Ações: registry e cache na região do consumo, endpoint privado, pull-through cache para as bases, imagens menores, cache nos nós. Meça antes e depois, e documente a política de retenção com compliance para não apagar o que a auditoria exige.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Registry</dt><dd>Servidor que guarda e serve imagens (API de distribuição da OCI).</dd></div>
+    <div><dt>Digest</dt><dd>Hash <code>sha256:…</code> do manifesto: identifica uma imagem de forma imutável.</dd></div>
+    <div><dt>Image index</dt><dd>Manifesto que aponta para um manifesto por plataforma (multi-arch) e para atestados.</dd></div>
+    <div><dt>Pull-through cache</dt><dd>Registry que busca no upstream no primeiro pull e serve a cópia depois.</dd></div>
+    <div><dt>Credential helper</dt><dd>Programa que guarda ou gera credenciais de registry fora do <code>config.json</code>.</dd></div>
+    <div><dt>Build once, deploy many</dt><dd>Construir o artefato uma vez e promover o mesmo digest entre ambientes.</dd></div>
+    <div><dt>SBOM</dt><dd>Inventário de componentes de uma imagem, em SPDX ou CycloneDX.</dd></div>
+    <div><dt>Proveniência</dt><dd>Atestado de como e onde um artefato foi construído (in-toto).</dd></div>
+    <div><dt>SLSA</dt><dd>Modelo de níveis de garantia da cadeia de build (L1 a L3 na trilha de build).</dd></div>
+    <div><dt>Cosign / Sigstore</dt><dd>Ferramenta e projeto para assinar e verificar artefatos, com modo sem chave.</dd></div>
+    <div><dt>Fulcio / Rekor</dt><dd>CA de certificados de vida curta e log público de transparência do Sigstore.</dd></div>
+    <div><dt>CVE / CVSS</dt><dd>Identificador de uma vulnerabilidade conhecida e a nota de severidade padronizada.</dd></div>
+    <div><dt>KEV / EPSS</dt><dd>Catálogo da CISA de vulnerabilidades exploradas de fato e probabilidade estimada de exploração.</dd></div>
+    <div><dt>VEX</dt><dd>Declaração de que uma CVE afeta ou não um produto, com justificativa.</dd></div>
+    <div><dt>Lifecycle policy</dt><dd>Regra declarativa que expira imagens por tag, idade ou contagem.</dd></div>
+    <div><dt>Egress</dt><dd>Tráfego de saída cobrado pelo provedor (por exemplo, pulls entre regiões).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Entrevista</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Responda em voz alta antes de abrir. A resposta ideal tem uma frase de definição e um exemplo prático.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre tag e digest?</span></summary><div class="ans"><p>Tag é um ponteiro móvel e legível (<code>api:1.4.2</code>); pode ser reapontada. Digest é o hash do manifesto (<code>@sha256:…</code>): identifica um conteúdo exato e nunca muda. Por isso o deploy deve usar o digest, ou <code>tag@digest</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Por que usar <code>latest</code> em produção é perigoso?</span></summary><div class="ans"><p>É só o nome da tag quando nenhuma é indicada, sem garantia de ser a mais recente nem a estável. Servidores que puxam em momentos diferentes ficam com versões diferentes, reinícios trazem versão nova sem ninguém decidir, e não há como dar rollback porque a versão anterior não tem nome.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Que estratégia de tags você adota?</span></summary><div class="ans"><p><code>sha-&lt;commit&gt;</code> em todo build (rastreio), <code>X.Y.Z</code> em release (imutável, apontando para o mesmo digest), <code>X.Y</code> e <code>X</code> opcionais para consumidores externos, e nunca <code>latest</code> em produção. Tag imutável habilitada no registry, e o deploy por digest.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>O que é "build once, deploy many" e por que importa?</span></summary><div class="ans"><p>Constrói-se a imagem uma vez no CI, testa-se e promove-se o <em>mesmo digest</em> para homologação e produção; as diferenças ficam na configuração. Reconstruir por ambiente pode trazer outra base ou dependência, e o que foi testado deixa de ser o que roda.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Quais são os limites de pull do Docker Hub e como lidar com eles?</span></summary><div class="ans"><p>Pela documentação oficial: 100 pulls por 6 horas por IP (ou /64 de IPv6) sem autenticação, 200 com conta gratuita autenticada, e sem limite (uso justo) em planos pagos. Multi-arch conta por arquitetura. Soluções: autenticar o CI, usar conta paga, pull-through cache ou espelhar as bases no registry próprio. Confirmo os números na documentação, pois podem mudar.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>O que é um pull-through cache e para que serve?</span></summary><div class="ans"><p>Um registry intermediário que busca no upstream no primeiro pull e serve a cópia nos seguintes. Reduz a contagem de pulls no Hub, acelera builds, dá resiliência se o upstream cair e permite aplicar scan e política antes de liberar. ECR, Harbor e Artifact Registry têm o recurso; o <code>registry-mirrors</code> do daemon vale só para o Docker Hub.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Onde o <code>docker login</code> guarda a credencial e como melhorar isso?</span></summary><div class="ans"><p>Em <code>~/.docker/config.json</code>; sem credential helper fica em base64, que não é criptografia. Com <code>credsStore</code> ou <code>credHelpers</code> usa o cofre do sistema ou gera o token sob demanda (ECR credential helper). No login, <code>--password-stdin</code> para a senha não ir para o histórico.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Como autenticar o CI no registry de forma segura?</span></summary><div class="ans"><p>Credenciais de curta duração e mínimo privilégio: <code>GITHUB_TOKEN</code> com <code>packages: write</code> para o GHCR e federação OIDC com papel de menor privilégio para ECR, ACR e GAR, sem chaves de longa duração em secrets. Quem faz pull em produção só tem permissão de leitura.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Descreva um pipeline de imagem no GitHub Actions.</span></summary><div class="ans"><p>Checkout, setup-qemu e setup-buildx, login (fora de PR), metadata-action para tags e labels, build local com cache gha, scan (falha em HIGH/CRITICAL com correção), build e push multi-arch com SBOM e proveniência, assinatura com cosign pelo digest. Permissões mínimas por job, <code>concurrency</code>, e nada publicado em pull request.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Por que escanear antes do push?</span></summary><div class="ans"><p>Para que uma imagem vulnerável nunca chegue ao registry nem a um ambiente. Faz-se um build de uma plataforma com <code>load: true</code> (fica no daemon local), escaneia-se, e só depois o build multi-arch com push, que reaproveita o cache. Complementa-se com varredura contínua do que já está publicado, porque CVEs novas surgem depois.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>O que faz <code>cache-to: type=gha,mode=max</code>?</span></summary><div class="ans"><p>Exporta as camadas de todos os estágios do build para o cache do GitHub Actions, não só do estágio final. Em multi-stage, sem <code>mode=max</code> os estágios <code>deps</code> e <code>build</code> não são reaproveitados. Para CI sem o cache do GitHub, a alternativa é <code>type=registry</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como publicar imagem multi-arch e quais os custos?</span></summary><div class="ans"><p><code>platforms: linux/amd64,linux/arm64</code> no buildx, que publica um índice com um manifesto por plataforma. A emulação QEMU torna o arm64 bem mais lento; alternativas: cross-compilation no Dockerfile (<code>--platform=$BUILDPLATFORM</code>, <code>TARGETARCH</code>) ou runners arm64 nativos e <code>imagetools create</code> para juntar. Sem multi-arch, uma imagem feita em Mac M1 falha em servidor amd64 com "exec format error".</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Qual a diferença entre SBOM e proveniência?</span></summary><div class="ans"><p>SBOM é o inventário do que há na imagem (pacotes e versões, em SPDX ou CycloneDX) e serve para saber se uma CVE nova me afeta. Proveniência é o atestado de como, onde e a partir de que foi construída (repo, commit, builder, bases), no modelo SLSA. Ambos se anexam à imagem como atestados.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como funciona a assinatura sem chave com cosign e como se verifica no deploy?</span></summary><div class="ans"><p>O pipeline obtém um token OIDC, o Fulcio emite um certificado de poucos minutos com a identidade do workflow, o cosign assina o digest e o evento fica no log Rekor. No deploy, <code>cosign verify</code> exige o emissor OIDC e a identidade esperada (o workflow do repositório), e um script de deploy ou admission controller bloqueia imagens sem isso.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Um scanner acusou 200 CVEs. O que você faz?</span></summary><div class="ans"><p>Não trato como lista plana. Filtro as que têm correção, priorizo por exploração ativa (KEV, EPSS), alcançabilidade e exposição, e vejo se vêm da base (atualizo a imagem) ou da aplicação (atualizo a dependência). As sem correção ou não alcançáveis viram exceção documentada, com dono e validade (VEX). O gate do CI bloqueia só o que é crítico/alto e corrigível.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Como manter as imagens base atualizadas sem quebrar tudo?</span></summary><div class="ans"><p>Base fixada por digest para reprodutibilidade e um bot (Renovate ou Dependabot) abrindo PRs a cada atualização, validados pelo CI. Mais um rebuild agendado semanal para pegar correções de pacotes. Imagem mínima (slim, distroless) reduz a superfície.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Como definir retenção e limpeza do registry sem comprometer rollback e auditoria?</span></summary><div class="ans"><p>Por categoria: releases e digests em produção protegidos pelo prazo de auditoria; <code>sha-</code> por contagem; PR/branch curto; sem tag com prazo e cuidado para não apagar assinaturas e atestados. Regras declarativas (lifecycle) testadas em pré-visualização, e validação com <code>cosign verify</code> depois da limpeza.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como gestora, como você garante que só imagens confiáveis chegam à produção, e como controla o custo?</span></summary><div class="ans"><p>Um único caminho: pipeline protegido, com scan, SBOM, proveniência e assinatura; push só pela identidade do pipeline; verificação obrigatória no deploy (admission controller ou script); tags imutáveis e deploy por digest com registro por versão. Política escrita de CVEs com prazos. No custo: retenção por categoria, imagens menores, registry próximo do consumo e cache para as bases; acompanho tempo de correção e custo por serviço.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

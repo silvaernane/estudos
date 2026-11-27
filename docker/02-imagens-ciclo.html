@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 02: Imagens e ciclo de vida</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+    <div class="topnote">Módulo 02 de 10 · Imagens e ciclo de vida</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li class="sub"><ol>
+      <li><a href="#imagem-camadas"><span class="n">1</span>Imagem, container e camadas</a></li>
+      <li><a href="#manifest-digest"><span class="n">2</span>Manifest, digest, tags, multi-arquitetura e inspeção</a></li>
+      <li><a href="#ciclo-de-vida"><span class="n">3</span>Ciclo de vida do container</a></li>
+      <li><a href="#run-comandos"><span class="n">4</span><code>docker run</code> e os comandos essenciais</a></li>
+      <li><a href="#sinais-pid1"><span class="n">5</span><code>docker stop</code>, sinais, PID 1 e zumbis</a></li>
+      <li><a href="#saida-restart"><span class="n">6</span>Códigos de saída e políticas de restart</a></li>
+      <li><a href="#entrypoint-cmd"><span class="n">7</span>ENTRYPOINT e CMD em tempo de execução</a></li>
+      <li><a href="#uso-disco"><span class="n">8</span>Boas práticas do dia a dia e limpeza de disco</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-imagens-ciclo.html" aria-current="page"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 02 · <span class="lvl l1">Básico</span> → <span class="lvl l2">Intermediário</span></div>
+  <h1>Imagens e ciclo de vida</h1>
+  <p class="lede">A imagem é o artefato imutável; o container é a execução dela, com vida própria. Este módulo explica como a imagem é construída por dentro (camadas, manifest, digest, multi-arquitetura), como um container nasce, vive e morre (estados, sinais, códigos de saída, restart) e os comandos e hábitos do dia a dia, incluindo limpeza de disco sem estragos.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar camadas, overlay2 e copy-on-write, e por que apagar arquivos numa camada posterior não reduz a imagem.</li>
+    <li>Ler manifest, config e digest; diferenciar tag de digest; inspecionar imagens multi-arquitetura.</li>
+    <li>Descrever os estados do container e usar com segurança <code>run</code>, <code>exec</code>, <code>logs</code>, <code>inspect --format</code>, <code>stats</code>, <code>top</code> e <code>cp</code>.</li>
+    <li>Explicar <code>docker stop</code> (SIGTERM, prazo, SIGKILL), PID 1, zumbis e <code>--init</code>, e interpretar os códigos de saída 0, 1, 125, 126, 127, 137, 139 e 143.</li>
+    <li>Escolher política de restart, prever o efeito de ENTRYPOINT e CMD em tempo de execução e limpar disco com <code>system df</code> e <code>prune</code> sem perder dados.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="imagem-camadas">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Imagem, container e camadas</h2>
+  <p>Uma <strong>imagem</strong> é um modelo somente leitura: um sistema de arquivos em camadas mais metadados (comando padrão, variáveis de ambiente, usuário, portas expostas). Um <strong>container</strong> é uma instância em execução (ou parada) dessa imagem, com uma camada gravável por cima e configuração própria (nome, rede, volumes, limites). A analogia é classe e objeto: uma imagem, vários containers, e mexer em um container não altera a imagem.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Imagem</th><th>Container</th></tr></thead>
+    <tbody>
+      <tr><td>Natureza</td><td>artefato imutável, identificado por conteúdo (digest)</td><td>processo com estado, nascido de uma imagem</td></tr>
+      <tr><td>Identificação</td><td><code>repositório:tag</code> e ID/digest</td><td>ID de 64 hex (12 na forma curta) e nome</td></tr>
+      <tr><td>Escrita</td><td>nunca muda depois de construída</td><td>escreve na camada gravável, descartada ao remover</td></tr>
+      <tr><td>Quantidade</td><td>uma</td><td>quantos você quiser a partir dela</td></tr>
+      <tr><td>Comandos</td><td><code>docker image ...</code> (<code>build</code>, <code>pull</code>, <code>push</code>, <code>rmi</code>)</td><td><code>docker container ...</code> (<code>run</code>, <code>stop</code>, <code>rm</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Camadas e overlay2</h3>
+  <p>Cada instrução do Dockerfile que altera arquivos (<code>RUN</code>, <code>COPY</code>, <code>ADD</code>) produz uma camada: um tar com as diferenças em relação à anterior. Instruções que só mudam metadados (<code>ENV</code>, <code>CMD</code>, <code>WORKDIR</code>, <code>EXPOSE</code>) entram no config, sem camada de arquivos (aparecem com <code>0B</code> no <code>history</code>). Na execução, o <strong>overlay2</strong> (OverlayFS do kernel) monta as camadas da imagem como <code>lowerdir</code> (somente leitura), cria um <code>upperdir</code> vazio para o container e entrega o resultado unificado (<code>merged</code>) como a raiz <code>/</code>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 640 252" role="img" aria-label="Pilha de camadas da imagem com a camada gravável do container e a visão unificada">
+      <defs><marker id="ah-cow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-w" x="20" y="28" width="300" height="32" rx="4"/><text x="170" y="48" text-anchor="middle">upperdir: gravável (efêmera)</text>
+      <rect class="box-a" x="20" y="64" width="300" height="32" rx="4"/><text x="170" y="84" text-anchor="middle">lowerdir 3: COPY . /app</text>
+      <rect class="box-a" x="20" y="100" width="300" height="32" rx="4"/><text x="170" y="120" text-anchor="middle">lowerdir 2: RUN pip install</text>
+      <rect class="box-a" x="20" y="136" width="300" height="32" rx="4"/><text x="170" y="156" text-anchor="middle">lowerdir 1: FROM python:3.12-slim</text>
+      <line class="ln-a" x1="170" y1="170" x2="170" y2="184" marker-end="url(#ah-cow)"/>
+      <rect class="box-m" x="20" y="186" width="300" height="32" rx="4"/><text x="170" y="206" text-anchor="middle">merged: a raiz / do container</text>
+      <line class="ln" x1="324" y1="44" x2="340" y2="44"/>
+      <text class="lbl" x="346" y="40">escrita: o arquivo inteiro é copiado</text>
+      <text class="lbl" x="346" y="56">para cá (copy-up) e alterado aqui</text>
+      <line class="ln" x1="324" y1="116" x2="340" y2="116"/>
+      <text class="lbl" x="346" y="112">leitura: procura de cima para baixo</text>
+      <text class="lbl" x="346" y="128">e usa a primeira ocorrência</text>
+      <line class="ln" x1="324" y1="152" x2="340" y2="152"/>
+      <text class="lbl" x="346" y="148">somente leitura, compartilhadas</text>
+      <text class="lbl" x="346" y="164">por todos os containers da imagem</text>
+      <text class="lbl" x="20" y="240">apagar um arquivo cria um "whiteout" no upperdir; o arquivo original continua na imagem</text>
+    </svg>
+    <figcaption>As camadas da imagem nunca mudam. Tudo o que o container grava vai para o <code>upperdir</code>, que some com o container.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Copy-on-write (copy-up)</strong>: ao modificar um arquivo que mora numa camada inferior, o overlay2 copia o <em>arquivo inteiro</em> para o <code>upperdir</code> e altera a cópia. Arquivos grandes alterados com frequência (bancos, logs) sofrem; por isso dados vão para volumes.</li>
+    <li><strong>Remoção</strong>: apagar um arquivo da imagem cria um marcador (<em>whiteout</em>) na camada de cima; os bytes continuam na camada de baixo.</li>
+    <li><strong>Compartilhamento</strong>: dez containers da mesma imagem usam o espaço das camadas da imagem uma vez, mais dez <code>upperdir</code> pequenos. Imagens que partem da mesma base compartilham as camadas da base em disco e na rede (o <code>pull</code> só baixa as que faltam).</li>
+    <li><strong>Apagar em camada posterior não encolhe a imagem</strong>: se um <code>RUN</code> baixa 500 MB e o seguinte os remove, a imagem continua com 500 MB. Limpe na <em>mesma</em> instrução que gerou os arquivos ou use multi-stage (módulos 03 e 04).</li>
+  </ul>
+  <div class="note"><b>Saiba mais: o armazenamento mudou?</b><p>Além do storage driver clássico (<code>overlay2</code>), o Docker oferece o <em>containerd image store</em>, que guarda imagens no containerd e dá suporte a imagens multi-arquitetura e novos formatos. Em instalações recentes ele vem sendo adotado como padrão. O conceito de camadas é o mesmo; o que muda são caminhos em <code>/var/lib/docker</code> e alguns campos do <code>inspect</code>. Confira com <code>docker info</code> (campo Storage Driver / driver-type).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A imagem é um modelo imutável em camadas; o container é a instância com uma camada gravável por cima, via overlay2 e copy-on-write. As camadas são compartilhadas entre containers e imagens. Remover um arquivo em uma camada posterior só o esconde, então não reduz o tamanho."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Camadas explicam três custos que o time sente: <strong>tamanho</strong> (pull lento, disco e banda do registry), <strong>tempo de build</strong> (cache por camada) e <strong>superfície de vulnerabilidades</strong> (tudo o que está nas camadas é escaneado, mesmo o que foi "apagado"). Peça uma regra simples: nenhum segredo entra em camada alguma, porque ele fica no histórico mesmo se for removido depois.</p></div>
+</section>
+
+<section class="chap" id="manifest-digest">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Manifest, digest, tags, multi-arquitetura e inspeção</h2>
+  <p>Por baixo do nome <code>nginx:1.27</code> há um conjunto de arquivos JSON e tarballs endereçados pelo <strong>hash do próprio conteúdo</strong> (<em>content-addressable</em>). Entender isso responde a perguntas práticas: "essa é a mesma imagem?", "por que a tag mudou?", "por que deu exec format error?".</p>
+  <figure class="figure">
+    <svg viewBox="0 0 720 256" role="img" aria-label="Da tag ao index, aos manifests por plataforma, e ao config e às camadas">
+      <defs><marker id="ah-mf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="96" width="120" height="34" rx="4"/><text x="80" y="118" text-anchor="middle">nginx:1.27</text>
+      <rect class="box-a" x="170" y="84" width="170" height="58" rx="4"/><text x="255" y="108" text-anchor="middle">index (manifest list)</text><text class="lbl" x="255" y="126" text-anchor="middle">digest sha256:9a3f…</text>
+      <rect class="box-a" x="375" y="38" width="165" height="40" rx="4"/><text x="457" y="62" text-anchor="middle">manifest linux/amd64</text>
+      <rect class="box" x="375" y="148" width="165" height="40" rx="4"/><text x="457" y="172" text-anchor="middle">manifest linux/arm64</text>
+      <rect class="box-w" x="585" y="10" width="115" height="28" rx="4"/><text x="642" y="29" text-anchor="middle">config</text>
+      <rect class="box" x="585" y="46" width="115" height="28" rx="4"/><text x="642" y="65" text-anchor="middle">layer 1</text>
+      <rect class="box" x="585" y="82" width="115" height="28" rx="4"/><text x="642" y="101" text-anchor="middle">layer 2</text>
+      <text class="lbl" x="642" y="170" text-anchor="middle">(outros blobs)</text>
+      <line class="ln" x1="140" y1="113" x2="168" y2="113" marker-end="url(#ah-mf)"/>
+      <line class="ln-a" x1="340" y1="100" x2="373" y2="62" marker-end="url(#ah-mf)"/>
+      <line class="ln" x1="340" y1="128" x2="373" y2="164" marker-end="url(#ah-mf)"/>
+      <line class="ln-a" x1="540" y1="52" x2="583" y2="26" marker-end="url(#ah-mf)"/>
+      <line class="ln-a" x1="540" y1="58" x2="583" y2="60" marker-end="url(#ah-mf)"/>
+      <line class="ln-a" x1="540" y1="66" x2="583" y2="94" marker-end="url(#ah-mf)"/>
+      <text class="lbl" x="20" y="218">O digest do index identifica o conjunto; cada manifest e cada blob tem o seu próprio sha256.</text>
+      <text class="lbl" x="20" y="236">O runtime escolhe o manifest da plataforma local e baixa só os blobs dele.</text>
+    </svg>
+    <figcaption>Uma tag aponta para um index (se a imagem for multi-arquitetura) ou direto para um manifest. Tudo é verificado por hash.</figcaption>
+  </figure>
+  <h3>As três peças</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Peça</th><th>O que é</th><th>Conteúdo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Manifest</strong></td><td>JSON que descreve uma imagem para uma plataforma</td><td>referência (digest e tamanho) ao <em>config</em> e à lista ordenada de <em>camadas</em></td></tr>
+      <tr><td><strong>Config</strong></td><td>JSON com os metadados da imagem</td><td><code>os</code>/<code>architecture</code>, <code>Env</code>, <code>Cmd</code>, <code>Entrypoint</code>, <code>User</code>, <code>WorkingDir</code>, <code>ExposedPorts</code>, <code>Labels</code>, <code>history</code> e <code>rootfs.diff_ids</code></td></tr>
+      <tr><td><strong>Camada (blob)</strong></td><td>tar comprimido (gzip ou zstd) com as mudanças de arquivos</td><td>digest do blob comprimido no manifest; <code>diff_id</code> (hash do tar descomprimido) no config</td></tr>
+    </tbody>
+  </table></div>
+  <pre data-file="manifest (formato OCI, reduzido)"><code class="json">{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:5c1e...",
+    "size": 7023
+  },
+  "layers": [
+    { "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip", "digest": "sha256:a8d2...", "size": 29151211 },
+    { "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip", "digest": "sha256:e3b0...", "size": 41873 }
+  ]
+}</code></pre>
+  <p>O <strong>ID da imagem</strong> que o <code>docker image ls</code> mostra é o sha256 do <em>config</em> (no armazenamento clássico). O <strong>digest</strong> do <code>@sha256:...</code> é o do <em>manifest</em> (ou do index) como está no registry. Por isso o ID local e o digest do registry são números diferentes para a mesma imagem. Registries também servem o formato próprio do Docker (<code>application/vnd.docker.distribution.manifest.v2+json</code>); o conceito é igual.</p>
+  <h3>Tag x digest</h3>
+  <pre><code class="sh">registry.exemplo.com/equipe/api:1.4.2
+└──── registry ────┘ └ repositório ┘ └ tag ┘
+
+docker pull nginx                       # = docker.io/library/nginx:latest
+docker pull nginx:1.27-alpine           # tag
+docker pull nginx@sha256:3f1a...        # digest: conteúdo exato
+docker pull nginx:1.27@sha256:3f1a...   # a tag é só documentação; vale o digest</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Tag</th><th>Digest</th></tr></thead>
+    <tbody>
+      <tr><td>O que é</td><td>apelido legível, um ponteiro</td><td>hash do manifest: identidade do conteúdo</td></tr>
+      <tr><td>Mutável?</td><td><strong>sim</strong>: pode ser movida para outra imagem a qualquer momento</td><td><strong>não</strong>: mudar um byte muda o digest</td></tr>
+      <tr><td>Quando usar</td><td>comunicação e fluxo humano (<code>1.4.2</code>, <code>1.4</code>)</td><td>reprodutibilidade total, auditoria, deploy imutável</td></tr>
+      <tr><td>Risco</td><td><code>latest</code> e tags "flutuantes" (<code>1.27</code>) mudam sem aviso, inclusive por correção de segurança</td><td>não recebe correções sozinho: é preciso atualizar de propósito</td></tr>
+    </tbody>
+  </table></div>
+  <p><code>latest</code> não significa "a mais recente": é só a tag aplicada quando você não informa nenhuma. Um bom equilíbrio: tags de versão completa e imutáveis por convenção (<code>1.4.2</code>, SHA do commit) para humanos, e digest registrado em cada deploy para rastrear exatamente o que rodou.</p>
+  <h3>Imagens multi-arquitetura</h3>
+  <p>Um mesmo nome pode servir arquiteturas diferentes (<code>linux/amd64</code>, <code>linux/arm64</code>...) por meio de um <strong>index</strong> (manifest list): uma lista de manifests, cada um com sua <code>platform</code>. O <code>docker pull</code> escolhe a variante da máquina. Em Mac com Apple Silicon ou em servidores Graviton, isso decide se a imagem roda nativa ou emulada.</p>
+  <pre><code class="sh">docker buildx imagetools inspect nginx:1.27        # lista as plataformas e digests
+docker pull --platform linux/arm64 nginx:1.27      # força outra plataforma
+docker image inspect nginx:1.27 --format '{{.Os}}/{{.Architecture}}'
+docker run --rm --platform linux/amd64 alpine uname -m   # emulado em máquina arm64</code></pre>
+  <pre><code class="text">Name:      docker.io/library/nginx:1.27
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:...
+
+Manifests:
+  Name:      docker.io/library/nginx:1.27@sha256:...
+  MediaType: application/vnd.oci.image.manifest.v1+json
+  Platform:  linux/amd64
+  ...
+  Platform:  linux/arm64
+  ...</code></pre>
+  <p>Se uma imagem não tem a variante da sua arquitetura, o Docker avisa ("requested image's platform does not match the detected host platform") e, ao rodar, pode falhar com <code>exec format error</code> (binário de outra CPU). Como construir multi-arquitetura é assunto do módulo 08.</p>
+  <h3>Inspecionando imagens</h3>
+  <pre><code class="sh">docker image ls                          # imagens locais
+docker image ls --digests                # com o digest do registry
+docker image ls --filter dangling=true   # só as sem tag
+docker image ls --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}'
+docker image history api:1.4.2           # camadas e o tamanho de cada uma
+docker image history --no-trunc api:1.4.2
+docker image inspect api:1.4.2           # JSON: Config, RootFS, RepoDigests...
+docker image inspect -f '{{json .Config.Cmd}} {{json .Config.Env}}' api:1.4.2
+docker image inspect -f '{{index .RepoDigests 0}}' api:1.4.2
+docker tag api:1.4.2 registro.exemplo.com/equipe/api:1.4.2   # outro nome, mesma imagem
+docker save -o api.tar api:1.4.2 &amp;&amp; docker load -i api.tar   # transporte offline</code></pre>
+  <pre><code class="text">IMAGE          CREATED        CREATED BY                                   SIZE
+a1b2c3d4e5f6   2 hours ago    CMD ["node" "server.js"]                     0B
+&lt;missing&gt;      2 hours ago    COPY . . # buildkit                          2.1MB
+&lt;missing&gt;      2 hours ago    RUN /bin/sh -c npm ci # buildkit             84MB
+&lt;missing&gt;      2 hours ago    COPY package*.json ./ # buildkit             18kB
+&lt;missing&gt;      3 weeks ago    CMD ["node"]                                 0B
+&lt;missing&gt;      3 weeks ago    ADD alpine-minirootfs.tar.gz / # buildkit    7.8MB</code></pre>
+  <p>(Saída ilustrativa de uma imagem de exemplo.) As linhas <code>&lt;missing&gt;</code> são as camadas herdadas da base: faltam no <em>seu</em> histórico local, o que é normal. O <code>history</code> é o melhor jeito de achar a camada que engordou a imagem. <code>docker save</code>/<code>load</code> transportam a imagem com camadas e metadados; já <code>docker export</code>/<code>import</code> achatam o <em>container</em> em um tar e perdem metadados (CMD, ENV), por isso não servem para mover imagens.</p>
+  <h3>Imagens dangling e remoção</h3>
+  <p>Uma imagem <em>dangling</em> aparece como <code>&lt;none&gt;:&lt;none&gt;</code>: perdeu sua tag (normalmente ao reconstruir <code>api:dev</code>, a imagem antiga fica sem nome) e nenhuma outra imagem depende dela. Acumulam-se rápido em máquinas de desenvolvimento e de CI.</p>
+  <pre><code class="sh">docker image prune                  # remove só as dangling
+docker image prune -a               # remove TODAS as sem uso (sem container, mesmo parado)
+docker image prune -a --filter "until=168h"   # só as criadas há mais de 7 dias
+docker rmi api:1.4.2                # remove a tag; as camadas só saem se nada mais as usa</code></pre>
+  <div class="note trap"><b>Armadilha comum: tag não é imagem</b><p><code>docker rmi nome:tag</code> remove o <em>nome</em>; se houver outro nome para a mesma imagem, ela continua. E uma imagem em uso por um container (mesmo parado) não pode ser removida sem <code>-f</code>. Para comparar "é a mesma imagem?", compare <strong>digests</strong>, nunca tags.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Tag é um ponteiro mutável; digest é o hash do manifest e é imutável. O manifest aponta para o config e para as camadas, todos por sha256. Para imagens multi-arquitetura, a tag aponta para um index que lista um manifest por plataforma. Em produção, uso tag de versão e registro o digest do que foi implantado."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina a <strong>política de tags</strong> do time: <code>latest</code> proibido em produção; versão ou SHA do commit como tag; deploys registram o digest (rastreabilidade para auditoria e para o "o que estava rodando às 14h?"). Defina também a retenção no registry e quem pode sobrescrever uma tag (idealmente ninguém: tags imutáveis). Isso é o que torna o rollback uma operação de segundos.</p></div>
+</section>
+
+<section class="chap" id="ciclo-de-vida">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>Ciclo de vida do container</h2>
+  <p>Um container existe independentemente de estar rodando. Ele nasce <code>created</code>, roda enquanto seu <strong>processo principal (PID 1)</strong> estiver vivo e vira <code>exited</code> quando esse processo termina. Parado, ele continua em disco (com a camada gravável, os logs e o código de saída) até ser removido.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 640 274" role="img" aria-label="Diagrama de estados do container: created, running, paused, restarting, exited e removido">
+      <defs><marker id="ah-st" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="100" width="90" height="36" rx="5"/><text x="65" y="123" text-anchor="middle">created</text>
+      <rect class="box-a" x="160" y="100" width="100" height="36" rx="5"/><text x="210" y="123" text-anchor="middle">running</text>
+      <rect class="box-w" x="160" y="190" width="100" height="36" rx="5"/><text x="210" y="213" text-anchor="middle">paused</text>
+      <rect class="box" x="380" y="100" width="100" height="36" rx="5"/><text x="430" y="123" text-anchor="middle">exited</text>
+      <rect class="box-b" x="540" y="100" width="90" height="36" rx="5"/><text x="585" y="123" text-anchor="middle">removido</text>
+      <rect class="box-m" x="300" y="22" width="120" height="36" rx="5"/><text x="360" y="45" text-anchor="middle">restarting</text>
+      <text class="lbl" x="360" y="14" text-anchor="middle">(política de restart)</text>
+      <line class="ln-a" x1="110" y1="118" x2="158" y2="118" marker-end="url(#ah-st)"/><text class="lbl" x="134" y="112" text-anchor="middle">start</text>
+      <line class="ln-a" x1="262" y1="110" x2="378" y2="110" marker-end="url(#ah-st)"/><text class="lbl" x="320" y="104" text-anchor="middle">stop · kill · fim</text>
+      <line class="ln-a" x1="378" y1="128" x2="262" y2="128" marker-end="url(#ah-st)"/><text class="lbl" x="320" y="144" text-anchor="middle">start</text>
+      <line class="ln" x1="482" y1="118" x2="538" y2="118" marker-end="url(#ah-st)"/><text class="lbl" x="510" y="112" text-anchor="middle">rm</text>
+      <line class="ln-a" x1="196" y1="138" x2="196" y2="188" marker-end="url(#ah-st)"/><text class="lbl" x="190" y="168" text-anchor="end">pause</text>
+      <line class="ln-a" x1="226" y1="188" x2="226" y2="138" marker-end="url(#ah-st)"/><text class="lbl" x="234" y="168">unpause</text>
+      <line class="ln" x1="440" y1="98" x2="416" y2="60" marker-end="url(#ah-st)"/>
+      <line class="ln" x1="304" y1="60" x2="236" y2="98" marker-end="url(#ah-st)"/>
+      <text class="lbl" x="20" y="252">docker run = create + start. "dead" (falha ao remover) e "removing" (remoção em andamento)</text>
+      <text class="lbl" x="20" y="268">são estados raros. Com --rm, o container é removido assim que sai.</text>
+    </svg>
+    <figcaption>Um container parado (<code>exited</code>) ainda ocupa disco e guarda os logs. Só deixa de existir no <code>rm</code> (ou com <code>--rm</code>).</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Estado</th><th>Significa</th><th>Como entra / sai</th></tr></thead>
+    <tbody>
+      <tr><td><code>created</code></td><td>container criado (camada gravável, rede, config), processo ainda não iniciado</td><td><code>docker create</code>; sai com <code>start</code></td></tr>
+      <tr><td><code>running</code></td><td>processo principal em execução</td><td><code>start</code>, <code>run</code>, <code>restart</code>, <code>unpause</code></td></tr>
+      <tr><td><code>paused</code></td><td>processos congelados (cgroup freezer); o processo <em>não sabe</em>, nada é sinalizado</td><td><code>docker pause</code> / <code>unpause</code></td></tr>
+      <tr><td><code>restarting</code></td><td>Docker reiniciando por causa da política de restart</td><td>automático após o processo sair</td></tr>
+      <tr><td><code>exited</code></td><td>processo terminou; guarda o código de saída</td><td>fim do processo, <code>stop</code>, <code>kill</code>; sai com <code>start</code> ou <code>rm</code></td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh">docker create --name c1 alpine sleep 300    # created
+docker start c1                              # running
+docker pause c1 &amp;&amp; docker ps --filter name=c1 --format '{{.Names}} {{.Status}}'
+docker unpause c1 &amp;&amp; docker stop c1          # exited
+docker ps -a --filter status=exited          # parados
+docker rm c1                                 # removido</code></pre>
+  <pre><code class="text">c1 Up 5 seconds (Paused)</code></pre>
+  <ul>
+    <li><code>docker start</code> reinicia o <strong>mesmo</strong> container (mesma camada gravável, mesmos arquivos). <code>docker run</code> cria sempre um <strong>novo</strong>.</li>
+    <li><code>docker restart</code> = stop + start. <code>docker events</code> mostra a sequência (<code>create</code>, <code>start</code>, <code>die</code>, <code>stop</code>, <code>destroy</code>...) em tempo real.</li>
+    <li>Um container sem processo principal de longa duração (<code>docker run alpine</code> sem comando) <strong>sai imediatamente</strong>: não há nada para manter vivo. Isso não é erro.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum: "o container reiniciou, perdi os arquivos"</b><p>Reiniciar (<code>stop</code>/<code>start</code>, <code>restart</code>, política de restart) preserva a camada gravável. Perde-se tudo no <strong>recriar</strong> (<code>rm</code> e <code>run</code> de novo, <code>compose up</code> com imagem ou configuração nova, deploy). Quem depende de dados gravados dentro do container tem um bug esperando para acontecer: use volumes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Estados: created, running, paused, restarting, exited e removido. O container vive enquanto o PID 1 vive; ao terminar vira exited, mantendo logs e código de saída até o <code>rm</code>. <code>run</code> é create mais start e sempre cria um novo; <code>start</code> reinicia um existente."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Containers são <strong>descartáveis por desenho</strong>: a regra é tratá-los como gado, não como animais de estimação. Se o time precisa "entrar no container para consertar", isso é sinal de processo falho (imagem, configuração, dados fora de volume). Reforce: sem ajuste manual em produção; correção vira nova imagem e novo deploy.</p></div>
+</section>
+
+<section class="chap" id="run-comandos">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l1">Básico</span></div>
+  <h2><code>docker run</code> e os comandos essenciais</h2>
+  <h3>As flags que mais importam</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Flag</th><th>Efeito</th><th>Observações</th></tr></thead>
+    <tbody>
+      <tr><td><code>-d</code></td><td>segundo plano (<em>detached</em>)</td><td>sem ele, o terminal fica preso à saída do processo</td></tr>
+      <tr><td><code>-it</code></td><td><code>-i</code> mantém stdin aberto; <code>-t</code> aloca um pseudo-terminal</td><td>necessário para shells interativos (<code>sh</code>, <code>psql</code>)</td></tr>
+      <tr><td><code>--rm</code></td><td>remove o container (e seus volumes anônimos) ao sair</td><td>ideal para tarefas descartáveis; incompatível com <code>--restart</code></td></tr>
+      <tr><td><code>--name</code></td><td>nome fixo</td><td>único por host; sem ele o Docker inventa (<code>vigilant_curie</code>)</td></tr>
+      <tr><td><code>-p host:container</code></td><td>publica porta</td><td><code>-p 127.0.0.1:8080:80</code> restringe ao loopback; <code>-P</code> publica as portas <code>EXPOSE</code> em portas aleatórias; <code>docker port</code> mostra</td></tr>
+      <tr><td><code>-e VAR=valor</code></td><td>variável de ambiente</td><td><code>-e VAR</code> (sem valor) repassa a do shell atual</td></tr>
+      <tr><td><code>--env-file arq</code></td><td>variáveis de um arquivo <code>CHAVE=valor</code>, uma por linha</td><td>comentários com <code>#</code>; <strong>aspas são literais</strong> (diferente do Compose)</td></tr>
+      <tr><td><code>-v nome:/caminho[:ro]</code></td><td>volume nomeado ou bind mount</td><td>módulo 05; <code>--mount</code> é a forma explícita</td></tr>
+      <tr><td><code>--network</code></td><td>rede do container</td><td><code>bridge</code> (padrão), rede definida pelo usuário, <code>host</code>, <code>none</code>; módulo 05</td></tr>
+      <tr><td><code>--restart</code></td><td>política de reinício</td><td>seção 6</td></tr>
+      <tr><td><code>--memory</code>, <code>--cpus</code></td><td>limites de cgroup (<code>512m</code>, <code>1.5</code>)</td><td>passou da memória: OOM kill (137); CPU é <em>throttling</em>, não morte</td></tr>
+      <tr><td><code>--user</code>, <code>--read-only</code></td><td>usuário não-root; raiz somente leitura</td><td>módulo 09</td></tr>
+      <tr><td><code>--init</code></td><td>coloca um init (tini) como PID 1</td><td>seção 5</td></tr>
+      <tr><td><code>--pull</code></td><td><code>always</code>, <code>missing</code> (padrão) ou <code>never</code></td><td><code>always</code> garante a imagem atual da tag</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh">docker run -d --name web -p 8080:80 nginx:1.27-alpine
+#          │  │          │           └ imagem (tag fixa)
+#          │  │          └ porta: host 8080 → container 80
+#          │  └ nome
+#          └ segundo plano
+
+docker run --rm -it alpine:3.20 sh                       # shell descartável
+docker run --rm -e TZ=America/Sao_Paulo --env-file .env minha-api
+docker run -d --name pg -e POSTGRES_PASSWORD=lab -v pgdata:/var/lib/postgresql/data postgres:17
+docker run -d --restart unless-stopped --memory 512m --cpus 1.5 --name api minha-api:1.4.2</code></pre>
+  <h3>Operando um container existente</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>Para quê</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker ps</code>, <code>ps -a</code></td><td>rodando / todos, inclusive parados; <code>--format</code> e <code>--filter</code> ajudam</td></tr>
+      <tr><td><code>docker logs -f --tail 100 --since 10m -t web</code></td><td>stdout/stderr do processo principal; <code>-f</code> acompanha; funciona com os drivers <code>json-file</code>, <code>local</code> e <code>journald</code></td></tr>
+      <tr><td><code>docker exec -it web sh</code></td><td>roda um comando <em>novo dentro</em> de um container que já está rodando (<code>-u</code> usuário, <code>-w</code> diretório, <code>-e</code> variável)</td></tr>
+      <tr><td><code>docker start / stop / restart / kill / rm</code></td><td>ciclo de vida; <code>rm -f</code> mata e remove; <code>rm -v</code> remove também os volumes anônimos</td></tr>
+      <tr><td><code>docker inspect web</code></td><td>JSON com estado, IP, mounts, variáveis, política, código de saída</td></tr>
+      <tr><td><code>docker stats [--no-stream]</code></td><td>CPU, memória (contra o limite), rede e I/O ao vivo</td></tr>
+      <tr><td><code>docker top web</code></td><td>processos do container, vistos do host (aceita opções do <code>ps</code>)</td></tr>
+      <tr><td><code>docker cp web:/etc/nginx/nginx.conf .</code></td><td>copia entre host e container (funciona com container parado); também no sentido inverso</td></tr>
+      <tr><td><code>docker diff web</code></td><td>arquivos criados (A), alterados (C) ou apagados (D) na camada gravável</td></tr>
+      <tr><td><code>docker attach web</code></td><td>conecta ao stdin/stdout do <em>PID 1</em> (cuidado: Ctrl+C pode parar o container)</td></tr>
+      <tr><td><code>docker port web</code>, <code>docker events</code></td><td>portas publicadas; fluxo de eventos do daemon</td></tr>
+    </tbody>
+  </table></div>
+  <h3><code>inspect</code> com <code>--format</code></h3>
+  <p>O <code>inspect</code> devolve JSON gigante; o <code>--format</code> usa templates Go para extrair só o que interessa, ótimo em scripts e diagnósticos.</p>
+  <pre><code class="sh">docker inspect -f '{{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' api
+docker inspect -f '{{.State.StartedAt}} → {{.State.FinishedAt}}' api
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' api
+docker inspect -f '{{json .Config.Env}}' api
+docker inspect -f '{{.HostConfig.RestartPolicy.Name}} restarts={{.RestartCount}}' api
+docker inspect -f '{{.HostConfig.Memory}} {{.HostConfig.NanoCpus}}' api</code></pre>
+  <pre><code class="text">exited exit=137 oom=true</code></pre>
+  <div class="note trap"><b>Armadilha comum: <code>run</code> x <code>exec</code>, <code>stop</code> x <code>kill</code></b><ul>
+    <li><code>docker run</code> cria um container <strong>novo</strong>. <code>docker exec</code> roda um comando extra em um container <strong>existente</strong>: se o processo principal morrer, o <code>exec</code> some junto.</li>
+    <li>Variáveis passadas no <code>exec -e</code> valem só para aquele comando; as do <code>run -e</code> valem para o processo principal. Mudar variável de um container existente exige recriá-lo.</li>
+    <li><code>stop</code> pede para encerrar e dá um prazo; <code>kill</code> mata na hora. Seção 5.</li>
+  </ul></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Tag fixa, <code>--name</code> para o que fica, <code>--rm</code> para o que é descartável, <code>-p 127.0.0.1:...</code> em desenvolvimento, <code>--memory</code> em produção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"<code>run</code> faz create e start de um container novo; <code>exec</code> executa um comando dentro de um existente; <code>logs</code> lê o stdout/stderr do processo principal; <code>inspect -f</code> extrai estado e configuração; <code>stats</code> mostra uso contra os limites."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize <strong>como o time sobe containers</strong> em vez de cada um lembrar flags: em desenvolvimento e produção pequena, Compose (módulo 06) versiona as flags em arquivo revisável. Comando <code>docker run</code> colado em wiki é configuração sem revisão nem histórico. E cobre limites de memória e CPU em tudo que vai para servidor compartilhado.</p></div>
+</section>
+
+<section class="chap" id="sinais-pid1">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2><code>docker stop</code>, sinais, PID 1 e zumbis</h2>
+  <p>Encerrar bem um container é <strong>um problema de sinais</strong>. O <code>docker stop</code> envia <code>SIGTERM</code> ao processo principal (um pedido: "termine de forma limpa"), espera um prazo (padrão 10 s, ajustável com <code>-t</code>) e, se o container ainda estiver vivo, envia <code>SIGKILL</code>, que o processo não pode tratar nem ignorar (o kernel o encerra). O <code>docker kill</code> envia <code>SIGKILL</code> direto (ou outro sinal com <code>-s</code>).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 226" role="img" aria-label="Linha do tempo do docker stop: aplicação que trata SIGTERM encerra rápido; aplicação que ignora espera o prazo e leva SIGKILL">
+      <defs><marker id="ah-sig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="lbl" x="20" y="14">docker stop: SIGTERM em t=0; SIGKILL se o processo seguir vivo após o prazo (padrão 10 s)</text>
+      <line class="ln-a" x1="60" y1="24" x2="60" y2="176" stroke-dasharray="4 3"/>
+      <text class="lbl" x="72" y="48">A) a aplicação trata SIGTERM (forma exec, handler, init)</text>
+      <rect class="box-a" x="62" y="56" width="100" height="26" rx="4"/><text x="112" y="73" text-anchor="middle">encerra</text>
+      <rect class="box" x="172" y="56" width="140" height="26" rx="4"/><text x="242" y="73" text-anchor="middle">exited 0 / 143</text>
+      <text class="lbl" x="72" y="112">B) PID 1 ignora SIGTERM (forma shell, sem handler)</text>
+      <rect class="box-w" x="62" y="120" width="418" height="26" rx="4"/><text x="271" y="137" text-anchor="middle">ninguém trata o sinal: o Docker espera o prazo</text>
+      <rect class="box-b" x="490" y="120" width="170" height="26" rx="4"/><text x="575" y="137" text-anchor="middle">SIGKILL: exit 137</text>
+      <line class="ln" x1="60" y1="170" x2="480" y2="170"/>
+      <line class="ln" x1="60" y1="166" x2="60" y2="174"/><line class="ln" x1="270" y1="166" x2="270" y2="174"/><line class="ln" x1="480" y1="166" x2="480" y2="174"/>
+      <text class="lbl" x="60" y="190" text-anchor="middle">0 s</text><text class="lbl" x="270" y="190" text-anchor="middle">5 s</text><text class="lbl" x="480" y="190" text-anchor="middle">10 s</text>
+      <text class="lbl" x="20" y="216">Se o handler demorar mais que o prazo, o resultado também é o da linha B.</text>
+    </svg>
+    <figcaption>O mesmo comando, dois destinos. O sintoma clássico de B: todo <code>docker stop</code> demora exatamente o prazo e termina em 137.</figcaption>
+  </figure>
+  <h3>Por que o PID 1 é especial</h3>
+  <p>Dentro do container, o processo principal é o <strong>PID 1</strong> do namespace. No Linux, o PID 1 tem dois comportamentos próprios:</p>
+  <ul>
+    <li><strong>Sinais sem tratador são ignorados.</strong> Para qualquer outro processo, <code>SIGTERM</code> sem handler mata o processo (ação padrão). Para o PID 1, se ele não instalou um handler, o kernel descarta o sinal vindo de fora do namespace (só <code>SIGKILL</code> e <code>SIGSTOP</code> passam). Resultado: <code>docker stop</code> "não faz nada" e cai no <code>SIGKILL</code>.</li>
+    <li><strong>Deve recolher órfãos.</strong> Quando um processo filho termina e o pai não chama <code>wait()</code>, ele vira <em>zumbi</em> (<code>Z</code>, <code>&lt;defunct&gt;</code>) e ocupa uma entrada na tabela de processos. Processos cujo pai morreu são adotados pelo PID 1, que precisa recolhê-los. Um PID 1 que não faz isso (um app qualquer) acumula zumbis.</li>
+  </ul>
+  <p>Na prática, isso significa:</p>
+  <ul>
+    <li><strong>Use a forma exec</strong> (<code>CMD ["node","server.js"]</code>) para a aplicação ser o PID 1. Na forma shell, o PID 1 é um <code>/bin/sh -c</code> que normalmente <em>não repassa</em> o sinal ao filho.</li>
+    <li><strong>Trate SIGTERM na aplicação</strong>: parar de aceitar novas requisições, concluir as em andamento, fechar conexões e sair (<em>graceful shutdown</em>). Node.js e Python não têm handler por padrão (precisam registrar <code>process.on('SIGTERM')</code> ou <code>signal.signal</code>); a JVM trata SIGTERM e executa shutdown hooks; Go exige <code>signal.Notify</code>.</li>
+    <li><strong>Use <code>--init</code></strong> (ou <code>init: true</code> no Compose) quando a aplicação cria subprocessos ou não trata sinais: o Docker coloca o <code>tini</code> como PID 1, que repassa sinais ao filho e recolhe zumbis.</li>
+    <li><strong>Em scripts de entrypoint</strong>, termine com <code>exec "$@"</code> para o script ser <em>substituído</em> pela aplicação, que assume o PID 1.</li>
+    <li><strong>Sinal diferente por imagem</strong>: algumas imagens declaram <code>STOPSIGNAL</code> próprio (a do nginx usa <code>SIGQUIT</code>, desligamento gracioso; a do postgres usa <code>SIGINT</code>, desligamento "rápido"). Dá para definir com <code>--stop-signal</code> e o prazo com <code>--stop-timeout</code> (ou <code>docker stop -t</code>).</li>
+  </ul>
+  <pre><code class="sh"># PID 1 = sleep, sem handler de SIGTERM: o stop espera os 10 s inteiros
+docker run -d --name t1 alpine sleep 300
+time docker stop t1
+docker inspect -f '{{.State.ExitCode}}' t1          # 137
+
+# com --init: o tini repassa SIGTERM e o sleep morre na hora
+docker run -d --init --name t2 alpine sleep 300
+time docker stop t2
+docker inspect -f '{{.State.ExitCode}}' t2          # 143
+docker rm t1 t2</code></pre>
+  <pre><code class="text">t1  ...  real  0m10.2s   (exit 137)
+t2  ...  real  0m0.4s    (exit 143)</code></pre>
+  <p>(Tempos ilustrativos.) O que um zumbi parece em <code>ps</code> dentro do container, quando o PID 1 não recolhe:</p>
+  <pre><code class="text">PID   USER   STAT COMMAND
+  1   app    S    node server.js
+ 87   app    Z    [convert] &lt;defunct&gt;
+ 91   app    Z    [convert] &lt;defunct&gt;</code></pre>
+  <div class="note trap"><b>Armadilha comum: <code>CMD npm start</code> e scripts de shell</b><p>Com <code>npm start</code> (ou um <code>.sh</code> que chama o app sem <code>exec</code>), a cadeia é <code>sh → npm → node</code>, e o SIGTERM costuma não chegar ao <code>node</code>. Prefira <code>CMD ["node","server.js"]</code>. Se precisar de um script, termine-o com <code>exec node server.js</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"<code>docker stop</code> envia SIGTERM, espera o prazo (10 s) e envia SIGKILL. O PID 1 não tem ação padrão para sinais: sem handler, ignora SIGTERM, e por isso usamos forma exec, tratamos o sinal e usamos <code>--init</code> (tini) quando há subprocessos ou zumbis."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Desligamento mal tratado aparece como <strong>erros no deploy</strong>: requisições cortadas, 502 no balanceador, jobs pela metade, transações abertas. Cobre do time o <em>graceful shutdown</em> em todo serviço, testado (envie SIGTERM durante carga). Em orquestradores o prazo se chama <em>terminationGracePeriod</em> (Kubernetes) ou <code>stop_grace_period</code> (Compose): ele precisa ser maior que o pior tempo de drenagem, e o balanceador deve tirar a instância do rodízio antes.</p></div>
+</section>
+
+<section class="chap" id="saida-restart">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Códigos de saída e políticas de restart</h2>
+  <p>Quando o processo principal termina, o shim registra o <strong>código de saída</strong>. Por convenção do Unix, <code>0</code> é sucesso, de <code>1</code> a <code>125</code> são erros definidos pela aplicação e <code>128 + n</code> significa "morto pelo sinal n". O diagnóstico de container que parou começa por ele.</p>
+  <pre><code class="sh">docker ps -a --filter status=exited --format 'table {{.Names}}\t{{.Status}}'
+docker inspect -f 'exit={{.State.ExitCode}} oom={{.State.OOMKilled}} erro={{.State.Error}}' api</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Código</th><th>Significado</th><th>Causas e o que olhar</th></tr></thead>
+    <tbody>
+      <tr><td><code>0</code></td><td>terminou com sucesso</td><td>normal para tarefas. Para um <em>serviço</em>, o processo principal acabou: CMD errado (comando que vai para segundo plano, <code>service x start</code>), ou o programa só imprime e sai</td></tr>
+      <tr><td><code>1</code></td><td>erro genérico da aplicação</td><td>leia <code>docker logs</code>: exceção, configuração ausente, banco inacessível, senha não definida</td></tr>
+      <tr><td><code>125</code></td><td>o <strong>próprio Docker</strong> falhou ao executar o <code>run</code></td><td>flag inválida, porta já em uso no host, nome de container duplicado, imagem inexistente; o comando nem chegou a iniciar</td></tr>
+      <tr><td><code>126</code></td><td>o comando existe mas não pode ser executado</td><td>sem permissão de execução (script sem <code>chmod +x</code>), é um diretório ou arquivo não executável</td></tr>
+      <tr><td><code>127</code></td><td>comando não encontrado</td><td>binário ausente na imagem, erro de digitação, PATH, interpretador do shebang inexistente, fim de linha CRLF no script (<code>/bin/sh^M</code>), <code>exec format error</code></td></tr>
+      <tr><td><code>130</code></td><td>128 + 2: SIGINT</td><td>Ctrl+C</td></tr>
+      <tr><td><code>137</code></td><td>128 + 9: <strong>SIGKILL</strong></td><td>mais comum: <strong>falta de memória (OOM)</strong> (<code>OOMKilled=true</code>); ou <code>docker kill</code>, ou <code>docker stop</code> que esgotou o prazo, ou o orquestrador. Se <code>OOMKilled=false</code>, investigue quem enviou o sinal (também o OOM killer do <em>host</em>)</td></tr>
+      <tr><td><code>139</code></td><td>128 + 11: <strong>SIGSEGV</strong></td><td>falha de segmentação: bug em código nativo/biblioteca C, binário incompatível com a libc da imagem (glibc x musl), arquitetura errada em emulação</td></tr>
+      <tr><td><code>143</code></td><td>128 + 15: <strong>SIGTERM</strong></td><td>encerrado por <code>docker stop</code> e saiu corretamente (ou foi encerrado por sinal sem tratador). Em geral é saudável</td></tr>
+    </tbody>
+  </table></div>
+  <p>Outros úteis: <code>134</code> (SIGABRT, abort/assert), <code>255</code> (saída fora de faixa, comum em Java e em erros de SSH). Lembre que alguns runtimes mapeiam um desligamento por SIGTERM para <code>0</code> ou <code>143</code>, dependendo do handler.</p>
+  <h3>Políticas de restart</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Política</th><th>Comportamento</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td><code>no</code> (padrão)</td><td>nunca reinicia sozinho</td><td>tarefas, desenvolvimento</td></tr>
+      <tr><td><code>on-failure[:N]</code></td><td>reinicia se sair com código diferente de 0, até N vezes</td><td>jobs que podem falhar de forma transitória</td></tr>
+      <tr><td><code>always</code></td><td>sempre reinicia; um container parado <em>à mão</em> só volta quando o daemon reinicia</td><td>serviços que devem estar sempre no ar</td></tr>
+      <tr><td><code>unless-stopped</code></td><td>como <code>always</code>, mas um container parado à mão <strong>continua parado</strong> mesmo depois de o daemon reiniciar</td><td>serviços em host único (a escolha comum)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>A política só passa a valer depois que o container fica de pé por um tempo mínimo (a documentação fala em 10 segundos); entre tentativas há um intervalo crescente (<em>backoff</em>). Um container que cai logo ao iniciar entra em <code>Restarting (1)</code> em loop.</li>
+    <li>Mudar sem recriar: <code>docker update --restart unless-stopped api</code>. Ver: <code>docker inspect -f '{{.HostConfig.RestartPolicy.Name}} {{.RestartCount}}' api</code>.</li>
+    <li><code>--rm</code> e <code>--restart</code> não combinam. Reiniciar o <em>processo</em> não conserta uma causa persistente (configuração errada, banco fora): vira loop silencioso. Combine com logs, alertas e healthcheck (módulo 03).</li>
+    <li>Restart policy cobre falha do processo e reboot do host. Não cobre <em>nó</em> inteiro fora do ar nem rolling update: isso é papel do orquestrador (módulo 10).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum: <code>always</code> que esconde o problema</b><p>Com <code>--restart always</code> um serviço que falha ao subir fica reiniciando sem parar, e o painel mostra "Up 3 seconds" repetidamente. Verifique <code>RestartCount</code> e <code>docker logs</code>; alerte quando a contagem passa de um limite, em vez de contar que "está de pé".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"137 é SIGKILL: costuma ser OOM (confirmo com <code>OOMKilled</code>) ou stop que estourou o prazo. 143 é SIGTERM tratado. 127 é comando não encontrado, 126 sem permissão, 125 falha do próprio docker run, 139 segfault. Em restart uso <code>unless-stopped</code> em host único e <code>on-failure</code> para jobs."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Restart automático é rede de proteção, não estratégia de confiabilidade. Pergunte ao time: o que alerta quando um serviço reinicia mais de N vezes? Quem vê o <code>OOMKilled</code>? Qual o limite de memória definido e com base em quê? Incidentes repetidos com 137 normalmente pedem ajuste de limite <em>e</em> investigação de vazamento, não só "aumentar a memória".</p></div>
+</section>
+
+<section class="chap" id="entrypoint-cmd">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>ENTRYPOINT e CMD em tempo de execução</h2>
+  <p>Como escrever Dockerfiles é assunto do módulo 03. Aqui interessa o efeito <strong>ao executar</strong>: o comando final do container é a combinação de <code>ENTRYPOINT</code>, <code>CMD</code> da imagem e o que você passou no <code>docker run</code>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 640 246" role="img" aria-label="Como ENTRYPOINT, CMD e argumentos do docker run se combinam no comando final">
+      <defs><marker id="ah-ep" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="lbl" x="20" y="18">imagem: ENTRYPOINT ["nginx"]   CMD ["-g", "daemon off;"]</text>
+      <rect class="box" x="20" y="34" width="250" height="32" rx="4"/><text x="145" y="54" text-anchor="middle">docker run img</text>
+      <rect class="box-a" x="330" y="34" width="290" height="32" rx="4"/><text x="475" y="54" text-anchor="middle">nginx -g "daemon off;"</text>
+      <line class="ln-a" x1="272" y1="50" x2="328" y2="50" marker-end="url(#ah-ep)"/>
+      <rect class="box" x="20" y="82" width="250" height="32" rx="4"/><text x="145" y="102" text-anchor="middle">docker run img -v</text>
+      <rect class="box-a" x="330" y="82" width="290" height="32" rx="4"/><text x="475" y="102" text-anchor="middle">nginx -v</text>
+      <line class="ln-a" x1="272" y1="98" x2="328" y2="98" marker-end="url(#ah-ep)"/>
+      <rect class="box" x="20" y="130" width="250" height="32" rx="4"/><text x="145" y="150" text-anchor="middle">docker run img sleep 5</text>
+      <rect class="box-w" x="330" y="130" width="290" height="32" rx="4"/><text x="475" y="150" text-anchor="middle">nginx sleep 5</text>
+      <line class="ln-a" x1="272" y1="146" x2="328" y2="146" marker-end="url(#ah-ep)"/>
+      <rect class="box" x="20" y="178" width="250" height="32" rx="4"/><text x="145" y="198" text-anchor="middle">docker run --entrypoint sh img</text>
+      <rect class="box-m" x="330" y="178" width="290" height="32" rx="4"/><text x="475" y="198" text-anchor="middle">sh   (CMD da imagem descartado)</text>
+      <line class="ln-a" x1="272" y1="194" x2="328" y2="194" marker-end="url(#ah-ep)"/>
+      <text class="lbl" x="20" y="236">Argumentos do run substituem o CMD; só --entrypoint troca o ENTRYPOINT (e zera o CMD).</text>
+    </svg>
+    <figcaption>Regra geral: <code>ENTRYPOINT</code> + <code>CMD</code> (ou os argumentos do <code>run</code>). A terceira linha mostra o erro típico: o argumento vira parâmetro do ENTRYPOINT, não um comando novo.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Imagem define</th><th>Sem argumentos no <code>run</code></th><th>Com <code>docker run img X Y</code></th></tr></thead>
+    <tbody>
+      <tr><td>só <code>CMD ["a","b"]</code></td><td><code>a b</code></td><td><code>X Y</code> (substitui o comando inteiro)</td></tr>
+      <tr><td>só <code>ENTRYPOINT ["e"]</code></td><td><code>e</code></td><td><code>e X Y</code></td></tr>
+      <tr><td><code>ENTRYPOINT ["e"]</code> + <code>CMD ["a"]</code></td><td><code>e a</code></td><td><code>e X Y</code> (substitui o CMD)</td></tr>
+      <tr><td>forma shell: <code>CMD a b</code></td><td><code>/bin/sh -c "a b"</code></td><td><code>X Y</code></td></tr>
+      <tr><td>forma shell: <code>ENTRYPOINT e</code> (+ qualquer CMD)</td><td><code>/bin/sh -c "e"</code> (CMD <strong>ignorado</strong>)</td><td><code>/bin/sh -c "e"</code> (argumentos ignorados)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Forma exec x forma shell</h3>
+  <ul>
+    <li><strong>Exec</strong> (<code>["node","server.js"]</code>, JSON): o programa é executado direto. É o PID 1 e recebe os sinais. Não há expansão de variáveis nem pipes (<code>$HOME</code> vira texto; para isso chame <code>["sh","-c","..."]</code> explicitamente).</li>
+    <li><strong>Shell</strong> (<code>node server.js</code>): vira <code>/bin/sh -c "node server.js"</code>. Há expansão e pipes, mas o PID 1 é o shell (seção 5). Em <code>ENTRYPOINT</code>, a forma shell ainda <em>descarta o CMD e os argumentos</em>.</li>
+  </ul>
+  <h3>Ver e sobrescrever</h3>
+  <pre><code class="sh">docker image inspect -f 'ENTRYPOINT={{json .Config.Entrypoint}} CMD={{json .Config.Cmd}}' nginx:1.27
+docker run --rm alpine echo oi                       # substitui o CMD
+docker run --rm --entrypoint cat nginx:1.27 /etc/os-release   # troca o ENTRYPOINT
+docker run --rm -it --entrypoint sh nginx:1.27       # shell para investigar a imagem
+docker run --rm --entrypoint "" alpine ls /          # remove o ENTRYPOINT da imagem</code></pre>
+  <pre><code class="text">ENTRYPOINT=["/docker-entrypoint.sh"] CMD=["nginx","-g","daemon off;"]</code></pre>
+  <p>Esse é o <strong>padrão do entrypoint de preparação</strong>, muito comum em imagens oficiais (nginx, postgres, mysql): o <code>ENTRYPOINT</code> é um script que prepara o ambiente (gera configuração, inicializa o banco, ajusta permissões) e termina com <code>exec "$@"</code>, que executa o <code>CMD</code> como PID 1. Por isso <code>docker run postgres:17 postgres -c max_connections=200</code> funciona: o argumento substitui o CMD e o script o repassa.</p>
+  <div class="note trap"><b>Armadilha comum: "passei um comando e a imagem ignorou"</b><p>Se a imagem tem <code>ENTRYPOINT</code>, o que vem depois do nome da imagem são <em>argumentos</em> dele, não um comando. Para rodar outro programa na mesma imagem (um shell de diagnóstico, por exemplo), use <code>--entrypoint</code>. E se um <code>ENTRYPOINT</code> em forma shell parece "comer" os argumentos, é porque ele descarta mesmo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"ENTRYPOINT define o executável; CMD, os argumentos padrão (ou o comando, se não há ENTRYPOINT). Argumentos no <code>docker run</code> substituem o CMD; o ENTRYPOINT só muda com <code>--entrypoint</code>. Uso forma exec para o processo ser o PID 1 e receber sinais."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Imagens "executáveis" (ENTRYPOINT definido, CMD com padrão) e entrypoints de preparação dão ao time um contrato claro de uso, e facilitam a <strong>reutilização</strong>: a mesma imagem como API, worker ou job de migração, mudando só os argumentos. Combine uma convenção e documente no README da imagem.</p></div>
+</section>
+
+<section class="chap" id="uso-disco">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Boas práticas do dia a dia e limpeza de disco</h2>
+  <h3>Hábitos que evitam dor</h3>
+  <ul>
+    <li><strong>Tags fixas</strong> (<code>postgres:17</code>, <code>nginx:1.27-alpine</code>), nunca <code>latest</code> em ambientes compartilhados.</li>
+    <li><strong>Nome e rótulos</strong>: <code>--name</code> para o que fica; <code>--label</code> (ex.: <code>equipe=pagamentos</code>) permite filtrar e limpar com precisão (<code>--filter label=...</code>).</li>
+    <li><strong><code>--rm</code></strong> em containers descartáveis; <code>-it</code> só quando há terminal.</li>
+    <li><strong>Logs na saída padrão</strong>: a aplicação escreve em stdout/stderr, e o driver de log cuida do resto. Arquivo de log dentro do container some e enche a camada gravável.</li>
+    <li><strong>Um processo principal por container</strong>; dados em volumes; configuração por variáveis ou arquivos montados; segredos nunca na imagem.</li>
+    <li><strong>Limites</strong> de memória e CPU, e <code>--pids-limit</code> quando fizer sentido, em qualquer servidor compartilhado.</li>
+    <li><strong>Não corrija dentro do container</strong>: <code>exec</code> é para investigar; a correção vai para a imagem ou a configuração.</li>
+  </ul>
+  <h3>Onde o disco vai</h3>
+  <pre><code class="sh">docker system df
+docker system df -v          # detalhado: por imagem, container e volume
+sudo du -sh /var/lib/docker/* 2&gt;/dev/null | sort -h | tail</code></pre>
+  <pre><code class="text">TYPE            TOTAL   ACTIVE   SIZE      RECLAIMABLE
+Images          48      6        14.2GB    11.9GB (83%)
+Containers      9       5        312MB     187MB (59%)
+Local Volumes   12      4        6.8GB     2.1GB (30%)
+Build Cache     210     0        9.4GB     9.4GB</code></pre>
+  <p>Os grandes consumidores, em ordem típica: <strong>imagens antigas</strong>, <strong>cache de build</strong>, <strong>volumes</strong> (dados reais) e <strong>logs de containers</strong>. O driver de log padrão (<code>json-file</code>) <strong>não rotaciona</strong>: um container falante enche o disco com um arquivo em <code>/var/lib/docker/containers/&lt;id&gt;/&lt;id&gt;-json.log</code>.</p>
+  <pre data-file="/etc/docker/daemon.json"><code class="json">{
+  "log-driver": "local",
+  "log-opts": { "max-size": "10m", "max-file": "3" }
+}</code></pre>
+  <p>(Reinicie o daemon; vale só para containers <em>novos</em>. O driver <code>local</code> já rotaciona por padrão; com <code>json-file</code>, defina <code>max-size</code> e <code>max-file</code> como acima. Também dá para definir por container com <code>--log-opt</code> ou por serviço no Compose.)</p>
+  <h3><code>prune</code>: limpar sem se arrepender</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>Remove</th><th>Risco</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker container prune</code></td><td>todos os containers <strong>parados</strong></td><td>perde a camada gravável e os logs de quem estava parado (às vezes é o que você queria investigar)</td></tr>
+      <tr><td><code>docker image prune</code></td><td>imagens dangling</td><td>baixo</td></tr>
+      <tr><td><code>docker image prune -a</code></td><td>todas as imagens sem container associado</td><td>o próximo <code>run</code> precisa baixar de novo; em servidor sem acesso ao registry pode quebrar um restart</td></tr>
+      <tr><td><code>docker builder prune</code></td><td>cache de build (<code>-a</code> todo; <code>--filter until=</code>)</td><td>próximo build mais lento</td></tr>
+      <tr><td><code>docker network prune</code></td><td>redes sem containers</td><td>baixo</td></tr>
+      <tr><td><code>docker volume prune</code></td><td>volumes sem container; por padrão, só os <em>anônimos</em> nas versões recentes (<code>-a</code> inclui os nomeados)</td><td><strong>alto: apaga dados</strong>. Volume de banco de um container parado "não está em uso"</td></tr>
+      <tr><td><code>docker system prune [-a] [--volumes]</code></td><td>containers parados, redes, imagens dangling (e sem uso com <code>-a</code>), cache; volumes só com <code>--volumes</code></td><td>agrega os riscos acima</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh"># limpeza conservadora e repetível (ex.: cron semanal em CI/desenvolvimento)
+docker container prune -f --filter "until=72h"
+docker image prune -a -f --filter "until=168h"
+docker builder prune -f --filter "until=168h"
+# NUNCA em servidor de produção sem revisar o que o volume prune apagaria:
+docker volume ls -f dangling=true</code></pre>
+  <div class="note trap"><b>Armadilha comum: <code>system prune --volumes</code> no servidor do banco</b><p>Um container de banco parado para manutenção deixa seu volume "sem uso", e o <code>--volumes</code> (ou o <code>volume prune -a</code>) o apaga, com dados reais dentro. Não existe lixeira. Em produção, rotule volumes importantes, faça backup antes de qualquer limpeza em massa e prefira remover itens por nome ou filtro.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Antes de apagar, <strong>veja</strong>: <code>system df -v</code>, <code>ps -a</code>, <code>volume ls</code>. Em desenvolvimento, pode ser agressivo; em produção, só com filtro de idade, backup dos volumes e uma janela combinada.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Disco cheio: <code>docker system df -v</code> para achar o culpado (imagens antigas, cache de build, volumes, logs sem rotação), <code>prune</code> com filtros e cuidado com volumes, e rotação de logs no daemon ou por container."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Servidor Docker sem política de limpeza e de rotação de logs <strong>enche o disco e cai</strong>, quase sempre de madrugada. Defina: rotação de logs padrão no <code>daemon.json</code>, rotina de limpeza para runners de CI, alerta de uso de disco em <code>/var/lib/docker</code> e retenção de imagens no registry. É manutenção barata contra um incidente caro.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios para um host Linux (ou WSL 2) com Docker. Tente antes de abrir a resolução.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Prove que apagar arquivos em uma camada posterior não diminui a imagem. Monte um Dockerfile de três instruções, compare os tamanhos e descubra qual camada pesa.</span></summary><div class="ans">
+  <pre data-file="Dockerfile"><code class="dockerfile">FROM alpine:3.20
+RUN dd if=/dev/zero of=/grande.bin bs=1M count=50
+RUN rm /grande.bin</code></pre>
+  <pre><code class="sh">docker build -t lab-camadas .
+docker image ls lab-camadas
+docker image history lab-camadas</code></pre>
+  <p>O <code>history</code> mostra a camada do <code>dd</code> com cerca de 52 MB e a do <code>rm</code> com 0B: o tamanho da imagem continua perto de 60 MB (7-8 MB da base + 50 MB). O arquivo está escondido, não ausente. Correção: gerar e apagar na mesma instrução (<code>RUN dd ... &amp;&amp; rm ...</code>), caso em que a camada não guarda os 50 MB. Limpeza: <code>docker rmi lab-camadas</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Mostre o copy-on-write: altere um arquivo da imagem dentro de um container, veja o que mudou com <code>docker diff</code>, localize a alteração no <code>UpperDir</code> e confirme que a imagem não mudou.</span></summary><div class="ans">
+  <pre><code class="sh">docker run -d --name cow nginx:1.27
+docker exec cow sh -c 'echo "# alterado" &gt;&gt; /etc/nginx/nginx.conf; touch /novo'
+docker diff cow
+sudo ls "$(docker inspect -f '{{.GraphDriver.Data.UpperDir}}' cow)/etc/nginx"
+docker run --rm nginx:1.27 tail -1 /etc/nginx/nginx.conf    # container novo: sem a alteração
+docker rm -f cow</code></pre>
+  <p>O <code>diff</code> lista <code>C /etc/nginx</code>, <code>C /etc/nginx/nginx.conf</code> e <code>A /novo</code>, além de arquivos que o próprio nginx criou. O arquivo <em>inteiro</em> foi copiado para o <code>UpperDir</code> (copy-up). O container novo, criado da mesma imagem, não tem a alteração, e ao remover o <code>cow</code> a camada gravável desaparece. (O <code>UpperDir</code> só existe com o storage driver clássico; com o containerd image store, use apenas o <code>diff</code>.)</p></div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Descubra o digest de <code>nginx:1.27</code>, as plataformas disponíveis e rode a imagem por digest. Explique por que o "ID" local difere do digest.</span></summary><div class="ans">
+  <pre><code class="sh">docker pull nginx:1.27
+docker image inspect -f '{{index .RepoDigests 0}}' nginx:1.27      # nginx@sha256:...
+docker image inspect -f '{{.Id}}' nginx:1.27                       # sha256 do CONFIG (outro número)
+docker buildx imagetools inspect nginx:1.27 | grep -E 'Digest|Platform'
+D=$(docker image inspect -f '{{index .RepoDigests 0}}' nginx:1.27)
+docker run --rm "$D" nginx -v</code></pre>
+  <p>O <code>RepoDigests</code> traz o digest do manifest/index no registry; o <code>Id</code> é o hash do config da imagem. São objetos diferentes, daí números diferentes. O <code>imagetools</code> lista uma linha <code>Platform</code> por arquitetura. Rodar pelo digest garante o conteúdo exato, mesmo que a tag <code>1.27</code> seja movida depois.</p></div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Meça o efeito do PID 1: compare o tempo e o código de saída de <code>docker stop</code> em um <code>sleep</code> sem e com <code>--init</code>, e repita com <code>-t 2</code>. Depois envie SIGTERM com <code>docker kill -s TERM</code>.</span></summary><div class="ans">
+  <pre><code class="sh">docker run -d --name a alpine sleep 300
+time docker stop a; docker inspect -f '{{.State.ExitCode}}' a             # ~10 s, 137
+docker run -d --name b alpine sleep 300
+time docker stop -t 2 b; docker inspect -f '{{.State.ExitCode}}' b        # ~2 s, 137
+docker run -d --init --name c alpine sleep 300
+time docker stop c; docker inspect -f '{{.State.ExitCode}}' c             # <1 s, 143
+docker run -d --name d alpine sleep 300
+docker kill -s TERM d; sleep 2; docker ps --filter name=d --format '{{.Names}} {{.Status}}'   # continua Up
+docker rm -f a b c d</code></pre>
+  <p>Sem handler, o <code>sleep</code> (PID 1) ignora o SIGTERM: o <code>stop</code> espera o prazo inteiro e termina com SIGKILL (137); <code>-t 2</code> só encurta a espera. Com <code>--init</code>, o tini repassa o sinal ao <code>sleep</code>, que morre pela ação padrão, e o tini sai com 143. O <code>kill -s TERM</code> direto no PID 1 sem handler não tem efeito: o container segue <code>Up</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Reproduza os códigos de saída 3, 125, 126, 127 e 137 (com <code>OOMKilled</code>), e depois observe uma política <code>on-failure:3</code>.</span></summary><div class="ans">
+  <pre><code class="sh">docker run --rm alpine sh -c 'exit 3'; echo $?                 # 3  (código da aplicação)
+docker run --rm --opcao-inexistente alpine; echo $?           # 125 (erro do docker run)
+docker run --rm alpine /etc/passwd; echo $?                   # 126 (não executável)
+docker run --rm alpine comando-que-nao-existe; echo $?        # 127 (não encontrado)
+
+docker run --name oom --memory 20m alpine sh -c 'tail /dev/zero'; echo $?   # 137
+docker inspect -f 'exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' oom   # oom=true
+docker rm oom
+
+docker run -d --name falha --restart on-failure:3 alpine sh -c 'echo tentei; exit 1'
+sleep 15; docker inspect -f '{{.State.Status}} exit={{.State.ExitCode}} restarts={{.RestartCount}}' falha
+docker logs falha | wc -l ; docker rm -f falha</code></pre>
+  <p>O <code>tail /dev/zero</code> lê zeros sem quebra de linha e acumula em memória até o cgroup de 20 MB estourar: o OOM killer envia SIGKILL e o container sai com 137 e <code>OOMKilled=true</code>. O container da política termina em <code>exited exit=1 restarts=3</code> (quatro execuções no total, com intervalos crescentes: <code>logs</code> mostra "tentei" quatro vezes).</p></div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Descubra o ENTRYPOINT e o CMD de <code>nginx:1.27</code> e de <code>postgres:17</code>, execute outro programa dentro da imagem do nginx e passe um argumento ao entrypoint do postgres.</span></summary><div class="ans">
+  <pre><code class="sh">for i in nginx:1.27 postgres:17; do
+  docker image inspect -f "$i  ENTRYPOINT={{json .Config.Entrypoint}} CMD={{json .Config.Cmd}} STOPSIGNAL={{.Config.StopSignal}}" $i
+done
+docker run --rm --entrypoint nginx nginx:1.27 -v        # versão do nginx, sem subir o servidor
+docker run --rm --entrypoint "" nginx:1.27 cat /etc/os-release
+docker run --rm -d --name pg -e POSTGRES_PASSWORD=lab postgres:17 postgres -c max_connections=50
+sleep 6; docker exec pg psql -U postgres -tc 'show max_connections;'
+docker stop pg</code></pre>
+  <p>Ambas usam um script de entrypoint (<code>/docker-entrypoint.sh</code>) e um CMD que roda o servidor; o nginx declara <code>SIGQUIT</code> e o postgres <code>SIGINT</code> como sinal de parada. O argumento <code>postgres -c max_connections=50</code> substitui o CMD e o script o repassa ao servidor (<code>show</code> retorna 50). Com <code>--rm -d</code>, o <code>stop</code> final já remove o container.</p></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <div class="note"><b>Cenário 1: o disco do servidor de homologação chegou a 95%</b>
+    <p>O alerta dispara em <code>/var/lib/docker</code> e os deploys começam a falhar com "no space left on device".</p>
+    <p><strong>O que fazer:</strong> <code>docker system df -v</code> para achar a categoria; se são <strong>logs</strong>, olhe <code>*-json.log</code> dos containers e configure rotação (<code>daemon.json</code>) e recrie os serviços; se são <strong>imagens</strong>, <code>image prune -a --filter until=...</code>; se for <strong>cache de build</strong>, <code>builder prune</code>; se forem <strong>volumes</strong>, veja <code>volume ls</code> e de quem são antes de apagar qualquer coisa. Não rode <code>system prune --volumes</code> às cegas. Depois, deixe uma rotina de limpeza e um alerta em 80%, e registre o aprendizado.</p></div>
+  <div class="note"><b>Cenário 2: o serviço "está Up" mas ninguém consegue usá-lo</b>
+    <p>O <code>docker ps</code> mostra <code>Up 4 seconds</code>, e na próxima olhada <code>Up 2 seconds</code>. Clientes recebem erro.</p>
+    <p><strong>O que fazer:</strong> o tempo de "Up" nunca passa de alguns segundos: loop de reinício. <code>docker inspect -f '{{.RestartCount}} {{.State.ExitCode}} {{.State.OOMKilled}}' api</code> e <code>docker logs --tail 50 api</code>. Se o código é 1, o log dirá a causa (variável faltando, banco inacessível); se 137 com <code>OOMKilled=true</code>, o limite de memória é baixo ou há vazamento; se 127/126, a imagem ou o entrypoint estão errados. Corrija a causa em vez de depender do <code>always</code>; crie alerta para contagem de restarts.</p></div>
+  <div class="note"><b>Cenário 3: cada deploy derruba requisições e leva 10 segundos por container</b>
+    <p>No deploy, usuários veem 502 por alguns segundos e a troca de cada container demora exatamente 10 s.</p>
+    <p><strong>O que fazer:</strong> é o padrão "SIGTERM ignorado": o <code>stop</code> espera o prazo e mata (137), cortando requisições em voo. Verifique o <code>CMD</code> (forma shell? <code>npm start</code>?), mude para a forma exec ou <code>exec</code> no script, implemente o <em>graceful shutdown</em> no app, use <code>--init</code> se houver subprocessos e ajuste o prazo (<code>--stop-timeout</code> / <code>stop_grace_period</code>) para o tempo real de drenagem. No balanceador, tire a instância do rodízio antes de enviar o sinal. Teste com carga e SIGTERM.</p></div>
+  <div class="note"><b>Cenário 4: a nova versão quebrou e ninguém sabe voltar</b>
+    <p>Produção roda <code>minha-api:latest</code>. Após um deploy, o sistema falha. Querem "voltar para a anterior", mas a tag foi sobrescrita.</p>
+    <p><strong>O que fazer:</strong> no curto prazo, localize a imagem antiga: <code>docker image ls --digests</code> no servidor, imagens dangling ainda no host (<code>docker image ls -a</code>) ou o histórico do registry/CI; recrie o container com o digest anterior. Em seguida, mude o processo: tags de versão imutáveis (<code>1.4.2</code> ou SHA do commit), deploy registrando o digest, e o rollback passa a ser "implantar a tag anterior". Proíba sobrescrever tags no registry e defina retenção das últimas N versões.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Camada (layer)</dt><dd>Tar com as mudanças de arquivos de uma instrução do build; imutável e compartilhada.</dd></div>
+    <div><dt>overlay2</dt><dd>Storage driver baseado em OverlayFS: empilha lowerdirs somente leitura e um upperdir gravável.</dd></div>
+    <div><dt>Copy-on-write</dt><dd>Copia o arquivo da camada inferior para a gravável apenas ao primeiro write.</dd></div>
+    <div><dt>Manifest</dt><dd>JSON que lista o config e as camadas de uma imagem para uma plataforma.</dd></div>
+    <div><dt>Index (manifest list)</dt><dd>Lista de manifests, um por plataforma; faz um mesmo nome servir amd64 e arm64.</dd></div>
+    <div><dt>Digest</dt><dd>Hash sha256 do conteúdo; identifica manifest ou blob de forma imutável.</dd></div>
+    <div><dt>Tag</dt><dd>Ponteiro nomeado e mutável para uma imagem (<code>1.4.2</code>, <code>latest</code>).</dd></div>
+    <div><dt>Dangling</dt><dd>Imagem sem tag (<code>&lt;none&gt;</code>) e sem dependentes; alvo do <code>image prune</code>.</dd></div>
+    <div><dt>Whiteout</dt><dd>Marcador numa camada que "apaga" um arquivo de camada inferior sem remover os bytes.</dd></div>
+    <div><dt>PID 1</dt><dd>Processo principal do container; ignora sinais sem handler e deve recolher órfãos.</dd></div>
+    <div><dt>Zumbi</dt><dd>Processo terminado cujo pai não chamou <code>wait()</code>; aparece como <code>&lt;defunct&gt;</code>.</dd></div>
+    <div><dt>tini / --init</dt><dd>Init mínimo que repassa sinais e recolhe zumbis, usado como PID 1 com <code>--init</code>.</dd></div>
+    <div><dt>SIGTERM / SIGKILL</dt><dd>Pedido de término (tratável) e término forçado (intratável) enviados por <code>docker stop</code>.</dd></div>
+    <div><dt>Graceful shutdown</dt><dd>Encerrar concluindo o trabalho em andamento ao receber SIGTERM.</dd></div>
+    <div><dt>Restart policy</dt><dd>Regra do Docker para reiniciar um container que sai: <code>no</code>, <code>on-failure</code>, <code>always</code>, <code>unless-stopped</code>.</dd></div>
+    <div><dt>ENTRYPOINT / CMD</dt><dd>Executável e argumentos padrão da imagem; combinados com o que o <code>docker run</code> informa.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Responda em voz alta antes de abrir. Boa resposta: definição, mecanismo e uma consequência prática.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre imagem e container?</span></summary><div class="ans">
+  <p>A imagem é um modelo imutável em camadas, com metadados. O container é uma instância dela com uma camada gravável própria e configuração de execução. Uma imagem gera vários containers; remover o container descarta a camada gravável, não a imagem.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>O que são camadas e como o overlay2 as usa?</span></summary><div class="ans">
+  <p>Cada instrução que altera arquivos gera uma camada somente leitura. O overlay2 as monta como lowerdirs, acrescenta um upperdir gravável e apresenta a união como a raiz do container. As camadas são compartilhadas entre imagens e containers e cacheadas no build e no pull.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Explique copy-on-write no Docker.</span></summary><div class="ans">
+  <p>Ao alterar um arquivo que vem de uma camada da imagem, o overlay2 copia o arquivo inteiro para o upperdir do container e altera a cópia; a camada original permanece intacta. Escritas pesadas em arquivos grandes ficam caras, por isso bancos e dados volumosos usam volumes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Por que apagar um arquivo em um RUN posterior não reduz o tamanho da imagem?</span></summary><div class="ans">
+  <p>Camadas são imutáveis e aditivas: o <code>rm</code> grava um whiteout na camada nova, mas a camada que criou o arquivo continua com os bytes. A solução é criar e apagar na mesma instrução ou usar multi-stage, copiando só o necessário para a imagem final.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Tag x digest? Por que evitar <code>latest</code> em produção?</span></summary><div class="ans">
+  <p>Tag é um ponteiro mutável; digest é o sha256 do manifest e identifica o conteúdo exato. <code>latest</code> é só a tag padrão, não "a mais recente": não diz qual versão roda, pode mudar sem aviso e inviabiliza rollback confiável. Use tag de versão ou SHA do commit e registre o digest do que foi implantado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>O que são manifest, config e digest?</span></summary><div class="ans">
+  <p>O manifest é o JSON que aponta, por digest, para o config e para as camadas. O config traz os metadados (CMD, ENV, usuário, histórico, diff_ids). Digest é o sha256 do conteúdo. O ID local da imagem é o hash do config; o digest do registry é o do manifest, por isso são diferentes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Como funcionam as imagens multi-arquitetura?</span></summary><div class="ans">
+  <p>A tag aponta para um index (manifest list) com um manifest por plataforma. O runtime escolhe a variante da sua CPU e baixa só as camadas dela. Se não existir a plataforma, há aviso ou <code>exec format error</code>. Em Apple Silicon x servidor amd64, constrói-se com <code>buildx --platform</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>O que são imagens dangling e como limpar o disco com segurança?</span></summary><div class="ans">
+  <p>Dangling são imagens sem tag e sem dependentes. <code>docker image prune</code> as remove; <code>-a</code> remove também as sem container. Para disco cheio: <code>docker system df -v</code> para ver imagens, cache, volumes e logs; <code>prune</code> com <code>--filter until</code>; cuidado com volumes (apagam dados); rotação de logs no daemon.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Quais são os estados de um container e as transições?</span></summary><div class="ans">
+  <p>created, running, paused, restarting e exited (mais removing/dead, raros). <code>create</code> leva a created; <code>start</code> a running; <code>pause</code>/<code>unpause</code> congelam e retomam por cgroup freezer; o fim do processo, <code>stop</code> ou <code>kill</code> levam a exited; a política de restart passa por restarting; <code>rm</code> remove. O container vive enquanto o PID 1 vive.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span><code>run</code> x <code>start</code> x <code>exec</code>?</span></summary><div class="ans">
+  <p><code>run</code> = <code>create</code> + <code>start</code> de um container novo. <code>start</code> reinicia um existente, com a mesma camada gravável. <code>exec</code> executa um comando adicional dentro de um container em execução e termina junto com ele se o principal morrer.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>O que faz <code>docker stop</code> e como ele difere de <code>kill</code>?</span></summary><div class="ans">
+  <p><code>stop</code> envia SIGTERM (ou o STOPSIGNAL da imagem), espera o prazo (10 s, <code>-t</code>) e envia SIGKILL. <code>kill</code> envia SIGKILL na hora ou outro sinal com <code>-s</code>. Para o <code>stop</code> ser limpo, a aplicação precisa tratar SIGTERM e ser o PID 1 (forma exec) ou ter um init que repasse o sinal.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Por que o PID 1 é especial e para que serve <code>--init</code>?</span></summary><div class="ans">
+  <p>O PID 1 não tem ação padrão para sinais: sem handler, SIGTERM é ignorado. Também precisa recolher processos órfãos; senão viram zumbis. <code>--init</code> coloca o tini como PID 1: ele repassa sinais ao filho e recolhe zumbis. Em scripts de entrypoint, <code>exec "$@"</code> entrega o PID 1 à aplicação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>O que significam os exit codes 0, 1, 125, 126, 127, 137, 139 e 143?</span></summary><div class="ans">
+  <p>0 sucesso; 1 erro da aplicação; 125 falha do próprio <code>docker run</code> (flag, porta ocupada); 126 comando sem permissão de execução; 127 comando não encontrado; 137 SIGKILL (OOM, <code>kill</code> ou stop sem tratar SIGTERM); 139 SIGSEGV; 143 SIGTERM tratado. Acima de 128, é 128 mais o número do sinal. Confirmo OOM com <code>docker inspect</code> e <code>OOMKilled</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Quais políticas de restart existem e qual você escolhe?</span></summary><div class="ans">
+  <p><code>no</code>, <code>on-failure[:N]</code>, <code>always</code> e <code>unless-stopped</code>. Em host único uso <code>unless-stopped</code> para serviços (respeita parada manual após reboot) e <code>on-failure</code> para jobs. A política só vale após o container subir por alguns segundos, e não substitui alerta, healthcheck nem orquestrador: reiniciar não conserta causa persistente.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>ENTRYPOINT x CMD em tempo de execução? Forma exec x shell?</span></summary><div class="ans">
+  <p>ENTRYPOINT é o executável; CMD, os argumentos padrão. Argumentos do <code>docker run</code> substituem o CMD; <code>--entrypoint</code> troca o ENTRYPOINT e zera o CMD. Na forma exec o programa é o PID 1 e recebe sinais; na forma shell (<code>/bin/sh -c</code>) o shell fica como PID 1 e, em ENTRYPOINT, o CMD e os argumentos são ignorados. Entrypoints de preparação terminam com <code>exec "$@"</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>O container reinicia sozinho em loop. Como você investiga?</span></summary><div class="ans">
+  <p>Vejo <code>docker ps</code> (Restarting ou Up de poucos segundos), depois <code>docker inspect -f '{{.State.ExitCode}} {{.State.OOMKilled}} {{.RestartCount}}'</code> e <code>docker logs --tail</code>. O código orienta: 1 aplicação/configuração, 137 com OOM é memória, 127/126 é imagem ou entrypoint, 0 é processo principal que termina. Reproduzo com <code>docker run --rm -it --entrypoint sh</code> se faltar contexto. Corrijo a causa e deixo um alerta de restarts.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Como você definiria, para uma equipe, a política de imagens e de limpeza de containers?</span></summary><div class="ans">
+  <p>Imagens identificadas por versão imutável ou SHA do commit, <code>latest</code> proibido em produção, digest registrado em cada deploy, retenção definida no registry e imagens construídas uma vez e promovidas entre ambientes. No host: rotação de logs no daemon, limites de memória e CPU, rotina de limpeza com filtros de idade para runners e desenvolvimento, e nenhuma limpeza de volumes em produção sem backup e revisão. Alertas de disco, de reinícios e de OOM completam a política.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

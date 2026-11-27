@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 11: Escala e manutenção</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 11 de 12 · Escala e manutenção</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html" aria-current="page"><span class="n">11</span>Escala e manutenção</a></li>
+    <li class="sub"><ol>
+      <li><a href="#particionamento"><span class="n">1</span>Particionamento: dividir para consultar e manter</a></li>
+      <li><a href="#part-indices-limites"><span class="n">2</span>Índices em tabelas particionadas, licença e quando não particionar</a></li>
+      <li><a href="#arquivamento"><span class="n">3</span>Arquivamento e expurgo: partição em vez de DELETE em massa</a></li>
+      <li><a href="#views-mv"><span class="n">4</span>Views e views materializadas</a></li>
+      <li><a href="#resumo-lote"><span class="n">5</span>Tabelas de resumo e operações em lote</a></li>
+      <li><a href="#hints-planos"><span class="n">6</span>Hints e estabilidade de planos</a></li>
+      <li><a href="#manutencao"><span class="n">7</span>Manutenção: VACUUM, estatísticas, bloat e reorganização</a></li>
+      <li><a href="#conexoes-replicas"><span class="n">8</span>Pool de conexões, réplicas de leitura e cache</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 11 · <span class="lvl l3">Avançado</span></div>
+  <h1>Escala e manutenção</h1>
+  <p class="lede">Quando <code>atendimento</code> passa de milhões para centenas de milhões de linhas, índice e SQL bom já não bastam: é preciso dividir, arquivar, pré-calcular, carregar em lote e manter o banco saudável. Este módulo cobre as ferramentas de escala e o que cada uma custa em licença, em complexidade e em risco.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Escolher entre particionamento por faixa, lista e hash, explicar o partition pruning e dizer quando <em>não</em> particionar.</li>
+    <li>Comparar índices locais e globais no Oracle, as restrições do particionamento declarativo do PostgreSQL e o custo da opção Partitioning.</li>
+    <li>Arquivar e expurgar dados antigos por partição, não por DELETE em massa, respeitando prontuário e LGPD.</li>
+    <li>Escolher entre view, view materializada e tabela de resumo, e operar refresh completo, rápido e CONCURRENTLY.</li>
+    <li>Fazer cargas e atualizações grandes em lote sem derrubar o banco, usar hints e planos estáveis com consciência do custo.</li>
+    <li>Cuidar da manutenção (VACUUM, estatísticas, bloat, reorganização), dimensionar pool de conexões e decidir quando réplica ou cache resolvem.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="particionamento">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Particionamento: dividir para consultar e manter</h2>
+  <p>Particionar é dividir <em>uma tabela lógica</em> em vários segmentos físicos menores (partições), escolhidos por uma <strong>chave de partição</strong>. Para o SQL da aplicação nada muda: continua existindo a tabela <code>atendimento</code>. O banco decide em qual pedaço cada linha mora e quais pedaços uma consulta precisa visitar.</p>
+  <p>Há dois ganhos reais, e só dois. Um é de <strong>consulta</strong>: o <em>partition pruning</em> (poda), em que o banco ignora as partições que o filtro exclui. O outro é de <strong>manutenção</strong>: operações como carga, arquivamento, expurgo, reorganização e coleta de estatísticas passam a atuar numa partição por vez, em vez da tabela inteira. Quase nunca é ganho de velocidade em consultas que já usam um bom índice.</p>
+
+  <h3>Os métodos de particionamento</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Método</th><th>Como decide</th><th>Quando usar</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Range</strong> (faixa)</td><td>Intervalos contíguos da chave</td><td>Dados com tempo: o caso mais comum. Permite arquivar e expurgar por período.</td><td><code>dt_atendimento</code> por mês</td></tr>
+      <tr><td><strong>List</strong> (lista)</td><td>Valores explícitos da chave</td><td>Categorias estáveis e poucas; separar clientes, unidades ou regiões.</td><td><code>uf</code>, ou <code>id_unidade</code></td></tr>
+      <tr><td><strong>Hash</strong></td><td>Função de hash da chave, N partições</td><td>Espalhar carga de forma uniforme (contenção em blocos quentes, paralelismo). Não ajuda a arquivar nem a podar por faixa.</td><td><code>id_paciente</code> em 16 partições</td></tr>
+      <tr><td><strong>Composto</strong></td><td>Dois níveis (ex.: range e depois hash)</td><td>Tabelas enormes que pedem poda por tempo e espalhamento. Oracle suporta; no PostgreSQL é particionamento multinível (partição de partição).</td><td>mês, depois hash de <code>id_paciente</code></td></tr>
+    </tbody></table></div>
+
+  <h3>Criando uma tabela particionada por mês</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Exige a opção paga Partitioning (Enterprise Edition)
+CREATE TABLE atendimento (
+  id_atendimento  NUMBER        NOT NULL,
+  id_paciente     NUMBER        NOT NULL,
+  id_medico       NUMBER        NOT NULL,
+  id_convenio     NUMBER,
+  id_setor        NUMBER        NOT NULL,
+  dt_atendimento  TIMESTAMP     NOT NULL,
+  tipo            VARCHAR2(10)  NOT NULL,
+  status          VARCHAR2(10)  NOT NULL,
+  valor           NUMBER(10,2)
+)
+PARTITION BY RANGE (dt_atendimento)
+INTERVAL (NUMTOYMINTERVAL(1, 'MONTH'))      -- cria partições novas sozinho
+( PARTITION p_ate_2025 VALUES LESS THAN (TIMESTAMP '2026-01-01 00:00:00') );
+
+-- Consultar uma partição pelo nome (útil em manutenção):
+SELECT COUNT(*) FROM atendimento PARTITION FOR (TIMESTAMP '2026-10-15 00:00:00');</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Particionamento declarativo: PostgreSQL 10+ (range e list); hash a partir do 11
+CREATE TABLE atendimento (
+  id_atendimento  bigint        NOT NULL,
+  id_paciente     bigint        NOT NULL,
+  id_medico       bigint        NOT NULL,
+  id_convenio     bigint,
+  id_setor        bigint        NOT NULL,
+  dt_atendimento  timestamp     NOT NULL,
+  tipo            varchar(10)   NOT NULL,
+  status          varchar(10)   NOT NULL,
+  valor           numeric(10,2),
+  PRIMARY KEY (id_atendimento, dt_atendimento)   -- a chave de partição entra na PK
+) PARTITION BY RANGE (dt_atendimento);
+
+CREATE TABLE atendimento_2026_10 PARTITION OF atendimento
+  FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');   -- início inclusivo, fim exclusivo
+CREATE TABLE atendimento_2026_11 PARTITION OF atendimento
+  FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+CREATE TABLE atendimento_padrao PARTITION OF atendimento DEFAULT;  -- default: PostgreSQL 11+</code></pre>
+  </div>
+  <p>Uma diferença operacional grande: no Oracle, o <code>INTERVAL</code> cria a partição do mês quando chega a primeira linha. No PostgreSQL, <strong>você precisa criar as partições antes</strong> (um job, ou a extensão <code>pg_partman</code>); sem partição nem <code>DEFAULT</code>, o INSERT falha com "no partition of relation found for row". Esquecer de criar a partição do mês seguinte é um clássico incidente de virada de mês.</p>
+
+  <h3>Partition pruning: o mecanismo</h3>
+  <p>Quando o filtro é sobre a chave de partição, o otimizador compara o filtro com os limites de cada partição e descarta as que não podem conter linhas relevantes. Descartar significa que o banco nem abre os segmentos: menos leituras, menos locks, menos estatísticas a consultar.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Uma consulta com filtro de outubro lê somente a partição de outubro entre seis partições mensais">
+      <defs><marker id="ah-prune" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Consulta</text>
+      <text class="ttl" x="300" y="22">atendimento, particionada por mês</text>
+      <rect class="box-w" x="20" y="95" width="210" height="70" rx="5"/>
+      <text x="125" y="122" text-anchor="middle">WHERE dt_atendimento</text>
+      <text x="125" y="142" text-anchor="middle">&gt;= 01/out AND &lt; 01/nov</text>
+      <rect class="box" x="300" y="40" width="200" height="28" rx="4"/><text x="312" y="59">p_2026_07</text>
+      <rect class="box" x="300" y="74" width="200" height="28" rx="4"/><text x="312" y="93">p_2026_08</text>
+      <rect class="box" x="300" y="108" width="200" height="28" rx="4"/><text x="312" y="127">p_2026_09</text>
+      <rect class="box-a" x="300" y="142" width="200" height="28" rx="4"/><text x="312" y="161">p_2026_10</text>
+      <rect class="box" x="300" y="176" width="200" height="28" rx="4"/><text x="312" y="195">p_2026_11</text>
+      <rect class="box" x="300" y="210" width="200" height="28" rx="4"/><text x="312" y="229">p_2026_12</text>
+      <line class="ln-a" x1="230" y1="130" x2="298" y2="156" marker-end="url(#ah-prune)"/>
+      <text class="lbl" x="515" y="59">ignorada (pruned)</text>
+      <text class="lbl" x="515" y="93">ignorada (pruned)</text>
+      <text class="lbl" x="515" y="127">ignorada (pruned)</text>
+      <text class="lbl" x="515" y="161">única partição lida</text>
+      <text class="lbl" x="515" y="195">ignorada (pruned)</text>
+      <text class="lbl" x="515" y="229">ignorada (pruned)</text>
+      <text class="lbl" x="20" y="262">Sem filtro na chave (ex.: WHERE id_paciente = 7), as 6 partições seriam visitadas.</text>
+    </svg>
+    <figcaption>O filtro sobre a chave de partição, sem função aplicada na coluna, reduz a leitura a uma partição.</figcaption>
+  </figure>
+  <p>No plano de execução, a poda aparece de formas diferentes:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="text">SELECT COUNT(*) FROM atendimento
+WHERE dt_atendimento &gt;= TIMESTAMP '2026-10-01 00:00:00'
+  AND dt_atendimento &lt;  TIMESTAMP '2026-11-01 00:00:00';
+
+| Id | Operation                | Name        | Pstart | Pstop |
+|  0 | SELECT STATEMENT         |             |        |       |
+|  1 |  SORT AGGREGATE          |             |        |       |
+|  2 |   PARTITION RANGE SINGLE |             |     10 |    10 |
+|  3 |    TABLE ACCESS FULL     | ATENDIMENTO |     10 |    10 |
+-- Pstart/Pstop = números das partições lidas. KEY = decidido na execução (binds).
+-- ALL = nenhuma poda: o banco visita todas.</code></pre>
+<pre data-label="PostgreSQL"><code class="text">EXPLAIN SELECT count(*) FROM atendimento
+WHERE dt_atendimento &gt;= '2026-10-01' AND dt_atendimento &lt; '2026-11-01';
+
+Aggregate
+  -&gt;  Seq Scan on atendimento_2026_10 atendimento
+        Filter: ((dt_atendimento &gt;= '2026-10-01') AND (dt_atendimento &lt; '2026-11-01'))
+-- Só a partição de outubro aparece no plano (poda na fase de planejamento).
+-- Com parâmetros (prepared statements), a poda pode acontecer na execução (PostgreSQL 11+):
+-- o plano lista todas e mostra "Subplans Removed: N" no nó Append.</code></pre>
+  </div>
+  <div class="note trap"><b>Armadilha comum</b><p>Perder a poda com um filtro "esperto". <code>WHERE TO_CHAR(dt_atendimento,'YYYY-MM') = '2026-10'</code> ou <code>date_trunc('month', dt_atendimento) = ...</code> aplicam função à coluna: o banco não consegue compará-la com os limites e visita tudo. Escreva sempre o intervalo aberto à direita (<code>&gt;= início AND &lt; início do mês seguinte</code>), o mesmo padrão sargável do módulo de índices. Confira <code>Pstart/Pstop</code> (Oracle) ou os nomes das partições no plano (PG) depois de escrever a consulta.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Para que serve particionar?" Resposta curta: poda em consultas que filtram pela chave, e manutenção barata (arquivar, expurgar, carregar e reorganizar por partição). Cite logo que <em>não</em> é um acelerador universal, e dê o contra-exemplo: uma consulta sem filtro na chave visita todas as partições e pode ficar mais lenta que numa tabela única.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Particionamento é decisão de arquitetura, não de otimização pontual: muda DDL, rotinas de virada de mês, estratégia de índices, backup e carga. Peça do time a consulta-alvo, a chave proposta, a medição antes/depois e o plano de operação (quem cria as partições, quem arquiva, o que alerta se faltar partição). Sem isso, vira complexidade sem ganho.</p></div>
+</section>
+
+<section class="chap" id="part-indices-limites">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l3">Avançado</span></div>
+  <h2>Índices em tabelas particionadas, licença e quando não particionar</h2>
+  <h3>Índices locais e globais no Oracle</h3>
+  <p>Num índice <strong>local</strong>, cada partição da tabela tem a sua partição de índice, alinhada 1 para 1. Num índice <strong>global</strong>, o índice é uma estrutura única (ou particionada de outro jeito) que aponta para linhas em qualquer partição da tabela.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Local</th><th>Global</th></tr></thead>
+    <tbody>
+      <tr><td>Manutenção de partição</td><td>Trivial: <code>DROP</code>/<code>EXCHANGE</code> de partição leva a partição de índice junto, sem invalidar nada.</td><td>Ao dropar partição, as entradas dela no índice ficam órfãs. É preciso <code>UPDATE GLOBAL INDEXES</code> (ou em versões recentes o banco faz manutenção assíncrona), que custa e pode demorar.</td></tr>
+      <tr><td>Unicidade</td><td>Só garante unicidade <em>dentro</em> da partição, a menos que a chave de partição esteja nas colunas do índice.</td><td>Garante unicidade global. Necessário para PK/UNIQUE que não contém a chave de partição.</td></tr>
+      <tr><td>Consulta por chave não particionada</td><td>Sem a chave de partição no filtro, o banco precisa buscar em <em>cada</em> partição de índice (N buscas).</td><td>Uma única busca no índice. Melhor para consultas de acesso pontual (<code>WHERE id_atendimento = :id</code>).</td></tr>
+      <tr><td>Tamanho/contenção</td><td>Estruturas pequenas, menor contenção.</td><td>Estrutura grande; pode ser a parte lenta das cargas.</td></tr>
+    </tbody></table></div>
+<pre><code class="sql">-- Índice local: alinhado às partições (padrão para tabelas de fatos por data)
+CREATE INDEX ix_atend_paciente ON atendimento (id_paciente, dt_atendimento) LOCAL;
+
+-- PK sem a chave de partição precisa de índice global
+CREATE UNIQUE INDEX pk_atendimento ON atendimento (id_atendimento) GLOBAL;
+ALTER TABLE atendimento ADD CONSTRAINT pk_atendimento
+  PRIMARY KEY (id_atendimento) USING INDEX pk_atendimento;
+
+-- Dropar partição mantendo os índices globais utilizáveis (custa mais)
+ALTER TABLE atendimento DROP PARTITION p_ate_2025 UPDATE GLOBAL INDEXES;</code></pre>
+  <p>É o dilema clássico: <strong>PK global</strong> deixa o acesso por id rápido, mas torna o expurgo mais caro. Uma saída frequente é aceitar a PK composta com a chave de partição (<code>id_atendimento, dt_atendimento</code>) num índice local, e garantir que a aplicação sempre informa a data junto com o id.</p>
+
+  <h3>PostgreSQL: não há índice global</h3>
+  <ul>
+    <li>Em PostgreSQL <strong>não existem índices globais</strong>. Um índice criado na tabela-mãe (PostgreSQL 11+) vira um índice por partição, mantido automaticamente; novas partições recebem o índice.</li>
+    <li><strong>PK e UNIQUE precisam incluir todas as colunas da chave de partição.</strong> Por isso a PK do exemplo é <code>(id_atendimento, dt_atendimento)</code>. Consequência: o banco não garante que <code>id_atendimento</code> sozinho seja único entre partições. A garantia vem de uma sequência e da disciplina da aplicação.</li>
+    <li>Chave estrangeira <em>apontando para</em> uma tabela particionada exige PostgreSQL 12+, e ela referencia a PK composta. Por isso <code>atendimento_item</code> costuma guardar também a data (desnormalização consciente) ou não declarar FK para a tabela particionada.</li>
+    <li>Criar índice em tabela grande particionada: <code>CREATE INDEX ... ON ONLY atendimento</code> e depois <code>CREATE INDEX CONCURRENTLY</code> partição por partição e <code>ATTACH PARTITION</code> do índice. Evita bloquear escrita. Um <code>CREATE INDEX CONCURRENTLY</code> direto na tabela-mãe particionada não é suportado.</li>
+  </ul>
+<pre><code class="sql">-- PostgreSQL: índice sem bloquear escrita, partição por partição
+CREATE INDEX ix_atend_pac ON ONLY atendimento (id_paciente, dt_atendimento);   -- índice "inválido" até anexar todos
+CREATE INDEX CONCURRENTLY ix_atend_pac_2026_10 ON atendimento_2026_10 (id_paciente, dt_atendimento);
+ALTER INDEX ix_atend_pac ATTACH PARTITION ix_atend_pac_2026_10;
+-- repetir para cada partição; ao anexar o último, o índice da tabela-mãe fica válido</code></pre>
+
+  <h3>O custo do particionamento no Oracle</h3>
+  <p>Partitioning é uma <strong>opção paga</strong> do Oracle Database Enterprise Edition, licenciada à parte (por processador ou usuário nomeado, como as demais opções). A Standard Edition 2 não a inclui. Duas consequências práticas:</p>
+  <ul>
+    <li>O custo entra na conta de arquitetura: às vezes a licença é mais cara que reprojetar (arquivar por tabelas de período, ou mover histórico para outro banco).</li>
+    <li>Risco de auditoria: usar o recurso sem licença é passivo contratual. A view <code>DBA_FEATURE_USAGE_STATISTICS</code> registra o uso de recursos licenciáveis, e a Oracle consegue ver isso numa auditoria. Quem cria a primeira tabela particionada num banco sem a opção cria o problema sem perceber.</li>
+  </ul>
+  <p>No PostgreSQL o particionamento declarativo é parte do núcleo, sem custo de licença. O custo é só de complexidade operacional.</p>
+
+  <h3>Quando <em>não</em> particionar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Situação</th><th>Por que particionar não ajuda</th><th>Alternativa</th></tr></thead>
+    <tbody>
+      <tr><td>Tabela pequena (poucos GB, milhões de linhas)</td><td>Índice bem escolhido já resolve; o custo operacional não compensa.</td><td>Índice, SQL melhor, estatísticas.</td></tr>
+      <tr><td>Consultas não filtram pela chave</td><td>Cada consulta visita todas as partições; planos ficam maiores e mais lentos.</td><td>Escolher outra chave, ou nenhum particionamento.</td></tr>
+      <tr><td>Muitas partições (milhares)</td><td>Planejamento fica lento, o catálogo incha e a memória do planejador também. No PG o planejamento escala mal com muitas partições.</td><td>Partições maiores (mês no lugar de dia); retenção que dropa as antigas.</td></tr>
+      <tr><td>Acesso pontual por id sem a data</td><td>No PG, o id sozinho não tem índice único global; no Oracle, o índice local busca em todas as partições.</td><td>Índice global (Oracle); embutir a data no identificador, ou manter tabela de lookup.</td></tr>
+      <tr><td>O problema real é lock ou SQL ruim</td><td>Particionar não corrige.</td><td>Diagnóstico (módulo 12).</td></tr>
+    </tbody></table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Particione quando <strong>(1)</strong> a tabela é grande e cresce com o tempo, <strong>(2)</strong> as consultas quentes filtram pela chave escolhida e <strong>(3)</strong> você precisa arquivar ou expurgar por período. Falta uma das três? Pense duas vezes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Índice local ou global?" Local para tabelas de fatos com manutenção por partição (drop sem invalidar nada); global quando a unicidade ou o acesso pontual sem a chave importam mais que a manutenção. Mostrar que você conhece o <em>trade-off</em>, e que no PostgreSQL só existe o equivalente do local, é o que a banca procura.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Antes de aprovar particionamento em Oracle, pergunte ao DBA e ao jurídico/compras: a opção Partitioning está licenciada? Em caso de dúvida, pare e confirme. E antes de qualquer particionamento, peça a lista de tabelas candidatas por tamanho e crescimento mensal: raramente são mais que três ou quatro.</p></div>
+</section>
+
+<section class="chap" id="arquivamento">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Arquivamento e expurgo: partição em vez de DELETE em massa</h2>
+  <p>Todo dado tem ciclo de vida. Um atendimento de 2012 raramente é consultado na tela do dia a dia, mas segue ocupando espaço, backup, índice e estatística, e deixa as consultas mais lentas. Há três perguntas distintas: <strong>onde</strong> o dado mora (quente, morno, frio), <strong>quando</strong> sai do banco operacional (arquivar) e <strong>quando</strong> é eliminado de vez (expurgar).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 190" role="img" aria-label="Ciclo de vida do dado em quatro estágios: quente, morno, frio e expurgo">
+      <defs><marker id="ah-ciclo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="10" y="20" width="140" height="100" rx="6"/>
+      <text class="ttl" x="80" y="42" text-anchor="middle">Quente</text>
+      <text class="lbl" x="80" y="64" text-anchor="middle">últimos 2 anos</text>
+      <text class="lbl" x="80" y="82" text-anchor="middle">disco rápido</text>
+      <text class="lbl" x="80" y="100" text-anchor="middle">todos os índices</text>
+      <rect class="box" x="180" y="20" width="140" height="100" rx="6"/>
+      <text class="ttl" x="250" y="42" text-anchor="middle">Morno</text>
+      <text class="lbl" x="250" y="64" text-anchor="middle">2 a 5 anos</text>
+      <text class="lbl" x="250" y="82" text-anchor="middle">disco mais barato</text>
+      <text class="lbl" x="250" y="100" text-anchor="middle">poucos índices</text>
+      <rect class="box" x="350" y="20" width="140" height="100" rx="6"/>
+      <text class="ttl" x="420" y="42" text-anchor="middle">Frio / arquivo</text>
+      <text class="lbl" x="420" y="64" text-anchor="middle">5 a 20 anos</text>
+      <text class="lbl" x="420" y="82" text-anchor="middle">comprimido/exportado</text>
+      <text class="lbl" x="420" y="100" text-anchor="middle">consulta sob demanda</text>
+      <rect class="box-b" x="520" y="20" width="140" height="100" rx="6"/>
+      <text class="ttl" x="590" y="42" text-anchor="middle">Expurgo</text>
+      <text class="lbl" x="590" y="64" text-anchor="middle">após o prazo legal</text>
+      <text class="lbl" x="590" y="82" text-anchor="middle">com aval do DPO</text>
+      <text class="lbl" x="590" y="100" text-anchor="middle">ata da eliminação</text>
+      <line class="ln" x1="150" y1="70" x2="178" y2="70" marker-end="url(#ah-ciclo)"/>
+      <line class="ln" x1="320" y1="70" x2="348" y2="70" marker-end="url(#ah-ciclo)"/>
+      <line class="ln-b" x1="490" y1="70" x2="518" y2="70" marker-end="url(#ah-ciclo)"/>
+      <text class="lbl" x="10" y="150">Cada seta é uma operação de metadados sobre uma partição (EXCHANGE, MOVE, DETACH, DROP),</text>
+      <text class="lbl" x="10" y="168">não uma cópia linha a linha. Prazos ilustrativos: o prazo real vem da lei e da política da empresa.</text>
+    </svg>
+    <figcaption>Os prazos são exemplos. O que importa é que cada passagem de estágio seja barata e auditável.</figcaption>
+  </figure>
+
+  <h3>Por que DELETE em massa é a pior opção</h3>
+  <ul>
+    <li><strong>Volume de log:</strong> cada linha apagada gera redo/WAL e undo. Apagar 50 milhões de linhas gera dezenas de GB de log e pode encher a área de archive ou o disco do WAL.</li>
+    <li><strong>Transação enorme:</strong> segura locks por muito tempo, atrasa o undo/vacuum de todos os outros e, se falhar, o rollback demora tanto quanto o DELETE.</li>
+    <li><strong>Espaço não volta:</strong> no Oracle os blocos ficam abaixo da high water mark; no PostgreSQL ficam como tuplas mortas até um VACUUM e, mesmo assim, o arquivo só encolhe com <code>VACUUM FULL</code>/reescrita. Ou seja: apagou, mas o disco continua cheio.</li>
+    <li><strong>Índices:</strong> cada linha apagada mexe em todos os índices.</li>
+    <li><strong>Estatísticas e planos:</strong> mudam bruscamente.</li>
+  </ul>
+
+  <h3>Expurgo por partição</h3>
+  <p>Se a tabela é particionada por mês e a retenção é por mês, expurgar é uma operação de dicionário (milissegundos), sem log de linhas:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Remove a partição inteira (instantâneo). UPDATE GLOBAL INDEXES mantém índices globais válidos.
+ALTER TABLE atendimento DROP PARTITION p_ate_2025 UPDATE GLOBAL INDEXES;
+
+-- Arquivar sem apagar: troca a partição por uma tabela vazia com a mesma estrutura
+CREATE TABLE atend_arq_2025 FOR EXCHANGE WITH TABLE atendimento;   -- 12.2+ (colunas compatíveis, sem índices)
+-- crie nela índices equivalentes aos locais antes da troca, para usar INCLUDING INDEXES
+ALTER TABLE atendimento EXCHANGE PARTITION p_ate_2025 WITH TABLE atend_arq_2025
+  INCLUDING INDEXES WITHOUT VALIDATION;
+-- agora atend_arq_2025 tem os dados e pode ser comprimida, exportada ou movida de tablespace.</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Solta a partição da tabela-mãe, sem apagar os dados
+ALTER TABLE atendimento DETACH PARTITION atendimento_2025_01;
+-- PostgreSQL 14+: sem bloqueio forte de leitores (veja a ressalva abaixo)
+ALTER TABLE atendimento DETACH PARTITION atendimento_2025_01 CONCURRENTLY;
+
+-- Agora é uma tabela comum: dá para exportar (COPY/pg_dump), mover de tablespace ou apagar
+ALTER TABLE atendimento_2025_01 SET TABLESPACE ts_arquivo;
+-- expurgo definitivo, depois de arquivar e aprovar:
+DROP TABLE atendimento_2025_01;</code></pre>
+  </div>
+  <p><strong>Ressalvas do PostgreSQL.</strong> <code>DETACH PARTITION ... CONCURRENTLY</code> não roda dentro de um bloco de transação e <em>não pode ser usado se a tabela tem partição <code>DEFAULT</code></em>. E uma partição <code>DEFAULT</code> que acumulou linhas impede criar a partição daquela faixa sem antes mover essas linhas (o banco precisa varrer o default). Use o default como rede de segurança com alerta, não como destino normal de dados.</p>
+  <p>O <code>EXCHANGE PARTITION</code> (Oracle) também é a técnica de <strong>carga</strong>: carrega-se a tabela auxiliar em direct-path e indexa-se fora do ar; depois um <code>EXCHANGE</code> instantâneo a "pluga" na tabela principal. O <code>ATTACH PARTITION</code> do PostgreSQL faz o mesmo: crie a tabela com um <code>CHECK</code> igual à faixa da partição, carregue, e anexe. Com o CHECK já presente, o PostgreSQL pula a varredura de validação.</p>
+
+  <h3>Se a tabela não é particionada: DELETE em blocos</h3>
+  <p>Sem partição, apague em lotes pequenos, com commit entre eles (veja a seção de operações em lote) e fora do horário de pico. Se a maior parte da tabela será apagada, é mais barato <strong>copiar o que fica</strong> para uma tabela nova (CTAS) e trocar os nomes, do que apagar a maior parte.</p>
+
+  <h3>Retenção de prontuário e LGPD</h3>
+  <p>Aqui o "expurgo" encontra a lei, e numa empresa de saúde é onde o erro custa mais caro:</p>
+  <ul>
+    <li><strong>Prontuário.</strong> A Lei 13.787/2018 (digitalização e uso de sistemas informatizados de prontuário) fixa o prazo mínimo de <strong>20 anos a partir do último registro</strong> para a eliminação de prontuários, em papel ou digitalizados. Depois desse prazo, a eliminação é permitida, não obrigatória, e deve seguir regras do próprio estabelecimento e do conselho profissional.</li>
+    <li><strong>LGPD.</strong> O término do tratamento leva à eliminação dos dados (art. 15 e 16), salvo exceções como <em>cumprimento de obrigação legal ou regulatória</em> pelo controlador. A retenção do prontuário se apoia nessa exceção: o dado de saúde não pode ser apagado a pedido do titular antes do prazo legal.</li>
+    <li><strong>Outras obrigações</strong> convivem com a do prontuário: documentos fiscais e financeiros têm prazos próprios; dados de saúde ocupacional têm regras próprias na legislação trabalhista. Cada tabela e finalidade tem uma retenção específica.</li>
+  </ul>
+  <p>Consequência de engenharia: <strong>arquivar não é eliminar</strong>. Dado com mais de 5 anos pode sair do banco operacional e continuar guardado, íntegro e acessível, por muito mais tempo. E, no arquivo, o dado continua sendo dado pessoal sensível: precisa de criptografia, controle de acesso e trilha de auditoria, como no banco principal.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Rodar um "job de limpeza" com <code>DELETE ... WHERE dt_atendimento &lt; ADD_MONTHS(SYSDATE, -60)</code> porque "cinco anos é o padrão". Em prontuário isso pode ser <em>eliminação ilegal</em>, e o backup antigo ainda guardaria o dado, o que também contraria a política de retenção. Todo expurgo precisa de regra escrita (por tabela e finalidade), aprovação do DPO e do jurídico, e registro do que foi eliminado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você apagaria 3 anos de histórico de uma tabela de 500 milhões de linhas?" Resposta de sênior: primeiro, <em>posso</em> apagar (retenção legal)? Depois: se está particionada por data, <code>DROP/DETACH</code> de partição, após arquivar; senão, lotes com commit frequente ou CTAS do que fica, no horário de baixa carga, monitorando log e réplicas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija uma <strong>política de retenção por tabela</strong>, assinada pelo DPO/jurídico: prazo, base legal, destino (arquivo ou eliminação), quem aprova. Particionamento por data é o que transforma essa política em operação barata. Meça também o crescimento mensal por tabela: é o dado que justifica (ou dispensa) o projeto.</p></div>
+</section>
+
+
+<section class="chap" id="views-mv">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Views e views materializadas</h2>
+  <p>Uma <strong>view</strong> comum não guarda dados: é uma consulta com nome. Cada uso a executa de novo, sempre com o dado atual, e o otimizador normalmente a "dissolve" dentro da consulta que a usa. Uma <strong>view materializada</strong> (MV) guarda o <em>resultado</em> da consulta numa estrutura física, como uma tabela. A leitura é rápida, mas o dado é tão novo quanto o último refresh.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>View</th><th>View materializada</th><th>Tabela de resumo (própria)</th></tr></thead>
+    <tbody>
+      <tr><td>Guarda dados</td><td>Não</td><td>Sim</td><td>Sim</td></tr>
+      <tr><td>Atualidade</td><td>Sempre atual</td><td>Atual até o último refresh</td><td>Atual até o último job</td></tr>
+      <tr><td>Custo na leitura</td><td>O da consulta inteira</td><td>Ler uma tabela pequena</td><td>Ler uma tabela pequena</td></tr>
+      <tr><td>Custo na escrita da base</td><td>Nenhum</td><td>Nenhum (PG) ou pequeno, com log (Oracle FAST)</td><td>Nenhum, a menos que use trigger</td></tr>
+      <tr><td>Quem controla a atualização</td><td>-</td><td>O banco (comando de refresh)</td><td>Você (SQL do job, incremental)</td></tr>
+      <tr><td>Uso típico</td><td>Encapsular joins, esconder colunas, dar permissão por view</td><td>Painéis, relatórios caros, dados que toleram atraso</td><td>Indicadores com regra própria; refresh incremental</td></tr>
+    </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Views dentro de views dentro de views. Cada camada parece inofensiva, mas o otimizador as expande todas, e o plano final junta tabelas que ninguém lembra que estão ali. Também não ajuda "criar uma view para melhorar o desempenho": view comum <em>não</em> acelera nada, só organiza o SQL.</p></div>
+
+  <h3>Criando e atualizando</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Sem log, só REFRESH COMPLETE é possível
+CREATE MATERIALIZED VIEW mv_fat_mensal
+  BUILD IMMEDIATE REFRESH COMPLETE ON DEMAND AS
+SELECT TRUNC(dt_atendimento, 'MM') AS mes, id_medico, SUM(valor) AS total
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY TRUNC(dt_atendimento, 'MM'), id_medico;
+
+-- Refresh completo; atomic_refresh => FALSE usa TRUNCATE+INSERT (mais rápido, mas a MV
+-- fica vazia/inconsistente durante o refresh); o padrão (TRUE) faz DELETE+INSERT numa só transação
+BEGIN
+  DBMS_MVIEW.REFRESH('MV_FAT_MENSAL', method => 'C', atomic_refresh => FALSE);
+END;
+/</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">CREATE MATERIALIZED VIEW mv_fat_mensal AS
+SELECT date_trunc('month', dt_atendimento) AS mes, id_medico, SUM(valor) AS total
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY 1, 2
+WITH DATA;
+
+-- Refresh simples: reconstrói tudo e TRAVA os leitores (ACCESS EXCLUSIVE) durante a operação
+REFRESH MATERIALIZED VIEW mv_fat_mensal;
+
+-- Sem travar leitores: exige índice único na MV (e que ela já tenha sido populada)
+CREATE UNIQUE INDEX ux_mv_fat_mensal ON mv_fat_mensal (mes, id_medico);
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fat_mensal;</code></pre>
+  </div>
+
+  <h3>PostgreSQL: o que o CONCURRENTLY realmente faz</h3>
+  <ul>
+    <li>Monta o resultado novo numa tabela temporária e calcula a <em>diferença</em> contra o conteúdo atual, aplicando só inserções, alterações e remoções. Leitores continuam lendo a versão antiga até o fim.</li>
+    <li><strong>Exige pelo menos um índice UNIQUE</strong> na MV, só com colunas (sem expressão, sem cláusula WHERE). É assim que ele sabe qual linha é qual. Sem ele, o comando falha. Por isso a consulta da MV precisa ter uma chave natural (aqui, <code>mes, id_medico</code>).</li>
+    <li>Custa mais tempo e CPU que o refresh simples (faz a diferença). Para uma MV que muda quase inteira, o simples fora do horário pode ser melhor. Para MVs lidas o dia todo, o CONCURRENTLY é o padrão.</li>
+    <li><strong>O PostgreSQL não tem refresh incremental nativo.</strong> Todo refresh recalcula a consulta inteira, mesmo no modo concorrente. Para algo incremental, use uma tabela de resumo própria (próxima seção) ou uma extensão como <code>pg_ivm</code> (verifique maturidade e disponibilidade no seu ambiente).</li>
+    <li>O refresh não é agendado pelo banco. Use <code>cron</code>, o agendador da aplicação ou a extensão <code>pg_cron</code>.</li>
+  </ul>
+
+  <h3>Oracle: COMPLETE, FAST e o log de view materializada</h3>
+  <p>O refresh <strong>complete</strong> executa a consulta inteira e substitui o conteúdo. O refresh <strong>fast</strong> (rápido) aplica só as <em>mudanças</em> ocorridas na tabela-base desde o último refresh. Para saber o que mudou, o Oracle precisa de um <strong>materialized view log</strong>: uma tabela, criada <em>antes</em> da MV, onde cada INSERT, UPDATE e DELETE na tabela-base deixa um registro.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 260" role="img" aria-label="Refresh complete relê a tabela inteira; refresh fast usa o log de mudanças da view materializada">
+      <defs><marker id="ah-mv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="18">REFRESH COMPLETE</text>
+      <rect class="box" x="20" y="28" width="140" height="40" rx="5"/><text x="90" y="53" text-anchor="middle">atendimento</text>
+      <rect class="box-m" x="480" y="28" width="170" height="40" rx="5"/><text x="565" y="53" text-anchor="middle">mv_fat_mensal</text>
+      <line class="ln-a" x1="160" y1="48" x2="478" y2="48" marker-end="url(#ah-mv)"/>
+      <text class="lbl" x="320" y="42" text-anchor="middle">relê a tabela inteira e recalcula</text>
+      <text class="lbl" x="480" y="86">custo: a tabela inteira</text>
+      <text class="ttl" x="20" y="118">REFRESH FAST</text>
+      <rect class="box" x="20" y="130" width="140" height="40" rx="5"/><text x="90" y="155" text-anchor="middle">atendimento</text>
+      <rect class="box-w" x="250" y="130" width="150" height="40" rx="5"/><text x="325" y="155" text-anchor="middle">MV LOG (deltas)</text>
+      <rect class="box-m" x="480" y="130" width="170" height="40" rx="5"/><text x="565" y="155" text-anchor="middle">mv_fat_mensal</text>
+      <line class="ln" x1="160" y1="150" x2="248" y2="150" marker-end="url(#ah-mv)"/>
+      <line class="ln-a" x1="400" y1="150" x2="478" y2="150" marker-end="url(#ah-mv)"/>
+      <text class="lbl" x="480" y="188">custo: só o que mudou</text>
+      <text class="lbl" x="20" y="210">1. cada DML na tabela-base também grava a mudança no log (custo extra em toda escrita).</text>
+      <text class="lbl" x="20" y="226">2. o refresh lê só o log, ajusta a MV e limpa o que já foi aplicado.</text>
+      <text class="lbl" x="20" y="248">Confirme se a consulta da MV permite FAST com DBMS_MVIEW.EXPLAIN_MVIEW antes de criar.</text>
+    </svg>
+    <figcaption>Fast refresh troca custo de leitura (no refresh) por custo de escrita (no log) e por restrições na consulta.</figcaption>
+  </figure>
+<pre><code class="sql">-- 1) o log vem primeiro, na tabela-base, com as colunas usadas pela MV
+CREATE MATERIALIZED VIEW LOG ON atendimento
+  WITH ROWID, SEQUENCE (id_medico, dt_atendimento, status, valor)
+  INCLUDING NEW VALUES;
+
+-- 2) MV agregada elegível a FAST: precisa de COUNT(*) e de COUNT(col) para cada SUM(col)
+CREATE MATERIALIZED VIEW mv_fat_mensal
+  BUILD IMMEDIATE REFRESH FAST ON DEMAND
+  ENABLE QUERY REWRITE AS
+SELECT TRUNC(dt_atendimento, 'MM') AS mes, id_medico,
+       COUNT(*) AS qtd, SUM(valor) AS total, COUNT(valor) AS qtd_valor
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY TRUNC(dt_atendimento, 'MM'), id_medico;
+
+-- 3) refresh rápido ('F'). Se não for possível, falha (FORCE tenta FAST e cai para COMPLETE)
+EXEC DBMS_MVIEW.REFRESH('MV_FAT_MENSAL', 'F');</code></pre>
+  <ul>
+    <li><strong>Restrições.</strong> As regras para ser "fast refreshable" são extensas (tipos de join, agregados permitidos, colunas no log). <code>DBMS_MVIEW.EXPLAIN_MVIEW</code> diz se a consulta qualifica e, se não, por quê. Trate o exemplo acima como ilustração: confirme na sua versão.</li>
+    <li><strong>ON COMMIT</strong> atualiza a MV na hora do commit da transação que alterou a base. Dá dado fresco, mas encarece cada commit e cria contenção. Evite em tabelas muito escritas.</li>
+    <li><strong>Query rewrite.</strong> Com <code>ENABLE QUERY REWRITE</code>, o otimizador pode redirecionar uma consulta de agregação sobre <code>atendimento</code> para a MV, sem a aplicação saber. Ele só faz isso se a MV estiver "fresca" o suficiente para a configuração <code>QUERY_REWRITE_INTEGRITY</code>. Recurso da Enterprise Edition.</li>
+    <li><strong>Agendamento.</strong> Pelo <code>DBMS_SCHEDULER</code>, ou <code>REFRESH ... START WITH ... NEXT</code> na criação da MV.</li>
+  </ul>
+  <div class="tbl"><table>
+    <thead><tr><th>Modo (Oracle)</th><th>Faz</th><th>Escolha quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>COMPLETE</code></td><td>Reexecuta a consulta, substitui o conteúdo</td><td>MV pequena, ou muda quase tudo; sem log</td></tr>
+      <tr><td><code>FAST</code></td><td>Aplica só os deltas do MV log</td><td>Base grande, poucas mudanças por ciclo, consulta elegível</td></tr>
+      <tr><td><code>FORCE</code></td><td>Tenta FAST, senão COMPLETE</td><td>Quando se aceita surpresa de custo</td></tr>
+      <tr><td><code>ON COMMIT</code> (momento)</td><td>Refresh na transação</td><td>Tabelas de baixa escrita que exigem frescor</td></tr>
+    </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Diferença entre view e view materializada?" View é consulta com nome, sempre atual; MV é resultado guardado, rápido, com atraso. Aprofunde com refresh: no Oracle, complete ou fast com MV log; no PostgreSQL, refresh sempre completo, e <code>CONCURRENTLY</code> evita travar leitores, mas exige índice único.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>MV traz uma pergunta de negócio que o time costuma esquecer: <em>qual o atraso aceitável?</em> Um painel de faturamento pode ter 1 hora; um painel de leitos, 1 minuto. Defina o atraso com o dono do indicador, mostre "atualizado em HH:MM" na tela e alerte quando o refresh falhar. Painel velho sem aviso é pior que painel lento.</p></div>
+</section>
+
+<section class="chap" id="resumo-lote">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Tabelas de resumo e operações em lote</h2>
+  <h3>Pré-agregação com tabela de resumo</h3>
+  <p>Quando o refresh completo é caro demais (ou o PostgreSQL não tem fast), você mesmo mantém uma tabela com o agregado já calculado, atualizando só o que mudou. O padrão é recalcular uma <strong>janela recente</strong> (hoje e os dias anteriores em que ainda há mudança, como cancelamentos retroativos), de forma idempotente.</p>
+<pre><code class="sql">CREATE TABLE resumo_fat_dia (
+  dia          DATE          NOT NULL,
+  id_medico    BIGINT        NOT NULL,
+  id_convenio  BIGINT,        -- NULL = particular
+  qtd          INTEGER       NOT NULL,
+  total        NUMERIC(14,2) NOT NULL,
+  atualizado_em TIMESTAMP    NOT NULL
+);
+-- unicidade com NULL: use índice único sobre expressão (COALESCE) ou um convênio "0 = particular"
+CREATE UNIQUE INDEX ux_resumo_fat_dia ON resumo_fat_dia (dia, id_medico, COALESCE(id_convenio, 0));</code></pre>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Recalcula os últimos 7 dias: apaga a janela e reinsere (idempotente, numa transação)
+DELETE FROM resumo_fat_dia WHERE dia &gt;= TRUNC(SYSDATE) - 7;
+
+INSERT INTO resumo_fat_dia (dia, id_medico, id_convenio, qtd, total, atualizado_em)
+SELECT TRUNC(dt_atendimento), id_medico, id_convenio, COUNT(*), SUM(valor), SYSTIMESTAMP
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND dt_atendimento &gt;= TRUNC(SYSDATE) - 7
+GROUP BY TRUNC(dt_atendimento), id_medico, id_convenio;
+COMMIT;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Mesma ideia, atômica. Outra opção: INSERT ... ON CONFLICT DO UPDATE com índice único sem expressão.
+BEGIN;
+DELETE FROM resumo_fat_dia WHERE dia &gt;= current_date - 7;
+
+INSERT INTO resumo_fat_dia (dia, id_medico, id_convenio, qtd, total, atualizado_em)
+SELECT dt_atendimento::date, id_medico, id_convenio, COUNT(*), SUM(valor), now()
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND dt_atendimento &gt;= current_date - 7
+GROUP BY 1, 2, 3;
+COMMIT;</code></pre>
+  </div>
+  <ul>
+    <li><strong>Reconcilie.</strong> Uma consulta de conferência diária (soma do resumo contra soma da base nos dias fechados) pega erro de lógica cedo. Alerte se divergir.</li>
+    <li><strong>Evite trigger</strong> para manter o resumo em tempo real, a menos que a carga seja baixa: cada escrita em <code>atendimento</code> passa a atualizar uma linha "quente" do resumo, e a contenção cresce com a concorrência.</li>
+    <li><strong>Grão.</strong> Escolha o menor grão que atende os relatórios (dia, médico, convênio). Dimensões demais derrubam o benefício: o resumo vira outra tabela grande.</li>
+  </ul>
+
+  <h3>Operações em lote: o princípio</h3>
+  <p>Uma operação grande (milhões de linhas) tem três riscos: <strong>log</strong> (redo/WAL e undo, com o disco do archive ou do WAL enchendo), <strong>locks e transação longa</strong> (bloqueando outros e atrasando limpeza) e <strong>efeito colateral em réplicas</strong> (lag). O remédio é <em>quebrar em lotes</em> com commit entre eles, ou usar um caminho de carga que evite o custo por linha.</p>
+
+  <h3>UPDATE e DELETE em blocos</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Apaga cancelados antigos em lotes de 10 mil (conforme a política de retenção!)
+DECLARE
+  v_n PLS_INTEGER;
+BEGIN
+  LOOP
+    DELETE FROM atendimento
+     WHERE status = 'CANCELADO'
+       AND dt_atendimento &lt; DATE '2021-01-01'
+       AND ROWNUM &lt;= 10000;
+    v_n := SQL%ROWCOUNT;
+    COMMIT;
+    EXIT WHEN v_n = 0;
+    DBMS_SESSION.SLEEP(0.2);     -- respira; DBMS_SESSION.SLEEP existe no 18c+ (antes: DBMS_LOCK.SLEEP)
+  END LOOP;
+END;
+/</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- DELETE não tem LIMIT: escolha as chaves numa subconsulta. COMMIT dentro de PROCEDURE: PG 11+
+CREATE PROCEDURE expurgar_cancelados(p_corte date) LANGUAGE plpgsql AS $$
+DECLARE v_n integer;
+BEGIN
+  LOOP
+    DELETE FROM atendimento
+     WHERE (id_atendimento, dt_atendimento) IN (
+       SELECT id_atendimento, dt_atendimento FROM atendimento
+        WHERE status = 'CANCELADO' AND dt_atendimento &lt; p_corte
+        LIMIT 10000);
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    COMMIT;
+    EXIT WHEN v_n = 0;
+    PERFORM pg_sleep(0.2);
+  END LOOP;
+END $$;
+
+CALL expurgar_cancelados(DATE '2021-01-01');   -- CALL fora de um bloco BEGIN/COMMIT explícito</code></pre>
+  </div>
+  <ul>
+    <li>Cada passada precisa <strong>achar as próximas linhas rápido</strong>. Sem índice em quem filtra, cada lote faz uma varredura completa. O padrão mais robusto é por <em>faixa de chave</em> (<code>WHERE id BETWEEN :ini AND :fim</code>, avançando a faixa), que não revisita o que já foi processado.</li>
+    <li>Lotes entre milhares e algumas dezenas de milhares de linhas, ajustados por medição. O sono entre lotes dá chance à réplica e aos outros.</li>
+    <li>O processo precisa ser <strong>retomável</strong>: guardar o último id processado, ou depender do próprio filtro (o que já foi feito não casa mais). E <strong>idempotente</strong>: rodar de novo não pode corromper.</li>
+    <li>No PostgreSQL, UPDATE em massa gera tuplas mortas, então o autovacuum precisa acompanhar (seção de manutenção). Em tabelas muito atualizadas, um <code>VACUUM</code> manual no meio do trabalho ajuda.</li>
+    <li>Se vai atualizar quase a tabela inteira, <strong>CTAS</strong> costuma ganhar: crie uma tabela nova com o resultado desejado, recrie índices e constraints, e troque os nomes.</li>
+  </ul>
+
+  <h3>Carga de dados: direct-path, COPY e CTAS</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Direct-path insert: grava blocos novos acima da high water mark, sem passar pelo cache
+-- e com pouquíssimo undo. Muito mais rápido que INSERT convencional em grandes volumes.
+INSERT /*+ APPEND */ INTO atendimento_item
+SELECT * FROM stg_atendimento_item;
+COMMIT;      -- obrigatório antes de ler a tabela de novo na mesma sessão (ORA-12838)
+
+-- Cópia/transformação em massa: CTAS (também direct-path), com paralelismo
+CREATE TABLE atendimento_2025
+  NOLOGGING PARALLEL 4 AS
+SELECT * FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2025-01-01' AND dt_atendimento &lt; DATE '2026-01-01';</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- COPY: carga em massa, ordens de grandeza mais rápida que INSERTs linha a linha
+COPY atendimento_item (id_item, id_atendimento, cod_procedimento, qtd, valor_unit)
+  FROM '/dados/itens.csv' WITH (FORMAT csv, HEADER true);   -- lê arquivo NO SERVIDOR (exige privilégio)
+-- Do cliente, sem arquivo no servidor: psql  \copy atendimento_item FROM 'itens.csv' CSV HEADER
+
+-- Tabela de staging sem WAL: rápida, mas some se o servidor cair e não vai para réplicas
+CREATE UNLOGGED TABLE stg_atendimento_item (LIKE atendimento_item);
+
+-- CTAS: cria e preenche numa instrução
+CREATE TABLE atendimento_2025 AS
+SELECT * FROM atendimento
+WHERE dt_atendimento &gt;= '2025-01-01' AND dt_atendimento &lt; '2026-01-01';</code></pre>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Característica</th><th>Oracle direct-path (<code>APPEND</code>)</th><th>PostgreSQL <code>COPY</code></th></tr></thead>
+    <tbody>
+      <tr><td>Ganho</td><td>Evita buffer cache, undo mínimo, blocos novos</td><td>Um comando em vez de milhões de INSERTs; menos overhead por linha</td></tr>
+      <tr><td>Efeito colateral</td><td>Lock exclusivo na tabela até o commit; não reutiliza espaço livre (a tabela só cresce); não pode ler a tabela na mesma transação</td><td>Falha numa linha aborta o COPY inteiro (versões recentes têm opções para tolerar erro, confira a sua)</td></tr>
+      <tr><td>Redo/WAL</td><td><code>NOLOGGING</code> reduz redo, mas é ignorado com <code>FORCE LOGGING</code> (comum com Data Guard) e deixa a carga fora do backup até o próximo backup</td><td>WAL normal, a menos que a tabela seja <code>UNLOGGED</code></td></tr>
+      <tr><td>Ferramentas parentes</td><td>SQL*Loader (direct path), tabelas externas, Data Pump</td><td><code>\copy</code>, <code>pg_dump</code>/<code>pg_restore</code>, <code>COPY ... FROM PROGRAM</code></td></tr>
+    </tbody></table></div>
+
+  <h3>Desligar índices e constraints durante a carga</h3>
+  <p>Cada índice custa por linha inserida. Numa carga massiva (milhões), costuma ser mais barato carregar e <em>criar o índice depois</em> (uma ordenação em lote é mais eficiente que milhões de inserções individuais na B-tree).</p>
+<pre><code class="sql">-- Oracle: índices NÃO únicos podem ficar UNUSABLE durante a carga
+ALTER INDEX ix_item_atend UNUSABLE;
+-- (SKIP_UNUSABLE_INDEXES = TRUE, o padrão, deixa o DML ignorar índices inutilizados;
+--  índices que sustentam PK/UNIQUE não podem ser ignorados: o INSERT falha)
+-- ... carga ...
+ALTER INDEX ix_item_atend REBUILD PARALLEL 4 NOLOGGING;
+
+-- PostgreSQL: não existe "unusable": derrube e recrie (memória de manutenção alta ajuda)
+DROP INDEX ix_item_atend;
+-- ... COPY ...
+SET maintenance_work_mem = '2GB';           -- só nesta sessão
+CREATE INDEX ix_item_atend ON atendimento_item (id_atendimento);
+ANALYZE atendimento_item;                    -- estatísticas novas depois da carga</code></pre>
+  <p>Tão importante quanto: <strong>coletar estatísticas</strong> ao fim da carga (<code>DBMS_STATS.GATHER_TABLE_STATS</code> no Oracle, <code>ANALYZE</code> no PostgreSQL). É o erro mais comum de ETL: carga termina às 3h, estatísticas só às 22h, e a manhã inteira roda com plano baseado em tabela "vazia" (o problema da "data além do máximo": o otimizador estima 1 linha para dados mais novos que a última coleta, e escolhe nested loops para 500 mil linhas; veja o módulo de planos).</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Rodar o expurgo ou a carga em horário de pico "porque é só um comando". Um DELETE de 40 milhões de linhas gera log que sufoca o disco, atrasa a réplica em horas e pode dar rollback demorado se for interrompido. Sempre em lote, em janela combinada, com monitoramento de espaço de log e de lag da réplica.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Para volume: <strong>carregue em massa, recrie índices depois, colete estatísticas</strong>. Para limpeza: <strong>apague por partição</strong> ou em <strong>lotes com commit</strong>. Para reescrever quase tudo: <strong>CTAS e troca</strong>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como carregar 50 milhões de linhas?" Direct-path/<code>APPEND</code> ou SQL*Loader no Oracle, <code>COPY</code> no PostgreSQL, índices recriados depois, constraints validadas depois (<code>ENABLE NOVALIDATE</code> / <code>NOT VALID</code> e <code>VALIDATE</code>), estatísticas no fim. Mencione <code>EXCHANGE/ATTACH PARTITION</code> se a tabela é particionada.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija que toda rotina de carga ou correção em massa seja um <strong>script versionado, com ensaio em homologação, janela aprovada e plano de reversão</strong>. O incidente clássico é um UPDATE "rápido" sem WHERE correto, ou uma correção manual em produção sem ensaio. Pergunte: "quantas linhas, quanto de log, em quanto tempo, e como desfazemos?"</p></div>
+</section>
+
+<section class="chap" id="hints-planos">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Hints e estabilidade de planos</h2>
+  <p>O otimizador escolhe um plano com base em estatísticas. Às vezes escolhe mal. Os dois bancos oferecem formas de <em>forçar</em> uma decisão, e esse poder tem preço: o plano fica congelado enquanto os dados, os índices e o volume mudam.</p>
+
+  <h3>Hints no Oracle</h3>
+  <p>Hint é um comentário especial, <code>/*+ ... */</code>, logo depois do <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> ou <code>MERGE</code>. Ele orienta o otimizador. <strong>Hint com erro de sintaxe é ignorado em silêncio</strong>, sem erro nem aviso, e hint que referencia um índice que não existe mais também. Use o <em>alias</em> da tabela, não o nome.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Hint</th><th>O que pede</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td><code>FULL(a)</code></td><td>Full table scan em <code>a</code></td><td>Útil para provar que o índice não ajudava</td></tr>
+      <tr><td><code>INDEX(a ix)</code></td><td>Usar o índice <code>ix</code></td><td>Sem nome de índice, o otimizador escolhe entre os de <code>a</code></td></tr>
+      <tr><td><code>NO_INDEX(a ix)</code></td><td>Não usar o índice</td><td>Bom para testar alternativa</td></tr>
+      <tr><td><code>LEADING(m a)</code></td><td>Ordem de junção</td><td>Combina com <code>USE_NL</code>/<code>USE_HASH</code></td></tr>
+      <tr><td><code>USE_NL(a)</code>, <code>USE_HASH(a)</code></td><td>Método de junção para <code>a</code> (como tabela interna)</td><td>O erro típico é pedir sem <code>LEADING</code></td></tr>
+      <tr><td><code>PARALLEL(a 4)</code></td><td>Paralelismo no acesso</td><td>Para relatório/lote, nunca em OLTP concorrido</td></tr>
+      <tr><td><code>APPEND</code></td><td>Direct-path insert</td><td>Seção anterior</td></tr>
+      <tr><td><code>FIRST_ROWS(n)</code></td><td>Otimizar para devolver as primeiras <em>n</em> linhas rápido</td><td>Telas paginadas</td></tr>
+      <tr><td><code>DYNAMIC_SAMPLING(a 4)</code></td><td>Amostrar a tabela em tempo de parse</td><td>Ajuda quando faltam estatísticas</td></tr>
+      <tr><td><code>GATHER_PLAN_STATISTICS</code></td><td>Coletar linhas reais por operação</td><td>Não muda o plano: serve ao diagnóstico (<code>ALLSTATS LAST</code>)</td></tr>
+    </tbody></table></div>
+<pre><code class="sql">SELECT /*+ LEADING(m a) USE_NL(a) INDEX(a ix_atend_med_dt) */
+       m.nome, COUNT(*)
+FROM   medico m
+JOIN   atendimento a ON a.id_medico = m.id_medico
+WHERE  m.especialidade = 'CARDIOLOGIA'
+  AND  a.dt_atendimento &gt;= DATE '2026-10-01'
+GROUP  BY m.nome;</code></pre>
+  <h3>Por que evitar, e quando usar</h3>
+  <ul>
+    <li><strong>Congelam um plano.</strong> O que era ótimo com 10 milhões de linhas pode ser péssimo com 300 milhões. Ninguém lembra que o hint está lá.</li>
+    <li><strong>Dependem de nomes.</strong> Renomear ou recriar o índice invalida o hint, e a consulta volta ao plano "natural" sem aviso.</li>
+    <li><strong>Escondem a causa.</strong> Se o otimizador erra, o motivo costuma ser estatística ruim, falta de histograma, correlação ou SQL não sargável. O hint trata o sintoma.</li>
+    <li><strong>Ficam no código.</strong> Para mudar, é preciso novo deploy, e SQL gerado por ORM raramente aceita hint.</li>
+  </ul>
+  <p>Usos legítimos: <strong>experimento</strong> (descobrir se outro plano é melhor e então perguntar "por que o otimizador não o escolheu?"), <strong>contenção de emergência</strong> com ticket para a correção real, e hints <em>operacionais</em> como <code>APPEND</code>, <code>PARALLEL</code> e <code>GATHER_PLAN_STATISTICS</code>, que não "escolhem plano".</p>
+
+  <h3>Estabilidade de planos no Oracle: Plan Baselines e SQL Profiles</h3>
+  <p>Para fixar um plano <em>sem mexer no código</em> (importante com ORM e sistemas de terceiros), o Oracle oferece mecanismos gerenciados:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mecanismo</th><th>O que faz</th><th>Licença (confirme no seu contrato)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>SQL Plan Baseline</strong> (SQL Plan Management)</td><td>Guarda planos <em>aceitos</em> para um SQL. O otimizador só usa planos aceitos; um plano novo e melhor fica "não aceito" até ser verificado (evolução). Estabiliza e ainda permite melhorar com segurança.</td><td>Recurso da Enterprise Edition; verifique o que exatamente exige pacote adicional (a evolução automática pode estar atrelada a pacotes de tuning)</td></tr>
+      <tr><td><strong>SQL Profile</strong></td><td>Guarda correções de estimativa (ajustes de cardinalidade) para um SQL, geradas pelo SQL Tuning Advisor. Não fixa um plano; guia o otimizador com informação melhor.</td><td>Exige <strong>Tuning Pack</strong> (que por sua vez pressupõe Diagnostics Pack): pacotes pagos</td></tr>
+      <tr><td><strong>SQL Patch</strong></td><td>Injeta hints num SQL específico sem alterar o texto, via API do banco.</td><td>Confirme no manual de licenciamento da sua versão</td></tr>
+    </tbody></table></div>
+<pre><code class="sql">-- Carregar o plano bom que está no cache como baseline (sql_id e plan_hash_value vêm do V$SQL)
+DECLARE
+  v_n PLS_INTEGER;
+BEGIN
+  v_n := DBMS_SPM.LOAD_PLANS_FROM_CURSOR_CACHE(sql_id => '8qk2x0f1abc9d', plan_hash_value => 1234567890);
+END;
+/
+SELECT sql_handle, plan_name, enabled, accepted, fixed FROM dba_sql_plan_baselines;
+-- Captura automática de planos repetidos: optimizer_capture_sql_plan_baselines = TRUE (padrão: FALSE)
+-- Uso de baselines existentes:            optimizer_use_sql_plan_baselines = TRUE (padrão)</code></pre>
+
+  <h3>PostgreSQL: sem hints nativos, mas com alavancas</h3>
+  <p>O PostgreSQL <strong>não tem hints</strong>: é uma decisão do projeto, que prefere corrigir o otimizador e as estatísticas a dar atalhos. Existe a extensão <code>pg_hint_plan</code>, que aceita comentários como <code>/*+ IndexScan(a ix_atend_med_dt) HashJoin(m a) Leading((m a)) */</code>. É uma extensão de terceiros (não vem no núcleo, precisa ser carregada e instalada); a disponibilidade em serviços gerenciados varia. Ela também permite registrar hints numa tabela (<code>hint_plan.hints</code>) para consultas sem alterar o código.</p>
+  <p>Antes dela, as ferramentas nativas para influenciar planos:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Alavanca</th><th>Para quê</th></tr></thead>
+    <tbody>
+      <tr><td><code>ANALYZE</code>, <code>ALTER TABLE ... ALTER COLUMN ... SET STATISTICS n</code></td><td>Estatísticas mais frescas e mais detalhadas (histograma e MCV) em colunas com distribuição torta</td></tr>
+      <tr><td><code>CREATE STATISTICS</code> (PG 10+; tipo <code>mcv</code> a partir do 12)</td><td>Estatísticas estendidas para colunas correlacionadas (<code>uf</code> e <code>cidade</code>): corrige estimativas de cardinalidade</td></tr>
+      <tr><td><code>SET LOCAL random_page_cost = 1.1</code> (SSD), <code>work_mem</code>, <code>effective_cache_size</code></td><td>Ajustes de custo que refletem o hardware real</td></tr>
+      <tr><td><code>SET LOCAL enable_nestloop = off</code> etc.</td><td>Experimento de sessão para provar que outro plano é melhor. Não é solução de produção</td></tr>
+      <tr><td><code>plan_cache_mode = force_custom_plan</code> (PG 12+)</td><td>Evita que um plano genérico de prepared statement fique ruim para valores atípicos</td></tr>
+      <tr><td><code>WITH x AS MATERIALIZED / NOT MATERIALIZED</code> (PG 12+)</td><td>Controla se a CTE é uma barreira de otimização; quase um hint</td></tr>
+      <tr><td>Reescrever o SQL, criar o índice certo</td><td>A resposta correta na maioria dos casos</td></tr>
+    </tbody></table></div>
+<pre><code class="sql">-- Estatística estendida: cidade determina uf, então o produto das seletividades superestima o filtro
+CREATE STATISTICS st_pac_cidade_uf (dependencies) ON cidade, uf FROM paciente;
+ANALYZE paciente;
+
+-- Experimento de sessão: o plano muda? o tempo melhora?
+BEGIN;
+SET LOCAL enable_nestloop = off;
+EXPLAIN (ANALYZE, BUFFERS) SELECT ... ;
+ROLLBACK;</code></pre>
+  <div class="note iv"><b>Na entrevista</b><p>"Posso forçar um índice no PostgreSQL?" Não com hint nativo. Primeiro corrijo estatísticas, índice e SQL; para experimentar uso os <code>enable_*</code> na sessão; se for indispensável, <code>pg_hint_plan</code>. E no Oracle, "e se o plano regride depois de uma coleta de estatísticas?" Resposta: SQL Plan Baseline (travar o plano bom), com a ressalva de licença e de que a baseline precisa de revisão periódica.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina uma política: <em>hint em produção só com ticket, dono, data de revisão e causa-raiz registrada.</em> E acompanhe quantos hints o sistema tem: crescendo, indicam otimizador mal alimentado (estatísticas, modelagem) ou dívida técnica. Em Oracle, verifique o licenciamento <em>antes</em> de o DBA usar SQL Profile, SQL Tuning Advisor ou pacotes de diagnóstico.</p></div>
+</section>
+
+
+<section class="chap" id="manutencao">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Manutenção: VACUUM, estatísticas, bloat e reorganização</h2>
+  <p>Banco de dados não é "instale e esqueça". Dois tipos de lixo se acumulam: <strong>estatísticas velhas</strong> (o otimizador decide às cegas) e <strong>espaço morto</strong> (linhas apagadas ou antigas versões que ocupam páginas). Cada banco cuida disso de forma diferente.</p>
+
+  <h3>PostgreSQL: VACUUM, autovacuum e bloat</h3>
+  <p>Pelo MVCC (módulo 10), um UPDATE ou DELETE não apaga a versão antiga: deixa uma <em>tupla morta</em>. O <code>VACUUM</code> marca esse espaço como reutilizável, atualiza o <em>visibility map</em> (que permite index-only scan) e "congela" transaction IDs antigos. O <code>ANALYZE</code> atualiza estatísticas. O <strong>autovacuum</strong> faz os dois automaticamente, por tabela, quando a quantidade de mudanças passa de um limite.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th><th>Trava?</th></tr></thead>
+    <tbody>
+      <tr><td><code>VACUUM</code></td><td>Recicla tuplas mortas para reuso; só devolve espaço ao SO se estiver no <em>fim</em> do arquivo</td><td>Não bloqueia leitura nem escrita</td></tr>
+      <tr><td><code>VACUUM (ANALYZE)</code></td><td>Vacuum e estatísticas juntos</td><td>Idem</td></tr>
+      <tr><td><code>VACUUM FULL</code></td><td>Reescreve a tabela compacta, devolvendo espaço ao SO</td><td><strong>ACCESS EXCLUSIVE</strong>: bloqueia tudo, inclusive SELECT. Evitar em produção</td></tr>
+      <tr><td><code>REINDEX CONCURRENTLY</code> (PG 12+)</td><td>Reconstrói um índice sem bloquear escritas</td><td>Não bloqueia DML; mais lento</td></tr>
+      <tr><td><code>pg_repack</code> (extensão)</td><td>Reorganiza tabela/índices online, com locks curtos</td><td>Locks breves no início e no fim</td></tr>
+    </tbody></table></div>
+
+  <h3>Autovacuum: o limite padrão não serve para tabela grande</h3>
+  <p>O autovacuum dispara numa tabela quando as tuplas mortas passam de <code>autovacuum_vacuum_threshold + autovacuum_vacuum_scale_factor × linhas</code>. Os padrões são 50 e <strong>0,2 (20%)</strong>. Para uma tabela de 500 milhões de linhas, isso significa esperar por ~100 milhões de tuplas mortas antes do primeiro vacuum: a tabela incha, os índices incham, o vacuum demora. A correção é <strong>ajustar por tabela</strong>:</p>
+<pre><code class="sql">ALTER TABLE atendimento SET (
+  autovacuum_vacuum_scale_factor  = 0.01,     -- 1% em vez de 20%
+  autovacuum_vacuum_threshold     = 10000,
+  autovacuum_analyze_scale_factor = 0.02);
+
+-- Parâmetros globais relevantes (postgresql.conf): autovacuum_max_workers (3 por padrão),
+-- autovacuum_vacuum_cost_limit / autovacuum_vacuum_cost_delay (o "freio" que o vacuum se impõe;
+-- se o autovacuum nunca alcança a carga, afrouxe o freio), maintenance_work_mem / autovacuum_work_mem.
+-- PostgreSQL 13+: também dispara por volume de INSERTs (autovacuum_vacuum_insert_scale_factor).</code></pre>
+  <p>Monitore antes de mexer:</p>
+<pre><code class="sql">SELECT relname, n_live_tup, n_dead_tup,
+       ROUND(100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0), 1) AS pct_mortas,
+       last_autovacuum, last_autoanalyze
+FROM pg_stat_user_tables
+ORDER BY n_dead_tup DESC
+LIMIT 5;</code></pre>
+<pre><code class="text"> relname           | n_live_tup | n_dead_tup | pct_mortas | last_autovacuum
+-------------------+------------+------------+------------+--------------------
+ atendimento_item  |  412000000 |   38500000 |        8.5 | 2026-11-24 03:12
+ atendimento       |  150000000 |   29800000 |       16.6 | 2026-11-19 21:40
+ paciente          |    2900000 |      41000 |        1.4 | 2026-11-26 09:05</code></pre>
+  <p>(Saída ilustrativa.) Uma tabela com 16% de mortas e último vacuum há uma semana é o retrato do limite padrão inadequado.</p>
+  <div class="note trap"><b>Armadilha comum</b><p><strong>Transação longa impede o vacuum de limpar.</strong> Enquanto existir uma transação (ou slot de replicação, ou <code>hot_standby_feedback</code> de uma réplica) enxergando versões antigas, o vacuum <em>não pode</em> remover tuplas mortas mais novas que essa transação. Resultado: o autovacuum roda, mas o bloat cresce. Procure e mate sessões <code>idle in transaction</code> e configure <code>idle_in_transaction_session_timeout</code>. Consulta útil:
+  <code>SELECT pid, now()-xact_start AS dur, state FROM pg_stat_activity WHERE xact_start IS NOT NULL ORDER BY xact_start LIMIT 5;</code></p></div>
+
+  <h3>Bloat e como tratar</h3>
+  <p><em>Bloat</em> é espaço ocupado por tuplas mortas e páginas semivazias, em tabelas e <strong>especialmente em índices</strong> (que não reaproveitam bem o espaço depois de muitas atualizações e remoções). Efeito: tabelas e índices maiores que o necessário, cache diluído, scans mais lentos. A extensão <code>pgstattuple</code> mede bloat com exatidão (varrendo a tabela); há consultas de estimativa baratas. Tratamento:</p>
+  <ul>
+    <li>Prevenir: autovacuum ajustado, sem transações longas, e lotes de UPDATE/DELETE moderados.</li>
+    <li>Índice inchado: <code>REINDEX CONCURRENTLY</code> (PG 12+; antes, criar um novo com <code>CREATE INDEX CONCURRENTLY</code> e trocar).</li>
+    <li>Tabela muito inchada: <code>pg_repack</code> ou, com janela de parada, <code>VACUUM FULL</code>.</li>
+    <li>Tabelas com muitos UPDATEs: um <code>fillfactor</code> menor (ex.: 85) deixa espaço na página para as atualizações HOT, que não tocam nos índices.</li>
+    <li>Monitorar também o "envelhecimento" dos IDs de transação (<code>age(datfrozenxid)</code>): o vacuum de congelamento é inadiável; se atrasar demais, o banco chega a recusar escritas para evitar o <em>wraparound</em>. Alerte bem antes do limite.</li>
+  </ul>
+
+  <h3>Oracle: estatísticas automáticas, espaço e reorganização</h3>
+  <p>O Oracle não tem VACUUM: o <strong>undo</strong> guarda versões antigas, e os blocos das tabelas são reaproveitados. O problema equivalente ao bloat é o espaço abaixo da <em>high water mark</em> depois de remoções em massa, e índices fragmentados em casos específicos.</p>
+  <ul>
+    <li><strong>Coleta automática de estatísticas.</strong> Uma tarefa automática, nas janelas de manutenção, coleta estatísticas de objetos com mais de 10% de linhas alteradas (<em>stale</em>). Verifique em <code>DBA_TAB_STATISTICS</code> (<code>LAST_ANALYZED</code>, <code>STALE_STATS</code>). Ela <strong>não sabe</strong> da sua carga das 3h: em tabelas cuja distribuição muda por carga, colete ao final do ETL.</li>
+    <li><strong>Tabelas particionadas.</strong> Estatísticas incrementais (<code>DBMS_STATS.SET_TABLE_PREFS(..., 'INCREMENTAL', 'TRUE')</code>) evitam reler as partições antigas inalteradas, só as novas.</li>
+    <li><strong>Estabilidade.</strong> Estatísticas podem ser travadas (<code>LOCK_TABLE_STATS</code>) ou salvas antes de coletar (<code>EXPORT_TABLE_STATS</code>), para reverter se a nova coleta piorar planos.</li>
+  </ul>
+<pre><code class="sql">SELECT table_name, num_rows, last_analyzed, stale_stats
+FROM   dba_tab_statistics
+WHERE  owner = 'APP' AND table_name = 'ATENDIMENTO' AND partition_name IS NULL;
+
+BEGIN
+  DBMS_STATS.GATHER_TABLE_STATS(ownname =&gt; 'APP', tabname =&gt; 'ATENDIMENTO',
+                                granularity =&gt; 'AUTO', degree =&gt; 4);
+END;
+/
+
+-- Recuperar espaço depois de remoção em massa (tablespace ASSM; online, mas muda ROWIDs)
+ALTER TABLE atendimento_item ENABLE ROW MOVEMENT;
+ALTER TABLE atendimento_item SHRINK SPACE CASCADE;
+
+-- Mover a tabela de lugar ou reorganizar (12.2+: ONLINE, sem bloquear DML)
+ALTER TABLE atendimento_item MOVE ONLINE TABLESPACE ts_dados;
+ALTER INDEX ix_item_atend REBUILD ONLINE;</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>"Reconstruir todos os índices toda semana" é um mito persistente no Oracle (e no PostgreSQL). Índice B-tree se mantém equilibrado; reconstruir sem motivo medido gasta I/O, gera redo e invalida estatísticas. Reconstrua depois de remoção em massa comprovada, ou quando houver evidência de fragmentação relevante.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Tarefa</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>Reaproveitar espaço de linhas removidas</td><td>Automático nos blocos; shrink/move após remoção em massa</td><td><code>VACUUM</code> (autovacuum)</td></tr>
+      <tr><td>Estatísticas</td><td>Tarefa automática; <code>DBMS_STATS</code> manual</td><td>Autoanalyze; <code>ANALYZE</code> manual</td></tr>
+      <tr><td>Compactar tabela</td><td><code>SHRINK SPACE</code>, <code>MOVE ONLINE</code>, <code>DBMS_REDEFINITION</code></td><td><code>pg_repack</code>, <code>VACUUM FULL</code> (offline)</td></tr>
+      <tr><td>Reconstruir índice online</td><td><code>ALTER INDEX ... REBUILD ONLINE</code></td><td><code>REINDEX CONCURRENTLY</code> (12+)</td></tr>
+      <tr><td>Versões antigas de linha</td><td>Segmento de undo</td><td>Dentro da própria tabela (tuplas mortas)</td></tr>
+      <tr><td>Risco de esquecer</td><td>Plano ruim por estatística velha</td><td>Plano ruim <em>e</em> tabela inchada <em>e</em> wraparound</td></tr>
+    </tbody></table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que o PostgreSQL precisa de VACUUM?" Porque o MVCC guarda versões antigas dentro da tabela; o vacuum recicla o espaço e mantém o visibility map. Sinal de sênior: citar que o padrão de 20% é alto para tabelas grandes, que transações longas travam a limpeza e que <code>VACUUM FULL</code> bloqueia tudo.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça dois gráficos ao DBA: <strong>tuplas mortas/bloat</strong> das cinco maiores tabelas (PG) e <strong>idade das estatísticas</strong> das tabelas quentes (Oracle e PG). Se ninguém sabe dizer quando foi o último vacuum/coleta da tabela principal, há um risco silencioso, e a lentidão vai aparecer "sem motivo" em alguns meses.</p></div>
+</section>
+
+<section class="chap" id="conexoes-replicas">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Pool de conexões, réplicas de leitura e cache</h2>
+  <h3>Por que muitas conexões matam o banco</h3>
+  <p>Intuitivamente, mais conexões deveriam dar mais vazão. É o contrário, depois de um ponto. Cada conexão é um <strong>processo</strong> no servidor (no PostgreSQL, um backend por conexão; no Oracle, por padrão um <em>dedicated server process</em> por sessão), com memória própria (<code>work_mem</code> por operação de sort/hash no PG; PGA no Oracle), custos de troca de contexto e contenção em estruturas internas. Com 1.000 conexões ativas num servidor de 16 núcleos, o banco gasta mais tempo alternando entre processos do que trabalhando, e <em>cada consulta fica mais lenta</em>, o que faz a aplicação abrir mais conexões, num ciclo de colapso.</p>
+  <p>O dimensionamento correto vem da <strong>Lei de Little</strong>: conexões ocupadas = vazão × tempo médio em uso. Uma API com 500 req/s e 20 ms de banco por requisição mantém, em média, <strong>10 conexões</strong> ocupadas (500 × 0,020). Um pool de 20 já dá folga. Uma regra empírica muito citada (guia de dimensionamento do HikariCP) parte de cerca de <em>2 × núcleos + discos</em> como ponto de partida a medir, não como lei.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Três instâncias de aplicação com pools de 50 conexões, passando por um pooler que mantém apenas 20 conexões reais com o banco">
+      <defs><marker id="ah-pool" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="140" height="36" rx="5"/><text x="90" y="53" text-anchor="middle">app-1 (pool 50)</text>
+      <rect class="box" x="20" y="80" width="140" height="36" rx="5"/><text x="90" y="103" text-anchor="middle">app-2 (pool 50)</text>
+      <rect class="box" x="20" y="130" width="140" height="36" rx="5"/><text x="90" y="153" text-anchor="middle">app-3 (pool 50)</text>
+      <rect class="box-a" x="280" y="40" width="150" height="116" rx="6"/>
+      <text class="ttl" x="355" y="66" text-anchor="middle">PgBouncer</text>
+      <text class="lbl" x="355" y="88" text-anchor="middle">modo transaction</text>
+      <text class="lbl" x="355" y="106" text-anchor="middle">150 clientes entram</text>
+      <text class="lbl" x="355" y="124" text-anchor="middle">20 conexões reais</text>
+      <text class="lbl" x="355" y="142" text-anchor="middle">fila para o resto</text>
+      <rect class="box-w" x="520" y="40" width="140" height="116" rx="6"/>
+      <text class="ttl" x="590" y="66" text-anchor="middle">PostgreSQL</text>
+      <text class="lbl" x="590" y="92" text-anchor="middle">20 backends ativos</text>
+      <text class="lbl" x="590" y="110" text-anchor="middle">CPU e RAM sob</text>
+      <text class="lbl" x="590" y="128" text-anchor="middle">controle</text>
+      <line class="ln" x1="160" y1="48" x2="278" y2="80" marker-end="url(#ah-pool)"/>
+      <line class="ln" x1="160" y1="98" x2="278" y2="98" marker-end="url(#ah-pool)"/>
+      <line class="ln" x1="160" y1="148" x2="278" y2="116" marker-end="url(#ah-pool)"/>
+      <line class="ln-a" x1="430" y1="98" x2="518" y2="98" marker-end="url(#ah-pool)"/>
+      <text class="lbl" x="20" y="196">Sem pooler: 3 apps × 50 = 150 backends disputando CPU e memória.</text>
+      <text class="lbl" x="20" y="214">Com pooler: só 20 trabalham; o resto espera na fila, em milissegundos, em vez de competir.</text>
+      <text class="lbl" x="20" y="236">Autoescala multiplica: 20 pods × pool de 50 = 1.000 conexões. Some todas as réplicas da aplicação.</text>
+    </svg>
+    <figcaption>O pooler concentra muitos clientes em poucas conexões reais.</figcaption>
+  </figure>
+
+  <h3>Onde fica o pool</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Camada</th><th>Exemplos</th><th>Cuidados</th></tr></thead>
+    <tbody>
+      <tr><td>Pool na aplicação</td><td>HikariCP (Java), pool do driver <code>node-postgres</code>, ODP.NET, Oracle UCP</td><td>Limita por instância, não no total. Defina tamanho máximo pequeno, timeout de aquisição curto, vida máxima menor que o timeout de firewall/balanceador</td></tr>
+      <tr><td>Pooler externo (PostgreSQL)</td><td><strong>PgBouncer</strong>, pgcat, Odyssey</td><td>Consolida todas as instâncias da aplicação. Os modos mudam o que funciona (abaixo)</td></tr>
+      <tr><td>Pooling no servidor (Oracle)</td><td><strong>DRCP</strong> (Database Resident Connection Pooling); <em>shared server</em>; Connection Manager</td><td>DRCP ajuda quando há muitas aplicações com sessões curtas; o pool da aplicação (UCP) segue sendo o primeiro passo</td></tr>
+    </tbody></table></div>
+  <h3>Modos do PgBouncer</h3>
+  <ul>
+    <li><strong>session</strong>: a conexão real fica do cliente do início ao fim da sessão. Compatível com tudo, mas ganha pouco (só reutiliza conexões entre sessões).</li>
+    <li><strong>transaction</strong>: a conexão real é do cliente <em>só durante a transação</em>, e volta ao pool no COMMIT. É o que dá o ganho de multiplexação, mas <strong>quebra recursos que dependem da sessão</strong>: <code>SET</code> sem <code>LOCAL</code>, tabelas temporárias, advisory locks de sessão, <code>LISTEN/NOTIFY</code>, e (conforme a versão e a configuração) prepared statements. Verifique a documentação da versão em uso.</li>
+    <li><strong>statement</strong>: devolve a cada instrução; proíbe transações de várias instruções. Raro.</li>
+  </ul>
+<pre><code class="text"># pgbouncer.ini (trecho ilustrativo)
+[databases]
+hospital = host=10.0.0.5 port=5432 dbname=hospital
+
+[pgbouncer]
+pool_mode = transaction
+default_pool_size = 20        ; conexões reais por par banco/usuário
+max_client_conn = 1000        ; clientes que podem se conectar ao pooler
+server_idle_timeout = 600</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Reagir a "timeout ao obter conexão" <em>aumentando o pool</em>. Normalmente a causa é lentidão de consultas (transações longas segurando conexões), e mais conexões pioram a lentidão. Também perigoso: transação aberta durante chamada HTTP externa. A conexão fica presa ("idle in transaction") enquanto o parceiro demora. Mantenha a transação do banco curta e sem I/O externo; configure <code>idle_in_transaction_session_timeout</code> e <code>statement_timeout</code> no PostgreSQL. Veja os timeouts de aquisição de pool na trilha de APIs, módulo 06.</p></div>
+
+  <h3>Réplicas de leitura</h3>
+  <p>Uma réplica recebe o fluxo de mudanças do primário (replicação por streaming no PostgreSQL; <strong>Active Data Guard</strong> no Oracle, opção paga da Enterprise Edition para abrir o standby em leitura) e atende consultas de leitura. Boa para <strong>relatórios, BI, exportações e leituras tolerantes a atraso</strong>, tirando carga do primário.</p>
+  <ul>
+    <li><strong>Atraso (lag).</strong> A réplica está sempre um pouco atrás. Pode ser milissegundos; sob carga de escrita pesada, minutos. Meça e alerte.</li>
+    <li><strong>Ler o que acabou de escrever.</strong> O paciente cadastra e a tela seguinte consulta a réplica: o registro "sumiu". A solução é rotear para o primário as leituras logo após uma escrita (por sessão, por poucos segundos), ou ler do primário nos fluxos críticos.</li>
+    <li><strong>Consultas longas na réplica de PostgreSQL</strong> podem ser canceladas por conflito com a replicação (<code>max_standby_streaming_delay</code>); a alternativa, <code>hot_standby_feedback</code>, segura o vacuum no primário. Trade-off.</li>
+    <li><strong>Réplica não escala escrita.</strong> Toda escrita continua indo ao primário. É escalabilidade de leitura e alta disponibilidade, não de escrita.</li>
+    <li>Atenção a <strong>LGPD</strong>: réplica é outra cópia do dado de paciente, com os mesmos controles de acesso e criptografia.</li>
+  </ul>
+
+  <h3>Cache</h3>
+  <p>O jeito mais barato de aliviar o banco é <em>não perguntar</em>. Cache de aplicação ou distribuído (Redis, Memcached) com <em>cache-aside</em>: lê do cache; se não há, lê do banco e grava no cache com um TTL. Vale para dados de leitura frequente e baixa mudança (tabelas de cadastro: <code>convenio</code>, <code>setor</code>, listas de procedimentos). A estratégia de invalidação e o cache HTTP estão na trilha de APIs, módulo 06 (ETag, 304, Vary).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Degrau</th><th>Resolve</th><th>Custo / risco</th></tr></thead>
+    <tbody>
+      <tr><td>1. Consulta e índice melhores</td><td>A maioria dos problemas</td><td>Baixo. Sempre o primeiro</td></tr>
+      <tr><td>2. Pool dimensionado, transações curtas</td><td>Saturação de conexões</td><td>Baixo</td></tr>
+      <tr><td>3. Cache de dados de leitura frequente</td><td>Carga repetida em cadastros</td><td>Invalidação, dado desatualizado</td></tr>
+      <tr><td>4. Réplica de leitura</td><td>Relatórios e leituras pesadas</td><td>Lag, roteamento, licença (Oracle ADG)</td></tr>
+      <tr><td>5. MV / tabela de resumo</td><td>Agregações caras repetidas</td><td>Atraso, manutenção</td></tr>
+      <tr><td>6. Particionamento + arquivamento</td><td>Tabelas gigantes, retenção</td><td>Complexidade, licença (Oracle)</td></tr>
+      <tr><td>7. Hardware maior (scale up)</td><td>Quando o resto foi esgotado</td><td>Custo; limite físico</td></tr>
+      <tr><td>8. Sharding / outro modelo de dados</td><td>Escrita além do que um servidor suporta</td><td>Muito alto. Raro em sistemas de saúde dessa escala</td></tr>
+    </tbody></table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Suba os degraus <em>em ordem</em>. A maioria dos sistemas hospitalares para no 4 ou no 6. Sharding antes de esgotar índice, pool e cache é quase sempre erro de diagnóstico.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A aplicação está dando timeout de conexão. O que você faz?" Primeiro, descobrir <em>por que</em> as conexões estão presas (transações longas, consulta lenta, vazamento no pool); medir ocupação do pool; só depois ajustar tamanho. Explique a Lei de Little, e que "mais conexões" costuma piorar.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Mantenha um <strong>orçamento de conexões</strong> do banco: <code>max_connections</code> (ou <code>sessions</code>) dividido entre aplicações, e conferido toda vez que alguém aumenta réplicas de pods. Tenha o número em um painel (usadas / máximo / ativas / <em>idle in transaction</em>). Réplica e cache são decisões de produto também: pergunte quais telas toleram dado de 30 segundos atrás e quais jamais (alergias, medicação, resultado crítico, onde o dado deve vir do primário).</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Exercícios</h2>
+  <p>Todos usam o esquema da trilha (<code>atendimento</code>, <code>atendimento_item</code> etc.). Tente resolver antes de abrir a resposta. Há versão para os dois bancos onde a sintaxe muda.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>A tabela <code>atendimento</code> tem 200 milhões de linhas, 5 anos de histórico e cresce 4 milhões por mês. 90% das consultas olham os últimos 3 meses; a tela do histórico do paciente busca por <code>id_paciente</code>; a política de retenção do banco operacional é de 24 meses. Proponha o particionamento e diga o que muda para a PK e <code>atendimento_item</code>.</span></summary><div class="ans">
+    <p><strong>Método:</strong> range por <code>dt_atendimento</code>, uma partição por mês (~4 milhões de linhas cada, tamanho confortável). Hash por <code>id_paciente</code> <em>não</em> serviria: não poda por período e não ajuda o arquivamento. List não faz sentido para tempo.</p>
+    <p><strong>Índices.</strong> A consulta do histórico (<code>WHERE id_paciente = :p</code>, sem data) visitará <em>todas</em> as partições de índice (60). Para isso: índice <code>(id_paciente, dt_atendimento)</code>, local (Oracle) ou por partição (PG). Visitar 60 índices pequenos ainda é rápido; se a tela só mostra os últimos 2 anos, filtre por data e a poda reduz para 24.</p>
+    <p><strong>PK.</strong> PostgreSQL: <code>(id_atendimento, dt_atendimento)</code> (obrigatório conter a chave de partição); a unicidade de <code>id_atendimento</code> sozinho vem da sequência. Oracle: PK global em <code>id_atendimento</code> (acesso pontual rápido, expurgo com <code>UPDATE GLOBAL INDEXES</code>) ou PK local composta com a data.</p>
+    <p><strong><code>atendimento_item</code>.</strong> Oracle: <em>reference partitioning</em> (<code>PARTITION BY REFERENCE (fk_item_atend)</code>) herda o particionamento do pai pela FK, sem copiar a data. PostgreSQL: não há; copie <code>dt_atendimento</code> para a tabela de itens, particione igual e a FK composta (PG 12+) aponta para <code>(id_atendimento, dt_atendimento)</code>.</p>
+    <p><strong>Operação.</strong> Oracle <code>INTERVAL</code> cria partições sozinho; PostgreSQL precisa de job (ou <code>pg_partman</code>) que crie as dos próximos meses, com partição <code>DEFAULT</code> como rede de segurança. Em Oracle, confirme a licença da opção.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Escreva, para PostgreSQL, a rotina mensal que (a) cria as partições dos próximos 2 meses e (b) arquiva a partição de 24 meses atrás sem bloquear leituras. Em que passo você pararia para aprovação humana?</span></summary><div class="ans">
+<pre><code class="sql">-- (a) criar partição do mês +1 e +2 (idempotente)
+DO $$
+DECLARE
+  m date;
+BEGIN
+  FOR i IN 1..2 LOOP
+    m := (date_trunc('month', current_date) + (i || ' month')::interval)::date;
+    EXECUTE format(
+      'CREATE TABLE IF NOT EXISTS %I PARTITION OF atendimento FOR VALUES FROM (%L) TO (%L)',
+      'atendimento_' || to_char(m, 'YYYY_MM'), m, (m + interval '1 month')::date);
+  END LOOP;
+END $$;
+
+-- (b) soltar a partição antiga (PG 14+: sem bloquear leitores; exige tabela SEM partição DEFAULT
+--     e fora de bloco de transação; senão, use DETACH PARTITION simples, com bloqueio curto)
+ALTER TABLE atendimento DETACH PARTITION atendimento_2024_11 CONCURRENTLY;
+
+-- (c) exportar e conferir antes de qualquer remoção
+--   \copy atendimento_2024_11 TO 'atend_2024_11.csv' CSV HEADER   (ou pg_dump -t)
+--   conferir contagem e soma de valor entre a tabela e o arquivo/arquivo-destino
+ALTER TABLE atendimento_2024_11 SET TABLESPACE ts_arquivo;   -- mover para disco barato, opcional</code></pre>
+    <p>A <strong>remoção definitiva</strong> (<code>DROP TABLE atendimento_2024_11</code>) é o ponto de aprovação humana: só após conferência da exportação, verificação do backup do arquivo e a decisão do DPO/jurídico de que o prazo de retenção já permite eliminar. Em prontuário, 24 meses é prazo do <em>banco operacional</em>, não de eliminação.</p>
+    <p>Alerte (monitoramento) se, no dia 25 de cada mês, não existir a partição do mês seguinte.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>O painel do diretor lê <code>mv_fat_mensal</code> (PostgreSQL). O <code>REFRESH MATERIALIZED VIEW</code> noturno dura 40 minutos, e às 7h ainda há relatórios travados esperando. O que você muda?</span></summary><div class="ans">
+    <p>O refresh simples toma <code>ACCESS EXCLUSIVE</code>: quem lê espera até o fim. Passos:</p>
+    <ol>
+      <li>Criar o índice único exigido: <code>CREATE UNIQUE INDEX ux_mv ON mv_fat_mensal (mes, id_medico)</code> (a consulta já tem essa chave natural).</li>
+      <li>Trocar para <code>REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fat_mensal</code>: os leitores seguem lendo a versão antiga até o fim. Mais lento e consome mais CPU, mas ninguém espera.</li>
+      <li>Atacar os 40 minutos: a MV recalcula <em>tudo</em>, incluindo os 5 anos que nunca mudam. Troque por uma <strong>tabela de resumo</strong> que recalcule só os últimos 2 meses (seção 5) e consulte uma view que una o histórico fechado ao mês corrente.</li>
+      <li>Garantir que o job termina antes das 6h, alerta se falhar, e que o painel exiba "atualizado em".</li>
+    </ol>
+    <p>Em Oracle, a resposta natural seria <code>REFRESH FAST</code> com MV log (se a consulta qualificar), ou <code>atomic_refresh =&gt; FALSE</code> avaliando o intervalo em que a MV fica vazia.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Você precisa marcar como <code>CANCELADO</code> cerca de 30 milhões de atendimentos <code>AGENDADO</code> anteriores a 2024 que nunca foram realizados. Escreva a rotina em lotes e liste os cuidados.</span></summary><div class="ans">
+<pre><code class="sql">-- PostgreSQL: lotes por faixa de chave, commit por lote (PROCEDURE, PG 11+)
+CREATE PROCEDURE cancelar_agendados_antigos() LANGUAGE plpgsql AS $$
+DECLARE
+  v_ini bigint; v_max bigint; v_passo constant bigint := 50000;
+BEGIN
+  SELECT MIN(id_atendimento), MAX(id_atendimento) INTO v_ini, v_max
+    FROM atendimento WHERE status = 'AGENDADO' AND dt_atendimento &lt; DATE '2024-01-01';
+  WHILE v_ini IS NOT NULL AND v_ini &lt;= v_max LOOP
+    UPDATE atendimento SET status = 'CANCELADO'
+     WHERE id_atendimento &gt;= v_ini AND id_atendimento &lt; v_ini + v_passo
+       AND status = 'AGENDADO' AND dt_atendimento &lt; DATE '2024-01-01';
+    COMMIT;
+    v_ini := v_ini + v_passo;
+    PERFORM pg_sleep(0.1);
+  END LOOP;
+END $$;</code></pre>
+<pre><code class="sql">-- Oracle: mesma ideia por faixa de id, com bind de início e fim controlados pelo laço
+UPDATE atendimento SET status = 'CANCELADO'
+ WHERE id_atendimento &gt;= :ini AND id_atendimento &lt; :ini + 50000
+   AND status = 'AGENDADO' AND dt_atendimento &lt; DATE '2024-01-01';
+COMMIT;</code></pre>
+    <p><strong>Cuidados:</strong> (1) o filtro <code>status = 'AGENDADO'</code> repetido no UPDATE faz a rotina ser retomável e idempotente; (2) faixa de chave evita revisitar linhas e não depende de varredura completa em cada lote; (3) o commit por lote mantém log, locks e undo pequenos; (4) no PG, cada UPDATE cria tuplas mortas, então 30 milhões de atualizações precisam do autovacuum acompanhando (acompanhe <code>n_dead_tup</code>); (5) monitore o lag da réplica e o espaço do WAL/redo; (6) há triggers ou integrações que disparam por mudança de status? Podem multiplicar o trabalho; (7) isso é mudança de dado de produção: ensaio em homologação, janela aprovada, backup ou script de reversão (guardar os ids alterados), e aval do negócio.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>No PostgreSQL, <code>pg_stat_user_tables</code> mostra <code>atendimento</code> com 16% de tuplas mortas e último autovacuum há 8 dias. <code>pg_stat_activity</code> tem uma sessão "idle in transaction" há 3 dias. A consulta mais crítica vem piorando semana a semana. Diagnostique e proponha o plano.</span></summary><div class="ans">
+    <ol>
+      <li><strong>Causa provável:</strong> a sessão antiga segura o <em>horizonte de limpeza</em>. O autovacuum até roda, mas não pode remover tuplas mortas mais novas que o início dessa transação. Isso explica o bloat crescente apesar do autovacuum. Soma-se o limite padrão de 20% de <code>scale_factor</code>, alto para essa tabela.</li>
+      <li><strong>Agora:</strong> identificar a sessão (<code>pid</code>, <code>application_name</code>, query), entender de quem é, e encerrá-la (<code>pg_terminate_backend</code>) com aviso. Conferir também slots de replicação ociosos e transações preparadas.</li>
+      <li><strong>Depois:</strong> rodar um <code>VACUUM (VERBOSE, ANALYZE) atendimento</code> manual e conferir se as mortas caem. Medir o bloat (<code>pgstattuple</code>); se índices estiverem inchados, <code>REINDEX CONCURRENTLY</code>.</li>
+      <li><strong>Prevenir:</strong> <code>idle_in_transaction_session_timeout</code>, <code>ALTER TABLE atendimento SET (autovacuum_vacuum_scale_factor = 0.01)</code>, alerta para transações com mais de X minutos e para tuplas mortas acima de Y%. Corrigir a aplicação que abriu a transação e não fechou (falta de commit/rollback no ramo de erro, ou chamada externa dentro da transação).</li>
+    </ol></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <p>Situações que chegam ao gestor ou ao tech lead. Para cada uma, o que fazer.</p>
+
+  <h3>Cenário 1 · Virada de mês: o cadastro de atendimentos parou</h3>
+  <p>No dia 1º, a recepção não consegue salvar. O log do PostgreSQL mostra <code>no partition of relation "atendimento" found for row</code>.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Contenção imediata: criar a partição do mês (<code>CREATE TABLE ... PARTITION OF ... FOR VALUES FROM ... TO ...</code>). Os INSERTs voltam na hora.</li>
+    <li>Se existiam linhas rejeitadas em fila ou arquivo, reprocessá-las por script idempotente.</li>
+    <li>Causa-raiz: o job que cria partições não rodou (ou ninguém o criou). Corrigir com criação antecipada de 2 a 3 meses, partição <code>DEFAULT</code> como rede de segurança e <strong>alerta</strong> que dispara se a partição do mês seguinte não existir até o dia 20.</li>
+    <li>Registrar no runbook de virada de mês.</li>
+  </ol>
+
+  <h3>Cenário 2 · O painel de resultados trava às 7h</h3>
+  <p>A diretoria abre o painel às 7h e ele fica minutos "carregando". O DBA diz que o refresh da MV roda das 6h40 às 7h20.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Descobrir por que o refresh atrasou: cresceu o volume, o job foi movido, outra carga disputa recursos?</li>
+    <li>PostgreSQL: <code>REFRESH ... CONCURRENTLY</code> (com índice único) para não travar leitores. Oracle: <code>FAST</code> com log, ou <code>atomic_refresh</code> ajustado.</li>
+    <li>Mover o job para terminar antes das 6h, com folga, e alertar em caso de atraso.</li>
+    <li>Longo prazo: tabela de resumo incremental; exibir "atualizado em HH:MM" no painel; acordar com o dono do indicador qual atraso é aceitável.</li>
+  </ol>
+
+  <h3>Cenário 3 · O DBA quer particionar no Oracle: "tem licença?"</h3>
+  <p>O DBA propõe particionar <code>atendimento</code> em Oracle para resolver o expurgo. Ninguém sabe se a opção Partitioning está licenciada.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Pare antes de criar qualquer objeto. Peça a compras/jurídico o contrato (edição e opções licenciadas) e confirme no documento oficial de licenciamento da versão em uso.</li>
+    <li>Verifique o que já está em uso (<code>DBA_FEATURE_USAGE_STATISTICS</code>) para não herdar um passivo oculto.</li>
+    <li>Se a opção não existe: comparar custo de licença contra alternativas (tabelas por período com uma view <code>UNION ALL</code>, arquivamento por lote em horário de baixa carga, outro banco para o histórico) e, para a decisão, levar números de crescimento e de custo.</li>
+    <li>Se existe: seguir o plano de particionamento (chave, índices locais/globais, rotina de manutenção).</li>
+  </ol>
+
+  <h3>Cenário 4 · "Too many connections" depois da autoescala</h3>
+  <p>A aplicação passa a ter 20 pods após um pico; o PostgreSQL responde <code>FATAL: sorry, too many clients already</code> e o atendimento cai.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Contenção: reduzir o número de réplicas (ou o pool por pod) para voltar abaixo de <code>max_connections</code> e encerrar sessões ociosas.</li>
+    <li>Conta: <code>pods × pool por pod</code> deve ser bem menor que o limite do banco. Com 20 × 50 = 1.000, o banco jamais aguentaria.</li>
+    <li>Solução estrutural: PgBouncer em modo <code>transaction</code> (checando compatibilidade da aplicação), pool pequeno por pod (10 a 20) e limite máximo de pods na autoescala.</li>
+    <li>Ver <em>por que</em> o pico exigiu tantas conexões: consultas lentas e transações longas seguram conexões. Medir, e não apenas aumentar limites.</li>
+  </ol>
+
+  <h3>Cenário 5 · "Apague os dados antigos para liberar espaço"</h3>
+  <p>O disco do banco chegou a 85%. Alguém propõe apagar atendimentos com mais de 5 anos.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Não apagar. Prontuário tem prazo mínimo de guarda (20 anos desde o último registro) pela Lei 13.787/2018, e outras tabelas têm prazos próprios. Consulte DPO e jurídico.</li>
+    <li>Descobrir onde o espaço está: maiores tabelas e índices, bloat (PG), espaço abaixo da HWM (Oracle), logs, backups. Muitas vezes o ganho está aí, sem tocar em dados.</li>
+    <li>Arquivar em vez de eliminar: mover partições antigas para storage barato, comprimidas, mantendo íntegras e acessíveis sob demanda, com criptografia e controle de acesso.</li>
+    <li>Acelerar a decisão de longo prazo: política de retenção por tabela, particionamento por data, e previsão de crescimento no capacity planning.</li>
+  </ol>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Partição</dt><dd>Segmento físico de uma tabela (ou índice) particionada, definido por uma faixa, lista ou hash da chave.</dd></div>
+    <div><dt>Partition pruning</dt><dd>Poda: o otimizador ignora as partições que o filtro exclui.</dd></div>
+    <div><dt>Índice local / global</dt><dd>Local: um por partição, alinhado à tabela. Global: único, cobre todas as partições (Oracle; o PG não tem).</dd></div>
+    <div><dt>EXCHANGE / ATTACH / DETACH PARTITION</dt><dd>Troca ou anexa/solta uma partição como metadado. Base de cargas e arquivamento instantâneos.</dd></div>
+    <div><dt>Retenção</dt><dd>Prazo pelo qual um dado deve ser guardado e depois arquivado ou eliminado, por lei ou política.</dd></div>
+    <div><dt>View materializada (MV)</dt><dd>Resultado de uma consulta guardado fisicamente e atualizado por refresh.</dd></div>
+    <div><dt>MV log</dt><dd>Tabela do Oracle que registra mudanças da base para permitir refresh rápido (FAST).</dd></div>
+    <div><dt>REFRESH CONCURRENTLY</dt><dd>Atualização de MV no PostgreSQL sem travar leitores; exige índice único.</dd></div>
+    <div><dt>CTAS</dt><dd><code>CREATE TABLE AS SELECT</code>: cria e preenche uma tabela numa instrução, muito usada para reescrever tabelas.</dd></div>
+    <div><dt>Direct-path</dt><dd>Inserção que grava blocos novos acima da high water mark, sem cache (Oracle: <code>APPEND</code>, SQL*Loader).</dd></div>
+    <div><dt>Hint</dt><dd>Instrução embutida no SQL que orienta o otimizador (Oracle). O PG usa a extensão pg_hint_plan.</dd></div>
+    <div><dt>SQL Plan Baseline</dt><dd>Plano de execução aceito e guardado pelo Oracle para um SQL, de modo a não regredir.</dd></div>
+    <div><dt>Bloat</dt><dd>Espaço ocupado por tuplas mortas e páginas semivazias em tabelas e índices.</dd></div>
+    <div><dt>Autovacuum</dt><dd>Processo do PostgreSQL que recicla tuplas mortas e atualiza estatísticas.</dd></div>
+    <div><dt>Pool de conexões</dt><dd>Conjunto reutilizável de conexões ao banco, limitando o número de sessões reais.</dd></div>
+    <div><dt>Lag de réplica</dt><dd>Atraso entre uma escrita no primário e a sua visibilidade na réplica.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Das de nível júnior às de sênior e gestão. Responda em voz alta antes de abrir.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é particionamento de tabelas e quais os ganhos?</span></summary><div class="ans"><p>Dividir uma tabela lógica em segmentos físicos por uma chave. Dois ganhos: poda (consultas com filtro na chave leem só as partições relevantes) e manutenção barata (carga, arquivamento, expurgo e estatísticas por partição). Não acelera consultas que não filtram pela chave, e pode piorá-las.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Range, list e hash: quando usar cada um?</span></summary><div class="ans"><p>Range para dados com tempo (poda por período e arquivamento). List para categorias estáveis e poucas (unidade, região). Hash para espalhar carga e reduzir contenção, sem poda por faixa nem arquivamento. Composto quando se precisa de dois níveis.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>O que é partition pruning e como se perde?</span></summary><div class="ans"><p>O otimizador descarta partições que o filtro exclui. Perde-se aplicando função à coluna da chave (<code>TO_CHAR</code>, <code>date_trunc</code>, <code>TRUNC</code>), conversões implícitas, ou filtrando por outra coluna. Confirme no plano (<code>Pstart/Pstop</code> no Oracle, nomes de partições no PG).</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Índice local ou global no Oracle?</span></summary><div class="ans"><p>Local: alinhado às partições, manutenção trivial (drop/exchange sem invalidar), mas unicidade só dentro da partição se a chave não estiver no índice, e busca por outra coluna visita todas as partições de índice. Global: acesso pontual rápido e unicidade global, mas expurgo mais caro (<code>UPDATE GLOBAL INDEXES</code>).</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Que restrições o particionamento declarativo do PostgreSQL impõe a PK e UNIQUE?</span></summary><div class="ans"><p>Devem incluir todas as colunas da chave de partição, porque não existem índices globais. Então <code>id_atendimento</code> sozinho não tem unicidade garantida pelo banco, e FKs que apontam para a tabela particionada referenciam a chave composta (FK apontando para particionada: PG 12+).</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Quando você <em>não</em> particionaria uma tabela?</span></summary><div class="ans"><p>Tabela pequena ou média, consultas que não filtram pela chave, necessidade de unicidade global por id, risco de milhares de partições, e quando o problema real é SQL ruim ou lock. Particionar muda operação, e só vale se há ganho medido de poda ou de manutenção.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Qual o custo de usar particionamento em Oracle?</span></summary><div class="ans"><p>É a opção paga Partitioning, da Enterprise Edition, licenciada à parte (SE2 não a inclui). Usá-la sem licença é passivo em auditoria (<code>DBA_FEATURE_USAGE_STATISTICS</code> mostra o uso). No PostgreSQL é parte do núcleo, sem custo de licença.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Como apagar 3 anos de histórico de uma tabela enorme?</span></summary><div class="ans"><p>Primeiro verificar se a retenção legal permite. Particionada por data: <code>DROP/DETACH PARTITION</code> (instantâneo, sem redo de linhas), após arquivar. Sem partição: lotes com commit, em baixa carga, ou CTAS do que fica. DELETE único em massa gera log gigante, transação longa, rollback demorado e não devolve espaço.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>O que a legislação diz sobre reter prontuário e como isso afeta a engenharia?</span></summary><div class="ans"><p>A Lei 13.787/2018 fixa o mínimo de 20 anos a partir do último registro para a eliminação de prontuários; a LGPD admite a conservação para cumprimento de obrigação legal. Consequência: arquivar não é eliminar; o expurgo exige política escrita, aval do DPO e do jurídico, e registro. O arquivo continua dado sensível, com criptografia e controle de acesso.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Diferença entre view e view materializada, e entre refresh complete e fast?</span></summary><div class="ans"><p>View é consulta com nome, sempre atual; MV guarda o resultado, rápida e com atraso. Complete reexecuta a consulta inteira. Fast (Oracle) aplica só os deltas registrados no MV log, desde que a consulta seja elegível. PostgreSQL só tem refresh completo (recalcula tudo).</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>O que é <code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> e o que ele exige?</span></summary><div class="ans"><p>Atualiza a MV sem bloquear leitores, calculando a diferença contra o conteúdo atual. Exige pelo menos um índice UNIQUE só de colunas (sem expressão ou WHERE) e MV já populada. É mais lento que o refresh simples, que toma <code>ACCESS EXCLUSIVE</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como carregar 50 milhões de linhas de forma eficiente?</span></summary><div class="ans"><p>Oracle: direct-path (<code>INSERT /*+ APPEND */</code>), SQL*Loader ou tabela externa; PostgreSQL: <code>COPY</code>. Índices não únicos desligados/recriados depois, constraints validadas depois, estatísticas ao final, e carga em tabela auxiliar com <code>EXCHANGE/ATTACH PARTITION</code> se for particionada. Cuidado com <code>NOLOGGING</code> e Data Guard.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Por que evitar hints? E o PostgreSQL, como lida sem eles?</span></summary><div class="ans"><p>Congelam o plano, dependem de nomes, escondem a causa (estatística, índice, SQL) e viram dívida. Uso legítimo: experimento, emergência com ticket, hints operacionais (<code>APPEND</code>, <code>PARALLEL</code>). O PostgreSQL não tem hints nativos: corrige-se estatística (<code>CREATE STATISTICS</code>), índice, custo (<code>random_page_cost</code>), SQL, e como último recurso a extensão <code>pg_hint_plan</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>SQL Plan Baseline versus SQL Profile: o que faz cada um e qual o ponto de atenção?</span></summary><div class="ans"><p>Baseline fixa planos aceitos para um SQL e permite evoluir com segurança. Profile guarda correções de estimativa do SQL Tuning Advisor, guiando o otimizador sem fixar plano. Ponto de atenção: licenças. O Profile exige o Tuning Pack (e Diagnostics Pack), e o SPM tem suas próprias condições; confirmar no contrato.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Uma tabela grande do PostgreSQL está inchada mesmo com autovacuum ligado. Por quê?</span></summary><div class="ans"><p>Três suspeitas: o limite padrão (20% de <code>scale_factor</code>) é alto demais para a tabela; uma transação longa, slot de replicação ou <code>hot_standby_feedback</code> segura o horizonte e impede a remoção; o autovacuum está limitado por custo e não acompanha a carga. Correção: parâmetros por tabela, matar transações ociosas, afrouxar o freio, e <code>REINDEX CONCURRENTLY</code>/<code>pg_repack</code> para recuperar o que já inchou.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Por que muitas conexões derrubam o banco e como dimensionar um pool?</span></summary><div class="ans"><p>Cada conexão é um processo com memória e custo de troca de contexto; passando de certo ponto, a vazão cai e a latência sobe. Dimensione pela Lei de Little (vazão × tempo em uso) e comece pequeno (algumas vezes o número de núcleos), medindo. Use pooler (PgBouncer em modo transaction, DRCP no Oracle), considere pods × pool, e mantenha transações curtas.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Quando usar réplica de leitura e cache, e quais os riscos?</span></summary><div class="ans"><p>Réplica: relatórios e leituras tolerantes a atraso; riscos: lag, ler o que acabou de escrever, cancelamento de consultas longas, e custo de licença no Oracle (Active Data Guard). Cache: dados de leitura frequente e baixa mudança, com TTL e invalidação; risco de dado velho. Nenhum dos dois escala escrita, e ambos vêm depois de consulta e índice bem feitos.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você, como gestora, decide quando investir em particionamento, réplica ou hardware maior?</span></summary><div class="ans"><p>Por dados, na ordem dos degraus: medir as consultas e o crescimento por tabela; corrigir SQL e índices; dimensionar pool; cache; réplica; MV/resumo; particionamento e arquivamento; só então hardware ou arquitetura nova. Exijo do time a medição antes/depois, o custo (licença inclusive), o plano de operação e o risco legal (retenção, LGPD) antes de aprovar.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

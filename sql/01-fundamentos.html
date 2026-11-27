@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 01: Fundamentos e modelo relacional</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 01 de 12 · Fundamentos e modelo relacional</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a aria-current="page" href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li class="sub"><ol>
+      <li><a href="#modelo-relacional"><span class="n">1</span>O modelo relacional e o esquema de exemplo</a></li>
+      <li><a href="#tipos"><span class="n">2</span>Tipos de dados: Oracle e PostgreSQL</a></li>
+      <li><a href="#select"><span class="n">3</span>SELECT, WHERE, ORDER BY, DISTINCT, aliases e CASE</a></li>
+      <li><a href="#ordem-logica"><span class="n">4</span>A ordem lógica de execução</a></li>
+      <li><a href="#null"><span class="n">5</span>NULL e a lógica de três valores</a></li>
+      <li><a href="#filtros"><span class="n">6</span>Filtros: LIKE, IN, BETWEEN e datas sem matar o índice</a></li>
+      <li><a href="#topn"><span class="n">7</span>Top-N e paginação básica</a></li>
+      <li><a href="#conjuntos"><span class="n">8</span>Operadores de conjunto</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#entrevista"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 01 · <span class="lvl l1">Básico</span></div>
+  <h1>Fundamentos e modelo relacional</h1>
+  <p class="lede">Tudo em SQL parte de uma ideia simples: dados são conjuntos de linhas em tabelas ligadas por chaves, e uma consulta descreve o resultado que você quer, não o caminho para chegar lá. Este módulo monta essa base, fixa o esquema usado em toda a trilha e ensina as três coisas que mais geram bugs silenciosos: a ordem lógica de execução, o NULL e os filtros de data.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar tabelas, chaves primárias e estrangeiras e cardinalidade 1:N e N:N, e ler o diagrama ER do esquema de exemplo.</li>
+    <li>Escolher tipos de dados em Oracle e PostgreSQL e evitar as pegadinhas de <code>DATE</code> com hora e de string vazia igual a NULL.</li>
+    <li>Escrever <code>SELECT</code> com <code>WHERE</code>, <code>ORDER BY</code>, <code>DISTINCT</code>, aliases, expressões e <code>CASE</code>, sabendo a ordem em que o banco avalia cada cláusula.</li>
+    <li>Raciocinar com a lógica de três valores: comparações, <code>NOT IN</code> com NULL, <code>COALESCE</code>/<code>NVL</code>, ordenação de NULLs e <code>COUNT(col)</code>.</li>
+    <li>Filtrar por datas com intervalo semiaberto, usar <code>LIKE</code>, <code>IN</code> e <code>BETWEEN</code> sem erro, paginar e combinar resultados com operadores de conjunto.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="modelo-relacional">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O modelo relacional e o esquema de exemplo</h2>
+  <p>Um banco relacional guarda dados em <strong>tabelas</strong> (formalmente, <em>relações</em>). Cada <strong>linha</strong> é um fato (um atendimento, um paciente) e cada <strong>coluna</strong> é um atributo com tipo definido. A tabela é um <em>conjunto</em>: não há ordem natural das linhas. Se você não escreve <code>ORDER BY</code>, a ordem em que as linhas voltam não é garantida, mesmo que hoje "pareça" estável.</p>
+  <p>O ponto central do modelo é que as tabelas se relacionam por <strong>valores</strong>, não por ponteiros. Para ligar um atendimento ao paciente, a linha do atendimento guarda o <code>id_paciente</code>. Isso permite que o banco recombine os dados de infinitas formas (JOINs, módulo 02) e que as regras de consistência sejam declaradas e verificadas pelo próprio banco.</p>
+
+  <h3>Chaves e restrições</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Conceito</th><th>O que garante</th><th>Exemplo no esquema</th></tr></thead>
+    <tbody>
+      <tr><td>Chave primária (PK)</td><td>Identifica uma linha de forma única e nunca é NULL</td><td><code>paciente.id_paciente</code></td></tr>
+      <tr><td>Chave estrangeira (FK)</td><td>O valor existe na tabela referenciada (integridade referencial)</td><td><code>atendimento.id_paciente</code> aponta para <code>paciente</code></td></tr>
+      <tr><td><code>UNIQUE</code></td><td>Sem repetição na coluna (ou combinação de colunas)</td><td><code>medico.crm</code> poderia ser único por UF</td></tr>
+      <tr><td><code>NOT NULL</code></td><td>A coluna sempre tem valor</td><td><code>atendimento.dt_atendimento</code></td></tr>
+      <tr><td><code>CHECK</code></td><td>Regra sobre o valor da linha</td><td><code>status IN ('AGENDADO','REALIZADO','CANCELADO')</code></td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Chave substituta ou natural?</strong> Uma chave natural vem do mundo real (CPF, CRM). Uma chave substituta (<em>surrogate</em>) é um número sem significado, gerado pelo banco (<code>id_paciente</code>). Prefira substituta como PK: CPF pode ser digitado errado, corrigido, ausente (estrangeiros, recém-nascidos) e é dado pessoal que você não quer espalhar como chave estrangeira em dezenas de tabelas. Mantenha o CPF como coluna com <code>UNIQUE</code> quando a regra de negócio exigir.</p>
+  <div class="note trap"><b>Chave estrangeira não cria índice</b><p>Nem Oracle nem PostgreSQL criam índice automaticamente na coluna da FK (só na PK e no <code>UNIQUE</code>). Sem índice em <code>atendimento.id_paciente</code>, todo JOIN reverso, todo <code>DELETE</code> em <code>paciente</code> e toda checagem de integridade viram varredura da tabela grande. No Oracle, FK sem índice ainda pode gerar locks mais agressivos no pai ao alterar chaves ou apagar linhas. Regra prática: indexe toda FK de tabela grande (detalhes no módulo 08).</p></div>
+
+  <h3>Cardinalidade</h3>
+  <ul>
+    <li><strong>1:N (um para muitos).</strong> Um paciente tem muitos atendimentos; cada atendimento tem um paciente. A FK fica no lado "N" (<code>atendimento.id_paciente</code>). É o caso mais comum.</li>
+    <li><strong>N:N (muitos para muitos).</strong> Um paciente consulta vários médicos e um médico atende vários pacientes. Não existe coluna que resolva isso em duas tabelas, então se cria uma <strong>tabela associativa</strong> no meio. Aqui, <code>atendimento</code> faz esse papel entre <code>paciente</code> e <code>medico</code>, e já carrega atributos próprios (data, valor, status). Do mesmo jeito, <code>atendimento_item</code> liga <code>atendimento</code> a procedimentos (<code>cod_procedimento</code>).</li>
+    <li><strong>Opcional (0..1).</strong> <code>atendimento.id_convenio</code> aceita NULL: o atendimento é particular. Uma FK pode ser nula, e então simplesmente não aponta para ninguém.</li>
+    <li><strong>Auto-relacionamento.</strong> <code>setor.id_setor_pai</code> aponta para a própria tabela <code>setor</code> e forma uma hierarquia (hospital, ala, andar). Aparece no self join (módulo 02) e na recursão (módulo 04).</li>
+  </ul>
+
+  <h3>O esquema usado em toda a trilha</h3>
+  <p>Todos os exemplos e exercícios usam estas seis tabelas, com dados fictícios. Releia sempre que um nome aparecer sem explicação.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 452" role="img" aria-label="Diagrama ER: atendimento referencia paciente, medico, convenio e setor; atendimento_item referencia atendimento; setor referencia a si mesmo">
+      <defs><marker id="ah-er" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="170" height="80" rx="6"/>
+      <text class="ttl" x="32" y="49">paciente</text>
+      <text x="32" y="67">PK id_paciente</text><text x="32" y="83">nome, cpf, uf,</text><text x="32" y="99">dt_nascimento, cidade</text>
+      <rect class="box" x="510" y="30" width="170" height="80" rx="6"/>
+      <text class="ttl" x="522" y="49">medico</text>
+      <text x="522" y="67">PK id_medico</text><text x="522" y="83">nome, crm,</text><text x="522" y="99">especialidade</text>
+      <rect class="box-a" x="250" y="120" width="200" height="160" rx="6"/>
+      <text class="ttl" x="262" y="139">atendimento</text>
+      <text x="262" y="157">PK id_atendimento</text><text x="262" y="173">FK id_paciente</text><text x="262" y="189">FK id_medico</text>
+      <text x="262" y="205">FK id_convenio (NULL)</text><text x="262" y="221">FK id_setor</text>
+      <text x="262" y="237">dt_atendimento, tipo,</text><text x="262" y="253">status, valor</text>
+      <rect class="box" x="20" y="300" width="170" height="64" rx="6"/>
+      <text class="ttl" x="32" y="319">convenio</text>
+      <text x="32" y="337">PK id_convenio</text><text x="32" y="353">nome, ativo</text>
+      <rect class="box-w" x="510" y="300" width="170" height="80" rx="6"/>
+      <text class="ttl" x="522" y="319">setor</text>
+      <text x="522" y="337">PK id_setor</text><text x="522" y="353">FK id_setor_pai</text><text x="522" y="369">nome</text>
+      <rect class="box" x="250" y="318" width="200" height="96" rx="6"/>
+      <text class="ttl" x="262" y="337">atendimento_item</text>
+      <text x="262" y="355">PK id_item</text><text x="262" y="371">FK id_atendimento</text><text x="262" y="387">cod_procedimento, qtd,</text><text x="262" y="403">valor_unit</text>
+      <path class="ln" d="M250,150 L220,150 L220,70 L190,70" marker-end="url(#ah-er)"/>
+      <path class="ln" d="M450,150 L480,150 L480,70 L510,70" marker-end="url(#ah-er)"/>
+      <path class="ln" d="M250,230 L220,230 L220,330 L190,330" marker-end="url(#ah-er)"/>
+      <path class="ln" d="M450,230 L480,230 L480,330 L510,330" marker-end="url(#ah-er)"/>
+      <path class="ln" d="M350,318 L350,282" marker-end="url(#ah-er)"/>
+      <path class="ln" d="M680,314 L694,314 L694,350 L680,350" marker-end="url(#ah-er)"/>
+      <text class="lbl" x="232" y="144">N</text><text class="lbl" x="196" y="64">1</text>
+      <text class="lbl" x="456" y="144">N</text><text class="lbl" x="492" y="64">1</text>
+      <text class="lbl" x="232" y="224">N</text><text class="lbl" x="196" y="324">1</text>
+      <text class="lbl" x="456" y="224">N</text><text class="lbl" x="486" y="324">1</text>
+      <text class="lbl" x="357" y="312">N</text><text class="lbl" x="357" y="294">1</text>
+      <text class="lbl" x="30" y="442">Seta: da tabela com a FK para a tabela referenciada.</text>
+      <text class="lbl" x="30" y="418">N = lado "muitos"; id_convenio é FK opcional (NULL = particular).</text>
+    </svg>
+    <figcaption>Diagrama ER do esquema da trilha. <code>atendimento</code> (em destaque) é a tabela grande; <code>atendimento_item</code> é ainda maior. <code>setor</code> aponta para si mesmo (hierarquia).</figcaption>
+  </figure>
+<pre data-file="esquema (resumo)"><code class="text">paciente          (id_paciente PK, nome, cpf VARCHAR(11), dt_nascimento DATE, cidade, uf CHAR(2))
+medico            (id_medico PK, nome, crm, especialidade)
+convenio          (id_convenio PK, nome, ativo)
+setor             (id_setor PK, nome, id_setor_pai FK -&gt; setor)
+atendimento       (id_atendimento PK, id_paciente FK, id_medico FK,
+                   id_convenio FK NULL (= particular), id_setor FK,
+                   dt_atendimento TIMESTAMP, tipo, status, valor NUMERIC(10,2))
+atendimento_item  (id_item PK, id_atendimento FK, cod_procedimento, qtd, valor_unit NUMERIC(10,2))</code></pre>
+  <p>Escala: <code>atendimento</code> tem milhões de linhas e cresce todos os dias; <code>atendimento_item</code> é maior ainda; as demais são cadastros com milhares de linhas. Essa diferença de tamanho é o que torna a otimização interessante nos módulos 07 a 09.</p>
+
+  <h3>DDL das duas tabelas centrais</h3>
+  <p>A criação difere nos detalhes de tipo e de geração de chave. <code>GENERATED ... AS IDENTITY</code> existe no Oracle desde o 12c e no PostgreSQL desde a versão 10.</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">CREATE TABLE paciente (
+  id_paciente    NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nome           VARCHAR2(120) NOT NULL,
+  cpf            VARCHAR2(11),
+  dt_nascimento  DATE,
+  cidade         VARCHAR2(80),
+  uf             CHAR(2),
+  CONSTRAINT uq_paciente_cpf UNIQUE (cpf)
+);
+
+CREATE TABLE atendimento (
+  id_atendimento NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_paciente    NUMBER NOT NULL REFERENCES paciente (id_paciente),
+  id_medico      NUMBER NOT NULL REFERENCES medico (id_medico),
+  id_convenio    NUMBER REFERENCES convenio (id_convenio),   -- NULL = particular
+  id_setor       NUMBER NOT NULL REFERENCES setor (id_setor),
+  dt_atendimento TIMESTAMP NOT NULL,
+  tipo           VARCHAR2(10) NOT NULL
+                 CONSTRAINT ck_atend_tipo CHECK (tipo IN ('CONSULTA','EXAME','RETORNO')),
+  status         VARCHAR2(10) NOT NULL
+                 CONSTRAINT ck_atend_status CHECK (status IN ('AGENDADO','REALIZADO','CANCELADO')),
+  valor          NUMBER(10,2)
+);
+CREATE INDEX ix_atend_paciente ON atendimento (id_paciente);  -- FK não cria índice</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">CREATE TABLE paciente (
+  id_paciente    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nome           VARCHAR(120) NOT NULL,
+  cpf            VARCHAR(11) UNIQUE,
+  dt_nascimento  DATE,
+  cidade         VARCHAR(80),
+  uf             CHAR(2)
+);
+
+CREATE TABLE atendimento (
+  id_atendimento BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_paciente    BIGINT NOT NULL REFERENCES paciente (id_paciente),
+  id_medico      BIGINT NOT NULL REFERENCES medico (id_medico),
+  id_convenio    BIGINT REFERENCES convenio (id_convenio),   -- NULL = particular
+  id_setor       BIGINT NOT NULL REFERENCES setor (id_setor),
+  dt_atendimento TIMESTAMP NOT NULL,
+  tipo           VARCHAR(10) NOT NULL CHECK (tipo IN ('CONSULTA','EXAME','RETORNO')),
+  status         VARCHAR(10) NOT NULL CHECK (status IN ('AGENDADO','REALIZADO','CANCELADO')),
+  valor          NUMERIC(10,2)
+);
+CREATE INDEX ix_atend_paciente ON atendimento (id_paciente);  -- FK não cria índice</code></pre>
+  </div>
+  <p>Escrita (<code>INSERT</code>, transações) e modelagem mais aprofundada ficam no módulo 06. Aqui basta saber ler o esquema.</p>
+
+  <h3>Normalização em um minuto</h3>
+  <p>Normalizar é gravar cada fato em <em>um único lugar</em>: sem listas dentro de uma célula (1FN), sem colunas que dependem só de parte da chave (2FN) e sem colunas que dependem de outra coluna não chave (3FN). O nome do médico fica em <code>medico</code>, não copiado em cada atendimento. Desnormalizar de propósito é decisão de desempenho, tomada depois de medir.</p>
+
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre PK e FK, e o que é integridade referencial?" PK identifica a linha de forma única e não nula; FK é uma coluna cujo valor precisa existir na PK de outra tabela (ou ser NULL, se permitido). O banco rejeita inserir um atendimento de paciente inexistente e rejeita apagar um paciente que ainda tem atendimentos (a menos que se declare <code>ON DELETE CASCADE</code> ou similar). Acrescente que FK não cria índice automaticamente: é um detalhe que separa quem decorou de quem operou um banco.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Restrições (PK, FK, <code>NOT NULL</code>, <code>CHECK</code>) são a única garantia de qualidade de dados que vale mesmo com cinco sistemas escrevendo no mesmo banco. Validação só na aplicação some quando alguém roda um script ou uma integração nova. Dados de saúde são <em>dados pessoais sensíveis</em> pela LGPD: CPF e dados clínicos pedem controle de acesso por coluna ou tabela, mascaramento em ambientes de teste e mínimo de cópias. Pergunte ao time se o ambiente de homologação tem dados reais.</p></div>
+</section>
+
+
+<section class="chap" id="tipos">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Tipos de dados: Oracle e PostgreSQL</h2>
+  <p>O tipo da coluna decide o que cabe nela, quanto espaço ocupa, como compara e quais índices funcionam. Escolher mal custa caro depois, porque mudar o tipo de uma tabela com milhões de linhas é uma operação pesada. Os dois bancos têm tipos parecidos com nomes e comportamentos diferentes.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Necessidade</th><th>Oracle</th><th>PostgreSQL</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Inteiro</td><td><code>NUMBER(p)</code> ou <code>NUMBER</code></td><td><code>INTEGER</code>, <code>BIGINT</code></td><td>Oracle não tem tipo inteiro nativo separado: <code>INTEGER</code> vira <code>NUMBER(38)</code></td></tr>
+      <tr><td>Dinheiro e quantidades exatas</td><td><code>NUMBER(10,2)</code></td><td><code>NUMERIC(10,2)</code></td><td>Nunca use ponto flutuante para valores monetários</td></tr>
+      <tr><td>Ponto flutuante</td><td><code>BINARY_DOUBLE</code>, <code>BINARY_FLOAT</code></td><td><code>DOUBLE PRECISION</code>, <code>REAL</code></td><td>Aproximado: <code>0.1 + 0.2</code> não é exatamente <code>0.3</code></td></tr>
+      <tr><td>Texto de tamanho variável</td><td><code>VARCHAR2(n)</code></td><td><code>VARCHAR(n)</code>, <code>TEXT</code></td><td>No Oracle use <code>VARCHAR2</code>; o <code>VARCHAR</code> existe mas a Oracle desaconselha</td></tr>
+      <tr><td>Texto longo</td><td><code>CLOB</code></td><td><code>TEXT</code></td><td><code>TEXT</code> no PG vai até 1 GB e se comporta como <code>VARCHAR</code> sem limite</td></tr>
+      <tr><td>Data (só dia)</td><td>não existe: <code>DATE</code> tem hora</td><td><code>DATE</code></td><td>Diferença que mais gera bug (abaixo)</td></tr>
+      <tr><td>Data e hora</td><td><code>DATE</code> (precisão de segundo) ou <code>TIMESTAMP</code> (até 9 casas)</td><td><code>TIMESTAMP</code> (6 casas), <code>TIMESTAMPTZ</code></td><td>Fuso horário: veja abaixo</td></tr>
+      <tr><td>Booleano</td><td>sem tipo em tabelas até o 23ai; usa-se <code>NUMBER(1)</code> ou <code>CHAR(1)</code></td><td><code>BOOLEAN</code></td><td>Oracle 23ai introduziu <code>BOOLEAN</code> em colunas</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>O DATE do Oracle tem hora</h3>
+  <p>No Oracle, <code>DATE</code> guarda século, ano, mês, dia, hora, minuto e segundo (sem fração de segundo). A exibição padrão esconde a hora, o que engana. Já no PostgreSQL, <code>DATE</code> é só o dia, e a hora exige <code>TIMESTAMP</code>.</p>
+<pre><code class="sql">-- Oracle: dt_nascimento DATE pode conter hora sem você ver.
+SELECT TO_CHAR(dt_nascimento, 'YYYY-MM-DD HH24:MI:SS') FROM paciente;
+-- 1984-05-17 00:00:00  (ok)   |   1990-02-03 14:30:00  (veio de uma carga com hora)
+
+-- Essa igualdade só acerta quem foi gravado à meia-noite exata:
+SELECT * FROM paciente WHERE dt_nascimento = DATE '1990-02-03';   -- não traz o de 14:30</code></pre>
+  <p>Por isso, quando uma coluna <code>DATE</code> do Oracle representa "um dia", você precisa garantir que a hora é sempre 00:00:00 (com <code>TRUNC</code> na escrita) ou comparar por intervalo (seção 6). E por isso <code>dt_atendimento</code> é <code>TIMESTAMP</code> no nosso esquema: o horário importa.</p>
+<pre><code class="sql">-- Aritmética de datas (a sintaxe muda)
+-- Oracle: DATE - DATE devolve dias (número, com fração); somar 1 soma um dia
+SELECT SYSDATE - dt_nascimento AS dias, SYSDATE + 7 AS daqui_a_7_dias, ADD_MONTHS(SYSDATE, 1) FROM paciente;
+
+-- PostgreSQL: DATE - DATE devolve inteiro de dias; timestamp - timestamp devolve INTERVAL
+SELECT CURRENT_DATE - dt_nascimento AS dias,
+       CURRENT_DATE + 7             AS daqui_a_7_dias,
+       now() + INTERVAL '1 month'   AS daqui_a_1_mes
+FROM paciente;</code></pre>
+  <h3>Fuso horário</h3>
+  <p><code>TIMESTAMP</code> guarda exatamente o que foi enviado, sem converter. O PostgreSQL oferece <code>TIMESTAMPTZ</code> (normaliza para UTC e converte para o fuso da sessão ao ler); o Oracle, <code>TIMESTAMP WITH TIME ZONE</code>. Para sistemas que cruzam fusos, guarde instantes com fuso; convenções de data em API estão na trilha de APIs.</p>
+
+  <h3>String vazia é NULL no Oracle</h3>
+  <p>Nos tipos de texto do Oracle, uma string de comprimento zero <strong>é tratada como NULL</strong>. No PostgreSQL, <code>''</code> e NULL são valores distintos, como manda o padrão SQL.</p>
+<pre><code class="sql">-- Oracle
+INSERT INTO paciente (id_paciente, nome, cidade) VALUES (1, 'Ana', '');
+SELECT COUNT(*) FROM paciente WHERE cidade IS NULL;     -- 1: a '' virou NULL
+SELECT COUNT(*) FROM paciente WHERE cidade = '';        -- 0: nunca é verdadeiro
+SELECT 'a' || NULL || 'b' FROM dual;                    -- 'ab': || trata NULL como ''
+
+-- PostgreSQL
+SELECT COUNT(*) FROM paciente WHERE cidade IS NULL;     -- 0
+SELECT COUNT(*) FROM paciente WHERE cidade = '';        -- 1
+SELECT 'a' || NULL || 'b';                              -- NULL: concatenação com NULL é NULL</code></pre>
+  <p>Há duas consequências para quem migra ou integra os dois bancos: uma coluna <code>NOT NULL</code> do Oracle rejeita <code>''</code> (ela é NULL), e um relatório que concatena colunas se comporta diferente quando alguma é nula. No PostgreSQL, <code>concat('a', NULL, 'b')</code> devolve <code>'ab'</code>, porque essa função ignora NULLs.</p>
+
+  <p>Detalhe: no Oracle, <code>VARCHAR2(10)</code> mede em <em>bytes</em> por padrão (<code>VARCHAR2(10 CHAR)</code> mede caracteres); no PostgreSQL, <code>VARCHAR(10)</code> sempre mede caracteres. Importa para nomes com acento.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Dinheiro em <code>NUMERIC</code>/<code>NUMBER(p,s)</code>; instante com hora em <code>TIMESTAMP</code>; identificadores como número, não texto; CPF, CRM e telefone como texto (têm zeros à esquerda e nunca entram em contas). Evite guardar datas como texto: perde validação, ordenação correta e índices úteis.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Comparar coluna de texto com número (<code>WHERE cpf = 12345678901</code>) força conversão implícita. No Oracle, a conversão recai sobre a coluna e desativa o índice, podendo ainda falhar com <code>ORA-01722</code> se alguma linha tiver caractere não numérico. O PostgreSQL costuma recusar a comparação com erro de tipo. Compare sempre tipos iguais.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre DATE no Oracle e no PostgreSQL?" Resposta curta: no Oracle o <code>DATE</code> inclui hora, minuto e segundo; no PostgreSQL é apenas a data, e o equivalente é <code>TIMESTAMP</code>. Cite a consequência (filtro por igualdade e <code>BETWEEN</code> perdem linhas) e a segunda diferença clássica, string vazia igual a NULL no Oracle.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em ambientes com os dois bancos, as diferenças de tipo e de NULL são fonte recorrente de bugs em integrações e migrações. Peça ao time uma tabela de equivalências escrita e testes de contrato nos pontos onde dados cruzam de um banco para o outro. Também vale padronizar: toda coluna de instante em <code>TIMESTAMP</code>, todo valor monetário em <code>NUMERIC(p,2)</code>, nenhuma data em texto.</p></div>
+</section>
+
+<section class="chap" id="select">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>SELECT, WHERE, ORDER BY, DISTINCT, aliases e CASE</h2>
+  <p>SQL é <strong>declarativo</strong>: você descreve o resultado, e o otimizador escolhe como obtê-lo. A consulta mais simples tem duas partes obrigatórias, <code>SELECT</code> (o que mostrar) e <code>FROM</code> (de onde). Tudo o mais refina o resultado.</p>
+<pre><code class="sql">SELECT   a.id_atendimento,                       -- colunas ou expressões a devolver
+         a.dt_atendimento,
+         a.valor * 1.1 AS valor_com_acrescimo     -- expressão com alias
+FROM     atendimento a                            -- origem (alias de tabela: a)
+WHERE    a.status = 'REALIZADO'                   -- filtra linhas
+  AND    a.valor &gt; 100
+ORDER BY a.dt_atendimento DESC, a.id_atendimento; -- ordem do resultado</code></pre>
+  <h3>Dados de exemplo e resultado</h3>
+  <p>Usaremos estas linhas fictícias de <code>atendimento</code> (colunas reduzidas) nos exemplos desta seção e das seguintes.</p>
+<pre><code class="text">id_atendimento | id_paciente | id_convenio | tipo     | status    | dt_atendimento      | valor
+---------------+-------------+-------------+----------+-----------+---------------------+-------
+1              | 10          | 3           | CONSULTA | REALIZADO | 2026-03-05 09:00:00 | 250.00
+2              | 10          | NULL        | EXAME    | REALIZADO | 2026-03-05 14:30:00 | 400.00
+3              | 11          | 3           | CONSULTA | CANCELADO | 2026-03-06 10:00:00 | 250.00
+4              | 12          | 5           | RETORNO  | REALIZADO | 2026-03-31 09:00:00 |   0.00
+5              | 12          | NULL        | CONSULTA | AGENDADO  | 2026-03-31 18:00:00 | 250.00
+6              | 13          | 5           | EXAME    | REALIZADO | 2026-04-01 08:00:00 | 180.00</code></pre>
+
+  <h3>SELECT * e a lista de colunas</h3>
+  <p><code>SELECT *</code> é aceitável para explorar uma tabela no console. Em código de aplicação ou em views, é um problema: traz colunas que ninguém usa, trafega mais dados, impede que um índice "cubra" a consulta (módulo 08) e quebra quando alguém adiciona ou reordena colunas. Liste as colunas.</p>
+
+  <h3>Aliases</h3>
+  <p><code>AS</code> dá nome a uma coluna calculada ou a uma tabela. Dois bancos, dois detalhes: no Oracle, o alias de <em>tabela</em> não aceita <code>AS</code> (<code>FROM atendimento a</code>); no PostgreSQL aceita. O alias de coluna aceita <code>AS</code> nos dois. Alias com maiúsculas, espaços ou acento exige aspas duplas (<code>AS "Valor Líquido"</code>), e entre aspas passa a ser sensível a maiúsculas. Sem aspas, o Oracle converte identificadores para maiúsculas e o PostgreSQL para minúsculas, e é por isso que escrever <code>"Nome"</code> numa tabela cria dor de cabeça duradoura. Padronize em minúsculas com underscore e nunca use aspas em nomes de objeto.</p>
+
+  <h3>Expressões</h3>
+  <p>Na lista do <code>SELECT</code> e nas condições cabem expressões: aritmética (<code>qtd * valor_unit</code>), funções (<code>UPPER(nome)</code>, <code>SUBSTR</code>, <code>ROUND(valor, 1)</code>) e concatenação com <code>||</code>. Dois cuidados: divisão inteira (no PostgreSQL <code>7 / 2</code> dá <code>3</code> quando ambos são inteiros; no Oracle dá <code>3.5</code>, pois tudo é <code>NUMBER</code>) e a tabela <code>dual</code> do Oracle, usada para consultas sem tabela (<code>SELECT SYSDATE FROM dual</code>), que no PostgreSQL se escreve sem <code>FROM</code> (<code>SELECT now()</code>). O Oracle 23ai também aceita <code>SELECT</code> sem <code>FROM</code>.</p>
+
+  <h3>DISTINCT</h3>
+  <p><code>DISTINCT</code> remove linhas duplicadas do <em>resultado inteiro</em> (todas as colunas selecionadas, não só a primeira). Exige ordenar ou fazer hash do resultado, então é mais caro que parece.</p>
+<pre><code class="sql">SELECT DISTINCT tipo, status FROM atendimento;      -- combinações únicas de (tipo, status)
+SELECT DISTINCT id_paciente FROM atendimento;       -- 10, 11, 12, 13
+SELECT COUNT(DISTINCT id_paciente) FROM atendimento;  -- 4  (conta pacientes distintos)</code></pre>
+  <div class="note trap"><b>DISTINCT para "consertar" resultado</b><p>Se o resultado veio com linhas repetidas depois de um JOIN e a solução foi pôr <code>DISTINCT</code>, o problema está no JOIN (multiplicação de linhas, módulo 02), e o <code>DISTINCT</code> só esconde. Soma e contagem continuam erradas quando há agregação por cima.</p></div>
+
+  <h3>ORDER BY</h3>
+  <p><code>ORDER BY</code> é a única forma de garantir ordem. Aceita várias colunas, <code>ASC</code> (padrão) e <code>DESC</code> por coluna, posições numéricas (<code>ORDER BY 2</code>, que quebra se alguém reordenar o SELECT, evite) e aliases. Use um <strong>desempate único</strong> (por exemplo, o id) para que a ordem seja determinística, indispensável para paginação (seção 7). A posição dos NULLs na ordenação está na seção 5.</p>
+
+  <h3>CASE: condicional dentro da consulta</h3>
+  <p><code>CASE</code> é uma expressão (devolve um valor), não um comando. A forma <em>pesquisada</em> avalia condições em ordem e devolve o resultado da primeira verdadeira; a forma <em>simples</em> compara uma expressão com valores.</p>
+<pre><code class="sql">SELECT id_atendimento,
+       CASE
+         WHEN valor = 0     THEN 'sem cobrança'
+         WHEN valor &lt; 200   THEN 'baixo'
+         WHEN valor &lt; 400   THEN 'médio'
+         ELSE                    'alto'
+       END AS faixa,
+       CASE tipo WHEN 'CONSULTA' THEN 'C' WHEN 'EXAME' THEN 'E' ELSE 'R' END AS sigla
+FROM atendimento
+WHERE status = 'REALIZADO'
+ORDER BY id_atendimento;</code></pre>
+<pre><code class="text">id_atendimento | faixa        | sigla
+---------------+--------------+------
+1              | médio        | C
+2              | alto         | E
+4              | sem cobrança | R
+6              | baixo        | E</code></pre>
+  <p>Sem <code>ELSE</code>, o resultado para quem não casa é NULL. Todas as ramas precisam devolver tipos compatíveis. <code>CASE</code> também aparece em <code>ORDER BY</code> (ordem customizada) e dentro de agregações, o famoso <em>pivot manual</em>: <code>SUM(CASE WHEN tipo = 'EXAME' THEN valor ELSE 0 END)</code> (módulo 03). O Oracle tem ainda <code>DECODE</code>, anterior ao <code>CASE</code>, que você vai encontrar em código legado; ele trata NULL = NULL como igual, ao contrário do <code>CASE</code>.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Liste colunas em vez de <code>*</code>; dê alias a toda expressão; sempre <code>ORDER BY</code> com desempate único quando a ordem importa; não use posição numérica; <code>DISTINCT</code> é último recurso, não ferramenta de correção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"As linhas de uma tabela têm ordem?" Não. Sem <code>ORDER BY</code> a ordem não é garantida e pode mudar com plano, índice, paralelismo ou versão. Já ter visto uma ordem "certa" em desenvolvimento não prova nada. Outra pergunta frequente: "diferença entre <code>COUNT(*)</code> e <code>COUNT(DISTINCT x)</code>" (seção 5).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em revisão de código SQL, três itens baratos e de alto retorno: sem <code>SELECT *</code> em código de produção, sem <code>ORDER BY</code> por posição, e toda lista com limite tem <code>ORDER BY</code> determinístico. Transformem isso em checklist de revisão. Também combinem um guia de estilo (maiúsculas nas palavras-chave, aliases curtos e consistentes, uma cláusula por linha): consulta legível encurta incidentes.</p></div>
+</section>
+
+
+<section class="chap" id="ordem-logica">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l1">Básico</span></div>
+  <h2>A ordem lógica de execução</h2>
+  <p>Você escreve <code>SELECT</code> primeiro, mas o banco o avalia quase por último. A ordem <em>lógica</em> é o modelo mental que define o <strong>significado</strong> da consulta; entendê-la explica metade dos erros que parecem misteriosos.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 215" role="img" aria-label="Ordem lógica: FROM, WHERE, GROUP BY, HAVING na primeira linha; SELECT, DISTINCT, ORDER BY, FETCH ou LIMIT na segunda">
+      <defs><marker id="ah-ordem" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="140" height="36" rx="5"/><text x="90" y="53" text-anchor="middle">1 FROM / JOIN</text>
+      <rect class="box" x="190" y="30" width="140" height="36" rx="5"/><text x="260" y="53" text-anchor="middle">2 WHERE</text>
+      <rect class="box" x="360" y="30" width="140" height="36" rx="5"/><text x="430" y="53" text-anchor="middle">3 GROUP BY</text>
+      <rect class="box" x="530" y="30" width="140" height="36" rx="5"/><text x="600" y="53" text-anchor="middle">4 HAVING</text>
+      <line class="ln" x1="160" y1="48" x2="188" y2="48" marker-end="url(#ah-ordem)"/>
+      <line class="ln" x1="330" y1="48" x2="358" y2="48" marker-end="url(#ah-ordem)"/>
+      <line class="ln" x1="500" y1="48" x2="528" y2="48" marker-end="url(#ah-ordem)"/>
+      <text class="lbl" x="90" y="84" text-anchor="middle">monta o conjunto</text>
+      <text class="lbl" x="260" y="84" text-anchor="middle">filtra linhas</text>
+      <text class="lbl" x="430" y="84" text-anchor="middle">forma os grupos</text>
+      <text class="lbl" x="600" y="84" text-anchor="middle">filtra grupos</text>
+      <path class="ln" d="M600,66 L600,100 L90,100 L90,130" marker-end="url(#ah-ordem)"/>
+      <rect class="box-a" x="20" y="130" width="140" height="36" rx="5"/><text x="90" y="153" text-anchor="middle">5 SELECT</text>
+      <rect class="box" x="190" y="130" width="140" height="36" rx="5"/><text x="260" y="153" text-anchor="middle">6 DISTINCT</text>
+      <rect class="box" x="360" y="130" width="140" height="36" rx="5"/><text x="430" y="153" text-anchor="middle">7 ORDER BY</text>
+      <rect class="box" x="530" y="130" width="140" height="36" rx="5"/><text x="600" y="153" text-anchor="middle">8 FETCH / LIMIT</text>
+      <line class="ln" x1="160" y1="148" x2="188" y2="148" marker-end="url(#ah-ordem)"/>
+      <line class="ln" x1="330" y1="148" x2="358" y2="148" marker-end="url(#ah-ordem)"/>
+      <line class="ln" x1="500" y1="148" x2="528" y2="148" marker-end="url(#ah-ordem)"/>
+      <text class="lbl" x="90" y="184" text-anchor="middle">expressões, janelas, aliases</text>
+      <text class="lbl" x="260" y="184" text-anchor="middle">remove duplicatas</text>
+      <text class="lbl" x="430" y="184" text-anchor="middle">ordena (vê aliases)</text>
+      <text class="lbl" x="600" y="184" text-anchor="middle">corta N linhas</text>
+      <text class="lbl" x="20" y="208">Ordem de significado; o otimizador pode executar em outra ordem física.</text>
+    </svg>
+    <figcaption>Ordem lógica de avaliação de um <code>SELECT</code>. O que vem antes não enxerga o que nasce depois (aliases, funções de janela).</figcaption>
+  </figure>
+
+  <h3>Consequências práticas</h3>
+  <ul>
+    <li><strong>Alias do SELECT não existe no WHERE.</strong> O WHERE roda antes do SELECT. Repita a expressão ou use uma subconsulta/CTE.</li>
+    <li><strong>O ORDER BY enxerga aliases</strong>, porque roda depois do SELECT. Também pode ordenar por coluna que nem está no SELECT (exceto se houver <code>DISTINCT</code> ou <code>GROUP BY</code>, que limitam o que existe naquela etapa).</li>
+    <li><strong>WHERE filtra linhas; HAVING filtra grupos.</strong> Um filtro que não depende de agregação deve ir no WHERE, para descartar linhas antes de agrupar. Agregação no WHERE é erro (<code>SUM(valor) &gt; 1000</code> só no HAVING).</li>
+    <li><strong>Funções de janela</strong> (módulo 05) nascem na etapa do SELECT, por isso não podem aparecer no WHERE nem no GROUP BY. Para filtrar pelo resultado delas, use subconsulta ou CTE.</li>
+    <li><strong>GROUP BY e aliases.</strong> O padrão SQL não permite alias do SELECT no GROUP BY; o PostgreSQL permite como extensão; o Oracle historicamente não permite (versões recentes podem aceitar, confira na sua). Para portabilidade, repita a expressão.</li>
+    <li><strong>DISTINCT vem depois do SELECT</strong> e antes do ORDER BY e do corte de linhas, por isso <code>SELECT DISTINCT ... ORDER BY coluna_fora_da_lista</code> falha.</li>
+    <li><strong>O corte de linhas é o último passo</strong>: o <code>FETCH FIRST</code> pega as N primeiras do resultado <em>já ordenado</em>.</li>
+  </ul>
+<pre><code class="sql">-- (sintaxe Oracle; no PostgreSQL a idade seria date_part('year', age(dt_nascimento)))
+-- ERRO: o alias "idade" ainda não existe quando o WHERE é avaliado
+SELECT nome, TRUNC(MONTHS_BETWEEN(SYSDATE, dt_nascimento) / 12) AS idade
+FROM paciente
+WHERE idade &gt;= 60;                  -- ORA-00904: "IDADE": invalid identifier
+
+-- Certo: calcule numa subconsulta e filtre por fora
+SELECT *
+FROM (SELECT nome, TRUNC(MONTHS_BETWEEN(SYSDATE, dt_nascimento) / 12) AS idade
+      FROM paciente) p
+WHERE p.idade &gt;= 60;
+
+-- Alias no ORDER BY funciona
+SELECT nome, valor * 1.1 AS valor_novo FROM atendimento ORDER BY valor_novo DESC;</code></pre>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Idade em anos
+SELECT nome, TRUNC(MONTHS_BETWEEN(SYSDATE, dt_nascimento) / 12) AS idade FROM paciente;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Idade em anos
+SELECT nome, EXTRACT(YEAR FROM age(CURRENT_DATE, dt_nascimento)) AS idade FROM paciente;</code></pre>
+  </div>
+
+  <h3>WHERE contra HAVING, com um exemplo</h3>
+<pre><code class="sql">-- Pacientes com mais de 1 atendimento REALIZADO no mês
+SELECT   id_paciente, COUNT(*) AS qtd
+FROM     atendimento
+WHERE    status = 'REALIZADO'                   -- filtro de linha: antes de agrupar
+  AND    dt_atendimento &gt;= DATE '2026-03-01'
+  AND    dt_atendimento &lt;  DATE '2026-04-01'
+GROUP BY id_paciente
+HAVING   COUNT(*) &gt; 1                           -- filtro de grupo: depois de agrupar
+ORDER BY qtd DESC;</code></pre>
+<pre><code class="text">id_paciente | qtd
+------------+----
+10          | 2</code></pre>
+
+  <div class="note rule"><b>Ordem lógica não é ordem física</b><p>Essa é a ordem de <em>significado</em>. O otimizador pode executar em outra ordem física (empurrar um filtro para dentro de um join, usar um índice para evitar o sort, parar cedo num <code>FETCH FIRST</code>), desde que o resultado seja o mesmo. Os módulos 07 e 09 tratam da ordem física.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que não posso usar um alias do SELECT no WHERE?" Porque o WHERE é avaliado antes do SELECT, então o alias ainda não existe. Recite a ordem (FROM, WHERE, GROUP BY, HAVING, SELECT, DISTINCT, ORDER BY, corte de linhas) e acrescente a consequência para funções de janela. É a pergunta júnior que mais separa quem entende SQL de quem decorou sintaxe.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando alguém do time diz "o banco está lento porque o <code>HAVING</code>..." ou "o SQL faz o <code>WHERE</code> depois", é sinal de modelo mental raso. A ordem lógica é o vocabulário comum para discutir uma consulta em revisão e em incidente. Vale um treinamento curto com o time inteiro usando consultas reais da casa.</p></div>
+</section>
+
+<section class="chap" id="null">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l1">Básico</span></div>
+  <h2>NULL e a lógica de três valores</h2>
+  <p>NULL não é zero, nem string vazia, nem "falso": significa <strong>valor ausente ou desconhecido</strong>. Como não se sabe o valor, qualquer comparação com NULL não é verdadeira nem falsa: resulta em <strong>UNKNOWN</strong> (desconhecido). O SQL trabalha com <em>três</em> valores lógicos, e o <code>WHERE</code> só devolve linhas em que a condição é <strong>TRUE</strong>. UNKNOWN é descartado junto com FALSE.</p>
+
+  <h3>Tabelas-verdade</h3>
+  <div class="tbl"><table>
+    <thead><tr><th><code>AND</code></th><th>TRUE</th><th>FALSE</th><th>UNKNOWN</th></tr></thead>
+    <tbody>
+      <tr><td><b>TRUE</b></td><td>TRUE</td><td>FALSE</td><td>UNKNOWN</td></tr>
+      <tr><td><b>FALSE</b></td><td>FALSE</td><td>FALSE</td><td>FALSE</td></tr>
+      <tr><td><b>UNKNOWN</b></td><td>UNKNOWN</td><td>FALSE</td><td>UNKNOWN</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tbl"><table>
+    <thead><tr><th><code>OR</code></th><th>TRUE</th><th>FALSE</th><th>UNKNOWN</th></tr></thead>
+    <tbody>
+      <tr><td><b>TRUE</b></td><td>TRUE</td><td>TRUE</td><td>TRUE</td></tr>
+      <tr><td><b>FALSE</b></td><td>TRUE</td><td>FALSE</td><td>UNKNOWN</td></tr>
+      <tr><td><b>UNKNOWN</b></td><td>TRUE</td><td>UNKNOWN</td><td>UNKNOWN</td></tr>
+    </tbody>
+  </table></div>
+  <p><code>NOT TRUE</code> é FALSE, <code>NOT FALSE</code> é TRUE e <code>NOT UNKNOWN</code> é UNKNOWN. A intuição: UNKNOWN "contamina", exceto quando o outro lado já decide (<code>FALSE AND qualquer coisa</code> é FALSE; <code>TRUE OR qualquer coisa</code> é TRUE).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Expressão</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td><code>NULL = NULL</code></td><td>UNKNOWN (não é verdadeiro!)</td></tr>
+      <tr><td><code>NULL &lt;&gt; 5</code>, <code>NULL &gt; 5</code></td><td>UNKNOWN</td></tr>
+      <tr><td><code>NULL + 10</code>, <code>valor * NULL</code></td><td>NULL (aritmética propaga NULL)</td></tr>
+      <tr><td><code>col IS NULL</code> / <code>col IS NOT NULL</code></td><td>a forma certa de testar, sempre TRUE ou FALSE</td></tr>
+      <tr><td><code>TRUE OR UNKNOWN</code></td><td>TRUE</td></tr>
+      <tr><td><code>FALSE AND UNKNOWN</code></td><td>FALSE</td></tr>
+      <tr><td><code>NOT UNKNOWN</code></td><td>UNKNOWN</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Onde isso morde: o filtro que "perde" linhas</h3>
+<pre><code class="sql">-- Quer os atendimentos que NÃO são do convênio 3.
+SELECT id_atendimento, id_convenio FROM atendimento WHERE id_convenio &lt;&gt; 3;</code></pre>
+<pre><code class="text">id_atendimento | id_convenio
+---------------+------------
+4              | 5
+6              | 5          &lt;- os particulares (NULL: ids 2 e 5) sumiram</code></pre>
+  <p>Para os particulares, <code>NULL &lt;&gt; 3</code> é UNKNOWN, então a linha é descartada. Se a intenção era "tudo que não é do convênio 3, particulares inclusive", escreva a regra completa:</p>
+<pre><code class="sql">WHERE id_convenio &lt;&gt; 3 OR id_convenio IS NULL
+
+-- PostgreSQL: operador null-safe
+WHERE id_convenio IS DISTINCT FROM 3
+
+-- Oracle: sem equivalente direto nas versões mais usadas; use COALESCE com um valor impossível
+WHERE COALESCE(id_convenio, -1) &lt;&gt; 3      -- cuidado: derrota o índice em id_convenio</code></pre>
+
+  <h3>NOT IN com NULL: a pegadinha clássica</h3>
+  <p><code>x NOT IN (1, 2, NULL)</code> equivale a <code>x &lt;&gt; 1 AND x &lt;&gt; 2 AND x &lt;&gt; NULL</code>. O último termo é UNKNOWN para qualquer x, então o <code>AND</code> nunca é TRUE e a consulta devolve <strong>zero linhas</strong>.</p>
+<pre><code class="sql">-- Convênios que nunca aparecem em atendimento
+SELECT * FROM convenio
+WHERE id_convenio NOT IN (SELECT id_convenio FROM atendimento);   -- 0 linhas! (há NULL em atendimento)
+
+-- Correto: NOT EXISTS
+SELECT c.* FROM convenio c
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a WHERE a.id_convenio = c.id_convenio);</code></pre>
+  <p>Com <code>IN</code> não há esse problema (UNKNOWN é descartado e as linhas que casam são TRUE), mas o <code>NOT IN</code> é perigoso em qualquer subconsulta cuja coluna aceite NULL, inclusive as que <em>hoje</em> não têm NULL e amanhã terão. Aprofundado no módulo 02 (anti-join).</p>
+
+  <h3>Funções que lidam com NULL</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Função</th><th>O que faz</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td><code>COALESCE(a, b, c)</code></td><td>primeiro argumento não nulo</td><td>Padrão SQL, nos dois bancos; avalia só até achar (curto-circuito)</td></tr>
+      <tr><td><code>NVL(a, b)</code></td><td>b se a é NULL</td><td>Só Oracle; dois argumentos; costuma avaliar o segundo mesmo quando desnecessário</td></tr>
+      <tr><td><code>NVL2(a, x, y)</code></td><td>x se a não é NULL, senão y</td><td>Só Oracle</td></tr>
+      <tr><td><code>NULLIF(a, b)</code></td><td>NULL se a = b, senão a</td><td>Padrão. Evita divisão por zero: <code>valor / NULLIF(qtd, 0)</code></td></tr>
+      <tr><td><code>IS DISTINCT FROM</code></td><td>comparação em que NULL é igual a NULL</td><td>PostgreSQL</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sql">SELECT id_atendimento,
+       COALESCE(id_convenio, 0)                     AS convenio_ou_zero,
+       CASE WHEN id_convenio IS NULL THEN 'Particular' ELSE 'Convênio' END AS origem
+FROM atendimento;
+-- Dividir sem estourar: NULL (em vez de erro) quando qtd = 0
+SELECT id_item, valor_unit / NULLIF(qtd, 0) AS valor_por_unidade FROM atendimento_item;</code></pre>
+
+  <h3>Agregações e NULL</h3>
+  <ul>
+    <li><code>COUNT(*)</code> conta linhas. <code>COUNT(col)</code> conta só os valores <strong>não nulos</strong>. <code>COUNT(DISTINCT col)</code> também ignora NULL.</li>
+    <li><code>SUM</code>, <code>AVG</code>, <code>MIN</code> e <code>MAX</code> ignoram NULL. Um <code>AVG</code> sobre uma coluna com nulos divide só pelos não nulos, o que muda a média.</li>
+    <li>Sobre um conjunto vazio ou só de NULLs, <code>SUM</code> devolve NULL (não 0) e <code>COUNT</code> devolve 0. Para mostrar zero: <code>COALESCE(SUM(valor), 0)</code>.</li>
+  </ul>
+<pre><code class="sql">SELECT COUNT(*)                     AS linhas,      -- 6
+       COUNT(id_convenio)           AS com_conv,    -- 4 (ids 1, 3, 4, 6)
+       COUNT(DISTINCT id_convenio)  AS conv_dist,   -- 2 (3 e 5)
+       AVG(id_convenio)             AS media,       -- 4.0 = (3+3+5+5)/4, não /6
+       SUM(valor)                   AS total        -- 1330.00
+FROM atendimento;</code></pre>
+  <p><code>GROUP BY</code>, <code>DISTINCT</code> e os operadores de conjunto tratam NULL como <em>iguais entre si</em> (todos os NULLs caem no mesmo grupo), diferentemente de <code>=</code>. É inconsistente, mas é o padrão.</p>
+
+  <h3>Ordenação de NULLs</h3>
+  <p>Para a ordenação, NULL é considerado <strong>maior</strong> que qualquer valor, nos dois bancos: em <code>ASC</code> os NULLs ficam no fim, em <code>DESC</code>, no começo. Controle explícito com <code>NULLS FIRST</code> / <code>NULLS LAST</code>, que ambos aceitam.</p>
+<pre><code class="sql">SELECT id_atendimento, id_convenio FROM atendimento
+ORDER BY id_convenio DESC NULLS LAST, id_atendimento;
+-- 4,5 | 6,5 | 1,3 | 3,3 | 2,NULL | 5,NULL</code></pre>
+
+  <h3>NULL e restrições</h3>
+  <ul>
+    <li><code>CHECK (valor &gt; 0)</code> <strong>aceita</strong> linha com <code>valor</code> NULL, pois UNKNOWN não é FALSE: a restrição só rejeita quando é FALSE. Para proibir NULL, use <code>NOT NULL</code> além do <code>CHECK</code>.</li>
+    <li>Índice B-tree no Oracle <strong>não guarda</strong> entradas em que todas as colunas do índice são NULL. Por isso <code>WHERE coluna IS NULL</code> não usa um índice simples dessa coluna no Oracle. O PostgreSQL indexa NULLs e consegue usar o índice para <code>IS NULL</code>. Detalhes no módulo 08.</li>
+  </ul>
+
+  <div class="note trap"><b>Particularidade do Oracle</b><p>Como visto na seção 2, no Oracle a string vazia <code>''</code> <strong>é</strong> NULL: <code>WHERE nome = ''</code> nunca retorna nada e <code>LENGTH('')</code> é NULL. No PostgreSQL, <code>''</code> e NULL são distintos, e <code>WHERE nome = ''</code> funciona. Ao validar entrada ou migrar dados, trate os dois.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Toda coluna que aceita NULL é uma decisão a ser justificada: pergunte "o que significa NULL aqui?" (desconhecido, não se aplica, ainda não ocorreu). Toda comparação com coluna anulável pede a pergunta "e se for NULL?". Use <code>NOT EXISTS</code>, não <code>NOT IN</code>. Marque <code>NOT NULL</code> o que for obrigatório.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Três perguntas quase certas: (1) "<code>NULL = NULL</code> é verdadeiro?" Não, é UNKNOWN; use <code>IS NULL</code>. (2) "Por que <code>NOT IN</code> com subconsulta devolve vazio?" Um NULL na lista torna o predicado nunca verdadeiro. (3) "Diferença entre <code>COUNT(*)</code> e <code>COUNT(col)</code>?" A segunda ignora NULLs. Mostrar que você sabe a ordenação de NULLs e que no Oracle <code>''</code> é NULL costuma impressionar.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Relatórios com números que "não fecham" frequentemente vêm de NULL: média sobre colunas parcialmente preenchidas, filtro <code>&lt;&gt;</code> que descarta particulares, <code>NOT IN</code> que zera o resultado. Em revisão, cobre que o autor diga em uma frase como a consulta trata NULL. Na modelagem, prefira <code>NOT NULL</code> com <code>DEFAULT</code> a campos opcionais "por via das dúvidas".</p></div>
+</section>
+
+
+<section class="chap" id="filtros">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l1">Básico</span></div>
+  <h2>Filtros: LIKE, IN, BETWEEN e datas sem matar o índice</h2>
+  <p>A maior parte do trabalho de uma consulta está no <code>WHERE</code>. Esta seção reúne os predicados de uso diário e a regra de ouro dos filtros: <strong>deixe a coluna "nua" de um lado da comparação</strong>, para que o banco possa usar um índice (módulo 08).</p>
+
+  <h3>Comparações e combinações</h3>
+  <p>Os operadores são <code>=</code>, <code>&lt;&gt;</code> (ou <code>!=</code>), <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, combinados com <code>AND</code>, <code>OR</code> e <code>NOT</code>. <code>AND</code> tem precedência sobre <code>OR</code>: <code>a OR b AND c</code> significa <code>a OR (b AND c)</code>. Use parênteses sempre que misturar os dois.</p>
+<pre><code class="sql">-- Intenção: consultas OU exames, mas só os realizados
+WHERE tipo = 'CONSULTA' OR tipo = 'EXAME' AND status = 'REALIZADO'      -- ERRADO: consultas de qualquer status
+WHERE (tipo = 'CONSULTA' OR tipo = 'EXAME') AND status = 'REALIZADO'    -- certo</code></pre>
+
+  <h3>IN</h3>
+  <p><code>x IN (a, b, c)</code> equivale a <code>x = a OR x = b OR x = c</code>. Também aceita subconsulta (<code>IN (SELECT ...)</code>, que é um semi-join, módulo 02). Cuidados: o Oracle limita listas literais a 1000 expressões em várias versões (<code>ORA-01795</code>), o que é sintoma de código que deveria usar tabela temporária, subconsulta ou <em>bind</em> em array; e <code>NOT IN</code> com NULL, já visto na seção 5.</p>
+
+  <h3>BETWEEN</h3>
+  <p><code>x BETWEEN a AND b</code> equivale a <code>x &gt;= a AND x &lt;= b</code>: <strong>os dois extremos são incluídos</strong>, e a ordem importa (<code>BETWEEN 10 AND 5</code> não devolve nada). Para números inteiros é confortável. Para <strong>datas com hora, é uma armadilha</strong> (adiante).</p>
+
+  <h3>LIKE</h3>
+  <p><code>LIKE</code> compara com padrões: <code>%</code> casa qualquer sequência (inclusive vazia) e <code>_</code> casa exatamente um caractere.</p>
+<pre><code class="sql">WHERE nome LIKE 'MARIA%'        -- começa com MARIA
+WHERE nome LIKE '%SILVA'        -- termina com SILVA
+WHERE nome LIKE '%SILVA%'       -- contém SILVA
+WHERE cpf  LIKE '123.___.___-__' -- _ casa um caractere por posição
+WHERE codigo LIKE '10\%%' ESCAPE '\'   -- procura o texto literal "10%" no início</code></pre>
+  <ul>
+    <li><strong>Sensibilidade a maiúsculas:</strong> nos dois bancos, <code>LIKE</code> diferencia maiúsculas de minúsculas (no Oracle, a menos que se mude <code>NLS_COMP</code>/<code>NLS_SORT</code>). O PostgreSQL oferece <code>ILIKE</code>. Para ignorar caixa e acentos de forma portável, normalize (<code>UPPER(coluna)</code> com índice funcional) ou use extensões (<code>pg_trgm</code>, <code>unaccent</code> no PG; Oracle Text no Oracle).</li>
+    <li><strong>Curinga no início mata o índice B-tree.</strong> <code>'MARIA%'</code> tem prefixo conhecido e usa o índice; <code>'%SILVA%'</code> não, e exige busca textual ou trigramas. No PostgreSQL, o índice B-tree comum com <code>LIKE 'prefixo%'</code> só funciona se a coluna usar collation <code>C</code> ou se o índice for criado com <code>text_pattern_ops</code>. Módulo 08.</li>
+    <li><strong>Escape:</strong> no PostgreSQL a barra invertida é o escape padrão do <code>LIKE</code>; no Oracle não há escape padrão, e é preciso declarar <code>ESCAPE</code>.</li>
+  </ul>
+
+  <h3>Datas: o intervalo semiaberto</h3>
+  <p>O filtro por data é onde mais se perde linha ou índice. Como <code>dt_atendimento</code> é <code>TIMESTAMP</code> (tem hora), "o dia 31" não é um ponto, é um intervalo de 00:00:00 até 23:59:59.999999. A forma correta é o <strong>intervalo semiaberto</strong>: início <em>incluído</em>, fim <em>excluído</em>, onde o fim é o primeiro instante depois do período.</p>
+<pre><code class="sql">-- Atendimentos de março de 2026
+WHERE dt_atendimento &gt;= TIMESTAMP '2026-03-01 00:00:00'
+  AND dt_atendimento &lt;  TIMESTAMP '2026-04-01 00:00:00'</code></pre>
+  <figure class="figure">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Linha do tempo de março: BETWEEN até 31/03 perde os atendimentos do dia 31 depois da meia-noite; o intervalo semiaberto até 01/04 os inclui">
+      <rect class="box-b" x="40" y="26" width="600" height="30" rx="5"/>
+      <text x="340" y="46" text-anchor="middle">BETWEEN '2026-03-01' AND '2026-03-31'</text>
+      <line class="ln-b" x1="640" y1="56" x2="640" y2="98"/>
+      <text class="lbl" x="632" y="80" text-anchor="end">termina em 31/03 00:00: o dia 31 inteiro fica de fora</text>
+      <line class="ln" x1="40" y1="104" x2="660" y2="104"/>
+      <line class="ln" x1="40" y1="98" x2="40" y2="110"/>
+      <line class="ln" x1="640" y1="98" x2="640" y2="110"/>
+      <line class="ln" x1="660" y1="98" x2="660" y2="110"/>
+      <circle class="box-w" cx="648" cy="104" r="4"/>
+      <circle class="box-w" cx="655" cy="104" r="4"/>
+      <text class="lbl" x="40" y="126">01/03 00:00</text>
+      <text class="lbl" x="580" y="126">31/03 00:00</text>
+      <text class="lbl" x="660" y="140" text-anchor="end">01/04 00:00</text>
+      <rect class="box-a" x="40" y="150" width="620" height="30" rx="5"/>
+      <text x="350" y="170" text-anchor="middle">&gt;= '2026-03-01' AND &lt; '2026-04-01'</text>
+      <text class="lbl" x="20" y="194">Pontos: atendimentos de 31/03 às 09h e 18h.</text>
+    </svg>
+    <figcaption>O <code>BETWEEN</code> termina na <em>meia-noite</em> do dia 31 e perde os atendimentos desse dia; o intervalo semiaberto termina na meia-noite do dia seguinte e não deixa nada de fora.</figcaption>
+  </figure>
+  <p>Com os dados da seção 3, <code>BETWEEN '2026-03-01' AND '2026-03-31'</code> devolve só os atendimentos 1, 2 e 3 e <strong>perde</strong> o 4 e o 5 (31/03 às 09h e 18h), pois ambos são posteriores a 31/03 00:00. O semiaberto devolve os cinco primeiros e exclui o 6 (01/04 08:00). Vantagens extras: funciona para qualquer precisão (segundos, microssegundos), encadeia períodos sem sobreposição (o fim de um é o início do próximo) e é compatível com índices.</p>
+
+  <h3>Coluna nua: nunca aplique função na coluna indexada</h3>
+<pre><code class="sql">-- RUINS: o banco precisa calcular a função em cada linha; o índice em dt_atendimento não é usado
+WHERE TRUNC(dt_atendimento) = DATE '2026-03-05'                 -- Oracle
+WHERE dt_atendimento::date = DATE '2026-03-05'                  -- PostgreSQL
+WHERE TO_CHAR(dt_atendimento, 'YYYY-MM') = '2026-03'
+WHERE EXTRACT(YEAR FROM dt_atendimento) = 2026
+
+-- BOM: a coluna fica nua; a conta vai para o lado da constante
+WHERE dt_atendimento &gt;= DATE '2026-03-05'
+  AND dt_atendimento &lt;  DATE '2026-03-05' + 1                   -- Oracle: +1 dia
+  -- PostgreSQL: DATE '2026-03-05' + 1  também funciona (date + inteiro = date)</code></pre>
+  <p>Se o filtro por função é inevitável, crie um <strong>índice funcional</strong> sobre a mesma expressão (<code>CREATE INDEX ... ON atendimento (TRUNC(dt_atendimento))</code> no Oracle; <code>ON atendimento ((dt_atendimento::date))</code> no PostgreSQL). O módulo 08 aprofunda esse e os demais anti-padrões sargáveis. Aqui fica a regra: <em>um filtro de data é sempre um intervalo semiaberto sobre a coluna crua</em>.</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Mês anterior ao corrente, sem função sobre a coluna
+WHERE dt_atendimento &gt;= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -1)
+  AND dt_atendimento &lt;  TRUNC(SYSDATE, 'MM')
+
+-- Últimos 7 dias completos até agora
+WHERE dt_atendimento &gt;= SYSDATE - 7</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Mês anterior ao corrente, sem função sobre a coluna
+WHERE dt_atendimento &gt;= date_trunc('month', now()) - INTERVAL '1 month'
+  AND dt_atendimento &lt;  date_trunc('month', now())
+
+-- Últimos 7 dias
+WHERE dt_atendimento &gt;= now() - INTERVAL '7 days'</code></pre>
+  </div>
+  <div class="note trap"><b>Armadilha comum</b><p>Filtrar <code>WHERE dt_atendimento = '2026-03-05'</code> numa coluna com hora só devolve o que foi gravado exatamente à meia-noite. A consulta "funciona" em teste (dados de teste à meia-noite) e falha em produção. Pior: <code>BETWEEN</code> sobre <code>DATE</code> do Oracle com hora presente perde o fim do último dia, e ninguém percebe porque as linhas que faltam não dão erro.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Data com hora: <code>&gt;= início AND &lt; fim_exclusivo</code>. Parênteses ao misturar <code>AND</code>/<code>OR</code>. <code>LIKE</code> com prefixo, nunca com curinga inicial em tabela grande. Função só sobre o valor do parâmetro, nunca sobre a coluna.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como filtrar todos os atendimentos de um mês de forma eficiente?" Intervalo semiaberto <code>&gt;= 1º do mês AND &lt; 1º do mês seguinte</code>, sem <code>TRUNC</code>/<code>TO_CHAR</code>/<code>EXTRACT</code> na coluna, e explique por quê: preserva o uso do índice e não perde horas do último dia. Se quiser ir além, mencione índice funcional como alternativa e o particionamento por data (módulo 11).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Este é um dos defeitos de maior custo por linha de código: consulta que usa <code>TRUNC(coluna)</code> sobre tabela de milhões de linhas funciona bem com 10 mil linhas de teste e derruba produção seis meses depois, quando a tabela cresce. Inclua "função sobre coluna filtrada" no checklist de revisão e peça ao time para testar consultas novas com volume realista (cópia mascarada de produção ou massa sintética).</p></div>
+</section>
+
+<section class="chap" id="topn">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Top-N e paginação básica</h2>
+  <p>Limitar o número de linhas devolvidas é indispensável: nenhuma tela mostra milhões de atendimentos. A sintaxe mudou bastante ao longo dos anos, e os dois bancos têm formas legadas que você ainda vai encontrar.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Forma</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td><code>FETCH FIRST n ROWS ONLY</code> (padrão SQL)</td><td>12c ou superior</td><td>Sim</td></tr>
+      <tr><td><code>OFFSET m ROWS FETCH NEXT n ROWS ONLY</code></td><td>12c ou superior</td><td>Sim</td></tr>
+      <tr><td><code>LIMIT n OFFSET m</code></td><td>Não</td><td>Sim (forma mais comum)</td></tr>
+      <tr><td><code>FETCH FIRST n ROWS WITH TIES</code> (inclui empates no corte)</td><td>12c ou superior</td><td>Versão 13 ou superior</td></tr>
+      <tr><td><code>ROWNUM</code></td><td>Todas (legado)</td><td>Não existe</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sql">-- As 3 consultas mais caras: padrão SQL, vale nos dois bancos
+SELECT id_atendimento, valor
+FROM atendimento
+WHERE status = 'REALIZADO'
+ORDER BY valor DESC, id_atendimento      -- ORDER BY primeiro, desempate único
+FETCH FIRST 3 ROWS ONLY;                 -- PostgreSQL também aceita: LIMIT 3
+
+-- Com empates: se o terceiro valor se repete, devolve todas as linhas empatadas
+... ORDER BY valor DESC FETCH FIRST 3 ROWS WITH TIES;   -- exige ORDER BY</code></pre>
+<pre><code class="text">id_atendimento | valor
+---------------+-------
+2              | 400.00
+1              | 250.00
+6              | 180.00</code></pre>
+
+  <h3>Oracle legado: ROWNUM</h3>
+  <p><code>ROWNUM</code> numera as linhas à medida que saem do <code>WHERE</code>, <strong>antes</strong> do <code>ORDER BY</code>. Por isso o código antigo abaixo está errado:</p>
+<pre><code class="sql">-- ERRADO: pega 3 linhas quaisquer e DEPOIS as ordena
+SELECT id_atendimento, valor FROM atendimento WHERE ROWNUM &lt;= 3 ORDER BY valor DESC;
+
+-- Certo (Oracle antigo): ordenar numa subconsulta e cortar por fora
+SELECT * FROM (SELECT id_atendimento, valor FROM atendimento ORDER BY valor DESC)
+WHERE ROWNUM &lt;= 3;
+
+</code></pre>
+  <p>Além disso, <code>WHERE ROWNUM = 2</code> nunca devolve linha, pois o primeiro candidato recebe ROWNUM 1 e é descartado. Em código novo, use <code>FETCH FIRST</code>. Para pegar uma linha qualquer de uma tabela (por exemplo, testar existência), <code>WHERE ROWNUM = 1</code> é idiomático no Oracle.</p>
+
+  <h3>Paginação com OFFSET</h3>
+<pre><code class="sql">-- Página 3, 20 linhas por página (descarta as 40 primeiras)
+SELECT id_atendimento, dt_atendimento
+FROM atendimento
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+OFFSET 40 ROWS FETCH NEXT 20 ROWS ONLY;     -- PostgreSQL: LIMIT 20 OFFSET 40</code></pre>
+  <p>Funciona e é simples, mas tem três defeitos. (1) <strong>Custo cresce com a página</strong>: <code>OFFSET 100000</code> obriga o banco a produzir e descartar 100 mil linhas; a página 5000 é muito mais lenta que a 1. (2) <strong>Instabilidade</strong>: se uma linha é inserida ou apagada entre duas requisições, os itens se deslocam e aparecem repetidos ou pulados. (3) Sem <code>ORDER BY</code> determinístico, a paginação é aleatória.</p>
+  <h3>Alternativa: paginação por chave (keyset)</h3>
+  <p>Guarde a última linha vista e peça "as próximas depois dela". O custo da página 5000 fica igual ao da página 1, desde que haja índice na ordem usada.</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Índice ideal: (dt_atendimento, id_atendimento)
+-- :dt e :id vêm da última linha da página anterior
+SELECT id_atendimento, dt_atendimento
+FROM atendimento
+WHERE dt_atendimento &lt; :dt
+   OR (dt_atendimento = :dt AND id_atendimento &lt; :id)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+FETCH FIRST 50 ROWS ONLY;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Índice ideal: (dt_atendimento, id_atendimento)
+-- Comparação de tuplas ("row value") usa o índice diretamente
+SELECT id_atendimento, dt_atendimento
+FROM atendimento
+WHERE (dt_atendimento, id_atendimento) &lt; ($1, $2)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+LIMIT 50;</code></pre>
+  </div>
+  <p>O <code>id_atendimento</code> serve de desempate, para que a ordem seja total e nenhuma linha se perca entre páginas. A desvantagem é não poder pular direto para a "página 37". O desenho dessa paginação na API (cursor opaco, links de próxima página) está na trilha de APIs; o plano de execução e o índice que a sustentam estão nos módulos 08 e 09.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Mostrar "página X de Y" exige <code>COUNT(*)</code> sobre todo o filtro a cada requisição, e esse <code>COUNT</code> costuma ser mais caro que a página. Considere "próxima/anterior" em vez de total, ou uma estimativa ("mais de 1000 resultados"). No PostgreSQL, <code>COUNT(*)</code> em tabela grande percorre a tabela ou um índice (não há contador pronto, por causa do MVCC).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que <code>OFFSET</code> é lento em páginas profundas e qual a alternativa?" O banco precisa gerar e descartar as linhas puladas, então o custo é proporcional ao deslocamento. A alternativa é keyset: <code>WHERE (chave) &lt; (última vista)</code> com índice e <code>ORDER BY</code> total. Cite a limitação (sem salto direto de página) e o desempate por id.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Endpoints de listagem sem limite máximo são um risco operacional: um cliente pede "todos" e a base inteira trafega. Imponha tamanho máximo de página, <code>ORDER BY</code> determinístico e, para tabelas que crescem sem parar, paginação por cursor. É uma regra de design de API que se cobra no contrato e no teste de carga.</p></div>
+</section>
+
+<section class="chap" id="conjuntos">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Operadores de conjunto</h2>
+  <p>Enquanto o JOIN combina tabelas <em>lado a lado</em> (mais colunas), os operadores de conjunto combinam resultados <em>um sobre o outro</em> (mais linhas). Cada operador recebe duas consultas e produz uma.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Dois conjuntos A com 1,2,2,3 e B com 2,3,4 e o resultado de UNION, UNION ALL, INTERSECT e EXCEPT">
+      <defs><marker id="ah-conj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="130" y="20" width="170" height="36" rx="5"/><text x="215" y="43" text-anchor="middle">A: 1, 2, 2, 3</text>
+      <rect class="box-m" x="380" y="20" width="170" height="36" rx="5"/><text x="465" y="43" text-anchor="middle">B: 2, 3, 4</text>
+      <path class="ln" d="M215,56 L215,100"/><path class="ln" d="M465,56 L465,100"/>
+      <line class="ln" x1="95" y1="100" x2="590" y2="100"/>
+      <line class="ln" x1="95" y1="100" x2="95" y2="136" marker-end="url(#ah-conj)"/>
+      <line class="ln" x1="260" y1="100" x2="260" y2="136" marker-end="url(#ah-conj)"/>
+      <line class="ln" x1="425" y1="100" x2="425" y2="136" marker-end="url(#ah-conj)"/>
+      <line class="ln" x1="590" y1="100" x2="590" y2="136" marker-end="url(#ah-conj)"/>
+      <rect class="box" x="20" y="140" width="150" height="56" rx="5"/><text class="ttl" x="95" y="160" text-anchor="middle">UNION</text><text x="95" y="182" text-anchor="middle">1, 2, 3, 4</text>
+      <rect class="box" x="185" y="140" width="150" height="56" rx="5"/><text class="ttl" x="260" y="160" text-anchor="middle">UNION ALL</text><text x="260" y="182" text-anchor="middle">1,2,2,3,2,3,4</text>
+      <rect class="box" x="350" y="140" width="150" height="56" rx="5"/><text class="ttl" x="425" y="160" text-anchor="middle">INTERSECT</text><text x="425" y="182" text-anchor="middle">2, 3</text>
+      <rect class="box" x="515" y="140" width="150" height="56" rx="5"/><text class="ttl" x="590" y="160" text-anchor="middle">EXCEPT / MINUS</text><text x="590" y="182" text-anchor="middle">1  (A menos B)</text>
+      <text class="lbl" x="20" y="218">Só UNION ALL preserva duplicatas; os demais devolvem linhas distintas.</text>
+    </svg>
+    <figcaption>Resultado dos quatro operadores sobre os mesmos dois conjuntos.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Operador</th><th>Devolve</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td><code>UNION ALL</code></td><td>Todas as linhas das duas consultas, com repetição</td><td>Só concatena; é a opção mais barata</td></tr>
+      <tr><td><code>UNION</code></td><td>Linhas distintas da união</td><td>Precisa de sort ou hash para remover duplicatas</td></tr>
+      <tr><td><code>INTERSECT</code></td><td>Linhas presentes nas duas</td><td>Distintas</td></tr>
+      <tr><td><code>EXCEPT</code> (PG, padrão) / <code>MINUS</code> (Oracle)</td><td>Linhas da primeira que não estão na segunda</td><td>Assimétrico: A menos B é diferente de B menos A. Oracle 21c aceita também <code>EXCEPT</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Regras</h3>
+  <ul>
+    <li>As duas consultas têm o <strong>mesmo número de colunas</strong>, na mesma ordem, com <strong>tipos compatíveis</strong>. A correspondência é por <em>posição</em>, não por nome; os nomes das colunas do resultado vêm da primeira consulta.</li>
+    <li><code>ORDER BY</code> só vale <strong>no final</strong> e ordena o resultado combinado, por posição ou pelo nome da primeira consulta. Para limitar cada parte, use subconsulta entre parênteses.</li>
+    <li><strong>NULLs são tratados como iguais</strong> entre si (diferente do <code>=</code>): dois NULLs são considerados a mesma linha na remoção de duplicatas.</li>
+    <li><strong>Precedência:</strong> no padrão SQL e no PostgreSQL, <code>INTERSECT</code> tem precedência maior que <code>UNION</code> e <code>EXCEPT</code>; no Oracle, os operadores são avaliados da esquerda para a direita com a mesma precedência. Resultado: misturar operadores sem parênteses dá respostas diferentes nos dois bancos. Sempre use parênteses.</li>
+    <li>No Oracle, colunas <code>CLOB</code> não podem participar de <code>UNION</code>/<code>INTERSECT</code>/<code>MINUS</code> (precisam de conversão).</li>
+  </ul>
+<pre><code class="sql">-- Cadastro unificado de pessoas que passaram pelo sistema: pacientes e médicos
+SELECT nome, 'PACIENTE' AS papel FROM paciente
+UNION ALL                                  -- um paciente e um médico homônimos são pessoas diferentes
+SELECT nome, 'MEDICO'   AS papel FROM medico
+ORDER BY nome;                             -- ORDER BY no final
+
+-- Pacientes que tiveram consulta E exame (intersecção)
+SELECT id_paciente FROM atendimento WHERE tipo = 'CONSULTA'
+INTERSECT
+SELECT id_paciente FROM atendimento WHERE tipo = 'EXAME';
+-- Dos dados da seção 3: paciente 10 (consulta 1, exame 2). Resultado: 10
+
+-- Pacientes com consulta e SEM nenhum exame (diferença). Oracle: MINUS no lugar de EXCEPT
+SELECT id_paciente FROM atendimento WHERE tipo = 'CONSULTA'
+EXCEPT
+SELECT id_paciente FROM atendimento WHERE tipo = 'EXAME';
+-- Resultado: 11, 12</code></pre>
+
+  <p>Para "pacientes sem exame com os dados do paciente", <code>NOT EXISTS</code> (módulo 02) é mais flexível que <code>EXCEPT</code>, que só compara a linha inteira. Já <code>UNION ALL</code> é a ferramenta certa para <em>empilhar</em> fontes iguais (atual mais histórico) e para reescrever um <code>OR</code> em duas consultas. Se as partes não se sobrepõem, nunca use <code>UNION</code>.</p>
+  <div class="note trap"><b>Armadilha comum</b><p><code>UNION</code> em vez de <code>UNION ALL</code> por hábito. Além de mais lento (sort/hash sobre o resultado inteiro), pode <strong>remover linhas legítimas</strong>: duas vendas idênticas no mesmo dia (mesmo paciente, tipo, valor) viram uma só. Se o relatório "perde" linhas ao empilhar, olhe o <code>UNION</code>. O inverso (usar <code>UNION ALL</code> quando as partes se sobrepõem) duplica as linhas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre <code>UNION</code> e <code>UNION ALL</code> e quando usar cada um?" <code>UNION</code> elimina duplicatas e custa um sort ou hash; <code>UNION ALL</code> só concatena. Use <code>UNION ALL</code> por padrão e <code>UNION</code> só quando precisar de unicidade de fato. Bônus: "e <code>MINUS</code>?" É o <code>EXCEPT</code> do Oracle (diferença de conjuntos); o 21c aceita os dois nomes.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Relatórios que empilham unidades ou bancos devem ter critério de unicidade definido e uma coluna de origem (<code>'UNIDADE_A' AS origem</code>), para que o número seja rastreável.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l1">Prática</span></div>
+  <h2>Exercícios</h2>
+  <p>Tente resolver antes de abrir a resposta. Todos usam o esquema da seção 1 e, quando precisam de dados, as seis linhas de <code>atendimento</code> da seção 3.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Liste os atendimentos <code>REALIZADO</code> de março de 2026 (id, data, valor), do mais caro para o mais barato, desempatando pelo id. Use filtro de data correto.</span></summary><div class="ans">
+<pre><code class="sql">SELECT id_atendimento, dt_atendimento, valor
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND dt_atendimento &gt;= TIMESTAMP '2026-03-01 00:00:00'
+  AND dt_atendimento &lt;  TIMESTAMP '2026-04-01 00:00:00'
+ORDER BY valor DESC, id_atendimento;</code></pre>
+<p>Resultado com os dados da seção 3: ids 2 (400), 1 (250) e 4 (0). O id 6 é de 01/04, fora do intervalo. Com <code>BETWEEN ... AND '2026-03-31'</code> o id 4 (31/03 09:00) sumiria.</p></div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Classifique cada atendimento como 'Particular' ou 'Convênio' e conte quantos há de cada. Depois diga quanto vale <code>COUNT(id_convenio)</code> e por quê.</span></summary><div class="ans">
+<pre><code class="sql">SELECT CASE WHEN id_convenio IS NULL THEN 'Particular' ELSE 'Convênio' END AS origem,
+       COUNT(*) AS qtd
+FROM atendimento
+GROUP BY CASE WHEN id_convenio IS NULL THEN 'Particular' ELSE 'Convênio' END;</code></pre>
+<p>Resultado: Particular 2, Convênio 4. O <code>GROUP BY</code> repete a expressão porque o alias do SELECT não existe nessa etapa (no Oracle). <code>COUNT(id_convenio)</code> vale 4: ignora os dois NULLs, que são justamente os particulares. Por isso <code>COUNT(*)</code> e <code>COUNT(col)</code> diferem.</p></div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Por que a consulta abaixo devolve zero linhas e como corrigir? Há duas correções.
+<pre><code class="sql">SELECT nome FROM convenio
+WHERE id_convenio NOT IN (SELECT id_convenio FROM atendimento);</code></pre></span></summary><div class="ans">
+<p><code>atendimento.id_convenio</code> tem NULL (particulares). <code>x NOT IN (3, 5, NULL)</code> vira <code>x&lt;&gt;3 AND x&lt;&gt;5 AND x&lt;&gt;NULL</code>, e o último termo é UNKNOWN para qualquer x: o predicado nunca é TRUE.</p>
+<pre><code class="sql">-- Correção 1 (preferida): NOT EXISTS
+SELECT c.nome FROM convenio c
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a WHERE a.id_convenio = c.id_convenio);
+
+-- Correção 2: eliminar os NULLs da subconsulta
+SELECT nome FROM convenio
+WHERE id_convenio NOT IN (SELECT id_convenio FROM atendimento WHERE id_convenio IS NOT NULL);</code></pre></div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Reescreva sem função sobre a coluna: <code>WHERE TO_CHAR(dt_atendimento,'YYYY-MM') = '2026-03'</code> e <code>WHERE EXTRACT(YEAR FROM dt_atendimento) = 2026</code>.</span></summary><div class="ans">
+<pre><code class="sql">WHERE dt_atendimento &gt;= TIMESTAMP '2026-03-01 00:00:00'
+  AND dt_atendimento &lt;  TIMESTAMP '2026-04-01 00:00:00'
+
+WHERE dt_atendimento &gt;= TIMESTAMP '2026-01-01 00:00:00'
+  AND dt_atendimento &lt;  TIMESTAMP '2027-01-01 00:00:00'</code></pre>
+<p>A coluna fica nua, o índice em <code>dt_atendimento</code> pode ser usado, e nada do último dia é perdido. Se a função é inevitável (por exemplo, filtro por mês em muitos anos), a alternativa é um índice funcional sobre a mesma expressão.</p></div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Escreva a consulta "50 atendimentos mais recentes" em padrão SQL e diga o que muda se você precisar da próxima página, de forma eficiente.</span></summary><div class="ans">
+<pre><code class="sql">SELECT id_atendimento, dt_atendimento, valor
+FROM atendimento
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+FETCH FIRST 50 ROWS ONLY;      -- PostgreSQL: LIMIT 50</code></pre>
+<p>Para a próxima página, guarde <code>(dt, id)</code> da última linha e filtre <code>WHERE dt_atendimento &lt; :dt OR (dt_atendimento = :dt AND id_atendimento &lt; :id)</code> (PostgreSQL: <code>(dt_atendimento, id_atendimento) &lt; ($1, $2)</code>), com índice em <code>(dt_atendimento, id_atendimento)</code>. Evite <code>OFFSET</code> em páginas profundas.</p></div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Pacientes que tiveram <em>consulta</em> mas <em>nunca</em> um exame, em duas versões: com operador de conjunto e com <code>NOT EXISTS</code>. Qual é mais flexível?</span></summary><div class="ans">
+<pre><code class="sql">-- Conjuntos (Oracle: MINUS)
+SELECT id_paciente FROM atendimento WHERE tipo = 'CONSULTA'
+EXCEPT
+SELECT id_paciente FROM atendimento WHERE tipo = 'EXAME';
+
+-- NOT EXISTS: permite trazer o nome e outras colunas
+SELECT p.id_paciente, p.nome
+FROM paciente p
+WHERE EXISTS     (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente AND a.tipo = 'CONSULTA')
+  AND NOT EXISTS (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente AND a.tipo = 'EXAME');</code></pre>
+<p>Com os dados da seção 3, ambos dão os pacientes 11 e 12. O <code>NOT EXISTS</code> é mais flexível: devolve colunas de <code>paciente</code> sem uma segunda passagem e pode combinar outras condições.</p></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Prática</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <h3>1. "O relatório mensal perdeu atendimentos do último dia"</h3>
+  <p>O faturamento de março fecha com valor menor que o do sistema de origem. A consulta usa <code>BETWEEN '2026-03-01' AND '2026-03-31'</code> sobre uma coluna com hora. <strong>O que fazer:</strong> trocar por intervalo semiaberto (<code>&gt;= 01/03 AND &lt; 01/04</code>), reconciliar o total com a origem e procurar o mesmo padrão em outros relatórios (<code>grep</code> por <code>BETWEEN</code> e <code>TRUNC</code> no repositório). Adicione um teste com um registro às 18h do último dia.</p>
+  <h3>2. "A tela de convênios sumiu com os particulares"</h3>
+  <p>Um filtro novo, "excluir convênio X", foi escrito como <code>id_convenio &lt;&gt; :x</code>, e os atendimentos particulares desapareceram da tela. <strong>O que fazer:</strong> explicar que comparação com NULL é UNKNOWN, corrigir para <code>id_convenio &lt;&gt; :x OR id_convenio IS NULL</code> (ou <code>IS DISTINCT FROM</code> no PostgreSQL), e acrescentar ao checklist de revisão a pergunta "e se a coluna for NULL?". Procure outros <code>&lt;&gt;</code> e <code>NOT IN</code> sobre colunas anuláveis.</p>
+  <h3>3. "Funcionava em teste e travou em produção"</h3>
+  <p>Uma consulta nova usa <code>WHERE TRUNC(dt_atendimento) = :dia</code> e <code>SELECT *</code>. Em homologação (50 mil linhas) levou 0,2 s; em produção (200 milhões) passou de minutos. <strong>O que fazer:</strong> reescrever com intervalo semiaberto na coluna crua, listar só as colunas necessárias, confirmar o uso do índice no plano (módulo 09) e exigir teste com volume realista antes de promover. A causa raiz é processo (teste sem volume), não só o código.</p>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Relação / tabela</dt><dd>Conjunto de linhas com as mesmas colunas e tipos; sem ordem natural.</dd></div>
+    <div><dt>Chave primária (PK)</dt><dd>Identifica cada linha de forma única e não nula.</dd></div>
+    <div><dt>Chave estrangeira (FK)</dt><dd>Coluna cujo valor deve existir na chave de outra tabela (ou ser NULL).</dd></div>
+    <div><dt>Cardinalidade</dt><dd>Quantas linhas de um lado se relacionam com quantas do outro (1:1, 1:N, N:N).</dd></div>
+    <div><dt>Tabela associativa</dt><dd>Tabela que resolve uma relação N:N, com uma FK para cada lado.</dd></div>
+    <div><dt>Normalização</dt><dd>Organizar as tabelas para que cada fato seja gravado em um só lugar.</dd></div>
+    <div><dt>Chave substituta</dt><dd>Identificador sem significado de negócio, gerado pelo banco.</dd></div>
+    <div><dt>Ordem lógica</dt><dd>Sequência que define o significado de um SELECT: FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY.</dd></div>
+    <div><dt>NULL</dt><dd>Valor ausente ou desconhecido; compara como UNKNOWN.</dd></div>
+    <div><dt>UNKNOWN</dt><dd>Terceiro valor lógico; o WHERE só aceita linhas TRUE.</dd></div>
+    <div><dt>Sargável (SARGable)</dt><dd>Predicado que permite usar índice porque a coluna está nua.</dd></div>
+    <div><dt>Intervalo semiaberto</dt><dd>Faixa com início incluído e fim excluído: <code>&gt;= a AND &lt; b</code>.</dd></div>
+    <div><dt>Keyset</dt><dd>Paginação por "depois da última chave vista", em vez de OFFSET.</dd></div>
+    <div><dt>Operador de conjunto</dt><dd>UNION, INTERSECT, EXCEPT/MINUS: combinam resultados linha a linha.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l1">Prática</span><span class="lvl l3">Sênior</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>O que é uma chave primária e uma chave estrangeira?</span></summary><div class="ans"><p>PK identifica cada linha de forma única e nunca é nula. FK é uma coluna cujo valor tem de existir na PK de outra tabela (ou ser NULL, se permitido); o banco impõe isso (integridade referencial). Detalhe: FK não cria índice automaticamente.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Como representar uma relação muitos-para-muitos?</span></summary><div class="ans"><p>Com uma tabela associativa que guarda uma FK para cada lado, e a combinação como PK (ou uma chave própria). Aqui, <code>atendimento</code> liga paciente e médico e ainda carrega atributos (data, valor).</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>As linhas de uma tabela têm ordem? Como garantir ordenação?</span></summary><div class="ans"><p>Não. A ordem sem <code>ORDER BY</code> é indefinida e pode mudar. Só <code>ORDER BY</code> garante, com desempate único se houver empates.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Qual é a ordem lógica de execução de um SELECT e por que ela importa?</span></summary><div class="ans"><p>FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, DISTINCT, ORDER BY, FETCH/LIMIT. Explica por que alias do SELECT não vale no WHERE, por que funções de janela não podem ser filtradas no WHERE e por que filtros que não dependem de agregação devem ir no WHERE e não no HAVING.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Diferença entre WHERE e HAVING?</span></summary><div class="ans"><p>WHERE filtra linhas antes do agrupamento e não aceita agregações; HAVING filtra grupos depois e aceita agregações. O que puder ir no WHERE deve ir, para reduzir as linhas antes de agrupar.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Quais as diferenças entre DATE no Oracle e no PostgreSQL?</span></summary><div class="ans"><p>No Oracle, <code>DATE</code> contém hora, minuto e segundo; no PostgreSQL só o dia (o equivalente é <code>TIMESTAMP</code>). Consequência: igualdade e <code>BETWEEN</code> sobre <code>DATE</code> do Oracle podem perder linhas. A aritmética também difere (<code>DATE - DATE</code> dá dias no Oracle; no PG, inteiro para date e <code>INTERVAL</code> para timestamp).</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>NULL = NULL é verdadeiro? Como testar NULL?</span></summary><div class="ans"><p>Não: resulta em UNKNOWN, e o WHERE só aceita TRUE. Teste com <code>IS NULL</code> / <code>IS NOT NULL</code>. No PostgreSQL, <code>IS DISTINCT FROM</code> compara tratando NULL como igual.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Por que <code>NOT IN (subconsulta)</code> pode devolver vazio?</span></summary><div class="ans"><p>Se a subconsulta tiver um NULL, <code>x &lt;&gt; NULL</code> é UNKNOWN e o predicado nunca é TRUE. Use <code>NOT EXISTS</code>, que não sofre disso, ou filtre os NULLs.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Diferença entre COUNT(*), COUNT(col) e COUNT(DISTINCT col)?</span></summary><div class="ans"><p><code>COUNT(*)</code> conta linhas; <code>COUNT(col)</code> conta valores não nulos; <code>COUNT(DISTINCT col)</code> conta valores distintos não nulos. Sobre conjunto vazio, COUNT dá 0, mas SUM dá NULL.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Onde ficam os NULLs na ordenação?</span></summary><div class="ans"><p>Nos dois bancos NULL é tratado como o maior valor: no fim em <code>ASC</code>, no começo em <code>DESC</code>. Controle com <code>NULLS FIRST</code>/<code>NULLS LAST</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>String vazia e NULL no Oracle e no PostgreSQL?</span></summary><div class="ans"><p>No Oracle, <code>''</code> é NULL (então <code>= ''</code> nunca é verdadeiro e <code>||</code> trata NULL como vazio). No PostgreSQL são distintos e concatenar com NULL dá NULL. Importa em validações, migrações e integrações.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como filtrar um mês inteiro de forma eficiente e correta?</span></summary><div class="ans"><p>Intervalo semiaberto: <code>&gt;= 1º do mês AND &lt; 1º do mês seguinte</code>, sem função na coluna. Preserva o índice e não perde o último dia. Alternativas: índice funcional ou particionamento.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>UNION ou UNION ALL?</span></summary><div class="ans"><p><code>UNION ALL</code> por padrão: só concatena. <code>UNION</code> remove duplicatas com sort/hash e pode apagar linhas legítimas; use quando a unicidade for requisito. Parênteses ao misturar operadores, pois a precedência difere entre Oracle e PostgreSQL.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como fazer top-N e paginar, no Oracle e no PostgreSQL?</span></summary><div class="ans"><p><code>FETCH FIRST n ROWS ONLY</code> (Oracle 12c+ e PG) ou <code>LIMIT n</code> (PG); <code>ROWNUM</code> é legado e avalia antes do <code>ORDER BY</code>. Para páginas, <code>OFFSET</code> é simples, mas custa mais a cada página e é instável; keyset é estável e de custo constante.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Um relatório "não fecha" com o sistema de origem. Por onde investiga?</span></summary><div class="ans"><p>Checklist: filtros de data com <code>BETWEEN</code> em coluna com hora; comparações <code>&lt;&gt;</code>/<code>NOT IN</code> que descartam NULL; <code>UNION</code> removendo linhas; <code>INNER JOIN</code> que perde registros sem par (módulo 02); fuso horário. Reconciliar por contagem e por soma em fatias (por dia, por convênio) até localizar a divergência.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Como você evita que o time escreva SQL que só funciona com poucos dados? (gestão)</span></summary><div class="ans"><p>Três alavancas: revisão de código com checklist (função na coluna, <code>SELECT *</code>, NULL, paginação), ambiente de homologação com volume e distribuição realistas (dados mascarados, LGPD), e olhar o plano de execução como parte da definição de pronto para consultas em tabelas grandes. Acrescente métricas em produção para pegar o resto.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Quando desnormalizar e quais os riscos? (sênior)</span></summary><div class="ans"><p>Quando há ganho de leitura medido que justifique (relatórios, dashboards) e o custo de manter a cópia sincronizada é aceitável. Riscos: inconsistência, escritas mais caras e lógica duplicada. Alternativas antes de desnormalizar: índice melhor, view materializada, cache (módulos 08 e 11).</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

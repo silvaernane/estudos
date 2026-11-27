@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 09: Segurança e troubleshooting</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 09 de 10 · Segurança e troubleshooting</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html" aria-current="page"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li class="sub"><ol>
+      <li><a href="#modelo-ameacas"><span class="n">1</span>Modelo de ameaças de containers</a></li>
+      <li><a href="#socket-rootless"><span class="n">2</span>O socket é root; rootless, userns e usuário não-root</a></li>
+      <li><a href="#capabilities-isolamento"><span class="n">3</span>Capabilities, privileged, seccomp e AppArmor/SELinux</a></li>
+      <li><a href="#runtime-hardening"><span class="n">4</span>Hardening em execução: read-only, tmpfs e limites de recursos</a></li>
+      <li><a href="#segredos-varredura"><span class="n">5</span>Segredos, varredura de imagens e CIS Benchmark</a></li>
+      <li><a href="#saude-lgpd"><span class="n">6</span>Dados de saúde em containers e LGPD</a></li>
+      <li><a href="#roteiro-diagnostico"><span class="n">7</span>Roteiro de diagnóstico e exit codes</a></li>
+      <li><a href="#problemas-frequentes"><span class="n">8</span>Problemas frequentes: do container que sai ao que não tem shell</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 09 · <span class="lvl l3">Avançado</span></div>
+
+  <h1>Segurança e troubleshooting</h1>
+  <p class="lede">Um container não é uma caixa-forte: é um processo do host com visão limitada do sistema. Este módulo mostra como endurecer esse processo e, quando algo dá errado de madrugada, como diagnosticar com método em vez de tentativa e erro.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Desenhar o modelo de ameaças de um ambiente com Docker e dizer onde cada defesa atua</li>
+    <li>Explicar por que o socket do Docker equivale a root e quando usar rootless, user namespaces e usuário não-root</li>
+    <li>Aplicar capabilities mínimas, filesystem somente leitura, <code>no-new-privileges</code> e limites de recursos</li>
+    <li>Tratar segredos, varredura de imagens e dados de saúde (LGPD) em containers</li>
+    <li>Seguir um roteiro de diagnóstico: exit code, OOM, rede, permissão de volume, disco, cache, lentidão e imagem sem shell</li>
+  </ul></div>
+
+
+<section class="chap" id="modelo-ameacas">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Modelo de ameaças de containers</h2>
+  <p>Segurança começa por perguntar <strong>quem ataca, por onde entra e o que ganha</strong>. Num ambiente Docker há cinco superfícies, e cada uma tem defesas diferentes. O ponto-chave: containers <strong>compartilham o kernel do host</strong>. Uma máquina virtual tem um kernel próprio atrás de um hypervisor; o container é um processo comum, isolado por namespaces e limitado por cgroups (módulo 01). Se o isolamento falhar, o invasor está no host.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Cinco superfícies de ataque: registry, imagem, daemon, container e kernel do host, cada uma com sua ameaça principal">
+      <defs>
+        <marker id="ah-ameaca1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ah-ameaca2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box" x="20" y="30" width="130" height="44" rx="5"/><text x="85" y="57" text-anchor="middle">Registry</text>
+      <rect class="box" x="200" y="30" width="130" height="44" rx="5"/><text x="265" y="57" text-anchor="middle">Imagem</text>
+      <rect class="box-a" x="380" y="30" width="130" height="44" rx="5"/><text x="445" y="57" text-anchor="middle">Daemon</text>
+      <rect class="box-a" x="550" y="30" width="110" height="44" rx="5"/><text x="605" y="57" text-anchor="middle">Container</text>
+      <line class="ln" x1="150" y1="52" x2="198" y2="52" marker-end="url(#ah-ameaca1)"/>
+      <line class="ln" x1="330" y1="52" x2="378" y2="52" marker-end="url(#ah-ameaca1)"/>
+      <line class="ln" x1="510" y1="52" x2="548" y2="52" marker-end="url(#ah-ameaca1)"/>
+      <text class="lbl" x="174" y="44" text-anchor="middle">pull</text>
+      <text class="lbl" x="354" y="44" text-anchor="middle">run</text>
+      <text class="lbl" x="529" y="44" text-anchor="middle">cria</text>
+      <line class="ln-b" x1="85" y1="74" x2="85" y2="120"/>
+      <line class="ln-b" x1="265" y1="74" x2="265" y2="120"/>
+      <line class="ln-b" x1="445" y1="74" x2="445" y2="120"/>
+      <line class="ln-b" x1="605" y1="74" x2="605" y2="120"/>
+      <rect class="box-b" x="20" y="120" width="130" height="60" rx="5"/>
+      <text class="lbl" x="85" y="146" text-anchor="middle">imagem adulterada,</text>
+      <text class="lbl" x="85" y="162" text-anchor="middle">nome parecido</text>
+      <rect class="box-b" x="200" y="120" width="130" height="60" rx="5"/>
+      <text class="lbl" x="265" y="146" text-anchor="middle">CVEs, segredo em</text>
+      <text class="lbl" x="265" y="162" text-anchor="middle">camada, USER root</text>
+      <rect class="box-b" x="380" y="120" width="130" height="60" rx="5"/>
+      <text class="lbl" x="445" y="146" text-anchor="middle">socket = root,</text>
+      <text class="lbl" x="445" y="162" text-anchor="middle">API aberta em TCP</text>
+      <rect class="box-b" x="550" y="120" width="110" height="60" rx="5"/>
+      <text class="lbl" x="605" y="146" text-anchor="middle">privileged,</text>
+      <text class="lbl" x="605" y="162" text-anchor="middle">sem limites</text>
+      <line class="ln-b" x1="605" y1="180" x2="605" y2="218" marker-end="url(#ah-ameaca2)"/>
+      <text class="lbl" x="595" y="204" text-anchor="end">escape do container</text>
+      <rect class="box-m" x="20" y="220" width="640" height="56" rx="5"/>
+      <text class="ttl" x="340" y="243" text-anchor="middle">Host</text>
+      <text class="lbl" x="340" y="262" text-anchor="middle">kernel compartilhado, disco, rede, outros containers e dados de pacientes</text>
+    </svg>
+    <figcaption>As cinco superfícies: o que vem do registry, o conteúdo da imagem, o daemon que obedece qualquer cliente do socket, o processo em execução e o kernel que todos dividem.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Superfície</th><th>Ameaça típica</th><th>Defesa principal</th><th>Onde estudar</th></tr></thead>
+    <tbody>
+      <tr><td>Registry e origem</td><td>imagem adulterada, typosquatting (nome quase igual ao oficial), tag mutável trocada</td><td>imagens oficiais/verificadas, digest, assinatura, registry privado</td><td>módulo 08</td></tr>
+      <tr><td>Conteúdo da imagem</td><td>CVE em pacote do SO ou da dependência, segredo esquecido numa camada, ferramentas demais (shell, curl, compiladores)</td><td>base mínima, multi-stage, varredura, SBOM, <code>USER</code> não-root</td><td>módulos 03, 04 e 08; seções 2 e 5 daqui</td></tr>
+      <tr><td>Daemon e socket</td><td>quem fala com o daemon vira root no host; API TCP sem TLS</td><td>nunca expor o socket, rootless, socket proxy, grupo <code>docker</code> restrito</td><td>seção 2</td></tr>
+      <tr><td>Container em execução</td><td>RCE na aplicação, root no container, capabilities demais, <code>--privileged</code>, consumo sem limite (DoS)</td><td>capabilities mínimas, <code>read_only</code>, <code>no-new-privileges</code>, seccomp, limites</td><td>seções 3 e 4</td></tr>
+      <tr><td>Host e kernel</td><td>escape de container por falha de kernel ou de runtime; host mal atualizado</td><td>patch do SO, user namespaces, AppArmor/SELinux, host dedicado para cargas sensíveis</td><td>seção 3</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Defesa em camadas: assuma que a aplicação <em>será</em> explorada um dia e projete para que o dano fique dentro do container. Cada controle desta trilha (não-root, caps, read-only, limites) reduz o que o invasor consegue fazer depois de entrar.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Container é seguro?" A resposta madura: é isolamento de processo, não de kernel. Seguro o bastante para a maioria das cargas <em>se</em> configurado com privilégio mínimo; para código não confiável de terceiros, use isolamento mais forte (microVMs como Firecracker, ou runtimes como gVisor e Kata Containers).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Segurança de containers é majoritariamente <strong>padrão de equipe</strong>, não ferramenta: uma imagem base aprovada, um template de Compose/Kubernetes com os controles já ligados e um item de checklist na revisão de código. O custo de fazer certo no início é pequeno; retrofit em dezenas de serviços não é.</p></div>
+</section>
+
+<section class="chap" id="socket-rootless">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O socket é root; rootless, userns e usuário não-root</h2>
+  <h3>Por que o socket do Docker é root</h3>
+  <p>O cliente <code>docker</code> é só um cliente HTTP. Ele conversa com o daemon pelo socket Unix <code>/var/run/docker.sock</code> (dono <code>root</code>, grupo <code>docker</code>), e o daemon roda como root. Quem consegue escrever nesse socket pode pedir ao daemon <em>qualquer coisa</em>, inclusive um container que monta o disco inteiro do host:</p>
+<pre><code class="sh">$ ls -l /var/run/docker.sock
+srw-rw---- 1 root docker 0 Nov 26 08:12 /var/run/docker.sock
+
+# qualquer membro do grupo docker consegue isto, sem sudo:
+docker run --rm -it -v /:/host alpine chroot /host sh
+# agora é root no sistema de arquivos do host (leia /etc/shadow, instale chave SSH...)</code></pre>
+  <p>Consequências práticas:</p>
+  <ul>
+    <li><strong>Estar no grupo <code>docker</code> é ser root.</strong> Trate a lista desse grupo como a lista de administradores do servidor.</li>
+    <li><strong>Nunca monte <code>/var/run/docker.sock</code> num container</strong> sem necessidade comprovada. Quem comprometer esse container controla o host. Montar com <code>:ro</code> <em>não ajuda</em>: o modo somente leitura protege o arquivo do socket, não impede de enviar requisições por ele.</li>
+    <li><strong>API em TCP:</strong> a porta 2375 é HTTP sem autenticação (equivale a root remoto para qualquer um que alcance a porta; é alvo clássico de mineradores de criptomoeda). Se for preciso, use 2376 com TLS mútuo, ou melhor, SSH (<code>docker context create remoto --docker "host=ssh://usuario@servidor"</code>).</li>
+  </ul>
+  <h3>Quem pede o socket e o que fazer</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Ferramenta</th><th>Por que pede</th><th>Alternativa mais segura</th></tr></thead>
+    <tbody>
+      <tr><td>Proxy reverso com autodescoberta (Traefik, nginx-proxy)</td><td>lê containers para montar rotas</td><td>um <em>socket proxy</em> (por exemplo, o projeto docker-socket-proxy) que expõe só endpoints de leitura; ou configuração de rotas por arquivo</td></tr>
+      <tr><td>Agente de CI que faz <code>docker build</code></td><td>"Docker no Docker" por atalho</td><td>BuildKit remoto, builder sem daemon (Kaniko, Buildah), runner rootless ou VM efêmera por job</td></tr>
+      <tr><td>Painéis de gestão (Portainer etc.)</td><td>administram o daemon</td><td>aceitar o risco conscientemente: é uma conta de administrador. Proteja com autenticação forte, rede interna e MFA</td></tr>
+      <tr><td>Monitoramento (cAdvisor, agentes de APM)</td><td>métricas por container</td><td>montar o mínimo necessário somente leitura quando a ferramenta permitir; revisar o que o agente realmente exige</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>"Montei o socket como <code>:ro</code>, então está seguro." Não está. Um container com o socket, mesmo "somente leitura", pode criar outro container privilegiado com <code>/</code> do host montado.</p></div>
+  <h3>Rootless mode: o daemon sem root</h3>
+  <p>No <strong>modo rootless</strong>, tanto o daemon quanto os containers rodam sob um usuário comum, usando user namespaces. O "root" dentro do container é um UID sem privilégio no host. Se alguém escapar do container, cai numa conta sem poder. Instalação típica no Linux:</p>
+<pre><code class="sh">dockerd-rootless-setuptool.sh install      # vem no pacote docker-ce-rootless-extras
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
+docker info --format '{{.SecurityOptions}}'   # deve listar rootless</code></pre>
+  <p>Limitações a conhecer: portas abaixo de 1024 exigem ajuste (<code>net.ipv4.ip_unprivileged_port_start</code>); a rede passa por uma camada em espaço de usuário (menor desempenho); o IP de origem das conexões pode aparecer mascarado; alguns recursos dependem de cgroup v2 com systemd; <code>--privileged</code> perde o sentido. O Podman é rootless por padrão (veja as alternativas no módulo 10).</p>
+  <h3>User namespaces com userns-remap</h3>
+  <p>Alternativa quando o daemon precisa continuar como root: o <strong>remapeamento de user namespace</strong> mapeia o UID 0 do container para uma faixa de UIDs sem privilégio no host (definida em <code>/etc/subuid</code> e <code>/etc/subgid</code>). Liga-se no <code>/etc/docker/daemon.json</code>:</p>
+<pre><code class="json">{ "userns-remap": "default" }</code></pre>
+  <p>O preço: o daemon usa um espaço de armazenamento separado (as imagens são baixadas de novo), volumes e bind mounts passam a ter donos "estranhos" no host e alguns recursos (como <code>--privileged</code> e <code>--network host</code>) ficam restritos. É poderoso, mas exige planejamento.</p>
+  <h3>Usuário não-root dentro da imagem</h3>
+  <p>É a defesa mais barata e a mais esquecida. Sem <code>USER</code>, o processo roda como root (UID 0) no container: com as capabilities padrão do Docker ele ainda faz muita coisa dentro do container, e qualquer falha de isolamento vira root no host. Prefira UID <strong>numérico</strong>: o Kubernetes (<code>runAsNonRoot</code>) só consegue verificar o usuário se ele for numérico:</p>
+<pre data-file="Dockerfile"><code class="dockerfile">FROM node:22-slim
+WORKDIR /app
+COPY --chown=10001:10001 package*.json ./
+RUN npm ci --omit=dev
+COPY --chown=10001:10001 . .
+USER 10001:10001
+EXPOSE 3000
+CMD ["node", "server.js"]</code></pre>
+<pre><code class="sh">docker run --rm app id            # uid=10001 gid=10001
+docker exec api whoami            # confirma num container em execução
+docker run --rm --user 10001:10001 imagem-sem-user   # força o usuário sem mudar a imagem</code></pre>
+  <p>Consequências de rodar sem root: <strong>porta abaixo de 1024</strong> não pode ser aberta (use 8080 internamente e publique <code>-p 80:8080</code>; imagens como <code>nginxinc/nginx-unprivileged</code> já fazem isso) e <strong>escrita em pastas</strong> exige dono correto (<code>--chown</code> no COPY, ou <code>mkdir</code> + <code>chown</code> antes do <code>USER</code>). Permissão em volumes é tratada na seção 8.</p>
+  <div class="note iv"><b>Na entrevista</b><p>Se perguntarem "por que o grupo docker é perigoso?", mostre o <code>chroot /host</code> acima. Se perguntarem a diferença entre rootless e <code>USER</code>: <code>USER</code> reduz o poder do <em>processo</em> dentro do container; rootless reduz o poder do <em>daemon</em> e de tudo que ele cria. São camadas complementares.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Faça um inventário: quais servidores têm o socket montado em algum container e quem está no grupo <code>docker</code>. Em geral há surpresas (runner de CI antigo, painel esquecido). Regra de equipe: pedido de acesso ao grupo <code>docker</code> passa pela mesma aprovação de acesso root.</p></div>
+</section>
+
+
+<section class="chap" id="capabilities-isolamento">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Capabilities, privileged, seccomp e AppArmor/SELinux</h2>
+  <p>Tradicionalmente, "root" é tudo ou nada. O Linux dividiu esse poder em dezenas de <strong>capabilities</strong> (ligar em porta baixa, mudar dono de arquivo, criar socket bruto, montar sistemas de arquivos...). O Docker já inicia o container sem a maioria delas, mas deixa um conjunto padrão que quase nenhuma aplicação usa. Sobre isso, camadas adicionais filtram o que o processo pode pedir ao kernel.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Caminho de uma chamada de sistema: processo, capabilities, seccomp, AppArmor ou SELinux, kernel; abaixo, namespaces e cgroups">
+      <defs>
+        <marker id="ah-iso1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="20">Caminho de uma chamada ao sistema</text>
+      <rect class="box" x="20" y="34" width="112" height="50" rx="5"/><text x="76" y="63" text-anchor="middle">Processo</text>
+      <rect class="box-a" x="152" y="34" width="112" height="50" rx="5"/><text x="208" y="63" text-anchor="middle">Capabilities</text>
+      <rect class="box-a" x="284" y="34" width="112" height="50" rx="5"/><text x="340" y="63" text-anchor="middle">seccomp</text>
+      <rect class="box-a" x="416" y="34" width="112" height="50" rx="5"/><text x="472" y="55" text-anchor="middle">AppArmor</text><text x="472" y="73" text-anchor="middle">ou SELinux</text>
+      <rect class="box-m" x="548" y="34" width="112" height="50" rx="5"/><text x="604" y="63" text-anchor="middle">Kernel</text>
+      <line class="ln" x1="132" y1="59" x2="150" y2="59" marker-end="url(#ah-iso1)"/>
+      <line class="ln" x1="264" y1="59" x2="282" y2="59" marker-end="url(#ah-iso1)"/>
+      <line class="ln" x1="396" y1="59" x2="414" y2="59" marker-end="url(#ah-iso1)"/>
+      <line class="ln" x1="528" y1="59" x2="546" y2="59" marker-end="url(#ah-iso1)"/>
+      <text class="lbl" x="76" y="104" text-anchor="middle">usuário não-root</text>
+      <text class="lbl" x="208" y="104" text-anchor="middle">divide o poder</text>
+      <text class="lbl" x="208" y="120" text-anchor="middle">do root em partes</text>
+      <text class="lbl" x="340" y="104" text-anchor="middle">filtra quais</text>
+      <text class="lbl" x="340" y="120" text-anchor="middle">syscalls existem</text>
+      <text class="lbl" x="472" y="104" text-anchor="middle">política de acesso</text>
+      <text class="lbl" x="472" y="120" text-anchor="middle">a arquivos e recursos</text>
+      <text class="lbl" x="604" y="104" text-anchor="middle">só recebe o que</text>
+      <text class="lbl" x="604" y="120" text-anchor="middle">passou pelos filtros</text>
+      <rect class="box" x="20" y="160" width="640" height="46" rx="5"/>
+      <text x="340" y="188" text-anchor="middle">namespaces: o que o processo enxerga (PID, rede, mount, user)</text>
+      <rect class="box" x="20" y="222" width="640" height="46" rx="5"/>
+      <text x="340" y="250" text-anchor="middle">cgroups: quanto ele pode consumir (memória, CPU, pids)</text>
+      <text class="lbl" x="20" y="290">Cada camada falha de um jeito diferente; por isso se somam, nenhuma substitui as outras.</text>
+    </svg>
+    <figcaption>Capabilities, seccomp e o módulo de segurança (AppArmor ou SELinux) filtram o que o processo pede ao kernel; namespaces e cgroups delimitam o que ele vê e o que consome.</figcaption>
+  </figure>
+  <h3>Capabilities: tirar tudo e devolver só o necessário</h3>
+  <p>O conjunto padrão do Docker inclui, entre outras, <code>CHOWN</code>, <code>DAC_OVERRIDE</code>, <code>SETUID</code>, <code>SETGID</code>, <code>KILL</code>, <code>NET_RAW</code>, <code>NET_BIND_SERVICE</code> e <code>SYS_CHROOT</code>. Uma API web raramente precisa de qualquer uma. A prática segura é descartar todas e adicionar só a que a aplicação exigir:</p>
+<pre><code class="sh">docker run --rm alpine sh -c 'grep CapEff /proc/self/status'
+CapEff: 00000000a80425fb          # conjunto padrão (root no container)
+
+docker run --rm --cap-drop ALL alpine sh -c 'grep CapEff /proc/self/status'
+CapEff: 0000000000000000          # nenhuma capability
+
+# nginx que precisa abrir a porta 80 como root, sem o resto:
+docker run -d --cap-drop ALL --cap-add NET_BIND_SERVICE \
+  --cap-add CHOWN --cap-add SETUID --cap-add SETGID nginx:1.27</code></pre>
+  <p>Descubra o necessário por tentativa: suba com <code>--cap-drop ALL</code>, leia o erro (<code>Operation not permitted</code>) e adicione a capability correspondente, uma de cada vez. Com usuário não-root em porta alta (8080), em geral nenhuma é necessária.</p>
+  <h3>--privileged e por que evitar</h3>
+  <p><code>--privileged</code> dá <strong>todas</strong> as capabilities, acesso a <strong>todos os dispositivos</strong> do host e relaxa seccomp e o módulo de segurança. É praticamente "root no host com uma camada de namespaces". De dentro, é possível montar o disco do host:</p>
+<pre><code class="sh">docker run --rm --privileged alpine sh -c 'mkdir /h && mount /dev/sda1 /h && ls /h'
+# lista o disco do host: nenhum isolamento de sistema de arquivos restou</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Necessidade real</th><th>Em vez de <code>--privileged</code></th></tr></thead>
+    <tbody>
+      <tr><td>acessar um dispositivo (USB, GPU, porta serial)</td><td><code>--device /dev/ttyUSB0</code> (GPU: runtime e flags do fabricante)</td></tr>
+      <tr><td>uma operação de rede específica (ping, tcpdump)</td><td><code>--cap-add NET_RAW</code> ou <code>NET_ADMIN</code>, só no container de diagnóstico</td></tr>
+      <tr><td>Docker dentro de Docker no CI</td><td>daemon rootless, runtime Sysbox, builder remoto, ou VM efêmera por job</td></tr>
+      <tr><td>depurar o host</td><td>sessão SSH no host, não um container privilegiado esquecido em produção</td></tr>
+    </tbody>
+  </table></div>
+  <h3>no-new-privileges, seccomp e AppArmor/SELinux</h3>
+  <ul>
+    <li><strong><code>--security-opt no-new-privileges</code></strong>: o processo e seus filhos não ganham privilégios extras por binários setuid ou capabilities de arquivo. Bloqueia uma classe inteira de escalada local. Custo quase zero; ligue sempre.</li>
+    <li><strong>seccomp</strong>: filtro de chamadas de sistema. O perfil padrão do Docker bloqueia algumas dezenas de syscalls perigosas ou obsoletas e já vem ligado. Pode-se fornecer um perfil próprio, mais restrito, com <code>--security-opt seccomp=perfil.json</code>. <strong>Nunca</strong> use <code>seccomp=unconfined</code> para "fazer funcionar"; descubra qual syscall o app precisa e libere só ela.</li>
+    <li><strong>AppArmor</strong> (distribuições Debian/Ubuntu) e <strong>SELinux</strong> (família Red Hat/Fedora): módulos de segurança do kernel que aplicam políticas de acesso obrigatório. O Docker aplica um perfil padrão (<code>docker-default</code> no AppArmor; rótulos de container no SELinux). Em hosts com SELinux, volumes de bind mount podem exigir o sufixo <code>:z</code> ou <code>:Z</code> para o rótulo correto. Desligar o módulo para "resolver" um erro de permissão é a armadilha clássica.</li>
+  </ul>
+<pre><code class="sh">docker info --format '{{.SecurityOptions}}'
+# [name=seccomp,profile=builtin name=cgroupns]  (e name=apparmor ou name=selinux, conforme o host)</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Receitas de internet que resolvem "permission denied" com <code>--privileged</code>, <code>seccomp=unconfined</code> ou <code>setenforce 0</code>. Resolvem o sintoma e abrem mão de todas as camadas ao mesmo tempo. Investigue a causa (dono do volume, rótulo SELinux, capability específica).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Pergunta clássica: "o que o <code>--privileged</code> faz?". Resposta curta: todas as capabilities, todos os dispositivos e sem as restrições de seccomp/AppArmor; o container vira quase um processo root do host. Complete com a alternativa (<code>--device</code>, <code>--cap-add</code> pontual).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Transforme isso em política verificável: "nenhum serviço em produção com <code>privileged</code>, <code>seccomp=unconfined</code> ou socket montado sem exceção documentada e aprovada". Ferramentas de política (Kubernetes Pod Security Standards, regras no CI que leem o Compose) fazem o cumprimento automático.</p></div>
+</section>
+
+<section class="chap" id="runtime-hardening">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Hardening em execução: read-only, tmpfs e limites de recursos</h2>
+  <h3>Sistema de arquivos somente leitura</h3>
+  <p>Se o invasor não consegue gravar no container, não instala ferramenta, não altera o código nem planta um binário. Com <code>--read-only</code>, a camada gravável some e a aplicação só escreve onde você permitir: <code>tmpfs</code> (memória, some ao parar) para arquivos temporários e volumes para dados reais.</p>
+<pre><code class="sh">docker run -d --name api \
+  --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+  -v api-uploads:/app/uploads \
+  --user 10001:10001 --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --pids-limit 200 --memory 512m --cpus 1.0 \
+  -p 127.0.0.1:8080:8080 \
+  reg.exemplo.com/clinica/api:1.4.2
+
+docker inspect -f 'ro={{.HostConfig.ReadonlyRootfs}} caps={{.HostConfig.CapDrop}} pids={{.HostConfig.PidsLimit}}' api
+ro=true caps=[ALL] pids=200</code></pre>
+  <p>Aplicações costumam falhar na primeira tentativa com <code>Read-only file system</code>. O erro mostra o caminho: ele vira um <code>tmpfs</code> ou um volume. Casos comuns: <code>/tmp</code>, <code>/var/run</code>, <code>/var/cache/nginx</code>, diretório de upload, cache do framework.</p>
+  <h3>Limites de recursos: segurança também é disponibilidade</h3>
+  <p>Sem limites, um container com defeito (ou invadido) consome toda a memória, CPU ou número de processos do host, e derruba os vizinhos. É a forma mais simples de <strong>negação de serviço</strong>, acidental ou não.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Recurso</th><th>Flag do <code>docker run</code></th><th>Comportamento ao estourar</th></tr></thead>
+    <tbody>
+      <tr><td>Memória</td><td><code>--memory 512m</code> (e <code>--memory-swap</code> para controlar swap)</td><td>o kernel mata o processo (OOM kill, exit code 137, <code>OOMKilled=true</code>)</td></tr>
+      <tr><td>CPU</td><td><code>--cpus 1.5</code> (cota), <code>--cpu-shares</code> (peso relativo)</td><td>o container é <em>estrangulado</em> (throttling): fica lento, não morre</td></tr>
+      <tr><td>Processos</td><td><code>--pids-limit 200</code></td><td>novos processos/threads falham (<code>fork: Resource temporarily unavailable</code>): contém fork bombs</td></tr>
+      <tr><td>Arquivos abertos</td><td><code>--ulimit nofile=4096:8192</code></td><td>erro <code>too many open files</code></td></tr>
+      <tr><td>Disco (camada gravável)</td><td>sem flag simples; use <code>--tmpfs size=</code>, quotas do driver de storage ou volumes dedicados</td><td>enche o disco do host: monitore</td></tr>
+    </tbody>
+  </table></div>
+  <p>Equivalente em Compose (Compose v2 respeita <code>deploy.resources.limits</code> fora do Swarm):</p>
+<pre data-file="compose.yaml"><code class="yaml">services:
+  api:
+    image: reg.exemplo.com/clinica/api:1.4.2
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 200
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    ports:
+      - "127.0.0.1:8080:8080"     # só o proxy local alcança
+    volumes:
+      - api-uploads:/app/uploads
+volumes:
+  api-uploads:</code></pre>
+  <h3>Outros ajustes baratos</h3>
+  <ul>
+    <li><strong>Publique só o necessário e só onde precisa:</strong> banco e cache <em>não</em> têm <code>ports</code>; ficam numa rede interna. <code>-p 5432:5432</code> abre o banco para a rede inteira (e o Docker contorna regras de UFW/firewalld ao inserir as próprias regras de iptables). Use <code>127.0.0.1:porta:porta</code> quando só o host precisa acessar.</li>
+    <li><strong>Redes separadas:</strong> <code>internal: true</code> numa rede Compose impede saída para a internet (útil para o banco). Veja o módulo 05.</li>
+    <li><strong><code>--init</code></strong>: processo mínimo como PID 1 que repassa sinais e colhe zumbis.</li>
+    <li><strong>Imagens por digest</strong> e <strong>pacotes mínimos</strong>: menos binários, menos ferramentas para o invasor.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>O "kit mínimo" de todo serviço: <code>USER</code> não-root, <code>cap_drop: ALL</code>, <code>no-new-privileges</code>, <code>read_only</code> + tmpfs, limites de memória/CPU/pids, e porta publicada só quando necessária. Leva dez linhas de YAML.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você preveniria que um container consuma todos os recursos do host?" Limites de memória, CPU e pids; monitoramento (<code>docker stats</code>, métricas) e política de restart. Mencione que estouro de memória mata o container e estouro de CPU só o desacelera.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Limites são também <strong>planejamento de capacidade</strong>: sem eles, você não sabe quanto cada serviço custa nem dimensiona o servidor com segurança. Exija limites em todo serviço novo e revise-os com dados reais (média e pico) após o primeiro mês em produção.</p></div>
+</section>
+
+<section class="chap" id="segredos-varredura">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Segredos, varredura de imagens e CIS Benchmark</h2>
+  <h3>Onde os segredos vazam</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Lugar</th><th>Por que é ruim</th></tr></thead>
+    <tbody>
+      <tr><td><code>ENV</code> no Dockerfile</td><td>gravado na imagem: qualquer um que puxe a imagem lê com <code>docker inspect</code> ou <code>docker history</code></td></tr>
+      <tr><td><code>ARG</code> no Dockerfile</td><td>some do container, mas fica no histórico da imagem e nos metadados do build</td></tr>
+      <tr><td><code>COPY .env</code> ou arquivo de credencial</td><td>fica numa camada para sempre, mesmo se apagado numa camada posterior</td></tr>
+      <tr><td>variável de ambiente em runtime</td><td>aceitável em muitos casos, mas visível em <code>docker inspect</code>, em <code>/proc/PID/environ</code>, em dumps de erro e em logs de debug que imprimem o ambiente</td></tr>
+      <tr><td>repositório git</td><td>fica no histórico; remover o arquivo depois não apaga o segredo, é preciso <em>rotacionar</em></td></tr>
+    </tbody>
+  </table></div>
+  <h3>Segredos no build (BuildKit)</h3>
+  <p>Precisa de um token para baixar pacote privado durante o build? Use o <strong>mount de secret do BuildKit</strong>: o arquivo existe só durante aquela instrução <code>RUN</code> e não entra em nenhuma camada.</p>
+<pre data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM node:22-slim AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci --omit=dev</code></pre>
+<pre><code class="sh">docker build --secret id=npmrc,src=$HOME/.npmrc -t app:1.0 .
+docker history app:1.0 | grep -i npmrc    # nada: o segredo não ficou na imagem</code></pre>
+  <h3>Segredos em runtime</h3>
+  <ul>
+    <li><strong>Arquivo montado:</strong> secrets do Compose aparecem em <code>/run/secrets/nome</code> (em memória, <code>tmpfs</code>). A aplicação lê o arquivo. Muitas imagens oficiais aceitam o sufixo <code>_FILE</code> (por exemplo <code>POSTGRES_PASSWORD_FILE</code>).</li>
+    <li><strong>Cofre:</strong> HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager. A aplicação (ou um agente sidecar) busca na inicialização, com identidade própria e acesso auditado, e permite rotação sem rebuild.</li>
+    <li><strong>Kubernetes Secret:</strong> é codificado em base64, <em>não</em> criptografado por padrão. Habilite criptografia em repouso e, de preferência, integre a um cofre externo.</li>
+  </ul>
+<pre data-file="compose.yaml"><code class="yaml">services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt     # fora do git (.gitignore)</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Apagar o segredo e fazer commit novo. O histórico do git e as camadas da imagem preservam o valor. Segredo vazado se <strong>revoga e troca</strong>; reescrever histórico é complemento, não solução. Use varredura de segredos no CI (gitleaks, trufflehog) para pegar o vazamento antes do push.</p></div>
+  <h3>Varredura de vulnerabilidades</h3>
+  <p>Scanners comparam os pacotes e dependências da imagem com bases de CVEs. Os mais usados: <strong>Trivy</strong>, <strong>Grype</strong> e o <strong>Docker Scout</strong> (integrado ao Docker; os recursos disponíveis variam conforme o plano).</p>
+<pre><code class="sh">trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 reg.exemplo.com/clinica/api:1.4.2
+docker scout cves reg.exemplo.com/clinica/api:1.4.2
+docker scout recommendations reg.exemplo.com/clinica/api:1.4.2   # sugere base melhor</code></pre>
+  <p>Como ler o resultado sem pânico: priorize CVEs <strong>com correção disponível</strong> em pacotes que o programa realmente usa; a maioria cai com a troca da imagem base por uma versão recente ou mínima (slim, distroless). Falso positivo e "sem correção" entram numa lista de exceções com prazo (arquivo <code>.trivyignore</code> ou VEX), nunca no silêncio. O gate de CI (<code>--exit-code 1</code>) deve ser calibrado: bloquear CRITICAL com correção, alertar o resto. SBOM, assinatura e provenance estão no módulo 08.</p>
+  <h3>CIS Docker Benchmark e docker-bench-security</h3>
+  <p>O <strong>CIS Docker Benchmark</strong> é um guia de configuração segura publicado pelo Center for Internet Security, com recomendações organizadas em: configuração do host, configuração do daemon, arquivos do daemon, imagens e Dockerfiles, runtime dos containers, operações e Swarm. O projeto <strong>docker-bench-security</strong> (mantido pela Docker) é um script que verifica essas recomendações no host e imprime <code>[PASS]</code>, <code>[WARN]</code>, <code>[INFO]</code> e <code>[NOTE]</code>:</p>
+<pre><code class="sh">git clone https://github.com/docker/docker-bench-security.git
+cd docker-bench-security && sudo sh docker-bench-security.sh
+[WARN] 2.1  - Ensure network traffic is restricted between containers on the default bridge
+[PASS] 4.1  - Ensure a user for the container has been created
+[WARN] 5.10 - Ensure memory usage for container is limited</code></pre>
+  <p>Use como <strong>auditoria periódica</strong>, não como lista a zerar às cegas: alguns itens não se aplicam ao seu cenário, outros exigem decisão (por exemplo, auditoria do daemon, userns-remap). Os números e os textos dos itens mudam entre versões do benchmark; consulte a versão vigente.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você evita segredo na imagem?" Build: <code>--mount=type=secret</code>. Runtime: arquivo em <code>/run/secrets</code> ou cofre, nunca <code>ENV</code>/<code>ARG</code>/<code>COPY</code>. Prevenção: <code>.dockerignore</code> com <code>.env</code>, varredura de segredos no CI e rotação periódica.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina quem é o dono do "plano de segredos": onde ficam, como são rotacionados e quem é avisado num vazamento. Defina também a <strong>política de CVE</strong>: prazos por severidade (por exemplo, crítico com correção em 7 dias) e quem decide exceções. Sem política, o relatório do scanner vira ruído.</p></div>
+</section>
+
+
+<section class="chap" id="saude-lgpd">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Dados de saúde em containers e LGPD</h2>
+  <p>Numa empresa de saúde, quase todo serviço toca dado pessoal, e boa parte é <strong>dado pessoal sensível</strong> (a LGPD, Lei 13.709/2018, trata dado referente à saúde como sensível, art. 5º, II, e art. 11). O art. 46 exige medidas técnicas de segurança para proteger esses dados de acessos não autorizados e de situações acidentais ou ilícitas. Docker não muda a lei, mas muda <em>onde</em> o dado se esconde: ele aparece em lugares que a equipe esquece de mapear.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Onde o dado pessoal pode estar</th><th>Risco</th><th>Controle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Logs</strong> do container (<code>docker logs</code>, arquivos do <code>json-file</code> no host)</td><td>CPF, nome, número de prontuário e até exames em stack trace e logs de requisição; logs ficam no disco do host e vão para a coleta centralizada</td><td>não logar payloads; mascarar CPF/nome; logs estruturados com ID interno em vez do dado; rotação e retenção definidas; acesso aos logs por perfil</td></tr>
+      <tr><td><strong>Volumes</strong> de banco e de arquivos (laudos, imagens, anexos)</td><td>qualquer pessoa com acesso ao host lê o volume; disco descartado ou snapshot copiado</td><td>criptografia em repouso (disco/volume do provedor, LUKS), permissões no diretório do Docker, host com acesso restrito e auditado</td></tr>
+      <tr><td><strong>Backups</strong> e dumps</td><td>cópia sem criptografia fora do controle de acesso; retenção indefinida</td><td>backup criptografado, armazenamento separado, retenção documentada, <strong>teste de restauração</strong> periódico</td></tr>
+      <tr><td><strong>Imagens</strong> e registry</td><td>dump de banco ou arquivo de teste com dados reais embutido numa camada; imagem puxada por quem não deveria</td><td><code>.dockerignore</code>, varredura de segredos, registry privado com controle de acesso</td></tr>
+      <tr><td><strong>Ambientes de desenvolvimento e teste</strong></td><td>cópia do banco de produção no <code>docker compose</code> do notebook do desenvolvedor</td><td>dados anonimizados/sintéticos; nunca produção em máquina pessoal</td></tr>
+      <tr><td><strong>Acesso interativo</strong> (<code>docker exec</code>, <code>docker cp</code>, shell no servidor)</td><td>qualquer um no grupo <code>docker</code> lê tudo (seção 2) sem deixar rastro na aplicação</td><td>acesso mínimo, sessão registrada (auditoria), acesso de emergência com justificativa</td></tr>
+      <tr><td><strong>Dumps de memória e de erro</strong>, imagens de debug</td><td>core dump e relatórios de erro com conteúdo de requisições</td><td>desabilitar core dump em produção; revisar o que ferramentas de APM e de erro capturam</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Exclusão e ciclo de vida</h3>
+  <p>O titular pode pedir eliminação de dados (art. 18). Dado em volume, em backup e em log tem de ter <strong>política de retenção</strong> que permita atender isso ou justifique a exceção. Para ambientes efêmeros, <code>docker compose down -v</code> apaga volumes; para servidores descomissionados, apague discos de forma segura.</p>
+  <h3>Incidente</h3>
+  <p>Se um container for comprometido ou um volume vazar, o incidente com dados pessoais tem comunicação obrigatória à ANPD e aos titulares quando há risco relevante (art. 48; pela Resolução CD/ANPD nº 15/2024, o prazo é de 3 dias úteis a partir do conhecimento do incidente). Ter inventário de <em>quais containers e volumes guardam dado pessoal</em> é o que torna essa resposta rápida.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Imagem de debug com dump de produção "só para reproduzir um bug", enviada a um registry público ou compartilhada por mensagem. Dado de paciente na camada de uma imagem é vazamento permanente: o histórico de camadas o preserva.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Se a vaga é em saúde, cite espontaneamente: logs sem dado pessoal, volumes e backups criptografados, retenção, ambientes de teste com dados anonimizados e acesso auditado ao host. Mostra que você liga a tecnologia ao risco do negócio.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça ao time um <strong>mapa de dados dos containers</strong>: serviço, tipo de dado, onde persiste (volume/log/backup), por quanto tempo e quem acessa. É a base do registro de operações (ROPA) e do relatório de impacto, e deixa a conversa com o encarregado (DPO) concreta. Trate backup e log como parte do escopo, não como detalhe.</p></div>
+</section>
+
+<section class="chap" id="roteiro-diagnostico">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Roteiro de diagnóstico e exit codes</h2>
+  <p>Diagnosticar bem é <strong>estreitar o problema antes de mexer</strong>. Em vez de reiniciar e rezar, siga uma ordem fixa: estado, logs, inspeção, visão por dentro, visão por fora e recursos. A cada passo você elimina uma família de causas.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 360" role="img" aria-label="Árvore de decisão de diagnóstico: do docker ps até logs e exit code, resposta interna, acesso externo e recursos">
+      <defs>
+        <marker id="ah-diag1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box-a" x="240" y="16" width="200" height="36" rx="5"/><text x="340" y="39" text-anchor="middle">docker ps -a</text>
+      <line class="ln" x1="290" y1="52" x2="145" y2="88" marker-end="url(#ah-diag1)"/>
+      <line class="ln" x1="390" y1="52" x2="535" y2="88" marker-end="url(#ah-diag1)"/>
+      <rect class="box-b" x="20" y="88" width="250" height="36" rx="5"/><text x="145" y="111" text-anchor="middle">Exited ou Restarting</text>
+      <rect class="box" x="410" y="88" width="250" height="36" rx="5"/><text x="535" y="111" text-anchor="middle">Up (em execução)</text>
+      <line class="ln" x1="145" y1="124" x2="145" y2="156" marker-end="url(#ah-diag1)"/>
+      <line class="ln" x1="535" y1="124" x2="535" y2="156" marker-end="url(#ah-diag1)"/>
+      <rect class="box" x="20" y="158" width="250" height="50" rx="5"/>
+      <text x="145" y="178" text-anchor="middle">docker logs --tail 100 x</text>
+      <text x="145" y="196" text-anchor="middle">inspect: ExitCode, OOM</text>
+      <rect class="box" x="410" y="158" width="250" height="50" rx="5"/>
+      <text x="535" y="178" text-anchor="middle">docker exec x curl -s</text>
+      <text x="535" y="196" text-anchor="middle">localhost:PORTA</text>
+      <line class="ln" x1="145" y1="208" x2="145" y2="240" marker-end="url(#ah-diag1)"/>
+      <rect class="box-w" x="20" y="240" width="250" height="40" rx="5"/><text x="145" y="264" text-anchor="middle">exit code, OOM, CMD, volume</text>
+      <line class="ln" x1="520" y1="208" x2="400" y2="240" marker-end="url(#ah-diag1)"/>
+      <line class="ln" x1="550" y1="208" x2="570" y2="240" marker-end="url(#ah-diag1)"/>
+      <text class="lbl" x="420" y="226" text-anchor="end">não responde</text>
+      <text class="lbl" x="566" y="226">responde</text>
+      <rect class="box-w" x="300" y="240" width="170" height="40" rx="5"/><text x="385" y="264" text-anchor="middle">logs, config, BD</text>
+      <rect class="box-w" x="490" y="240" width="170" height="40" rx="5"/><text x="575" y="264" text-anchor="middle">porta, rede, DNS</text>
+      <rect class="box-m" x="20" y="300" width="640" height="40" rx="5"/>
+      <text x="340" y="324" text-anchor="middle">Lento ou instável? docker stats, limites, throttling, disco</text>
+      <text class="lbl" x="20" y="354">Cada caixa laranja corresponde a uma família de causas descrita nas seções 7 e 8.</text>
+    </svg>
+    <figcaption>Roteiro de decisão: o estado do container decide se você investiga o motivo da saída ou a visibilidade do serviço que está no ar.</figcaption>
+  </figure>
+  <ol class="seq">
+    <li><div><strong>O que mudou?</strong> Deploy, imagem nova, variável, rede, disco, certificado, o horário. A maior parte dos incidentes começa numa mudança.</div></li>
+    <li><div><strong>Estado:</strong> <code>docker ps -a</code> (Up, Exited, Restarting; há quanto tempo; <code>(unhealthy)</code>).</div></li>
+    <li><div><strong>Logs:</strong> <code>docker logs --tail 100 --timestamps x</code>. Se está em loop, veja o <em>primeiro</em> erro, não o último.</div></li>
+    <li><div><strong>Inspeção:</strong> <code>docker inspect</code> para exit code, OOM, variáveis, mounts, rede, health.</div></li>
+    <li><div><strong>Por dentro:</strong> <code>docker exec -it x sh</code> e teste o serviço em <code>localhost</code>, o DNS e a conectividade com as dependências.</div></li>
+    <li><div><strong>Por fora:</strong> porta publicada, firewall, proxy reverso, rede entre containers.</div></li>
+    <li><div><strong>Recursos:</strong> <code>docker stats</code>, <code>docker system df</code>, limites e cota de CPU.</div></li>
+  </ol>
+<pre><code class="sh">$ docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+NAMES    STATUS                         IMAGE
+api      Restarting (1) 8 seconds ago   clinica/api:1.4.2
+db       Up 3 days (healthy)            postgres:17
+nginx    Up 3 days                      nginx:1.27
+
+$ docker inspect api --format 'exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restarts={{.RestartCount}} err={{.State.Error}}'
+exit=1 oom=false restarts=14 err=
+
+$ docker logs --tail 3 api
+Error: connect ECONNREFUSED 127.0.0.1:5432</code></pre>
+  <p>Leitura do exemplo: <code>exit=1</code> sem OOM é erro da aplicação, e a mensagem mostra a causa: ela tenta o banco em <code>127.0.0.1</code>, mas o banco é outro container. Deveria usar o nome do serviço (<code>db</code>). Diagnóstico em três comandos.</p>
+  <h3>Códigos de saída</h3>
+  <p>Valores acima de 128 significam "morto por sinal": <code>128 + número do sinal</code>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Código</th><th>Significado comum</th><th>Onde olhar</th></tr></thead>
+    <tbody>
+      <tr><td><code>0</code></td><td>terminou normalmente. Para um serviço que deveria ficar no ar, o processo principal acabou</td><td>CMD, serviço iniciado em segundo plano</td></tr>
+      <tr><td><code>1</code></td><td>erro da aplicação (genérico)</td><td><code>docker logs</code></td></tr>
+      <tr><td><code>125</code></td><td>o próprio <code>docker run</code> falhou (flag inválida, nome em uso, erro do daemon)</td><td>mensagem na saída do comando</td></tr>
+      <tr><td><code>126</code></td><td>o comando existe mas não pode ser executado</td><td>permissão (<code>chmod +x</code>), é um diretório, arquitetura</td></tr>
+      <tr><td><code>127</code></td><td>comando não encontrado</td><td>binário ausente, PATH, erro de digitação, <code>#!</code> com CRLF</td></tr>
+      <tr><td><code>137</code></td><td>128 + 9 = SIGKILL. <strong>OOM</strong> ou <code>docker stop</code> que esgotou o prazo, ou <code>docker kill</code></td><td><code>OOMKilled</code>; forma do CMD; limite de memória</td></tr>
+      <tr><td><code>139</code></td><td>128 + 11 = SIGSEGV (falha de segmentação)</td><td>bug em código nativo, biblioteca incompatível (musl x glibc), binário de outra arquitetura</td></tr>
+      <tr><td><code>143</code></td><td>128 + 15 = SIGTERM: encerrado por <code>docker stop</code> e saiu como esperado</td><td>normal; se for inesperado, veja quem enviou o sinal</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Sintoma → onde olhar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Sintoma</th><th>Causas prováveis</th></tr></thead>
+    <tbody>
+      <tr><td>container sai logo depois de subir</td><td><code>docker logs</code>; processo principal terminou; CMD que inicia o serviço em segundo plano; erro de configuração (seção 8)</td></tr>
+      <tr><td>porta publicada não responde</td><td>app escutando em 127.0.0.1 em vez de 0.0.0.0; porta interna errada no <code>-p</code>; container reiniciando em loop; firewall</td></tr>
+      <tr><td>"connection refused" entre serviços</td><td><code>localhost</code> no lugar do nome do serviço; serviços em redes diferentes; o outro ainda não está pronto</td></tr>
+      <tr><td>alteração no código não aparece</td><td>faltou <code>--build</code>; cache; Compose usando imagem antiga com a mesma tag; bind mount cobrindo a pasta da imagem</td></tr>
+      <tr><td>build lento</td><td>ordem das camadas; contexto grande sem <code>.dockerignore</code>; sem cache no CI</td></tr>
+      <tr><td>disco cheio</td><td>imagens antigas, cache de build, logs sem rotação: <code>docker system df</code></td></tr>
+      <tr><td>"permission denied" em volume</td><td>UID do container diferente do dono da pasta no host; rótulo SELinux</td></tr>
+      <tr><td>"exec format error"</td><td>imagem de outra arquitetura (arm64 x amd64), ou script sem <code>#!</code> válido</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Leia o <em>primeiro</em> erro dos logs, confirme o exit code e só então mexa em algo. Mudar duas coisas ao mesmo tempo apaga a evidência do que resolveu.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Quando pedirem "container não sobe, o que você faz?", narre o roteiro: <code>ps -a</code>, <code>logs</code>, <code>inspect</code> (exit code e OOM), <code>run --entrypoint sh</code> para entrar na imagem, e só depois hipóteses. Quem mostra método passa mais confiança do que quem recita causas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize o <strong>runbook de primeiros socorros</strong> (esses sete passos numa página) e exija que todo serviço tenha: health check, logs em stdout e um dono. Tempo para diagnosticar cai muito quando o plantão sabe por onde começar.</p></div>
+</section>
+
+<section class="chap" id="problemas-frequentes">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Problemas frequentes: do container que sai ao que não tem shell</h2>
+  <h3>Container que sai na hora</h3>
+  <p>Um container vive enquanto o <strong>processo PID 1</strong> viver. Se o comando termina ou vai para segundo plano, o container sai com exit code 0. Causas clássicas:</p>
+  <ul>
+    <li><strong>Serviço iniciado como daemon:</strong> <code>CMD service nginx start</code> ou <code>CMD ["nginx"]</code> sem <code>-g "daemon off;"</code> (a imagem oficial já usa o certo). O init do daemon retorna e o container acaba. O processo precisa rodar em <em>primeiro plano</em>.</li>
+    <li><strong>CMD em forma shell:</strong> <code>CMD node server.js</code> vira <code>/bin/sh -c "node server.js"</code>; o shell é o PID 1 e não repassa SIGTERM. O <code>docker stop</code> espera 10 s e envia SIGKILL (exit 137). Use a forma exec: <code>CMD ["node","server.js"]</code>.</li>
+    <li><strong>ENTRYPOINT errado:</strong> caminho inexistente (127), script sem permissão de execução (126), ou script com fim de linha CRLF (do Windows): aparece como <code>exec /entrypoint.sh: no such file or directory</code> mesmo existindo, porque o interpretador procurado é <code>/bin/sh^M</code>. Corrija com <code>.gitattributes</code> (<code>*.sh text eol=lf</code>).</li>
+    <li><strong>Script de entrada sem <code>exec</code>:</strong> o último comando do script precisa ser <code>exec "$@"</code>, para o app assumir o PID 1 e receber os sinais.</li>
+  </ul>
+<pre><code class="sh"># entrar na imagem ignorando o ENTRYPOINT, para olhar de dentro
+docker run --rm -it --entrypoint sh clinica/api:1.4.2
+ls -l /entrypoint.sh; head -1 /entrypoint.sh | od -c | head -2     # procure \r (CRLF)
+
+# medir o prazo do stop: forma shell x forma exec
+time docker stop api        # ~10 s = não tratou SIGTERM; ~1 s = encerrou limpo</code></pre>
+  <h3>OOMKilled e exit 137; exit 139</h3>
+<pre><code class="sh">docker inspect api --format 'oom={{.State.OOMKilled}} exit={{.State.ExitCode}}'
+oom=true exit=137
+docker events --filter event=oom --since 24h        # quando aconteceu
+docker stats --no-stream api                        # uso atual x limite</code></pre>
+  <p>O que fazer, nesta ordem: confirme que é OOM do <em>container</em> (limite <code>--memory</code>) e não do host (<code>dmesg | grep -i "killed process"</code>); procure vazamento ou pico; ajuste o runtime da linguagem ao limite (JVM e Node não "enxergam" o limite automaticamente em versões antigas; Java moderno respeita cgroups, e no Node costuma-se definir <code>--max-old-space-size</code>); só então aumente o limite. Sem <code>OOMKilled=true</code> e com 137, foi <code>docker stop/kill</code> (prazo estourado). O <strong>139</strong> é falha de segmentação: investigue código nativo, bibliotecas incompatíveis (binário compilado para glibc rodando em Alpine/musl) e arquitetura errada.</p>
+  <h3>Rede e DNS</h3>
+<pre><code class="sh">docker network ls
+docker network inspect clinica_default --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{"\n"}}{{end}}'
+docker exec api getent hosts db                      # resolve o nome do serviço?
+docker run --rm -it --network clinica_default nicolaka/netshoot   # dig, curl, ss, tcpdump</code></pre>
+  <ul>
+    <li><strong>Nome não resolve:</strong> containers em redes diferentes, ou na rede <code>bridge</code> padrão (que não tem DNS por nome). Use rede definida pelo usuário (módulo 05).</li>
+    <li><strong><code>localhost</code> dentro do container</strong> é o próprio container.</li>
+    <li><strong>Aplicação em 127.0.0.1:</strong> o publish não alcança; escute em <code>0.0.0.0</code>.</li>
+    <li><strong>DNS externo falha</strong> (comum com VPN corporativa ou DNS interno): configure <code>"dns": ["10.0.0.2"]</code> no <code>daemon.json</code> ou <code>dns:</code> no serviço.</li>
+    <li><strong>Conexões que "penduram" no TLS ou em transferências grandes:</strong> suspeite de <strong>MTU</strong> menor na VPN; teste com <code>"mtu": 1400</code> no daemon ou na rede. Conceitos em Redes e HTTP na trilha web.</li>
+  </ul>
+  <h3>Permissão negada em volume</h3>
+  <p>O kernel compara <strong>UIDs numéricos</strong>, não nomes. Se a pasta do host pertence ao UID 1000 e o container roda como 10001, a escrita falha.</p>
+<pre><code class="sh">ls -ln /dados/uploads                        # dono numérico no host
+docker exec api id                           # uid=10001
+# correções, da melhor para a pior:
+#  1) volume nomeado + chown na imagem (mkdir /app/uploads &amp;&amp; chown 10001 antes do USER)
+#  2) em desenvolvimento: docker run --user "$(id -u):$(id -g)" ...
+#  3) ajustar o dono no host: sudo chown -R 10001:10001 /dados/uploads
+#  nunca: chmod 777
+# host com SELinux: acrescente :z ao bind mount (-v /dados:/app/dados:z)</code></pre>
+  <h3>"No space left on device"</h3>
+<pre><code class="sh">$ docker system df
+TYPE            TOTAL   ACTIVE   SIZE      RECLAIMABLE
+Images          48      6        21.3GB    17.9GB (84%)
+Containers      12      5        1.2GB     640MB (53%)
+Local Volumes   9       4        8.1GB     2.0GB (24%)
+Build Cache     210     0        14.6GB    14.6GB
+
+docker builder prune --filter until=168h     # cache de build com mais de 7 dias
+docker image prune -a --filter until=720h    # imagens sem uso há 30 dias
+docker system prune                          # parados, redes e imagens sem tag
+# CUIDADO: docker system prune -a --volumes apaga volumes sem uso (bancos de dados!)</code></pre>
+  <p>Se o disco encheu e nada disso explica, olhe os <strong>logs</strong>: o driver padrão <code>json-file</code> não rotaciona. Localize o arquivo (<code>docker inspect -f '{{.LogPath}}' api</code>), veja o tamanho e configure a rotação para o host inteiro em <code>/etc/docker/daemon.json</code>:</p>
+<pre data-file="/etc/docker/daemon.json"><code class="json">{
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" }
+}</code></pre>
+  <p>Reinicie o daemon e <strong>recrie</strong> os containers: a configuração só vale para containers criados depois. Em Compose, o equivalente por serviço é <code>logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }</code>.</p>
+  <h3>Build que não usa cache</h3>
+  <ul>
+    <li><code>COPY . .</code> antes de instalar dependências: qualquer arquivo alterado invalida tudo abaixo. Copie primeiro só o manifesto (<code>package*.json</code>, <code>requirements.txt</code>).</li>
+    <li>Sem <code>.dockerignore</code>: <code>.git</code>, <code>node_modules</code> e logs mudam e invalidam o <code>COPY</code>.</li>
+    <li><code>ARG</code> com valor que muda a cada build (data, SHA do commit) declarado cedo: invalida as instruções seguintes. Declare-o o mais tarde possível.</li>
+    <li>CI com runner limpo: cache só existe se exportado (<code>--cache-from</code>/<code>--cache-to</code>, módulo 08).</li>
+    <li>Diagnóstico: <code>docker build --progress=plain .</code> mostra <code>CACHED</code> por passo; a primeira instrução sem <code>CACHED</code> é a culpada.</li>
+  </ul>
+  <h3>Container lento</h3>
+<pre><code class="sh">$ docker stats --no-stream
+NAME    CPU %    MEM USAGE / LIMIT    MEM %    NET I/O       BLOCK I/O     PIDS
+api     99.8%    498MiB / 512MiB      97.3%    1.2GB/0.9GB   2.1GB/10MB    41
+
+docker exec api cat /sys/fs/cgroup/cpu.stat    # cgroup v2: nr_throttled e throttled_usec crescendo = limite de CPU</code></pre>
+  <p>CPU em 100% do limite com <code>nr_throttled</code> subindo indica <strong>throttling</strong>: a aplicação está sendo desacelerada pela cota, não pelo código. Memória colada no limite leva a swap ou a OOM iminente. Em Docker Desktop (Windows/macOS), bind mounts de pastas do sistema hospedeiro são lentos; mantenha o projeto no sistema de arquivos do WSL 2 ou use volume. Outras causas: DNS lento (resolve cada conexão), disco saturado (<code>BLOCK I/O</code>) e poucos workers.</p>
+  <h3>Depurar imagem sem shell</h3>
+  <p>Imagens distroless ou <code>scratch</code> não têm <code>sh</code>, <code>curl</code> nem <code>ps</code>: <code>docker exec -it x sh</code> falha. Opções:</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Container de depuração efêmero compartilhando os namespaces de rede e de PID com o container alvo, que não tem shell">
+      <defs>
+        <marker id="ah-dbg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box-a" x="40" y="40" width="240" height="100" rx="5"/>
+      <text class="ttl" x="160" y="64" text-anchor="middle">api (alvo)</text>
+      <text class="lbl" x="160" y="84" text-anchor="middle">distroless, sem shell</text>
+      <text x="160" y="112" text-anchor="middle">PID 1: node server.js</text>
+      <rect class="box-w" x="400" y="40" width="240" height="100" rx="5"/>
+      <text class="ttl" x="520" y="64" text-anchor="middle">debug (efêmero)</text>
+      <text class="lbl" x="520" y="84" text-anchor="middle">netshoot: curl, dig, ss, tcpdump</text>
+      <text x="520" y="112" text-anchor="middle">strace -p 1</text>
+      <line class="ln-a" x1="282" y1="90" x2="398" y2="90" marker-start="url(#ah-dbg1)" marker-end="url(#ah-dbg1)"/>
+      <text class="lbl" x="340" y="80" text-anchor="middle">mesma rede</text>
+      <text class="lbl" x="340" y="108" text-anchor="middle">e mesmos PIDs</text>
+      <line class="ln-a" x1="160" y1="140" x2="160" y2="170"/>
+      <line class="ln-a" x1="520" y1="140" x2="520" y2="170"/>
+      <rect class="box-m" x="40" y="170" width="600" height="44" rx="5"/>
+      <text x="340" y="196" text-anchor="middle">--network container:api  e  --pid container:api</text>
+    </svg>
+    <figcaption>O container de depuração traz as ferramentas e entra nos namespaces do alvo; a imagem de produção não precisa mudar.</figcaption>
+  </figure>
+<pre><code class="sh"># 1) container efêmero nos mesmos namespaces (funciona em qualquer Docker Engine)
+docker run --rm -it --network container:api --pid container:api \
+  --cap-add SYS_PTRACE nicolaka/netshoot
+ss -tlnp ; curl -s localhost:8080/health ; ls /proc/1/root/app   # sistema de arquivos do alvo
+
+# 2) docker debug: depuração com caixa de ferramentas própria, sem alterar a imagem
+docker debug api
+
+# 3) copiar arquivos para analisar fora
+docker cp api:/app/config.json ./config.json
+
+# 4) Kubernetes: container efêmero no Pod
+kubectl debug -it pod/api-7d9f --image=busybox --target=api</code></pre>
+  <div class="note"><b>Sobre o docker debug</b><p>É um recurso do <strong>Docker Desktop</strong> (a CLI padrão do Engine puro não traz o subcomando). No lançamento exigia assinatura paga; versões recentes do Docker Desktop passaram a oferecê-lo também no plano gratuito. Como as regras de licença mudam, <strong>confirme na documentação e no seu plano</strong> antes de depender dele; a opção 1 funciona em qualquer ambiente e não tem esse risco.</p></div>
+  <h3>Eventos do daemon</h3>
+<pre><code class="sh">docker events --since 1h --filter type=container --filter event=die
+2026-11-26T09:41:12.000000000-03:00 container die 3f9c1a... (exitCode=137, image=clinica/api:1.4.2, name=api)
+docker events --filter event=oom --filter event=health_status
+docker events --since 30m --until 0s --format '{{.Time}} {{.Action}} {{.Actor.Attributes.name}}'</code></pre>
+  <p>Os eventos contam a história: <code>die</code> com <code>exitCode</code>, <code>oom</code>, <code>health_status: unhealthy</code>, <code>kill</code> (quem enviou qual sinal), <code>restart</code>. Útil para reconstruir "o que aconteceu às 03:00" e para alimentar alertas.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Deixar uma ferramenta de depuração na imagem de produção "para facilitar". Um shell, curl e um compilador dentro da imagem são exatamente o que um invasor quer encontrar. Depure com container efêmero e mantenha a imagem mínima.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A imagem é distroless e preciso investigar." Resposta: container efêmero compartilhando <code>--network container:</code> e <code>--pid container:</code> (ou <code>kubectl debug</code>, ou <code>docker debug</code> no Desktop), sem alterar a imagem. Cite também <code>docker cp</code> e <code>docker inspect</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Disco cheio por log sem rotação é uma das quedas mais evitáveis. Padronize <code>max-size</code>/<code>max-file</code> no <code>daemon.json</code> de todos os hosts e na imagem de VM, e monitore disco do host e do diretório do Docker com alerta em 80%.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios práticos, em ordem crescente. Faça num Docker de teste (nunca em produção). Tente primeiro; abra a resolução depois.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Crie uma imagem que rode como usuário não-root (UID 10001) e prove que ela não consegue escrever em <code>/etc</code>.</span></summary><div class="ans">
+<pre data-file="Dockerfile"><code class="dockerfile">FROM alpine
+RUN addgroup -S -g 10001 app &amp;&amp; adduser -S -u 10001 -G app app
+USER 10001:10001
+CMD ["sleep", "3600"]</code></pre>
+<pre><code class="sh">docker build -t lab-naoroot .
+docker run -d --name t1 lab-naoroot
+docker exec t1 id
+uid=10001(app) gid=10001(app) groups=10001(app)
+docker exec t1 sh -c 'echo x &gt; /etc/teste'
+sh: can't create /etc/teste: Permission denied
+docker exec -u 0 t1 sh -c 'echo x &gt; /etc/teste &amp;&amp; echo escreveu como root'   # contraste
+docker rm -f t1</code></pre>
+  <p>Observe que a imagem decide o padrão, mas <code>docker exec -u 0</code> ainda entra como root: por isso o acesso ao daemon também precisa ser controlado.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Compare as capabilities de um container padrão com <code>--cap-drop ALL</code> e mostre uma operação que quebra sem <code>NET_RAW</code>.</span></summary><div class="ans">
+<pre><code class="sh">docker run --rm alpine grep CapEff /proc/self/status
+CapEff: 00000000a80425fb
+docker run --rm --cap-drop ALL alpine grep CapEff /proc/self/status
+CapEff: 0000000000000000
+
+docker run --rm alpine ping -c1 127.0.0.1                     # funciona
+docker run --rm --cap-drop ALL alpine ping -c1 127.0.0.1      # permission denied
+docker run --rm --cap-drop ALL --cap-add NET_RAW alpine ping -c1 127.0.0.1   # volta a funcionar</code></pre>
+  <p>Lição: a capability necessária aparece como erro <code>Operation not permitted</code>/<code>permission denied</code>; você devolve uma de cada vez. A API do dia a dia raramente precisa de nenhuma.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Rode o nginx com <code>--read-only</code>, leia o erro e corrija usando <code>tmpfs</code>.</span></summary><div class="ans">
+<pre><code class="sh">docker run -d --name web --read-only -p 8081:80 nginx:1.27
+docker logs web | grep -i "read-only"
+# erros como: mkdir() "/var/cache/nginx/client_temp" failed (30: Read-only file system)
+# ou falha ao criar o pid file em /var/run
+
+docker rm -f web
+docker run -d --name web --read-only \
+  --tmpfs /var/cache/nginx --tmpfs /var/run --tmpfs /tmp \
+  -p 8081:80 nginx:1.27
+curl -sI localhost:8081 | head -1
+HTTP/1.1 200 OK
+docker exec web sh -c 'echo x &gt; /usr/share/nginx/html/novo.txt'    # falha: read-only</code></pre>
+  <p>O método vale para qualquer app: rode, leia o caminho do erro, transforme-o em <code>tmpfs</code> ou volume. Os caminhos exatos podem variar com a versão da imagem; guie-se pelo erro.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Provoque um OOM kill e confirme a causa sem olhar os logs da aplicação.</span></summary><div class="ans">
+<pre><code class="sh">docker run -d --name oom --memory 64m --memory-swap 64m python:3.13-slim \
+  python -c "x = [bytearray(10**6) for _ in range(500)]"
+sleep 3
+docker ps -a --filter name=oom --format '{{.Status}}'
+Exited (137) 2 seconds ago
+docker inspect oom --format 'oom={{.State.OOMKilled}} exit={{.State.ExitCode}}'
+oom=true exit=137
+docker events --since 5m --filter event=oom
+docker rm oom</code></pre>
+  <p>O <code>--memory-swap</code> igual a <code>--memory</code> desliga o swap do container, para o OOM ocorrer de forma previsível. A correção real, numa aplicação, é achar o consumo ou subir o limite com base em medição.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Meça quanto demora o <code>docker stop</code> com CMD em forma shell e com <code>--init</code>. Explique a diferença.</span></summary><div class="ans">
+<pre data-file="Dockerfile"><code class="dockerfile">FROM alpine
+CMD sleep 300; echo fim</code></pre>
+<pre><code class="sh">docker build -t lab-shell .
+docker run -d --name s1 lab-shell
+time docker stop s1                      # perto de 10 s: o sh é PID 1 e não repassa o SIGTERM
+docker inspect s1 --format '{{.State.ExitCode}}'     # 137: veio SIGKILL
+
+docker run -d --init --name s2 alpine sleep 300
+time docker stop s2                      # rápido: o tini é PID 1 e repassa o SIGTERM ao sleep
+docker rm s1 s2</code></pre>
+  <p>No Linux, o PID 1 de um namespace não recebe a ação padrão de sinais como SIGTERM: só reage se o programa instalou um tratador. Um shell em PID 1 não repassa o sinal; um <code>init</code> mínimo (<code>--init</code>, tini) resolve. Programas em forma exec sem tratador de sinal também tendem a ignorar o SIGTERM como PID 1, por isso aplicações devem tratar o sinal (encerramento limpo, módulo 10).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>Gere logs em excesso e configure rotação para o container não encher o disco.</span></summary><div class="ans">
+<pre><code class="sh">docker run -d --name ruido --log-opt max-size=1m --log-opt max-file=3 alpine \
+  sh -c 'while true; do echo linha-de-log-bem-comprida-para-encher-rapido; done'
+sleep 30
+docker inspect -f '{{.HostConfig.LogConfig}}' ruido
+ls -lh "$(dirname "$(docker inspect -f '{{.LogPath}}' ruido)")"     # no máximo 3 arquivos de ~1 MB
+docker rm -f ruido</code></pre>
+  <p>Num host Linux, o caminho é acessível diretamente (com permissão). No Docker Desktop os arquivos ficam dentro da VM. Para valer em todos os containers, coloque <code>log-opts</code> no <code>daemon.json</code> e recrie os containers (seção 8).</p></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>1. O painel de gestão que pede o socket</h3>
+  <p>Um desenvolvedor quer subir uma ferramenta web de administração de containers no servidor de homologação, e o Compose dela monta <code>/var/run/docker.sock</code>. A homologação tem cópia de dados reais.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Explique que o socket equivale a root no host e que a homologação com dados reais é alvo de valor.</li>
+    <li>Se a ferramenta for realmente necessária: exposição só em rede interna, autenticação forte com MFA, atrás de VPN/proxy, versão fixa e atualizada; ou um socket proxy limitando a API a leitura.</li>
+    <li>Considere alternativas: <code>docker context</code> via SSH para quem precisa administrar, métricas e logs em ferramenta de observabilidade.</li>
+    <li>Registre a exceção, o dono e a data de revisão.</li>
+  </ul></div>
+
+  <h3>2. O serviço que cai todo dia às 03:00 com exit 137</h3>
+  <p>O relatório noturno da API reinicia o container às 03:00; ninguém viu erro nos logs.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><code>docker inspect</code> mostra <code>OOMKilled=true</code>, e <code>docker events --since 24h --filter event=oom</code> confirma o horário: coincide com o job de relatório.</li>
+    <li>Meça o pico (<code>docker stats</code> durante o job, ou métricas); verifique se a consulta carrega tudo em memória e se há paginação/streaming possível.</li>
+    <li>Curto prazo: aumentar o limite com base no pico medido. Médio prazo: mover o relatório para um worker separado, com limite próprio, para que o pico não derrube a API.</li>
+    <li>Garanta alerta de restart e de OOM, e <code>restart: unless-stopped</code> como rede de proteção, não como solução.</li>
+  </ul></div>
+
+  <h3>3. Servidor com disco 100% numa sexta à tarde</h3>
+  <p>Um host de Compose parou de aceitar escritas. O banco entra em modo de erro.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Descubra o que ocupa o espaço: <code>df -h</code>, <code>docker system df</code>, <code>du -sh /var/lib/docker/containers/*/*-json.log | sort -h | tail</code>.</li>
+    <li>Se for log: com cuidado, truncar o arquivo (<code>truncate -s 0 arquivo</code>) libera o espaço de imediato sem reiniciar o container; depois configurar <code>max-size</code>/<code>max-file</code> e recriar.</li>
+    <li>Se for cache/imagens: <code>docker builder prune</code> e <code>docker image prune -a</code>. <strong>Não</strong> use <code>--volumes</code> sem conferir quais volumes seriam apagados.</li>
+    <li>Pós-incidente: rotação padrão no <code>daemon.json</code> de todos os hosts, alerta de disco em 80%, limpeza agendada de cache e imagens antigas.</li>
+  </ul></div>
+
+  <h3>4. Dados de pacientes aparecendo nos logs</h3>
+  <p>Numa revisão, o time de segurança encontra CPF e nome completo em logs de requisição da API, coletados por um serviço centralizado com retenção de um ano.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Conter: parar de registrar o payload (ajuste de nível/configuração da biblioteca de log) e restringir o acesso ao armazenamento de logs.</li>
+    <li>Corrigir na origem: logar identificador interno em vez de CPF/nome; filtro de mascaramento como segunda barreira; revisar APM e ferramentas de erro.</li>
+    <li>Tratar o passivo: avaliar com o encarregado (DPO) a eliminação ou anonimização dos logs antigos e se há incidente a comunicar.</li>
+    <li>Prevenir: teste automatizado que falha se logs contiverem padrão de CPF; item de revisão de código; mapa de dados atualizado.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>docker.sock</dt><dd>Socket Unix pelo qual o cliente fala com o daemon. Acesso a ele equivale a root no host.</dd></div>
+    <div><dt>Rootless</dt><dd>Modo em que o daemon e os containers rodam sem root, via user namespaces.</dd></div>
+    <div><dt>userns-remap</dt><dd>Mapeia o UID 0 do container para uma faixa sem privilégio no host, com o daemon ainda root.</dd></div>
+    <div><dt>Capability</dt><dd>Fração do poder do root (por exemplo, <code>NET_BIND_SERVICE</code>) que pode ser concedida ou retirada.</dd></div>
+    <div><dt>--privileged</dt><dd>Concede todas as capabilities e dispositivos do host; evite.</dd></div>
+    <div><dt>seccomp</dt><dd>Filtro de chamadas de sistema que o processo pode fazer ao kernel.</dd></div>
+    <div><dt>AppArmor / SELinux</dt><dd>Módulos de segurança do kernel com política de acesso obrigatório a arquivos e recursos.</dd></div>
+    <div><dt>no-new-privileges</dt><dd>Impede que o processo ganhe privilégios por setuid ou capabilities de arquivo.</dd></div>
+    <div><dt>tmpfs</dt><dd>Sistema de arquivos em memória; some quando o container para.</dd></div>
+    <div><dt>cgroup</dt><dd>Mecanismo do kernel que limita memória, CPU e processos de um grupo.</dd></div>
+    <div><dt>OOM kill</dt><dd>Morte do processo pelo kernel por falta de memória (exit 137, <code>OOMKilled=true</code>).</dd></div>
+    <div><dt>Throttling</dt><dd>Desaceleração do container ao atingir a cota de CPU; não o mata.</dd></div>
+    <div><dt>CVE</dt><dd>Identificador público de uma vulnerabilidade conhecida, usado pelos scanners.</dd></div>
+    <div><dt>CIS Docker Benchmark</dt><dd>Guia de configuração segura; o docker-bench-security automatiza sua verificação.</dd></div>
+    <div><dt>PID 1</dt><dd>Primeiro processo do container; recebe sinais de modo especial e define a vida do container.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Entrevista</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Responda em voz alta antes de abrir. Ordem: básico, operação, segurança avançada e gestão.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Containers são seguros? Qual a diferença de segurança para uma VM?</span></summary><div class="ans">
+  <p>Container é isolamento de processo (namespaces e cgroups) sobre o <strong>kernel compartilhado</strong>; a VM tem kernel próprio atrás de um hypervisor, com superfície de ataque menor entre cargas. Container é seguro o bastante para a maioria dos casos <em>com privilégio mínimo</em>; para código não confiável, use isolamento mais forte (microVM, gVisor, Kata).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Por que não rodar o container como root?</span></summary><div class="ans">
+  <p>O root do container é UID 0 no host, apenas com capabilities reduzidas. Se a aplicação for explorada e houver falha de isolamento (kernel, volume sensível, socket), o invasor ganha root no host. Com <code>USER</code> não-root, <code>cap_drop: ALL</code> e <code>no-new-privileges</code>, o estrago fica contido. Corrige-se na imagem (<code>USER 10001</code>, <code>--chown</code>) e reforça-se no runtime (<code>user:</code> no Compose, <code>runAsNonRoot</code> no Kubernetes).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Por que montar <code>/var/run/docker.sock</code> num container é perigoso?</span></summary><div class="ans">
+  <p>O socket é a API do daemon, que roda como root. Com ele, o container pode criar outro container com <code>/</code> do host montado e privilégios totais. Montar como <code>:ro</code> não ajuda. Alternativas: socket proxy com permissões mínimas, builders sem daemon, runners rootless/VM efêmera.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Por que o grupo <code>docker</code> equivale a root?</span></summary><div class="ans">
+  <p>Quem está no grupo escreve no socket, e pode executar <code>docker run -v /:/host alpine chroot /host</code>, obtendo root no sistema de arquivos do host sem <code>sudo</code> e sem rastro de <code>sudo</code>. Trate a lista do grupo como a lista de administradores.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Rootless mode, user namespaces (<code>userns-remap</code>) e <code>USER</code> na imagem: qual a diferença?</span></summary><div class="ans">
+  <p><code>USER</code> reduz o poder do processo dentro do container. <code>userns-remap</code> mapeia o root do container para um UID sem privilégio no host, mas o daemon continua root. Rootless roda o <em>daemon inteiro</em> sem root. São camadas complementares; rootless tem limitações (portas baixas, rede em espaço de usuário), e userns-remap muda a propriedade de volumes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>O que são capabilities e como você as usa?</span></summary><div class="ans">
+  <p>São frações do poder do root no Linux. O Docker concede um conjunto padrão; a prática segura é <code>--cap-drop ALL</code> e adicionar só o necessário (<code>NET_BIND_SERVICE</code> para porta baixa, por exemplo). Descobre-se o necessário subindo sem nenhuma e atendendo aos erros <code>Operation not permitted</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>O que faz o <code>--privileged</code> e o que usar no lugar?</span></summary><div class="ans">
+  <p>Dá todas as capabilities e acesso a todos os dispositivos, e relaxa seccomp e o módulo de segurança: o container vira praticamente root no host. Em vez disso: <code>--device</code> para um dispositivo, <code>--cap-add</code> pontual, e para Docker-em-Docker um daemon rootless, Sysbox ou builder remoto.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Para que servem <code>no-new-privileges</code> e seccomp?</span></summary><div class="ans">
+  <p><code>no-new-privileges</code> impede ganhar privilégio por binários setuid; seccomp filtra as syscalls que o processo pode chamar (o perfil padrão do Docker já bloqueia as mais perigosas). Nunca use <code>seccomp=unconfined</code> para "resolver" erros; identifique a syscall necessária e libere só ela. AppArmor/SELinux completam com política de acesso a arquivos.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Por que usar <code>--read-only</code> e como lidar com apps que precisam gravar?</span></summary><div class="ans">
+  <p>Impede o invasor de gravar binários e alterar o código no container. O que a aplicação precisa gravar vai para <code>tmpfs</code> (temporários) ou volume (dados). Leva-se o caminho de cada erro <code>Read-only file system</code> para um desses dois destinos.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Como evitar que um container derrube o host por consumo de recursos?</span></summary><div class="ans">
+  <p>Limites: <code>--memory</code> (estouro mata o container, exit 137), <code>--cpus</code> (estouro estrangula), <code>--pids-limit</code> (contém fork bomb) e <code>--ulimit</code>. Mais monitoramento e alertas. Também vale limitar disco de logs e tmpfs.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como você trata segredos em imagens e containers?</span></summary><div class="ans">
+  <p>Nunca em imagem (<code>ENV</code>, <code>ARG</code>, <code>COPY</code>) nem no git. No build: <code>RUN --mount=type=secret</code>. Em runtime: arquivo em <code>/run/secrets</code> (Compose/Swarm/Kubernetes) ou cofre (Vault, Secrets Manager), com rotação. Segredo vazado se revoga e troca. Complementos: <code>.dockerignore</code>, varredura de segredos no CI.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Como você lida com as vulnerabilidades que o scanner encontra?</span></summary><div class="ans">
+  <p>Priorizo CRITICAL/HIGH <em>com correção disponível</em> em pacotes realmente usados; a maioria resolve com base atualizada ou mínima. Rebuild periódico da imagem base, scanner no CI com gate calibrado, exceções registradas com prazo e dono. Política de prazo por severidade, definida com a gestão.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>O que é o CIS Docker Benchmark e o docker-bench-security?</span></summary><div class="ans">
+  <p>O benchmark é um conjunto de recomendações de configuração segura (host, daemon, imagens, runtime). O docker-bench-security é um script que verifica essas recomendações e devolve PASS/WARN/INFO/NOTE. Uso como auditoria periódica, avaliando cada item no contexto, não zerando às cegas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O container saiu com 137. E com 139? Como você investiga?</span></summary><div class="ans">
+  <p>137 = SIGKILL. <code>docker inspect</code>: se <code>OOMKilled=true</code>, é memória (limite ou vazamento); se não, foi <code>docker stop</code> que esgotou o prazo (CMD em forma shell ou sem tratar SIGTERM) ou um <code>kill</code>. <code>docker events</code> dá o horário. 139 = SIGSEGV: código nativo, biblioteca incompatível (glibc x musl) ou arquitetura errada.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>O container sobe e sai imediatamente. Passo a passo?</span></summary><div class="ans">
+  <ol><li><code>docker ps -a</code> e <code>docker logs</code>: o primeiro erro.</li><li><code>docker inspect</code>: exit code, OOM.</li><li>Exit 0: o processo principal terminou (serviço em segundo plano, CMD errado).</li><li>126/127: permissão ou comando inexistente; CRLF no script.</li><li><code>docker run --rm -it --entrypoint sh img</code> para olhar por dentro.</li></ol></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>O disco do servidor encheu. O que você verifica?</span></summary><div class="ans">
+  <p><code>docker system df</code> para separar imagens, containers, volumes e cache; logs do <code>json-file</code> sem rotação são a causa frequente (<code>max-size</code>/<code>max-file</code> no <code>daemon.json</code>, que só vale para containers recriados). Limpe com <code>builder prune</code> e <code>image prune</code>; cuidado com <code>--volumes</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Como depurar um container de imagem distroless, sem shell?</span></summary><div class="ans">
+  <p>Container efêmero com ferramentas (netshoot) nos mesmos namespaces: <code>--network container:alvo --pid container:alvo</code>; no Kubernetes, <code>kubectl debug</code> com container efêmero; no Docker Desktop, <code>docker debug</code> (confirmar licença/disponibilidade). Também <code>docker cp</code> e <code>docker inspect</code>. A imagem de produção não é alterada.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como estabelecer um padrão de segurança de containers numa equipe e cuidar de dados de saúde (LGPD)?</span></summary><div class="ans">
+  <ul><li><strong>Baseline:</strong> imagem base aprovada, template de Compose/Kubernetes com não-root, <code>cap_drop</code>, <code>no-new-privileges</code>, read-only e limites já ligados.</li><li><strong>Verificação automática:</strong> scanner e checagem de configuração no CI, política de exceções.</li><li><strong>Acesso:</strong> grupo <code>docker</code> controlado, socket nunca exposto sem exceção aprovada.</li><li><strong>LGPD:</strong> mapa de dados (logs, volumes, backups), logs sem dado pessoal, criptografia em repouso, backup criptografado com restauração testada, retenção definida, ambientes de teste anonimizados.</li><li><strong>Operação:</strong> runbook de diagnóstico, rotação de logs, alertas de disco, OOM e restart.</li></ul></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

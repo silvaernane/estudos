@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 08: Índices a fundo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 08 de 12 · Índices a fundo</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li class="sub"><ol>
+      <li><a href="#btree"><span class="n">1</span>B-tree por dentro e o custo de uma busca</a></li>
+      <li><a href="#composto"><span class="n">2</span>Índice composto e a ordem das colunas</a></li>
+      <li><a href="#cobertura"><span class="n">3</span>Índice de cobertura e index-only scan</a></li>
+      <li><a href="#expressao-parcial"><span class="n">4</span>Índices de expressão, parciais e o tratamento de NULL</a></li>
+      <li><a href="#tipos-especiais"><span class="n">5</span>Tipos especiais de índice: bitmap, GIN, GiST, BRIN e hash</a></li>
+      <li><a href="#clustering-custo"><span class="n">6</span>Clustering factor, custo de escrita e índices não usados</a></li>
+      <li><a href="#sargabilidade"><span class="n">7</span>Sargabilidade e anti-padrões que matam índices</a></li>
+      <li><a href="#producao-roteiro"><span class="n">8</span>Mudar índices em produção e roteiro de decisão</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html" aria-current="page"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 08 · <span class="lvl l3">Avançado</span></div>
+  <h1>Índices a fundo</h1>
+  <p class="lede">Índice é a ferramenta de desempenho mais usada e mais mal usada: sem ele a consulta lê a tabela inteira; com índices demais, cada gravação vira um pequeno trabalho em cadeia. Este módulo mostra como o B-tree funciona por dentro, como desenhar índices compostos, de cobertura, parciais e de expressão, quando usar os tipos especiais, como reconhecer consultas que impedem o uso de índices e como criar, testar e remover índices em produção sem susto.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar a estrutura do B-tree (raiz, ramos, folhas) e por que a busca custa poucas leituras mesmo com milhões de linhas.</li>
+    <li>Desenhar índices compostos: igualdade antes de faixa, onde a "seletividade primeiro" é só meia verdade, e quando o skip scan ajuda.</li>
+    <li>Criar índices de cobertura (<code>INCLUDE</code> no PostgreSQL, colunas extras no Oracle), de expressão e parciais, tratando NULLs corretamente no Oracle.</li>
+    <li>Escolher entre B-tree, bitmap, GIN, GiST, BRIN e hash, e entender clustering factor e correlação física.</li>
+    <li>Reconhecer e reescrever anti-padrões não sargáveis, inclusive conversão implícita de tipo.</li>
+    <li>Medir o custo de manutenção, achar índices não usados e mudar índices em produção com índice invisível e <code>CREATE INDEX CONCURRENTLY</code>.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="btree">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>B-tree por dentro e o custo de uma busca</h2>
+  <p>Sem índice, achar o atendimento <code>id_atendimento = 4.200.117</code> em 5 milhões de linhas exige ler a tabela inteira. Um índice é uma estrutura separada, ordenada pela(s) coluna(s) indexada(s), que permite chegar à linha certa lendo poucas páginas. Nos dois bancos, o tipo padrão e de longe o mais usado é o <strong>B-tree</strong> (árvore balanceada): é o que <code>CREATE INDEX</code> cria quando você não diz o tipo.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="B-tree com raiz, três ramos e quatro folhas encadeadas que apontam para as linhas da tabela">
+      <defs><marker id="ah-bt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="260" y="12" width="160" height="30" rx="5"/><text x="340" y="32" text-anchor="middle">raiz: 40 | 80</text>
+      <line class="ln" x1="300" y1="42" x2="115" y2="78"/><line class="ln" x1="340" y1="42" x2="340" y2="78"/><line class="ln" x1="380" y1="42" x2="565" y2="78"/>
+      <rect class="box" x="30" y="78" width="170" height="30" rx="5"/><text x="115" y="98" text-anchor="middle">ramo: 10 | 25</text>
+      <rect class="box" x="255" y="78" width="170" height="30" rx="5"/><text x="340" y="98" text-anchor="middle">ramo: 50 | 65</text>
+      <rect class="box" x="480" y="78" width="170" height="30" rx="5"/><text x="565" y="98" text-anchor="middle">ramo: 90 | 120</text>
+      <line class="ln" x1="115" y1="108" x2="85" y2="146"/><line class="ln" x1="340" y1="108" x2="255" y2="146"/><line class="ln" x1="340" y1="108" x2="425" y2="146"/><line class="ln" x1="565" y1="108" x2="595" y2="146"/>
+      <rect class="box-w" x="15" y="146" width="140" height="30" rx="5"/><text x="85" y="166" text-anchor="middle">10 11 14 …</text>
+      <rect class="box-w" x="185" y="146" width="140" height="30" rx="5"/><text x="255" y="166" text-anchor="middle">50 52 57 …</text>
+      <rect class="box-w" x="355" y="146" width="140" height="30" rx="5"/><text x="425" y="166" text-anchor="middle">65 66 71 …</text>
+      <rect class="box-w" x="525" y="146" width="140" height="30" rx="5"/><text x="595" y="166" text-anchor="middle">90 94 99 …</text>
+      <line class="ln-a" x1="157" y1="161" x2="183" y2="161" marker-end="url(#ah-bt)"/>
+      <line class="ln-a" x1="327" y1="161" x2="353" y2="161" marker-end="url(#ah-bt)"/>
+      <line class="ln-a" x1="497" y1="161" x2="523" y2="161" marker-end="url(#ah-bt)"/>
+      <text class="lbl" x="15" y="200">folhas: chave ordenada + ROWID (Oracle) ou TID (PostgreSQL), encadeadas para varrer intervalos</text>
+      <text class="lbl" x="15" y="220">busca por 57: raiz → ramo → folha = 3 leituras de página, mesmo com milhões de linhas</text>
+      <text class="lbl" x="15" y="240">esquema: só alguns ponteiros foram desenhados; cada nó real tem centenas de entradas</text>
+    </svg>
+    <figcaption>As folhas guardam as chaves em ordem e o endereço da linha; os níveis de cima só orientam a descida.</figcaption>
+  </figure>
+
+  <h3>As peças</h3>
+  <ul>
+    <li><strong>Raiz e ramos</strong> (<em>branch blocks</em>): guardam "faixas" de chaves e ponteiros para os nós de baixo. Servem só para navegar.</li>
+    <li><strong>Folhas</strong>: guardam as chaves em ordem e, para cada uma, o endereço físico da linha: <strong>ROWID</strong> no Oracle, <strong>TID</strong> (página, posição) no PostgreSQL. As folhas são ligadas entre si, o que permite percorrer um intervalo sem voltar à raiz.</li>
+    <li><strong>Altura</strong>: cada nó é uma página de 8 kB com centenas de entradas (para uma chave pequena, na ordem de 200 a 400). Com 3 níveis (raiz, ramo, folha) cabem dezenas de milhões de chaves; com 4, bilhões. A busca por chave desce 3 ou 4 páginas, e a raiz e os ramos de cima quase sempre estão no cache.</li>
+    <li><strong>Divisão de página</strong> (<em>split</em>): quando uma folha enche, é dividida em duas; no Oracle, inserções em chave crescente (sequência, data) dividem a folha da direita em proporção 90/10 para não desperdiçar espaço. Chaves aleatórias (UUID v4) dividem folhas por toda a árvore, deixando o índice maior e as gravações mais caras.</li>
+  </ul>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- BLEVEL = níveis de ramo; altura = BLEVEL + 1. CLUSTERING_FACTOR: seção 6.
+SELECT index_name, blevel, leaf_blocks, distinct_keys, num_rows, clustering_factor
+FROM   user_indexes
+WHERE  table_name = 'ATENDIMENTO';</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Tamanho do índice e profundidade (extensão pageinspect, só para estudo/DBA)
+SELECT pg_size_pretty(pg_relation_size('atendimento_pkey')) AS tamanho;
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+SELECT level FROM bt_metap('atendimento_pkey');   -- 2 = raiz + ramo + folha (nível 0 é a folha)</code></pre>
+</div>
+
+  <h3>As três partes do custo de uma busca</h3>
+  <ol>
+    <li><strong>Descer a árvore</strong> até a primeira folha: 3 ou 4 leituras. É sempre barata.</li>
+    <li><strong>Percorrer as folhas</strong> do intervalo: proporcional ao número de entradas que casam.</li>
+    <li><strong>Ir à tabela</strong> buscar as colunas que o índice não tem, <em>uma leitura por linha</em>. Com 200 mil linhas casadas, esta parte domina o custo, e é por isso que índice de cobertura (seção 3) e clustering (seção 6) importam.</li>
+  </ol>
+<pre><code class="text">-- PostgreSQL: busca pela PK de uma tabela com 5 milhões de linhas
+EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM atendimento WHERE id_atendimento = 4200117;
+ Index Scan using atendimento_pkey on atendimento  (cost=0.43..8.45 rows=1 width=64) (actual time=0.03..0.03 rows=1 loops=1)
+   Index Cond: (id_atendimento = 4200117)
+   Buffers: shared hit=4        -- 3 páginas do índice + 1 da tabela</code></pre>
+
+  <h3>O que um B-tree sabe fazer</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Operação</th><th>Usa o índice?</th></tr></thead>
+    <tbody>
+      <tr><td><code>=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>BETWEEN</code>, <code>IN</code></td><td>Sim: igualdade e faixa.</td></tr>
+      <tr><td><code>LIKE 'MARIA%'</code> (prefixo fixo)</td><td>Sim (com ressalva de <em>collation</em> no PostgreSQL, seção 7).</td></tr>
+      <tr><td><code>ORDER BY</code> na ordem do índice, <code>MIN</code>/<code>MAX</code>, top-N</td><td>Sim: a ordem já está pronta; o primeiro/último valor é a ponta da folha.</td></tr>
+      <tr><td><code>LIKE '%SILVA%'</code>, <code>coluna + 1 = x</code>, <code>UPPER(coluna) = x</code></td><td>Não (sem índice de expressão/trigrama): a comparação não é feita sobre a chave armazenada.</td></tr>
+      <tr><td><code>IS NULL</code></td><td>PostgreSQL: sim. Oracle: só se o índice tiver outra coluna não nula (seção 4).</td></tr>
+    </tbody>
+  </table></div>
+  <p>Chaves primárias e <code>UNIQUE</code> criam índices B-tree automaticamente. <strong>Chaves estrangeiras não criam índice</strong> em nenhum dos dois bancos; crie-o você (seção 8). No PostgreSQL, índices B-tree usam fator de preenchimento (<code>fillfactor</code>) de 90% por padrão e, desde a versão 13, deduplicam entradas iguais, o que reduz índices com muitos valores repetidos.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Índice ajuda quando o filtro devolve <em>uma fração pequena</em> da tabela (ou quando cobre a consulta, ou quando entrega a ordem pedida). Para um filtro que devolve 30% da tabela, o plano sem índice costuma ser melhor, e o otimizador sabe disso (módulo 07).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como funciona um índice B-tree?" Árvore balanceada ordenada: raiz e ramos orientam a busca; as folhas guardam as chaves em ordem com o endereço da linha (ROWID/TID) e são encadeadas, o que serve faixas e <code>ORDER BY</code>. A busca desce 3 ou 4 níveis independentemente do tamanho da tabela; o custo real aparece quando há muitas linhas e cada uma exige uma ida à tabela.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Índice não é gratuito nem "sempre bom": ocupa espaço (muitas vezes metade do tamanho da tabela ou mais), compete por memória e custa em cada escrita. Trate a criação de índice como decisão de design com justificativa (qual consulta, qual ganho, qual custo), não como reflexo ao primeiro "está lento".</p></div>
+</section>
+
+<section class="chap" id="composto">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Índice composto e a ordem das colunas</h2>
+  <p>Um índice em <code>(id_medico, dt_atendimento)</code> é ordenado primeiro por médico e, dentro de cada médico, por data: como uma lista telefônica ordenada por sobrenome e depois por nome. Essa ordem decide <em>quais consultas</em> conseguem navegar no índice.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Entradas de um índice por médico e data, destacando o trecho contíguo para id_medico igual a 7 e data a partir de 05/11, e as entradas espalhadas quando só se filtra por data">
+      <text class="ttl" x="20" y="20">Índice (id_medico, dt_atendimento), em ordem</text>
+      <rect class="box" x="20" y="34" width="190" height="24" rx="4"/><text x="115" y="51" text-anchor="middle">(7, 01/11)</text>
+      <rect class="box" x="20" y="60" width="190" height="24" rx="4"/><text x="115" y="77" text-anchor="middle">(7, 03/11)</text>
+      <rect class="box-a" x="20" y="86" width="190" height="24" rx="4"/><text x="115" y="103" text-anchor="middle">(7, 09/11)</text>
+      <rect class="box-a" x="20" y="112" width="190" height="24" rx="4"/><text x="115" y="129" text-anchor="middle">(7, 12/11)</text>
+      <rect class="box" x="20" y="138" width="190" height="24" rx="4"/><text x="115" y="155" text-anchor="middle">(9, 02/11)</text>
+      <rect class="box-w" x="20" y="164" width="190" height="24" rx="4"/><text x="115" y="181" text-anchor="middle">(9, 06/11)</text>
+      <rect class="box" x="20" y="190" width="190" height="24" rx="4"/><text x="115" y="207" text-anchor="middle">(12, 01/11)</text>
+      <rect class="box-w" x="20" y="216" width="190" height="24" rx="4"/><text x="115" y="233" text-anchor="middle">(12, 08/11)</text>
+      <rect class="box-a" x="250" y="60" width="16" height="16" rx="3"/>
+      <text class="ttl" x="274" y="73">id_medico = 7 e dt &gt;= 05/11</text>
+      <text class="lbl" x="250" y="96">trecho contíguo: desce a árvore, lê em sequência</text>
+      <text class="lbl" x="250" y="112">e para no fim da faixa. Poucas leituras.</text>
+      <rect class="box-w" x="250" y="150" width="16" height="16" rx="3"/>
+      <text class="ttl" x="274" y="163">só dt &gt;= 05/11, sem o médico</text>
+      <text class="lbl" x="250" y="186">entradas espalhadas por todo o índice: não há</text>
+      <text class="lbl" x="250" y="202">trecho contíguo; o banco lê o índice todo e filtra</text>
+      <text class="lbl" x="250" y="218">(ou nem usa o índice).</text>
+    </svg>
+    <figcaption>A mesma condição de data é barata ou cara conforme a coluna que a antecede esteja fixada por igualdade.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Filtro</th><th>Usa bem o índice <code>(id_medico, dt_atendimento)</code>?</th></tr></thead>
+    <tbody>
+      <tr><td><code>id_medico = 7</code></td><td>Sim, pelo prefixo.</td></tr>
+      <tr><td><code>id_medico = 7 AND dt_atendimento &gt;= :ini</code></td><td>Sim, o caso ideal: igualdade + faixa.</td></tr>
+      <tr><td><code>id_medico = 7 ORDER BY dt_atendimento</code></td><td>Sim, e dispensa o sort. Com <code>FETCH FIRST 20</code>, para nas 20 primeiras entradas.</td></tr>
+      <tr><td><code>dt_atendimento &gt;= :ini</code> (sem médico)</td><td>Mal: ver figura. Seria procurar todos os "João" numa lista por sobrenome.</td></tr>
+      <tr><td><code>id_medico IN (7, 9) AND dt_atendimento &gt;= :ini</code></td><td>Sim: uma descida por valor do <code>IN</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra para montar índices compostos</b><ol style="margin-bottom:0">
+    <li>Colunas filtradas por <strong>igualdade</strong> primeiro.</li>
+    <li>Depois, <strong>uma</strong> coluna de faixa (<code>&gt;</code>, <code>BETWEEN</code>, <code>LIKE 'abc%'</code>) <em>ou</em> a coluna do <code>ORDER BY</code>.</li>
+    <li>Colunas depois de uma faixa ajudam pouco a navegar; servem para filtrar dentro do índice ou cobrir a consulta (seção 3).</li>
+  </ol></div>
+
+  <h3>"Coloque a coluna mais seletiva primeiro": meia verdade</h3>
+  <p>É um conselho antigo e repetido, e vale só em parte. Quando <em>todas</em> as colunas do índice são filtradas por igualdade, a ordem entre elas <strong>não muda o número de entradas lidas</strong>: o conjunto de entradas que casa com <code>(a = 1 AND b = 2)</code> é o mesmo em qualquer ordem. O que muda é a <em>reutilização</em> e as outras formas de uso. Critérios melhores, nesta ordem:</p>
+  <ol>
+    <li><strong>Igualdade antes de faixa</strong> (regra acima): nenhuma seletividade supera isso. Um índice <code>(dt_atendimento, id_medico)</code> para <code>id_medico = 7 AND dt_atendimento &gt;= :ini</code> varre todas as datas desde <code>:ini</code> e filtra o médico; o índice <code>(id_medico, dt_atendimento)</code> vai direto ao trecho.</li>
+    <li><strong>Reaproveitamento por prefixo</strong>: a primeira coluna deve ser a que aparece <em>sozinha</em> em mais consultas. Um índice <code>(id_medico, dt_atendimento)</code> atende também <code>id_medico = :m</code> e dispensa um índice separado em <code>id_medico</code> (é redundante).</li>
+    <li><strong>Ordenação</strong>: para dispensar o sort, as colunas do <code>ORDER BY</code> vêm logo depois das de igualdade, na mesma direção (ASC/DESC; o B-tree lê nos dois sentidos, mas índices mistos precisam declarar as direções).</li>
+    <li><strong>Compressão e skip scan</strong>: colunas de poucos valores distintos na frente comprimem bem (Oracle, compressão de chave) e permitem skip scan.</li>
+  </ol>
+
+  <h3>Skip scan: a rede de segurança</h3>
+  <p>Com um índice <code>(tipo, dt_atendimento)</code> e uma consulta só por <code>dt_atendimento</code>, o Oracle pode fazer um <em>index skip scan</em>: trata o índice como vários sub-índices, um por valor de <code>tipo</code> (3 valores: CONSULTA, EXAME, RETORNO), e faz uma busca em cada um. Só compensa quando a primeira coluna tem <strong>poucos</strong> valores distintos; com milhares, são milhares de buscas. O PostgreSQL ganhou skip scan para B-tree na versão 18; antes não existia. Não projete contando com ele: é uma rede de segurança para quando o índice "errado" já existe.</p>
+<pre><code class="sql">-- Oracle: skip scan visível no plano; dá para pedir/impedir por hint
+SELECT /*+ INDEX_SS(a ix_atend_tipo_dt) */ COUNT(*)
+FROM   atendimento a
+WHERE  dt_atendimento &gt;= DATE '2026-11-01';
+-- plano: INDEX SKIP SCAN IX_ATEND_TIPO_DT</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Criar um índice por coluna "porque todas aparecem em filtros" (<code>id_medico</code>, <code>dt_atendimento</code>, <code>status</code>, <code>tipo</code> cada um num índice). O banco quase nunca consegue combiná-los bem; um índice composto bem pensado vence quatro isolados e custa menos nas escritas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a ordem das colunas num índice composto?" Igualdade primeiro; depois a coluna de faixa ou de ordenação; colunas depois da faixa não ajudam a navegar. Para colunas só de igualdade a ordem não muda as leituras, então escolho pelo prefixo mais reaproveitável. Completo: "o que se ouve sobre seletividade primeiro é só parte da história".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em revisão de índices, peça a lista das consultas que cada índice atende. Se ninguém sabe dizer, o índice é candidato a remoção; se dois índices têm o mesmo prefixo, um provavelmente é redundante. Esse inventário (consulta, índice, dono) é barato e evita o acúmulo que degrada a gravação.</p></div>
+</section>
+
+
+<section class="chap" id="cobertura">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Índice de cobertura e index-only scan</h2>
+  <p>Na seção 1 vimos que a etapa cara de uma busca é ir à tabela, uma leitura por linha. Se <em>todas as colunas que a consulta usa</em> (filtro, ordenação, saída) estão no índice, o banco responde só com ele: o índice <strong>cobre</strong> a consulta. Num relatório que devolve milhares de linhas, isso pode reduzir as leituras em uma ordem de grandeza.</p>
+<pre><code class="sql">-- Consulta frequente: faturamento de um médico num período
+SELECT SUM(valor)
+FROM   atendimento
+WHERE  id_medico = :m
+  AND  dt_atendimento &gt;= :ini AND dt_atendimento &lt; :fim
+  AND  status = 'REALIZADO';</code></pre>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Oracle não tem INCLUDE: colunas extras entram na própria chave do índice
+CREATE INDEX ix_atend_med_dt_cob
+  ON atendimento (id_medico, dt_atendimento, status, valor);
+
+-- Plano esperado: só o índice, sem TABLE ACCESS BY INDEX ROWID
+-- |  3 |  INDEX RANGE SCAN | IX_ATEND_MED_DT_COB |</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- INCLUDE (PostgreSQL 11+): colunas guardadas só nas folhas, fora da chave de busca
+CREATE INDEX ix_atend_med_dt_cob
+  ON atendimento (id_medico, dt_atendimento)
+  INCLUDE (status, valor);
+
+ Aggregate  (actual time=3.1..3.1 rows=1 loops=1)
+   -&gt;  Index Only Scan using ix_atend_med_dt_cob on atendimento
+         Index Cond: ((id_medico = 77) AND (dt_atendimento &gt;= ...) AND (dt_atendimento &lt; ...))
+         Filter: ((status)::text = 'REALIZADO'::text)
+         Heap Fetches: 0
+         Buffers: shared hit=212</code></pre>
+</div>
+  <p>Diferença de projeto: no Oracle, as colunas extras fazem parte da chave (e ordenam o índice). No PostgreSQL, as colunas do <code>INCLUDE</code> <strong>não participam da busca nem da ordenação</strong>: só viajam na folha. Isso mantém a chave curta nos níveis de cima, permite incluir tipos sem ordenação e deixa claro a intenção; o filtro por <code>status</code> acima é aplicado dentro do índice, sobre a folha.</p>
+
+  <h3>O mapa de visibilidade (PostgreSQL)</h3>
+  <p>No PostgreSQL, a folha do índice não sabe se a versão da linha é visível para a sua transação (MVCC, módulo de concorrência). Para saber, o <em>index-only scan</em> consulta o <strong>visibility map</strong>: um mapa, mantido pelo <code>VACUUM</code>, que marca as páginas da tabela em que todas as linhas são visíveis a todos. Se a página está marcada, o banco não visita a tabela; se não, faz um <em>heap fetch</em>. No <code>EXPLAIN ANALYZE</code>, o contador <code>Heap Fetches</code> mostra quantas vezes ele teve de ir à tabela: com valor alto, o "index only" é só de nome.</p>
+  <ul>
+    <li><strong>Tabelas muito atualizadas</strong> mantêm páginas "sujas" e o index-only perde o benefício até o próximo <code>VACUUM</code>. Confira o autovacuum da tabela (<code>pg_stat_user_tables.last_autovacuum</code>).</li>
+    <li><strong>Tabelas só de inserção</strong> (log de eventos) dependem de o autovacuum processar inserts: o PostgreSQL 13 em diante dispara vacuum por volume de inserções.</li>
+    <li>No <strong>Oracle</strong> não existe visibility map: o índice cobre a consulta sem etapa extra (a consistência de leitura é resolvida com o mecanismo de undo nos blocos do índice).</li>
+  </ul>
+  <h3>O preço e quando vale</h3>
+  <ul>
+    <li>Índice mais largo: ocupa mais espaço, cabe menos no cache e custa mais para manter (colunas incluídas que mudam, como <code>status</code>, forçam atualização do índice).</li>
+    <li>Vale para consultas <strong>críticas e frequentes</strong> que leem muitas linhas por chamada, ou para telas de listagem. Não vale para consultas que devolvem poucas linhas (a ida à tabela custa 3 leituras, e o ganho é pequeno).</li>
+    <li><code>SELECT *</code> destrói a cobertura: peça só as colunas de que precisa.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Colocar no índice colunas "por garantia" até ele ficar maior que a tabela. Cobertura é desenhada a partir de <em>uma consulta específica</em>: as colunas do <code>WHERE</code> (igualdade, faixa), do <code>ORDER BY</code> e as da saída. Se a consulta muda, a cobertura se perde sem erro: só aparece no plano.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é um índice de cobertura?" É o que contém todas as colunas usadas pela consulta, evitando a ida à tabela (Oracle: só <code>INDEX RANGE SCAN</code>; PostgreSQL: <code>Index Only Scan</code>, com <code>INCLUDE</code> desde a 11). Para o PostgreSQL acrescente o visibility map: depende do <code>VACUUM</code>, e <code>Heap Fetches</code> mostra se está funcionando.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Índice de cobertura é uma otimização cirúrgica para as 5 a 10 consultas mais quentes, e deve vir com a consulta anotada no comentário do índice ou na documentação. Sem isso, quem alterar a consulta (acrescentar uma coluna na saída) descobrirá o efeito só em produção.</p></div>
+</section>
+
+<section class="chap" id="expressao-parcial">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Índices de expressão, parciais e o tratamento de NULL</h2>
+
+  <h3>Índice por expressão (ou por função)</h3>
+  <p>Um índice normal guarda o valor da coluna. Se a consulta compara o <em>resultado de uma função</em> (<code>UPPER(nome)</code>), o índice na coluna não serve: a chave armazenada é outra. A solução é indexar a própria expressão. A expressão da consulta precisa ser <strong>a mesma</strong> do índice, e a função precisa ser determinística (imutável).</p>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Busca por nome sem diferenciar maiúsculas
+CREATE INDEX ix_pac_nome_up ON paciente (UPPER(nome));
+-- usado por: WHERE UPPER(nome) = UPPER(:nome)
+
+-- Atendimentos de um dia, se o código não puder usar o intervalo
+CREATE INDEX ix_atend_dia ON atendimento (TRUNC(dt_atendimento));
+-- usado por: WHERE TRUNC(dt_atendimento) = DATE '2026-11-10'</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Busca por nome sem diferenciar maiúsculas
+CREATE INDEX ix_pac_nome_up ON paciente (upper(nome));
+-- usado por: WHERE upper(nome) = upper($1)
+
+-- Atendimentos de um dia (timestamp sem fuso: o cast para date é imutável)
+CREATE INDEX ix_atend_dia ON atendimento ((dt_atendimento::date));
+-- usado por: WHERE dt_atendimento::date = DATE '2026-11-10'</code></pre>
+</div>
+  <ul>
+    <li>No PostgreSQL, o <code>ANALYZE</code> coleta estatísticas da expressão indexada, o que também melhora a estimativa de cardinalidade (módulo 07). No Oracle, crie estatística estendida sobre a expressão.</li>
+    <li>Oracle: funções de usuário precisam ser declaradas <code>DETERMINISTIC</code>; uma <em>coluna virtual</em> (11g+) é uma alternativa que documenta a expressão e pode ser indexada.</li>
+    <li>Prefira reescrever a consulta como <strong>intervalo</strong> sobre a coluna (<code>&gt;= início AND &lt; fim</code>, seção 7): usa o índice que já existe, sem criar outro. Use índice de expressão quando a reescrita não é possível (código de terceiros, busca insensível a maiúsculas).</li>
+  </ul>
+
+  <h3>Índices parciais</h3>
+  <p>Às vezes a consulta importante olha uma <em>pequena parte</em> da tabela: os atendimentos <code>AGENDADO</code> (2% de 5 milhões = 100 mil linhas). Um índice só dessas linhas é minúsculo, rápido de manter (as outras 98% nunca o tocam) e eficiente. Também dá para impor unicidade condicional, como "um médico não pode ter dois atendimentos agendados no mesmo horário".</p>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Oracle não tem índice parcial declarativo. O truque: uma expressão que devolve NULL
+-- para as linhas que não interessam; chaves totalmente NULL não entram no B-tree.
+CREATE INDEX ix_atend_agendado
+  ON atendimento (CASE WHEN status = 'AGENDADO' THEN id_medico END);
+-- usado por (a expressão precisa ser idêntica):
+-- WHERE CASE WHEN status = 'AGENDADO' THEN id_medico END = :med
+
+-- Unicidade condicional: só os agendados participam da regra
+CREATE UNIQUE INDEX ux_agenda_medico_hora
+  ON atendimento (CASE WHEN status = 'AGENDADO' THEN id_medico END,
+                  CASE WHEN status = 'AGENDADO' THEN dt_atendimento END);</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Índice parcial: só os agendados entram
+CREATE INDEX ix_atend_agendado
+  ON atendimento (id_medico, dt_atendimento)
+  WHERE status = 'AGENDADO';
+-- usado quando a consulta traz o predicado: ... WHERE status = 'AGENDADO' AND id_medico = $1
+
+-- Unicidade condicional
+CREATE UNIQUE INDEX ux_agenda_medico_hora
+  ON atendimento (id_medico, dt_atendimento)
+  WHERE status = 'AGENDADO';</code></pre>
+</div>
+  <div class="note trap"><b>Armadilha comum (PostgreSQL)</b><p>O índice parcial só é usado se o planejador <em>provar</em> que a consulta implica o predicado do índice. <code>status = 'AGENDADO'</code> escrito literalmente funciona. Com <code>status = $1</code> em um plano genérico (statement preparado, módulo 07), ele não consegue provar nada e ignora o índice. Se o valor é fixo por natureza (a "fila de agendados"), escreva-o como literal na consulta.</p></div>
+
+  <h3>NULL em índices B-tree</h3>
+  <p>Aqui os bancos divergem, com consequências práticas. Em nosso esquema, <code>atendimento.id_convenio</code> é <code>NULL</code> para atendimento particular.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>Linhas em que <em>todas</em> as colunas do índice são NULL</td><td><strong>Não entram</strong> no B-tree.</td><td>Entram, como qualquer valor.</td></tr>
+      <tr><td><code>WHERE id_convenio IS NULL</code></td><td>Não usa um índice só em <code>id_convenio</code>: o índice não contém essas linhas. Full scan.</td><td>Usa o índice normalmente. <code>IS NOT NULL</code> também.</td></tr>
+      <tr><td>Chave composta com um NULL e outro não</td><td>A entrada existe (basta uma coluna não nula).</td><td>Existe.</td></tr>
+      <tr><td>Unicidade</td><td>Duas chaves totalmente NULL não violam <code>UNIQUE</code>; chaves parcialmente NULL são comparadas pelas colunas não nulas.</td><td><code>UNIQUE</code> trata NULLs como distintos (padrão); a partir do PostgreSQL 15, <code>NULLS NOT DISTINCT</code> muda isso.</td></tr>
+      <tr><td>Posição na ordenação</td><td><code>ASC</code>: NULLs por último; <code>DESC</code>: primeiro.</td><td>Idem (<code>NULLS LAST</code> no <code>ASC</code>); configurável com <code>NULLS FIRST/LAST</code> no índice e na consulta.</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sql">-- Oracle: como tornar "atendimento particular" pesquisável por índice
+-- (a) coluna constante: toda linha passa a ter entrada
+CREATE INDEX ix_atend_conv ON atendimento (id_convenio, 0);
+-- consulta: WHERE id_convenio IS NULL   -&gt; INDEX RANGE SCAN
+
+-- (b) índice por expressão com NVL; a consulta usa a mesma expressão
+CREATE INDEX ix_atend_conv_nvl ON atendimento (NVL(id_convenio, -1));
+-- consulta: WHERE NVL(id_convenio, -1) = -1
+
+-- (c) a mesma ideia do índice "parcial": só as linhas NULL entram
+CREATE INDEX ix_atend_particular
+  ON atendimento (CASE WHEN id_convenio IS NULL THEN 1 END);</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>No Oracle, ao ver <code>IS NULL</code> num filtro, pergunte "o índice tem outra coluna obrigatória?". Se não, a consulta fará full scan. No PostgreSQL, preocupe-se com o contrário: um índice com muitos NULLs e consultas que nunca os procuram é candidato a índice parcial <code>WHERE coluna IS NOT NULL</code>, bem menor.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que <code>WHERE x IS NULL</code> não usa o índice no Oracle?" Porque o B-tree do Oracle não guarda entradas em que todas as colunas indexadas são NULL. Soluções: adicionar uma coluna constante ao índice (<code>(x, 0)</code>), indexar <code>NVL(x, valor)</code> ou usar a expressão <code>CASE</code>. No PostgreSQL o problema não existe.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em ambientes com os dois bancos, NULL e índice é um clássico de "funcionou no PostgreSQL de teste e ficou lento no Oracle de produção" (ou o contrário, com uso de <code>NULLS NOT DISTINCT</code> e comportamento de unicidade). Se o time desenvolve em um banco e roda em outro, exija teste de plano no banco de produção.</p></div>
+</section>
+
+<section class="chap" id="tipos-especiais">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Tipos especiais de índice: bitmap, GIN, GiST, BRIN e hash</h2>
+  <p>O B-tree resolve igualdade, faixa e ordenação. Para outros problemas (texto, JSON, arrays, geometria, tabelas gigantes, poucos valores distintos), existem estruturas próprias. Todas as opções abaixo têm um custo: escolha por caso de uso, não por moda.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Banco</th><th>Para quê</th><th>Custo / limites</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Bitmap</strong></td><td>Oracle (Enterprise Edition)</td><td>Colunas com poucos valores distintos em <em>data warehouse</em>; combinações de filtros com AND/OR/NOT; consultas ad hoc.</td><td>Terrível em OLTP: uma entrada de bitmap cobre muitas linhas, então atualizar uma linha bloqueia todas as demais da mesma entrada. Gravações concorrentes se serializam e geram deadlock.</td></tr>
+      <tr><td><strong>GIN</strong></td><td>PostgreSQL</td><td>Índice invertido: <code>JSONB</code> (<code>@&gt;</code>, <code>?</code>), arrays, <code>tsvector</code> (texto), e com <code>pg_trgm</code>: <code>LIKE '%x%'</code> e <code>ILIKE</code>.</td><td>Escrita mais lenta (várias chaves por linha); usa lista pendente (<code>fastupdate</code>) para amortizar. Leitura rápida.</td></tr>
+      <tr><td><strong>GiST</strong></td><td>PostgreSQL</td><td>Dados com "proximidade" ou sobreposição: geometrias (PostGIS), intervalos (<code>tstzrange</code>), vizinho mais próximo, <em>exclusion constraints</em> (impedir horários sobrepostos de um médico, com <code>btree_gist</code>), também <code>pg_trgm</code>.</td><td>Mais lento que GIN na leitura de texto, mais leve na escrita; é "com perdas" e rechecka a linha.</td></tr>
+      <tr><td><strong>BRIN</strong></td><td>PostgreSQL</td><td>Tabelas enormes cuja ordem física acompanha a coluna (datas de inserção, séries temporais). Índice minúsculo (KB em vez de GB).</td><td>Só funciona com correlação física alta; resultado aproximado (rechecka páginas). Desde o PostgreSQL 14, variantes <em>multi-minmax</em> e <em>bloom</em>.</td></tr>
+      <tr><td><strong>Hash</strong></td><td>PostgreSQL</td><td>Só igualdade (<code>=</code>). Seguro em produção desde a versão 10 (passou a ter log de transações).</td><td>Não suporta faixa, ordem nem <code>UNIQUE</code>. Raramente vence o B-tree; use só com motivo medido.</td></tr>
+      <tr><td><strong>Oracle Text</strong> (domain index)</td><td>Oracle</td><td>Busca textual em documentos (<code>CONTAINS</code>), em vez de <code>LIKE '%x%'</code>.</td><td>Sincronização do índice (sincroniza na confirmação ou em lote); confira o licenciamento da edição.</td></tr>
+    </tbody>
+  </table></div>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Bitmap: só em DW/relatórios, nunca em tabela com escrita concorrente
+CREATE BITMAP INDEX bx_atend_status ON atendimento (status);
+
+-- Texto: busca por palavra no nome
+CREATE INDEX ix_pac_nome_txt ON paciente (nome) INDEXTYPE IS CTXSYS.CONTEXT;
+SELECT nome FROM paciente WHERE CONTAINS(nome, 'silva') &gt; 0;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Trigramas: LIKE '%silva%' e ILIKE deixam de ser full scan
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX ix_pac_nome_trgm ON paciente USING gin (nome gin_trgm_ops);
+
+-- BRIN: log de eventos que cresce em ordem de data
+CREATE INDEX ix_atend_dt_brin ON atendimento USING brin (dt_atendimento)
+  WITH (pages_per_range = 64);
+
+-- GIN em JSONB (tabela hipotética, só para ilustrar)
+CREATE INDEX ix_doc_gin ON documento USING gin (conteudo jsonb_path_ops);</code></pre>
+</div>
+  <figure class="figure">
+    <svg viewBox="0 0 680 240" role="img" aria-label="Índice BRIN: seis faixas de páginas com valor mínimo e máximo de data, e uma consulta por data que só precisa ler a terceira faixa">
+      <defs><marker id="ah-brin" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-w" x="20" y="14" width="170" height="30" rx="5"/><text x="105" y="34" text-anchor="middle">WHERE dt = 15/09</text>
+      <line class="ln-a" x1="190" y1="34" x2="270" y2="96" marker-end="url(#ah-brin)"/>
+      <rect class="box" x="20" y="100" width="95" height="56" rx="5"/><text class="ttl" x="67" y="118" text-anchor="middle">faixa 1</text><text x="67" y="136" text-anchor="middle">min 01/09</text><text x="67" y="150" text-anchor="middle">max 07/09</text>
+      <rect class="box" x="127" y="100" width="95" height="56" rx="5"/><text class="ttl" x="174" y="118" text-anchor="middle">faixa 2</text><text x="174" y="136" text-anchor="middle">min 08/09</text><text x="174" y="150" text-anchor="middle">max 11/09</text>
+      <rect class="box-a" x="234" y="100" width="95" height="56" rx="5"/><text class="ttl" x="281" y="118" text-anchor="middle">faixa 3</text><text x="281" y="136" text-anchor="middle">min 12/09</text><text x="281" y="150" text-anchor="middle">max 18/09</text>
+      <rect class="box" x="341" y="100" width="95" height="56" rx="5"/><text class="ttl" x="388" y="118" text-anchor="middle">faixa 4</text><text x="388" y="136" text-anchor="middle">min 19/09</text><text x="388" y="150" text-anchor="middle">max 24/09</text>
+      <rect class="box" x="448" y="100" width="95" height="56" rx="5"/><text class="ttl" x="495" y="118" text-anchor="middle">faixa 5</text><text x="495" y="136" text-anchor="middle">min 25/09</text><text x="495" y="150" text-anchor="middle">max 30/09</text>
+      <rect class="box" x="555" y="100" width="95" height="56" rx="5"/><text class="ttl" x="602" y="118" text-anchor="middle">faixa 6</text><text x="602" y="136" text-anchor="middle">min 01/10</text><text x="602" y="150" text-anchor="middle">max 05/10</text>
+      <text class="lbl" x="67" y="174" text-anchor="middle">pula</text><text class="lbl" x="174" y="174" text-anchor="middle">pula</text>
+      <text class="lbl" x="281" y="174" text-anchor="middle">lê as páginas</text>
+      <text class="lbl" x="388" y="174" text-anchor="middle">pula</text><text class="lbl" x="495" y="174" text-anchor="middle">pula</text><text class="lbl" x="602" y="174" text-anchor="middle">pula</text>
+      <text class="lbl" x="20" y="205">O BRIN guarda só o mínimo e o máximo de cada faixa de páginas (padrão: 128 páginas por faixa).</text>
+      <text class="lbl" x="20" y="225">Só poda bem se a ordem física acompanha a coluna: correlação perto de 1 (seção 6).</text>
+    </svg>
+    <figcaption>Um BRIN de uma tabela de centenas de GB pode ter poucos MB, mas só ajuda quando os valores vêm "agrupados" no disco.</figcaption>
+  </figure>
+  <div class="note rule"><b>Regra de bolso</b><p>B-tree por padrão. Texto com curinga no início ou JSON: GIN (PostgreSQL) / Oracle Text. Tabela imensa só de inserção cronológica: BRIN. Poucos valores distintos em DW Oracle: bitmap, e só lá. Qualquer índice fora do B-tree precisa de uma consulta concreta que o justifique e de medição antes e depois.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Quando usar um índice bitmap?" Em DW Oracle, com colunas de baixa cardinalidade e consultas analíticas que combinam filtros. Nunca em OLTP: uma entrada de bitmap representa muitas linhas, e atualizar uma bloqueia as outras, serializando as gravações. "E para <code>LIKE '%x%'</code> no PostgreSQL?" GIN com <code>pg_trgm</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tipos especiais exigem conhecimento operacional (GIN pesa na escrita; BRIN depende de ordem física; bitmap depende da edição e do tipo de carga). Antes de aprovar um, pergunte quem vai mantê-lo e que consulta e métrica provam o ganho. Também confira licenças Oracle antes de depender de recursos de Enterprise Edition.</p></div>
+</section>
+
+
+<section class="chap" id="clustering-custo">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Clustering factor, custo de escrita e índices não usados</h2>
+
+  <h3>Clustering factor e correlação física</h3>
+  <p>Dois índices com a mesma seletividade podem ter custos muito diferentes, por causa de <strong>onde as linhas estão na tabela</strong>. Se percorrer o índice em ordem leva a linhas que estão juntas nos mesmos blocos, cada bloco é lido uma vez para várias linhas. Se leva a linhas espalhadas, cada linha custa uma leitura de bloco.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 296" role="img" aria-label="Duas situações: índice com entradas consecutivas apontando para os mesmos blocos da tabela (clustering factor baixo) e índice com entradas apontando para blocos alternados (clustering factor alto)">
+      <text class="ttl" x="20" y="22">Clustering factor baixo (bom)</text>
+      <text class="ttl" x="360" y="22">Clustering factor alto (ruim)</text>
+      <rect class="box" x="40" y="40" width="90" height="24" rx="4"/><text x="85" y="57" text-anchor="middle">chave 1</text>
+      <rect class="box" x="40" y="70" width="90" height="24" rx="4"/><text x="85" y="87" text-anchor="middle">chave 2</text>
+      <rect class="box" x="40" y="100" width="90" height="24" rx="4"/><text x="85" y="117" text-anchor="middle">chave 3</text>
+      <rect class="box" x="40" y="130" width="90" height="24" rx="4"/><text x="85" y="147" text-anchor="middle">chave 4</text>
+      <rect class="box" x="40" y="160" width="90" height="24" rx="4"/><text x="85" y="177" text-anchor="middle">chave 5</text>
+      <rect class="box-a" x="210" y="40" width="90" height="46" rx="4"/><text x="255" y="68" text-anchor="middle">bloco A</text>
+      <rect class="box-a" x="210" y="96" width="90" height="46" rx="4"/><text x="255" y="124" text-anchor="middle">bloco B</text>
+      <rect class="box-a" x="210" y="152" width="90" height="46" rx="4"/><text x="255" y="180" text-anchor="middle">bloco C</text>
+      <line class="ln-a" x1="130" y1="52" x2="208" y2="63"/><line class="ln-a" x1="130" y1="82" x2="208" y2="63"/>
+      <line class="ln-a" x1="130" y1="112" x2="208" y2="119"/><line class="ln-a" x1="130" y1="142" x2="208" y2="119"/>
+      <line class="ln-a" x1="130" y1="172" x2="208" y2="175"/>
+      <rect class="box" x="380" y="40" width="90" height="24" rx="4"/><text x="425" y="57" text-anchor="middle">chave 1</text>
+      <rect class="box" x="380" y="70" width="90" height="24" rx="4"/><text x="425" y="87" text-anchor="middle">chave 2</text>
+      <rect class="box" x="380" y="100" width="90" height="24" rx="4"/><text x="425" y="117" text-anchor="middle">chave 3</text>
+      <rect class="box" x="380" y="130" width="90" height="24" rx="4"/><text x="425" y="147" text-anchor="middle">chave 4</text>
+      <rect class="box" x="380" y="160" width="90" height="24" rx="4"/><text x="425" y="177" text-anchor="middle">chave 5</text>
+      <rect class="box-b" x="550" y="40" width="90" height="46" rx="4"/><text x="595" y="68" text-anchor="middle">bloco A</text>
+      <rect class="box-b" x="550" y="96" width="90" height="46" rx="4"/><text x="595" y="124" text-anchor="middle">bloco B</text>
+      <rect class="box-b" x="550" y="152" width="90" height="46" rx="4"/><text x="595" y="180" text-anchor="middle">bloco C</text>
+      <line class="ln-b" x1="470" y1="52" x2="548" y2="63"/><line class="ln-b" x1="470" y1="82" x2="548" y2="175"/>
+      <line class="ln-b" x1="470" y1="112" x2="548" y2="119"/><line class="ln-b" x1="470" y1="142" x2="548" y2="63"/>
+      <line class="ln-b" x1="470" y1="172" x2="548" y2="175"/>
+      <text class="lbl" x="20" y="222">5 entradas, 3 mudanças de bloco: A, A, B, B, C.</text>
+      <text class="lbl" x="360" y="222">5 entradas, 5 mudanças de bloco: A, C, B, A, C.</text>
+      <text class="lbl" x="20" y="250">Clustering factor = trocas de bloco da tabela ao andar no índice em ordem.</text>
+      <text class="lbl" x="20" y="270">Perto do número de blocos da tabela: linhas agrupadas. Perto do número de linhas: espalhadas.</text>
+      <text class="lbl" x="20" y="290">No PostgreSQL, a medida equivalente é pg_stats.correlation (de -1 a 1; perto de 1 ou -1 = agrupado).</text>
+    </svg>
+    <figcaption>Mesmo número de entradas, custo de acesso à tabela bem diferente.</figcaption>
+  </figure>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Compare o clustering factor com BLOCKS e NUM_ROWS da tabela
+SELECT i.index_name, i.clustering_factor, t.blocks, t.num_rows
+FROM   user_indexes i JOIN user_tables t ON t.table_name = i.table_name
+WHERE  i.table_name = 'ATENDIMENTO';
+
+INDEX_NAME          CLUSTERING_FACTOR     BLOCKS   NUM_ROWS
+------------------- ----------------- ---------- ----------
+PK_ATENDIMENTO                  61800      62500    5000000    -- ~ blocos: agrupado (ordem de inserção)
+IX_ATEND_PACIENTE             4720000      62500    5000000    -- ~ linhas: espalhado</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">SELECT attname, correlation
+FROM   pg_stats
+WHERE  tablename = 'atendimento' AND attname IN ('id_atendimento', 'id_paciente');
+
+    attname     | correlation
+----------------+-------------
+ id_atendimento |        0.99    -- ordem física acompanha a coluna
+ id_paciente    |       0.012    -- espalhado</code></pre>
+</div>
+  <p>Consequência prática: um índice em <code>id_paciente</code> serve muito bem para "histórico de um paciente" (dezenas de linhas, dezenas de leituras), mas é ruim para "todos os atendimentos dos pacientes de uma lista de 20 mil" (muitas leituras aleatórias). Já um índice em <code>dt_atendimento</code>, numa tabela gravada em ordem cronológica, mantém bom agrupamento e permite faixas largas.</p>
+  <p>Como melhorar o agrupamento? É uma propriedade da tabela, não do índice; reconstruir o índice <em>não</em> a muda. Opções: gravar em ordem (se a carga permite), particionar pela coluna de acesso, <em>index-organized table</em> (Oracle), <code>CLUSTER</code> (PostgreSQL: reordena a tabela uma vez, com bloqueio exclusivo, e não mantém a ordem depois; a extensão <code>pg_repack</code> faz sem bloqueio longo) ou, o mais barato, tornar o índice de cobertura (seção 3) para que a tabela nem seja visitada.</p>
+
+  <h3>O custo de manter índices na escrita</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 232" role="img" aria-label="Uma inserção gera uma escrita na tabela e uma em cada um dos quatro índices, todas registradas no log de transações">
+      <defs><marker id="ah-wr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="84" width="130" height="44" rx="6"/><text class="ttl" x="85" y="110" text-anchor="middle">INSERT 1 linha</text>
+      <rect class="box-a" x="270" y="14" width="170" height="32" rx="5"/><text x="355" y="35" text-anchor="middle">tabela atendimento</text>
+      <rect class="box-w" x="270" y="56" width="170" height="32" rx="5"/><text x="355" y="77" text-anchor="middle">ix_atend_pk</text>
+      <rect class="box-w" x="270" y="98" width="170" height="32" rx="5"/><text x="355" y="119" text-anchor="middle">ix_atend_paciente</text>
+      <rect class="box-w" x="270" y="140" width="170" height="32" rx="5"/><text x="355" y="161" text-anchor="middle">ix_atend_med_dt</text>
+      <rect class="box-w" x="270" y="182" width="170" height="32" rx="5"/><text x="355" y="203" text-anchor="middle">ix_atend_status</text>
+      <line class="ln" x1="150" y1="98" x2="268" y2="30" marker-end="url(#ah-wr)"/>
+      <line class="ln" x1="150" y1="102" x2="268" y2="72" marker-end="url(#ah-wr)"/>
+      <line class="ln" x1="150" y1="106" x2="268" y2="114" marker-end="url(#ah-wr)"/>
+      <line class="ln" x1="150" y1="110" x2="268" y2="156" marker-end="url(#ah-wr)"/>
+      <line class="ln" x1="150" y1="114" x2="268" y2="198" marker-end="url(#ah-wr)"/>
+      <text class="lbl" x="470" y="70">1 inserção lógica =</text>
+      <text class="lbl" x="470" y="88">1 escrita na tabela +</text>
+      <text class="lbl" x="470" y="106">1 em cada índice, todas</text>
+      <text class="lbl" x="470" y="124">registradas no log (redo/undo</text>
+      <text class="lbl" x="470" y="142">no Oracle, WAL no PostgreSQL)</text>
+    </svg>
+    <figcaption>Com quatro índices, cada INSERT faz cinco escritas de estrutura, e o custo aparece em latência, em log e em replicação.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>INSERT e DELETE</strong> tocam todos os índices da tabela. <strong>UPDATE</strong> toca os índices das colunas alteradas (no Oracle, uma entrada é removida e outra criada; no PostgreSQL, uma nova versão da linha pode exigir novas entradas em índices).</li>
+    <li>No PostgreSQL, atualizações que <em>não alteram nenhuma coluna indexada</em> e têm espaço na mesma página podem ser <strong>HOT</strong> (heap-only tuple): não criam novas entradas de índice. Um índice em <code>status</code>, que muda toda hora, desliga o HOT para as atualizações dessa coluna e infla todos os índices. Pense antes de indexar colunas que mudam muito.</li>
+    <li><strong>Custo indireto</strong>: mais espaço (e mais para backup), mais dados disputando o cache, mais trabalho para o vacuum/estatísticas, mais log gerado e replicado.</li>
+    <li>Índices redundantes por prefixo (<code>(id_medico)</code> e <code>(id_medico, dt_atendimento)</code>) pagam o custo duas vezes: o segundo atende ao primeiro.</li>
+  </ul>
+
+  <h3>Achar índices não usados</h3>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Liga a monitoração do uso (por índice) e consulta depois de um ciclo de negócio completo
+ALTER INDEX ix_atend_status MONITORING USAGE;
+
+SELECT index_name, table_name, monitoring, used, start_monitoring
+FROM   v$object_usage        -- só enxerga índices do schema corrente
+WHERE  index_name = 'IX_ATEND_STATUS';
+
+-- Para parar:
+ALTER INDEX ix_atend_status NOMONITORING USAGE;
+-- Nas versões mais novas (12.2+), existe também a visão DBA_INDEX_USAGE, automática;
+-- confirme a disponibilidade na sua versão.</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- idx_scan = 0 desde o último reset das estatísticas
+SELECT s.relname AS tabela, s.indexrelname AS indice, s.idx_scan,
+       pg_size_pretty(pg_relation_size(s.indexrelid)) AS tamanho
+FROM   pg_stat_user_indexes s
+JOIN   pg_index i ON i.indexrelid = s.indexrelid
+WHERE  s.idx_scan = 0
+  AND  NOT i.indisunique              -- não sugerir remoção de PK/UNIQUE: impõem regra
+ORDER  BY pg_relation_size(s.indexrelid) DESC;</code></pre>
+</div>
+  <div class="note trap"><b>Armadilha comum</b><p>Dropar tudo que mostra "não usado" numa semana qualquer. Relatórios de fechamento mensal ou anual usam índices que ficam semanas sem uso. No PostgreSQL, as estatísticas valem só para o servidor onde foram coletadas (réplicas de leitura têm as suas) e zeram em certas operações; índices <code>UNIQUE</code>/PK existem para impor regras mesmo sem leitura; índices em chaves estrangeiras podem ser usados só em <code>DELETE</code> da tabela pai.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é clustering factor?" Mede quantas trocas de bloco ocorrem ao percorrer o índice em ordem: perto do número de blocos da tabela, as linhas estão agrupadas e o índice é eficiente para faixas largas; perto do número de linhas, está tudo espalhado e cada linha custa uma leitura. No PostgreSQL, vê-se por <code>pg_stats.correlation</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tabelas com 10 ou 15 índices são frequentes em sistemas que acumulam pedidos do tipo "cria um índice aí". O custo vira lentidão de gravação em picos e replicação atrasada. Instale uma rotina trimestral de revisão: índices sem uso, índices redundantes e tabelas com mais índices que um limite combinado.</p></div>
+</section>
+
+<section class="chap" id="sargabilidade">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Sargabilidade e anti-padrões que matam índices</h2>
+  <p>Uma condição é <em>sargável</em> (de <em>Search ARGument ABLE</em>) quando o banco consegue usá-la para navegar no índice. A regra geral: <strong>deixe a coluna "nua" de um lado da comparação</strong>. Qualquer transformação aplicada à coluna obriga o banco a calcular a expressão para cada linha e impede usar a ordem do índice.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Anti-padrão</th><th>Por que é ruim</th><th>Reescrita</th></tr></thead>
+    <tbody>
+      <tr><td>Função na coluna: <code>TRUNC(dt) = ...</code>, <code>TO_CHAR(dt, 'YYYY-MM') = ...</code>, <code>EXTRACT(YEAR FROM dt) = 2026</code></td><td>Calcula para cada linha; o índice em <code>dt</code> não serve.</td><td>Intervalo semiaberto sobre a coluna; ou índice de expressão (seção 4).</td></tr>
+      <tr><td>Conversão implícita de tipo: <code>cpf = 12345678901</code> com <code>cpf VARCHAR</code></td><td>Converte a <em>coluna</em> linha a linha.</td><td>Mesmo tipo dos dois lados: <code>cpf = '12345678901'</code>.</td></tr>
+      <tr><td>Curinga inicial: <code>LIKE '%silva'</code></td><td>Sem prefixo conhecido, B-tree não ordena.</td><td>Prefixo fixo; ou GIN com trigramas / Oracle Text.</td></tr>
+      <tr><td>Cálculo na coluna: <code>valor * 1.1 &gt; 500</code></td><td>Operação sobre a coluna.</td><td>Mova a conta para o outro lado: <code>valor &gt; 500 / 1.1</code>.</td></tr>
+      <tr><td><code>OR</code> entre colunas diferentes</td><td>Um índice só não cobre os dois ramos.</td><td>Deixar o banco combinar índices (<code>BitmapOr</code> / expansão OR) ou <code>UNION ALL</code>.</td></tr>
+      <tr><td><code>NOT</code>, <code>&lt;&gt;</code>, <code>NOT IN</code></td><td>Resultado grande e pouco seletivo; não navega.</td><td>Forma positiva: <code>status IN ('AGENDADO','REALIZADO')</code>.</td></tr>
+      <tr><td><code>NVL(:p, coluna)</code> / <code>(:p IS NULL OR coluna = :p)</code> para filtro opcional</td><td>Um plano para "com filtro" e "sem filtro".</td><td>SQL montado dinamicamente só com os filtros preenchidos, com binds (módulo 07).</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Função na coluna e intervalos de datas</h3>
+<pre><code class="sql">-- Ruim: a função é aplicada a todas as linhas; o índice em dt_atendimento não é usado
+WHERE TRUNC(dt_atendimento) = DATE '2026-11-10'          -- Oracle
+WHERE dt_atendimento::date = DATE '2026-11-10'           -- PostgreSQL
+WHERE TO_CHAR(dt_atendimento, 'YYYY-MM') = '2026-11'
+WHERE EXTRACT(YEAR FROM dt_atendimento) = 2026
+
+-- Bom: intervalo semiaberto [início, fim)
+WHERE dt_atendimento &gt;= DATE '2026-11-10'
+  AND dt_atendimento &lt;  DATE '2026-11-11'
+
+-- Para um mês inteiro
+WHERE dt_atendimento &gt;= DATE '2026-11-01' AND dt_atendimento &lt; DATE '2026-12-01'</code></pre>
+  <p>Use sempre <code>&gt;= início AND &lt; fim</code>. <code>BETWEEN '2026-11-01' AND '2026-11-30'</code> perde tudo o que aconteceu depois de 00:00 do dia 30, e <code>BETWEEN</code> é inclusivo nas duas pontas.</p>
+
+  <h3>Conversão implícita de tipo: o caso do CPF</h3>
+  <p>Em <code>paciente</code>, <code>cpf</code> é <code>VARCHAR(11)</code> (e deve ser: tem zeros à esquerda). Uma aplicação que lê o CPF como número e o passa como parâmetro numérico gera um problema silencioso no Oracle e um erro explícito no PostgreSQL.</p>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- cpf VARCHAR2 comparado a número: o Oracle converte a COLUNA (TO_NUMBER(cpf)) em cada linha
+SELECT nome FROM paciente WHERE cpf = 12345678901;
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+   1 - filter(TO_NUMBER("CPF")=12345678901)       -- full scan, índice em cpf ignorado
+-- E pior: qualquer CPF não numérico na tabela (um "123.456.789-01" mal cadastrado)
+-- faz a consulta falhar com ORA-01722: número inválido.
+
+-- Correto: texto com texto
+SELECT nome FROM paciente WHERE cpf = '12345678901';</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- O PostgreSQL é mais rígido: não existe operador varchar = bigint
+SELECT nome FROM paciente WHERE cpf = 12345678901;
+-- ERROR:  operator does not exist: character varying = bigint
+
+-- Correto: texto com texto (e o índice em cpf é usado)
+SELECT nome FROM paciente WHERE cpf = '12345678901';
+-- Cuidado com o inverso: coluna INTEGER comparada a parâmetro NUMERIC faz o PostgreSQL
+-- converter a coluna para numeric e abandonar o índice. Tipos iguais sempre.</code></pre>
+</div>
+  <p>Outros casos do mesmo tipo: parâmetro <code>TIMESTAMP</code> contra coluna <code>DATE</code> no Oracle converte a coluna (procure <code>INTERNAL_FUNCTION</code> no plano); drivers que enviam strings como <code>NVARCHAR</code> contra coluna <code>VARCHAR2</code>; <em>joins</em> entre colunas de tipos diferentes (<code>varchar</code> com <code>bigint</code>). Diagnóstico: leia a seção de <strong>predicados</strong> do plano e procure funções ou casts sobre a coluna.</p>
+
+  <h3>LIKE, OR e filtros opcionais</h3>
+<pre><code class="sql">WHERE nome LIKE 'MARIA%'      -- usa B-tree (prefixo fixo)
+WHERE nome LIKE '%SILVA%'     -- B-tree não ajuda: GIN com pg_trgm / Oracle Text
+
+-- PostgreSQL: em bancos com collation que não seja "C", o B-tree comum NÃO atende LIKE 'abc%'.
+-- É preciso declarar a classe de operador de padrão:
+CREATE INDEX ix_pac_nome_pat ON paciente (nome text_pattern_ops);   -- (varchar_pattern_ops para varchar)
+
+-- OR entre colunas diferentes
+WHERE id_medico = :m OR id_paciente = :p
+-- Os bancos podem combinar dois índices (BitmapOr no PostgreSQL; expansão OR/concatenação no Oracle).
+-- Se não combinarem, reescreva, evitando duplicar a linha que satisfaz os dois ramos:
+SELECT * FROM atendimento WHERE id_medico = :m
+UNION ALL
+SELECT * FROM atendimento WHERE id_paciente = :p
+                            AND (id_medico &lt;&gt; :m OR id_medico IS NULL);</code></pre>
+  <p>Anti-padrões de aplicação que não são de índice, mas que o acompanham: <code>SELECT *</code> (impede cobertura e trafega dados inúteis), N+1 (501 idas ao banco para 500 pacientes: use <code>JOIN</code> ou <code>IN</code>), <code>COUNT(*)</code> para checar existência (use <code>EXISTS</code> ou <code>FETCH FIRST 1 ROW ONLY</code>) e paginação por <code>OFFSET</code> grande (paginação por chave, na trilha de APIs).</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Antes de criar um índice novo para uma consulta lenta, pergunte: <em>a consulta consegue usar um índice que já existe se for reescrita?</em> Função na coluna, tipo diferente e intervalo mal escrito respondem por boa parte dos "preciso de um índice" que na verdade são "preciso corrigir o filtro".</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Parâmetro do ORM com o tipo "errado": CPF como <code>Long</code>, data como <code>String</code>, <code>setString</code> numa coluna <code>NUMBER</code>. O teste passa (poucas linhas, full scan não dói) e a produção sofre. Revise o tipo <em>do parâmetro</em> no código, não só o SQL.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que <code>WHERE TRUNC(dt) = ...</code> não usa o índice?" Porque o índice está ordenado pelo valor de <code>dt</code>, não por <code>TRUNC(dt)</code>; o banco teria de calcular a função em todas as linhas. Reescrevo como <code>dt &gt;= dia AND dt &lt; dia + 1</code> ou crio um índice sobre a expressão. E o CPF: comparar texto com número faz o Oracle converter a coluna.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Coloque um checklist de sargabilidade em code review: função na coluna, tipo do parâmetro, <code>LIKE '%'</code>, <code>OR</code>, filtro opcional. É a revisão de maior retorno para pouco esforço, e evita a corrida de "mais um índice" que pesa nas escritas.</p></div>
+</section>
+
+<section class="chap" id="producao-roteiro">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Mudar índices em produção e roteiro de decisão</h2>
+  <p>Criar um índice comum em uma tabela de milhões de linhas, em horário de uso, pode bloquear gravações por minutos. Os dois bancos têm formas de reduzir o risco, e o Oracle tem uma ferramenta específica para testar a remoção.</p>
+
+  <h3>Criar sem bloquear</h3>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- ONLINE: permite DML durante a construção (bloqueios curtos no início e no fim)
+CREATE INDEX ix_atend_med_dt ON atendimento (id_medico, dt_atendimento) ONLINE;
+-- O recurso de construção online é da Enterprise Edition (confirme na sua licença).
+
+-- Criar INVISÍVEL (11g+): existe e é mantido, mas o otimizador ignora. Permite testar sem risco.
+-- (use ONLINE também, se a licença permitir)
+CREATE INDEX ix_atend_med_dt ON atendimento (id_medico, dt_atendimento) INVISIBLE;
+ALTER SESSION SET optimizer_use_invisible_indexes = TRUE;   -- só esta sessão enxerga
+-- ... EXPLAIN / testes ...
+ALTER INDEX ix_atend_med_dt VISIBLE;                        -- libera para todos
+
+-- Antes de DROP: torne invisível, espere um ciclo de negócio e observe
+ALTER INDEX ix_atend_status INVISIBLE;      -- se algo piorar: ALTER INDEX ... VISIBLE (imediato)
+DROP INDEX ix_atend_status;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- CONCURRENTLY: não bloqueia gravações (lê a tabela duas vezes e espera transações antigas)
+CREATE INDEX CONCURRENTLY ix_atend_med_dt ON atendimento (id_medico, dt_atendimento);
+-- Não pode rodar dentro de um bloco de transação. Demora mais e usa mais E/S.
+
+-- Se falhar (deadlock, violação de unicidade, cancelamento), sobra um índice INVALID
+SELECT indexrelid::regclass, indisvalid FROM pg_index WHERE NOT indisvalid;
+DROP INDEX CONCURRENTLY ix_atend_med_dt;   -- remove sem bloqueio; tente de novo
+
+-- Reconstruir sem bloquear (PostgreSQL 12+)
+REINDEX INDEX CONCURRENTLY ix_atend_med_dt;
+
+-- Acompanhar a criação (PostgreSQL 12+)
+SELECT phase, blocks_done, blocks_total FROM pg_stat_progress_create_index;
+
+-- O PostgreSQL não tem índice invisível nativo. Para testar o efeito de um índice
+-- sem construí-lo, a extensão hypopg cria índices hipotéticos (só para EXPLAIN).</code></pre>
+</div>
+  <ul>
+    <li>Rode em horário de menor carga mesmo assim: construir índice consome E/S e CPU, e pode atrasar a replicação.</li>
+    <li>No PostgreSQL, uma transação longa aberta impede o fim do <code>CONCURRENTLY</code>. Verifique <code>pg_stat_activity</code> antes.</li>
+    <li>Depois de criar, confirme estatísticas atualizadas (<code>ANALYZE</code> / coleta no Oracle) e veja o plano mudar nas consultas alvo.</li>
+    <li>Para reverter: Oracle, <code>ALTER INDEX ... INVISIBLE</code> (instantâneo); PostgreSQL, <code>DROP INDEX CONCURRENTLY</code>.</li>
+  </ul>
+
+  <h3>Índices em chaves estrangeiras</h3>
+  <p>Nenhum dos dois bancos cria índice em FK. Sem ele, apagar ou alterar uma linha da tabela pai obriga a varrer a tabela filha inteira; no Oracle, uma FK sem índice pode ainda travar a tabela filha durante a operação na tabela pai. Em junções pelo id também faltará caminho eficiente.</p>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- FKs cuja primeira coluna não é a primeira coluna de nenhum índice
+SELECT c.table_name, c.constraint_name, cc.column_name
+FROM   user_constraints c
+JOIN   user_cons_columns cc ON cc.constraint_name = c.constraint_name
+WHERE  c.constraint_type = 'R' AND cc.position = 1
+  AND  NOT EXISTS (SELECT 1 FROM user_ind_columns ic
+                   WHERE ic.table_name = c.table_name
+                     AND ic.column_name = cc.column_name AND ic.column_position = 1);</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- FKs de uma coluna sem índice que comece por ela
+SELECT c.conrelid::regclass AS tabela, c.conname, a.attname AS coluna
+FROM   pg_constraint c
+JOIN   pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+WHERE  c.contype = 'f' AND array_length(c.conkey, 1) = 1
+  AND  NOT EXISTS (SELECT 1 FROM pg_index i
+                   WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1]);</code></pre>
+</div>
+
+  <h3>Roteiro para decidir um índice</h3>
+  <ol class="seq">
+    <li><div><strong>Identifique a consulta e sua importância</strong>: frequência, linhas devolvidas, quem sofre (tela, relatório, job). Evidência vem de top SQL, não de palpite.</div></li>
+    <li><div><strong>Liste os predicados</strong>: igualdades, faixa, ordenação, colunas da saída. Anote os tipos dos parâmetros.</div></li>
+    <li><div><strong>Cheque a sargabilidade</strong> e reescreva o que for possível (seção 7). Verifique estatísticas e estimativas (módulo 07).</div></li>
+    <li><div><strong>Veja os índices existentes</strong>: dá para estender um (colocar a coluna no fim, incluir a coluna de saída) em vez de criar outro?</div></li>
+    <li><div><strong>Defina o índice</strong>: igualdades, depois faixa ou ordem; cobertura só se a consulta for crítica; tipo especial só se o B-tree não resolver; parcial ou de expressão quando fizer sentido.</div></li>
+    <li><div><strong>Avalie o custo</strong>: tamanho estimado, razão leitura/escrita da tabela, colunas que mudam, impacto em replicação.</div></li>
+    <li><div><strong>Teste com dados do tamanho de produção</strong>: invisível/<code>hypopg</code> ou ambiente cópia; compare leituras lógicas e tempo, com estimado e real.</div></li>
+    <li><div><strong>Crie online</strong>, com janela e plano de reversão; <strong>monitore</strong> o uso e o plano; e <strong>remova</strong> o que ficou redundante.</div></li>
+  </ol>
+  <div class="tbl"><table>
+    <thead><tr><th>Quando <em>não</em> criar índice</th><th>Por quê</th></tr></thead>
+    <tbody>
+      <tr><td>Tabela pequena (milhares de linhas)</td><td>Full scan é uma leitura de poucas páginas; o índice só adiciona custo.</td></tr>
+      <tr><td>Consulta rara (um relatório por mês) que pode ser lenta</td><td>O custo contínuo de escrita não compensa o ganho eventual.</td></tr>
+      <tr><td>Filtro devolve fração grande da tabela e não há cobertura</td><td>O otimizador não o usará.</td></tr>
+      <tr><td>Carga em massa frequente na tabela</td><td>Cada índice multiplica o tempo da carga (considere criar depois).</td></tr>
+      <tr><td>Já existe índice com o mesmo prefixo</td><td>Estenda o existente.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Todo índice novo nasce com cinco informações registradas: consulta que atende, colunas e justificativa, tamanho, dono e data de revisão. Sem elas, em um ano ninguém saberá se pode remover.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você criaria um índice em uma tabela grande em produção?" Oracle: <code>CREATE INDEX ... ONLINE</code>, de preferência <code>INVISIBLE</code> para testar com <code>optimizer_use_invisible_indexes</code> e liberar depois. PostgreSQL: <code>CREATE INDEX CONCURRENTLY</code>, vigiando transações longas e verificando se não sobrou índice <code>INVALID</code>. Em ambos, testar o plano, atualizar estatísticas e ter reversão.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina um processo leve para mudanças de índice em tabelas críticas: pedido com a consulta e o plano, teste com volume real, janela, responsável e verificação posterior. A maior parte dos incidentes com índice vem de criação em horário de pico, de remoção sem observação e de índice duplicado deixado para trás.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Exercícios</h2>
+  <p>Todos usam o esquema da trilha. Tente antes de abrir a resposta.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Projete o índice para: <code>WHERE id_medico = :m AND status = 'REALIZADO' AND dt_atendimento &gt;= :ini ORDER BY dt_atendimento DESC FETCH FIRST 20 ROWS ONLY</code>.</span></summary><div class="ans">
+    <p>Igualdades primeiro, depois a coluna de ordenação/faixa: <code>(id_medico, status, dt_atendimento)</code>. O B-tree lê de trás para frente, então o <code>DESC</code> é atendido sem sort e a consulta para nas 20 primeiras entradas (<code>COUNT STOPKEY</code> no Oracle, <code>Index Scan Backward</code> + <code>Limit</code> no PostgreSQL). Como <code>status</code> é igualdade, pode ficar antes da data. Um índice <code>(id_medico, dt_atendimento)</code> também serve, mas filtra <code>status</code> depois da ida à tabela.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Reescreva de forma sargável: (a) <code>WHERE TO_CHAR(dt_atendimento,'YYYY-MM') = '2026-11'</code>; (b) <code>WHERE valor * 1.1 &gt; 500</code>; (c) <code>WHERE UPPER(nome) LIKE 'MARIA%'</code> (diga o que fazer, não só reescrever); (d) <code>WHERE cpf = 12345678901</code>.</span></summary><div class="ans">
+    <p>(a) <code>dt_atendimento &gt;= DATE '2026-11-01' AND dt_atendimento &lt; DATE '2026-12-01'</code>. (b) <code>valor &gt; 500 / 1.1</code>. (c) Ou índice por expressão <code>UPPER(nome)</code> (no PostgreSQL, com <code>text_pattern_ops</code> se a collation não for "C"), ou comparar o nome já normalizado na gravação. (d) <code>cpf = '12345678901'</code>: texto com texto; no Oracle a forma original converte a coluna e ignora o índice, no PostgreSQL dá erro de operador.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>No Oracle, <code>WHERE id_convenio IS NULL</code> (particulares) faz full scan apesar de haver índice em <code>id_convenio</code>. Explique e dê duas soluções.</span></summary><div class="ans">
+    <p>O B-tree do Oracle não guarda entradas em que todas as colunas indexadas são NULL, então o índice não contém as linhas procuradas. Soluções: <code>CREATE INDEX ix ON atendimento (id_convenio, 0)</code> (a constante garante entrada para toda linha; a consulta continua <code>IS NULL</code>) ou índice por expressão <code>NVL(id_convenio, -1)</code> com a consulta <code>NVL(id_convenio, -1) = -1</code>. Se só os particulares interessam, um índice com <code>CASE WHEN id_convenio IS NULL THEN 1 END</code> fica minúsculo. No PostgreSQL o índice comum já resolve.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Garanta, no banco, que um médico não tenha dois atendimentos <code>AGENDADO</code> no mesmo horário, sem restringir os demais status. Escreva para Oracle e PostgreSQL.</span></summary><div class="ans">
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">CREATE UNIQUE INDEX ux_agenda_medico_hora ON atendimento
+  (CASE WHEN status = 'AGENDADO' THEN id_medico END,
+   CASE WHEN status = 'AGENDADO' THEN dt_atendimento END);</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">CREATE UNIQUE INDEX ux_agenda_medico_hora ON atendimento (id_medico, dt_atendimento)
+  WHERE status = 'AGENDADO';</code></pre>
+</div>
+    <p>No Oracle, linhas não agendadas geram chave totalmente NULL e não entram no índice, então não colidem. O erro de violação (<code>ORA-00001</code> / <code>23505</code>) deve ser tratado pela aplicação como "horário já ocupado".</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>A tabela tem os índices <code>ix1 (id_medico)</code>, <code>ix2 (id_medico, dt_atendimento)</code>, <code>ix3 (dt_atendimento, id_medico)</code> e <code>ix4 (status)</code>. Quais você questiona e como remove com segurança?</span></summary><div class="ans">
+    <p><code>ix1</code> é redundante: <code>ix2</code> atende ao mesmo prefixo. <code>ix4</code>, em coluna com 3 valores (78% / 20% / 2%), quase nunca é usado; vale como parcial para <code>AGENDADO</code>, se essa fila importar. <code>ix3</code> só se houver consulta por data sem médico. Procedimento: medir uso (<code>v$object_usage</code> ou <code>idx_scan</code>), conferir consultas e FKs que dependem deles, tornar invisível (Oracle) ou testar em cópia (PostgreSQL), esperar um ciclo de negócio (fechamento mensal) e só então <code>DROP</code> (<code>DROP INDEX CONCURRENTLY</code> no PostgreSQL), com o <code>CREATE</code> guardado para reversão.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>No PostgreSQL, um <code>Index Only Scan</code> mostra <code>Heap Fetches: 480000</code> para 500.000 linhas e ficou lento. Por quê e o que fazer?</span></summary><div class="ans">
+    <p>O visibility map está desatualizado: quase todas as páginas não estão marcadas como totalmente visíveis, então o banco visita a tabela para quase todas as linhas e o "index only" perde o benefício. Causa comum: tabela com muitas atualizações e autovacuum atrasado. Ações: <code>VACUUM (ANALYZE) atendimento</code>, revisar parâmetros de autovacuum da tabela e reavaliar o plano. Se a tabela é atualizada o tempo todo, talvez a cobertura não compense.</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>Cenário 1: a busca por CPF ficou lenta depois da nova API</h3>
+  <p>A busca de paciente por CPF levava 5 ms e passou a levar segundos no Oracle, só em produção. A nova API recebe o CPF como número no JSON e o repassa ao banco.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Ver o plano e a seção de predicados: <code>TO_NUMBER("CPF")=...</code> confirma a conversão da coluna e o full scan.</li>
+    <li>Corrigir na origem: tratar CPF como texto (com zeros à esquerda!) na API e passar o parâmetro como string. Não crie índice por <code>TO_NUMBER(cpf)</code>: arrisca <code>ORA-01722</code> e mantém o erro de modelagem.</li>
+    <li>Adicionar teste de contrato (CPF com zero à esquerda) e revisar outros parâmetros numéricos de colunas texto.</li>
+  </ul></div>
+
+  <h3>Cenário 2: a gravação do cadastro de atendimentos está lenta</h3>
+  <p>No pico da manhã, o INSERT de atendimento sobe de 3 ms para 40 ms e a replicação do PostgreSQL atrasa. A tabela tem 14 índices, criados ao longo de anos.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Listar índices com tamanho e uso (<code>pg_stat_user_indexes</code>/<code>v$object_usage</code>) e agrupar por prefixo para achar redundantes.</li>
+    <li>Remover em etapas: invisível primeiro no Oracle; no PostgreSQL, conferir uso e remover com <code>DROP INDEX CONCURRENTLY</code> fora do pico, guardando o DDL de cada um.</li>
+    <li>Atenção a índices em colunas que mudam muito (<code>status</code>), que também atrapalham atualizações HOT.</li>
+    <li>Combinar um limite e uma revisão trimestral de índices por tabela.</li>
+  </ul></div>
+
+  <h3>Cenário 3: criar um índice em produção, 24 horas por dia</h3>
+  <p>O relatório de faturamento por médico precisa de <code>(id_medico, dt_atendimento) INCLUDE (status, valor)</code> numa tabela de 5 milhões de linhas, em um serviço que nunca para.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>PostgreSQL: <code>CREATE INDEX CONCURRENTLY</code> fora do pico, sem transações longas abertas, acompanhando <code>pg_stat_progress_create_index</code>; ao fim, checar <code>indisvalid</code> e fazer <code>ANALYZE</code>.</li>
+    <li>Oracle: criar <code>INVISIBLE</code>, testar com <code>optimizer_use_invisible_indexes</code> na sessão, liberar com <code>VISIBLE</code>; usar <code>ONLINE</code> se a licença permitir.</li>
+    <li>Preparar reversão (drop concorrente / voltar a invisível) e medir antes e depois: leituras lógicas do relatório e latência de escrita da tabela.</li>
+  </ul></div>
+
+  <h3>Cenário 4: pedido de "mais um índice" para a tela de busca por nome</h3>
+  <p>O time pede um índice para <code>WHERE nome LIKE '%silva%'</code> na tabela de pacientes, que cresce todo dia.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Explicar que B-tree não atende a curinga inicial. Opções: PostgreSQL, GIN com <code>pg_trgm</code>; Oracle, Oracle Text (<code>CONTAINS</code>), conferindo licença.</li>
+    <li>Questionar o requisito: busca por prefixo (<code>LIKE 'silva%'</code>) basta? Pode-se exigir um segundo critério (data de nascimento) para limitar a busca?</li>
+    <li>Medir custo de escrita do GIN/Text e o tamanho do índice antes de aprovar; definir dono.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>B-tree</dt><dd>Árvore balanceada de chaves ordenadas; o tipo de índice padrão nos dois bancos.</dd></div>
+    <div><dt>ROWID / TID</dt><dd>Endereço físico da linha guardado nas folhas (Oracle / PostgreSQL).</dd></div>
+    <div><dt>Índice composto</dt><dd>Índice em várias colunas; a ordem das colunas define o que ele atende.</dd></div>
+    <div><dt>Sargável</dt><dd>Condição que permite navegar num índice: coluna "nua" comparada a um valor.</dd></div>
+    <div><dt>Skip scan</dt><dd>Uso do índice sem a primeira coluna, fazendo uma busca por valor distinto dela.</dd></div>
+    <div><dt>Índice de cobertura</dt><dd>Contém todas as colunas da consulta; dispensa visitar a tabela.</dd></div>
+    <div><dt>INCLUDE</dt><dd>PostgreSQL 11+: colunas guardadas só na folha, fora da chave.</dd></div>
+    <div><dt>Visibility map</dt><dd>PostgreSQL: mapa das páginas totalmente visíveis, que viabiliza o index-only scan.</dd></div>
+    <div><dt>Índice parcial</dt><dd>Índice só das linhas que satisfazem um predicado (PostgreSQL <code>WHERE</code>; Oracle via expressão NULL).</dd></div>
+    <div><dt>Índice por expressão</dt><dd>Índice sobre o resultado de uma função, usado quando a consulta traz a mesma expressão.</dd></div>
+    <div><dt>Bitmap / GIN / GiST / BRIN</dt><dd>Estruturas especiais: baixa cardinalidade em DW; invertido; proximidade/intervalos; faixas de páginas.</dd></div>
+    <div><dt>Clustering factor / correlação</dt><dd>Medida de quão agrupadas estão as linhas na tabela em relação à ordem do índice.</dd></div>
+    <div><dt>HOT update</dt><dd>PostgreSQL: atualização sem novas entradas de índice, quando nenhuma coluna indexada muda.</dd></div>
+    <div><dt>Índice invisível</dt><dd>Oracle: índice mantido, mas ignorado pelo otimizador; serve para testar remoção.</dd></div>
+    <div><dt>CONCURRENTLY</dt><dd>PostgreSQL: cria ou remove índice sem bloquear gravações.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Como funciona um índice B-tree?</span></summary><div class="ans"><p>Árvore balanceada: raiz e ramos orientam a busca, folhas guardam chaves ordenadas com ROWID/TID e são encadeadas. A busca desce poucos níveis, mesmo com milhões de linhas, e serve igualdade, faixa e ordenação.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Por que um índice nem sempre é usado?</span></summary><div class="ans"><p>Porque o filtro devolve muitas linhas (a ida à tabela por linha custa mais que um full scan), porque o predicado não é sargável, ou porque a estimativa está errada. Para filtros pouco seletivos, ignorar o índice é correto.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Qual a ordem das colunas num índice composto?</span></summary><div class="ans"><p>Igualdades primeiro, depois uma coluna de faixa ou de ordenação. Colunas após a faixa não ajudam a navegar. Com só igualdades, a ordem não muda o número de entradas lidas; escolho pelo prefixo mais reaproveitável.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>"Coloque a coluna mais seletiva primeiro": verdade?</span></summary><div class="ans"><p>Só em parte. Igualdade antes de faixa vem primeiro e supera a seletividade; para colunas só de igualdade a ordem não altera as leituras. O que importa é reaproveitamento por prefixo, ordenação e, às vezes, compressão e skip scan.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>O que é skip scan?</span></summary><div class="ans"><p>Usar um índice composto sem a primeira coluna, fazendo uma busca para cada valor distinto dela. Compensa só com poucos valores distintos. Existe no Oracle e, para B-tree, no PostgreSQL 18; é rede de segurança, não projeto.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>O que é um índice de cobertura e como é no PostgreSQL e no Oracle?</span></summary><div class="ans"><p>Índice com todas as colunas da consulta, que evita a ida à tabela. PostgreSQL: <code>INCLUDE</code> (11+) e <code>Index Only Scan</code>, que depende do visibility map e do vacuum. Oracle: colunas extras na chave, e o plano mostra só o acesso ao índice.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>O que é um índice parcial? Como fazer no Oracle?</span></summary><div class="ans"><p>Índice só das linhas que satisfazem um predicado, pequeno e barato de manter (PostgreSQL <code>WHERE</code>). No Oracle, usa-se uma expressão <code>CASE</code> que devolve NULL para as demais, pois chaves totalmente NULL não entram no B-tree; a consulta precisa usar a mesma expressão.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Por que <code>IS NULL</code> não usa índice no Oracle?</span></summary><div class="ans"><p>O B-tree do Oracle não indexa linhas em que todas as colunas do índice são NULL. Soluções: coluna constante no índice, índice sobre <code>NVL</code> ou expressão <code>CASE</code>. No PostgreSQL, NULLs são indexados.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Quando usar bitmap, GIN, GiST, BRIN?</span></summary><div class="ans"><p>Bitmap: DW Oracle com baixa cardinalidade, nunca OLTP. GIN: JSONB, arrays, texto e <code>LIKE '%x%'</code> com trigramas. GiST: geometria, intervalos, exclusion constraints. BRIN: tabelas enormes com ordem física correlacionada à coluna.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Por que <code>WHERE TRUNC(dt) = ...</code> não usa o índice em <code>dt</code>?</span></summary><div class="ans"><p>O índice está ordenado por <code>dt</code>, não por <code>TRUNC(dt)</code>. Reescrevo como intervalo semiaberto <code>dt &gt;= dia AND dt &lt; dia + 1</code> ou crio índice sobre a expressão.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Uma consulta por CPF (VARCHAR) passando número ficou lenta. Por quê?</span></summary><div class="ans"><p>No Oracle, a comparação coluna texto com número converte a coluna (<code>TO_NUMBER</code>) em cada linha: full scan e risco de <code>ORA-01722</code>. No PostgreSQL daria erro de operador. Corrijo o tipo do parâmetro.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que é clustering factor?</span></summary><div class="ans"><p>Quantas trocas de bloco ocorrem ao percorrer o índice em ordem. Perto do número de blocos: linhas agrupadas, bom para faixas; perto do número de linhas: espalhadas, cada linha custa uma leitura. No PostgreSQL, <code>pg_stats.correlation</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Qual o custo de ter muitos índices?</span></summary><div class="ans"><p>Cada INSERT/DELETE toca todos; UPDATE toca os de colunas alteradas (e desliga HOT no PostgreSQL). Mais espaço, cache, log, replicação e manutenção. Índices redundantes pagam em dobro.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como achar índices não usados?</span></summary><div class="ans"><p>Oracle: <code>ALTER INDEX ... MONITORING USAGE</code> e <code>v$object_usage</code> (versões novas têm <code>DBA_INDEX_USAGE</code>). PostgreSQL: <code>pg_stat_user_indexes.idx_scan = 0</code>. Cuidando de ciclos longos, réplicas, índices de PK/UNIQUE e FKs. Remover em etapas.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Como criar um índice em produção sem derrubar o sistema?</span></summary><div class="ans"><p>Oracle: <code>ONLINE</code> (conforme licença) e, para testar, <code>INVISIBLE</code>. PostgreSQL: <code>CREATE INDEX CONCURRENTLY</code>, evitando transações longas e verificando índice <code>INVALID</code> ao final. Janela, estatísticas, plano de reversão.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Para que serve um índice invisível?</span></summary><div class="ans"><p>É mantido mas ignorado pelo otimizador. Serve para testar o efeito de um novo índice só numa sessão e para simular a remoção de um existente com reversão imediata.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Devo indexar chaves estrangeiras?</span></summary><div class="ans"><p>Quase sempre sim: nenhum dos dois bancos o faz sozinho; sem índice, deletes e updates na tabela pai varrem a filha e, no Oracle, podem travá-la, e as junções ficam sem caminho eficiente.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você governaria a criação de índices numa equipe?</span></summary><div class="ans"><p>Pedido com a consulta e o plano, teste com volume real, justificativa registrada (consulta, colunas, tamanho, dono), janela e reversão; revisão trimestral de índices sem uso e redundantes; checklist de sargabilidade em code review antes de aceitar "mais um índice".</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

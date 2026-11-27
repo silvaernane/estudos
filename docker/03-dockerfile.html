@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 03: Dockerfile e cache de build</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 03 de 10 · Dockerfile e cache de build</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html" aria-current="page"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li class="sub"><ol>
+      <li><a href="#como-build-funciona"><span class="n">1</span>Como um build funciona: BuildKit, contexto e .dockerignore</a></li>
+      <li><a href="#from-arg-env"><span class="n">2</span>FROM, ARG e ENV: base e variáveis</a></li>
+      <li><a href="#run-copy-add"><span class="n">3</span>RUN, COPY, ADD, WORKDIR e USER</a></li>
+      <li><a href="#expose-label-health"><span class="n">4</span>EXPOSE, LABEL, HEALTHCHECK, VOLUME, SHELL e STOPSIGNAL</a></li>
+      <li><a href="#entrypoint-cmd"><span class="n">5</span>ENTRYPOINT, CMD e o PID 1</a></li>
+      <li><a href="#cache-ordem"><span class="n">6</span>Cache de build: invalidação em cascata e ordem das instruções</a></li>
+      <li><a href="#buildkit-avancado"><span class="n">7</span>BuildKit avançado: mounts, segredos, SSH e heredocs</a></li>
+      <li><a href="#ci-flags-inspecao"><span class="n">8</span>Cache no CI, flags úteis, inspeção de camadas e erros comuns</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 03 · <span class="lvl l2">Intermediário</span></div>
+  <h1>Dockerfile e cache de build</h1>
+  <p class="lede">Cada instrução do Dockerfile a fundo, como o BuildKit decide o que reaproveitar e como escrever builds rápidos, pequenos e sem segredos vazados.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar o que cada instrução faz, o que vira camada e o que é só metadado (ARG x ENV, EXPOSE, VOLUME, HEALTHCHECK)</li>
+    <li>Escrever ENTRYPOINT/CMD na forma exec e um script de entrypoint com <code>exec "$@"</code> que respeita sinais</li>
+    <li>Controlar o contexto de build com <code>.dockerignore</code> e ordenar instruções para maximizar o cache</li>
+    <li>Usar BuildKit: cache mounts, secret e ssh mounts, heredocs, cache externo no CI</li>
+    <li>Inspecionar camadas com <code>docker history</code> e <code>dive</code> e evitar os erros clássicos</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="como-build-funciona">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Como um build funciona: BuildKit, contexto e .dockerignore</h2>
+  <p>O Dockerfile é uma receita declarativa: cada instrução descreve um passo para transformar uma imagem base na sua imagem. Antes de ver as instruções, entenda o caminho completo de um <code>docker build</code>, porque quase todo problema de build lento, imagem gorda ou segredo vazado nasce numa dessas etapas.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 222" role="img" aria-label="Fluxo de um build: cliente envia o contexto ao BuildKit, que lê o Dockerfile, usa o cache e produz a imagem">
+      <defs><marker id="ah-bld" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="62" width="135" height="50" rx="5"/><text x="87" y="84" text-anchor="middle">docker build</text><text x="87" y="100" text-anchor="middle">(cliente)</text>
+      <rect class="box-w" x="190" y="62" width="135" height="50" rx="5"/><text x="257" y="84" text-anchor="middle">contexto</text><text x="257" y="100" text-anchor="middle">.dockerignore</text>
+      <rect class="box-a" x="360" y="62" width="135" height="50" rx="5"/><text x="427" y="84" text-anchor="middle">BuildKit</text><text x="427" y="100" text-anchor="middle">(buildkitd)</text>
+      <rect class="box" x="530" y="62" width="135" height="50" rx="5"/><text x="597" y="84" text-anchor="middle">imagem</text><text x="597" y="100" text-anchor="middle">camadas + config</text>
+      <rect class="box" x="360" y="8" width="135" height="32" rx="5"/><text x="427" y="29" text-anchor="middle">Dockerfile</text>
+      <rect class="box-m" x="360" y="166" width="135" height="40" rx="5"/><text x="427" y="190" text-anchor="middle">cache de camadas</text>
+      <line class="ln" x1="155" y1="87" x2="190" y2="87" marker-end="url(#ah-bld)"/>
+      <line class="ln" x1="325" y1="87" x2="360" y2="87" marker-end="url(#ah-bld)"/>
+      <line class="ln" x1="495" y1="87" x2="530" y2="87" marker-end="url(#ah-bld)"/>
+      <line class="ln" x1="427" y1="40" x2="427" y2="62" marker-end="url(#ah-bld)"/>
+      <line class="ln-a" x1="427" y1="166" x2="427" y2="112" marker-start="url(#ah-bld)" marker-end="url(#ah-bld)"/>
+      <text class="lbl" x="87" y="132" text-anchor="middle">empacota a pasta</text>
+      <text class="lbl" x="257" y="132" text-anchor="middle">filtra e envia</text>
+      <text class="lbl" x="597" y="132" text-anchor="middle">tag + digest</text>
+      <text class="lbl" x="445" y="144">reusa ou executa</text>
+    </svg>
+    <figcaption>O cliente só empacota o contexto; quem executa as instruções, decide o que vem do cache e monta a imagem é o BuildKit.</figcaption>
+  </figure>
+  <ol class="seq">
+    <li><div><strong>Contexto.</strong> O argumento final de <code>docker build .</code> define a pasta enviada ao builder. Só o que está no contexto pode ser alvo de <code>COPY</code>/<code>ADD</code>.</div></li>
+    <li><div><strong>Parse.</strong> O BuildKit lê o Dockerfile e monta um grafo de passos (não uma lista: estágios independentes rodam em paralelo).</div></li>
+    <li><div><strong>Execução com cache.</strong> Para cada passo, ele calcula uma chave. Se já existe resultado para a chave, reutiliza; senão executa.</div></li>
+    <li><div><strong>Exportação.</strong> O resultado vira uma imagem local (<code>--load</code>), é enviado a um registry (<code>--push</code>) ou vai para outro destino.</div></li>
+  </ol>
+
+  <h3>BuildKit: o que é e o que muda</h3>
+  <p>BuildKit é o motor de build moderno do Docker. É o padrão no Docker Engine desde a versão 23.0 e já era o padrão no Docker Desktop antes disso; no Engine mais antigo, ligava-se com <code>DOCKER_BUILDKIT=1</code>. Hoje <code>docker build</code> chama o Buildx por baixo. O que ele trouxe sobre o builder clássico:</p>
+  <ul>
+    <li><strong>Grafo e paralelismo:</strong> estágios independentes constroem ao mesmo tempo; estágios que o alvo não usa nem são executados.</li>
+    <li><strong>Cache por conteúdo:</strong> a chave de <code>COPY</code> é o checksum dos arquivos, não a data de modificação.</li>
+    <li><strong>Mounts em <code>RUN</code>:</strong> cache de pacotes, segredos e chave SSH sem gravá-los em camada (seção 7).</li>
+    <li><strong>Heredocs, <code>COPY --link</code>, cache externo, build multi-plataforma.</strong></li>
+  </ul>
+  <p>A saída padrão do BuildKit é um painel compacto. Para ver cada comando e a saída completa (essencial para depurar), use <code>--progress=plain</code>:</p>
+<pre><code class="text">$ docker build --progress=plain -t api:dev .
+#1 [internal] load build definition from Dockerfile
+#2 [internal] load .dockerignore
+#3 [internal] load build context
+#3 transferring context: 48.2kB done
+#5 [2/5] WORKDIR /app
+#5 CACHED
+#6 [3/5] COPY package.json package-lock.json ./
+#6 CACHED
+#7 [4/5] RUN npm ci
+#7 CACHED
+#8 [5/5] COPY . .
+#8 DONE 0.1s</code></pre>
+
+  <h3>Contexto de build e .dockerignore</h3>
+  <p>O contexto é a pasta inteira (<code>.</code>), enviada ao builder antes de qualquer instrução rodar. Três motivos para controlá-lo:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Problema</th><th>Como acontece</th><th>Efeito</th></tr></thead>
+    <tbody>
+      <tr><td>Tamanho</td><td><code>.git</code>, <code>node_modules</code>, <code>dist</code>, dumps e vídeos entram no contexto.</td><td>Build lento já na linha "transferring context"; pior com builder remoto.</td></tr>
+      <tr><td>Segredos</td><td><code>.env</code>, chaves, <code>.npmrc</code> e credenciais cloud na pasta; um <code>COPY . .</code> os leva para a camada.</td><td>Quem puxar a imagem lê o segredo, mesmo que você o apague depois.</td></tr>
+      <tr><td>Cache</td><td>Um arquivo irrelevante (log, <code>.git/index</code>) muda a cada build e entra no <code>COPY . .</code>.</td><td>Invalida o cache de tudo que vem depois.</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file=".dockerignore"><code class="sh">.git
+.gitignore
+node_modules
+dist
+coverage
+*.log
+.env
+.env.*
+**/*.pem
+Dockerfile*
+compose*.y*ml
+.dockerignore
+README.md
+docs/</code></pre>
+  <ul>
+    <li>A sintaxe lembra a do <code>.gitignore</code>, com <code>**</code> e exceções <code>!padrão</code>; vale a última regra que casar.</li>
+    <li><strong>Lista de permissão:</strong> comece com <code>*</code> e libere só o necessário. É a forma mais segura contra vazamento acidental.
+<pre><code class="sh">*
+!package.json
+!package-lock.json
+!src/
+!tsconfig.json</code></pre></li>
+    <li>O arquivo fica na <strong>raiz do contexto</strong>. Com BuildKit, um arquivo <code>meu.Dockerfile.dockerignore</code> ao lado de <code>meu.Dockerfile</code> tem precedência, o que permite regras diferentes por Dockerfile.</li>
+    <li>Ignorar o próprio <code>Dockerfile</code> não impede o build de lê-lo; só o esconde de <code>COPY</code>/<code>ADD</code>.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p><code>.dockerignore</code> não remove o segredo que já está no seu histórico Git ou numa camada anterior de uma imagem publicada. Ele só impede entradas novas. Se um segredo foi para uma imagem, rotacione-o.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Para que serve o <code>.dockerignore</code>?" Reduz o contexto enviado ao builder, impede que arquivos sensíveis ou voláteis entrem na imagem via <code>COPY . .</code> e evita invalidações de cache por arquivos que não importam. Acrescente que prefiro uma lista de permissão em projetos com segredos.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Inclua <code>.dockerignore</code> no checklist de criação de repositório (template de projeto). Custa um minuto e elimina duas classes de incidente: segredo em imagem e build de 10 minutos por contexto de 2 GB. Os fundamentos de rede e infraestrutura por trás do build remoto estão na <a href="../web/06-backend-infra.html">trilha Web, módulo 6</a>.</p></div>
+</section>
+
+<section class="chap" id="from-arg-env">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>FROM, ARG e ENV: base e variáveis</h2>
+  <h3>FROM e a escolha da base</h3>
+  <p><code>FROM</code> abre um estágio e define a imagem sobre a qual tudo é construído. Tudo que a base trouxe (pacotes, vulnerabilidades, tamanho) vira seu. Pode aparecer várias vezes (multi-stage, módulo 4); <code>FROM scratch</code> parte de uma imagem totalmente vazia.</p>
+<pre><code class="dockerfile">FROM node:22-alpine
+FROM node:22-alpine AS build
+FROM --platform=linux/amd64 postgres:16
+FROM node:22-alpine@sha256:0000000000000000000000000000000000000000000000000000000000000000</code></pre>
+  <p>As quatro formas: tag simples, estágio nomeado, plataforma forçada e tag fixada por <em>digest</em> (o hash do manifesto, que nunca muda; o módulo 4 aprofunda). Para decidir entre <code>slim</code>, <code>alpine</code>, distroless e <code>scratch</code>, veja a tabela do <a href="04-multi-stage.html">módulo 4</a>. Aqui fica a regra de base: use a imagem oficial da linguagem, uma <strong>tag específica</strong> (nunca <code>latest</code>) e a variante enxuta compatível com o que a aplicação precisa.</p>
+  <p>O cache também depende da base: se a tag aponta para uma imagem nova (<code>22-alpine</code> recebe patches), o <code>FROM</code> muda e tudo depois é refeito. <code>docker build --pull</code> força verificar se há versão mais nova da base.</p>
+
+  <h3>ENV: variável que vai para a imagem</h3>
+<pre><code class="dockerfile">ENV NODE_ENV=production PORT=3000
+ENV APP_HOME=/app</code></pre>
+  <p>Variável de ambiente gravada nos metadados da imagem. Existe nas instruções seguintes <strong>e</strong> em todo container criado a partir dela. Dá para sobrescrever em execução (<code>docker run -e PORT=8080</code>). Qualquer pessoa com acesso à imagem a vê em <code>docker inspect</code>.</p>
+
+  <h3>ARG: variável só do build</h3>
+<pre><code class="dockerfile">ARG APP_VERSION=dev
+RUN echo "versão $APP_VERSION"</code></pre>
+<pre><code class="sh">docker build --build-arg APP_VERSION=1.4.2 -t api:1.4.2 .</code></pre>
+  <p>O ARG existe durante o build, não no container em execução (a menos que você o copie para um ENV). Mas <strong>não é secreto</strong>: os valores aparecem em <code>docker history</code> e nos metadados do build.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>ARG</th><th>ENV</th></tr></thead>
+    <tbody>
+      <tr><td>Visível no build</td><td>sim, depois de declarado</td><td>sim, depois de declarado</td></tr>
+      <tr><td>Visível no container</td><td>não</td><td>sim</td></tr>
+      <tr><td>Muda via CLI</td><td><code>--build-arg</code></td><td><code>-e</code> / <code>--env</code> no run</td></tr>
+      <tr><td>Efeito no cache</td><td>muda o valor, invalida a partir do primeiro uso</td><td>muda o valor, invalida as instruções seguintes</td></tr>
+      <tr><td>Serve para segredo</td><td><strong>não</strong></td><td><strong>não</strong></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Escopo de ARG: antes e depois do FROM</h3>
+  <p>Um ARG declarado <strong>antes</strong> do primeiro <code>FROM</code> pertence a um espaço especial: só pode ser usado nas próprias linhas <code>FROM</code>. Dentro do estágio ele "some", a não ser que seja redeclarado (sem valor) depois do <code>FROM</code>. Todo ARG também vale só dentro do estágio em que foi declarado.</p>
+<pre data-file="Dockerfile"><code class="dockerfile">ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-alpine AS build
+
+# sem esta linha, NODE_VERSION estaria vazio aqui dentro
+ARG NODE_VERSION
+RUN echo "build com Node ${NODE_VERSION}"
+
+FROM node:${NODE_VERSION}-alpine AS prod
+# outro estágio: o ARG precisaria ser declarado de novo para ser usado
+RUN echo "versão: ${NODE_VERSION:-indefinida}"</code></pre>
+  <p>Há também ARGs predefinidos que o BuildKit preenche sozinho, sem declarar: <code>BUILDPLATFORM</code>, <code>TARGETPLATFORM</code>, <code>TARGETOS</code>, <code>TARGETARCH</code> (para declará-los dentro do estágio, escreva <code>ARG TARGETARCH</code>) e variáveis de proxy como <code>HTTP_PROXY</code>, que não entram no histórico.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>ARG para parametrizar o build (versão da base, versão do app, URL pública). ENV para configuração que o processo lê ao rodar. Segredo: nem um, nem outro; use <code>--mount=type=secret</code> (seção 7).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre ARG e ENV?" ARG vive só no build e não chega ao container; ENV é gravada na imagem e chega ao processo. Ambos aparecem em <code>docker history</code>/<code>inspect</code>, então nenhum guarda segredo. Cite o escopo de ARG antes do FROM para mostrar que já esbarrou nisso.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize a versão da linguagem num único lugar (ARG no topo, ou arquivo <code>.tool-versions</code> lido pela pipeline) para evitar que dev, CI e produção rodem versões diferentes. Configuração por ambiente deve entrar por variável em execução, para que a mesma imagem seja promovida de homologação a produção.</p></div>
+</section>
+
+<section class="chap" id="run-copy-add">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>RUN, COPY, ADD, WORKDIR e USER</h2>
+  <h3>RUN e o modelo de camadas</h3>
+  <p><code>RUN</code> executa um comando durante o build e grava as <strong>mudanças no sistema de arquivos</strong> numa camada nova e imutável. Em geral só <code>RUN</code>, <code>COPY</code> e <code>ADD</code> criam camadas com arquivos; as demais instruções só gravam metadados. A imagem é a pilha de camadas (visão mais completa no <a href="02-imagens-ciclo.html">módulo 2</a>).</p>
+  <p>A consequência prática: <strong>apagar numa camada posterior não devolve espaço</strong>, porque a camada anterior continua na imagem (a nova só marca o arquivo como removido).</p>
+<pre><code class="dockerfile">FROM debian:12-slim
+# ruim: o tarball de 300 MB fica gravado na camada 1
+RUN curl -fsSL -o /tmp/dados.tgz https://exemplo.com/dados.tgz
+RUN tar -xzf /tmp/dados.tgz -C /opt &amp;&amp; rm /tmp/dados.tgz</code></pre>
+<pre><code class="dockerfile">FROM debian:12-slim
+# bom: baixa, extrai e remove na mesma camada
+RUN curl -fsSL -o /tmp/dados.tgz https://exemplo.com/dados.tgz \
+ &amp;&amp; tar -xzf /tmp/dados.tgz -C /opt \
+ &amp;&amp; rm /tmp/dados.tgz</code></pre>
+  <p>Duas formas de escrever o comando:</p>
+  <ul>
+    <li><strong>Forma shell</strong> <code>RUN comando args</code>: executa via <code>/bin/sh -c</code>, com <code>&amp;&amp;</code>, pipes e expansão de variáveis.</li>
+    <li><strong>Forma exec</strong> <code>RUN ["/bin/bash", "-c", "..."]</code>: sem shell; as variáveis não são expandidas.</li>
+  </ul>
+  <p>Em encadeamentos use <code>set -eux</code> ou <code>&amp;&amp;</code> para o build falhar no primeiro erro. Num pipe (<code>curl ... | tar ...</code>), o código de saída é o do último comando, e o erro do <code>curl</code> passa batido; a seção 4 mostra o <code>SHELL</code> com <code>pipefail</code> para corrigir.</p>
+  <p>Instalar pacotes do sistema, o caso mais comum, tem receita fixa:</p>
+<pre><code class="dockerfile">RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends curl ca-certificates \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*</code></pre>
+  <p>Em Alpine: <code>RUN apk add --no-cache curl ca-certificates</code>. O <code>--no-cache</code> do <code>apk</code> dispensa a limpeza manual.</p>
+
+  <h3>COPY x ADD</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>COPY</th><th>ADD</th></tr></thead>
+    <tbody>
+      <tr><td>Copia arquivos do contexto</td><td>sim</td><td>sim</td></tr>
+      <tr><td>Copia de outro estágio</td><td>sim (<code>--from=</code>)</td><td>não</td></tr>
+      <tr><td>Extrai <code>.tar</code>/<code>.tgz</code> local</td><td>não</td><td>sim, automático</td></tr>
+      <tr><td>Baixa URL</td><td>não</td><td>sim (sem extrair); aceita <code>--checksum=sha256:...</code></td></tr>
+      <tr><td>Comportamento previsível</td><td>sim</td><td>menos: "mágica" implícita</td></tr>
+    </tbody>
+  </table></div>
+  <p>Regra: use <code>COPY</code> sempre; <code>ADD</code> só para extrair um tarball local do contexto ou baixar uma URL com verificação de checksum. Baixar com <code>ADD</code> sem <code>--checksum</code> trava uma dependência não verificada na imagem; é melhor um <code>RUN curl ... &amp;&amp; sha256sum -c</code>.</p>
+<pre><code class="dockerfile">COPY package.json package-lock.json ./
+COPY --chown=app:app src/ ./src/
+COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/
+COPY --from=build /out/api /usr/local/bin/api
+COPY --link config/ /etc/app/</code></pre>
+  <ul>
+    <li><code>--chown</code> e <code>--chmod</code> acertam dono e permissão na cópia, sem um <code>RUN chown -R</code> que duplicaria os arquivos numa camada nova.</li>
+    <li><code>--link</code> (BuildKit) cria a camada independente da anterior, o que permite reaproveitar o cache da cópia mesmo que a base mude e acelera o push. Útil, mas tem sutilezas com permissões; adote com teste.</li>
+    <li>Caminho de destino terminando em <code>/</code> é tratado como pasta. Sem o <code>/</code>, o Docker pode interpretar como nome de arquivo.</li>
+    <li>Cuidado com curingas: <code>COPY . .</code> leva tudo do contexto (veja o <code>.dockerignore</code>).</li>
+  </ul>
+
+  <h3>WORKDIR</h3>
+<pre><code class="dockerfile">WORKDIR /app
+COPY . .
+RUN npm ci</code></pre>
+  <p>Define (e cria, se não existir) o diretório em que <code>RUN</code>, <code>CMD</code>, <code>ENTRYPOINT</code>, <code>COPY</code> e <code>ADD</code> seguintes funcionam. Prefira sempre <code>WORKDIR</code> a <code>RUN cd /app &amp;&amp; ...</code>, porque o <code>cd</code> vale só para aquele <code>RUN</code>. Caminhos relativos sobre um WORKDIR anterior se acumulam, então use caminhos absolutos.</p>
+
+  <h3>USER</h3>
+<pre><code class="dockerfile">RUN groupadd --system --gid 10001 app \
+ &amp;&amp; useradd --system --uid 10001 --gid app --no-create-home app
+USER 10001:10001</code></pre>
+  <p>Troca o usuário das instruções seguintes e do processo do container. O padrão é <strong>root</strong>, e um processo comprometido que roda como root tem muito mais poder dentro do container (e mais chance de escapar dele). Pontos práticos:</p>
+  <ul>
+    <li>Prefira o UID numérico: o orquestrador pode verificar "roda como não-root" só se o usuário for numérico. Em Alpine: <code>adduser -S -u 10001 app</code>. Várias imagens oficiais já trazem um usuário pronto (<code>node</code> na imagem do Node, <code>nonroot</code> nas distroless).</li>
+    <li>Instale pacotes <strong>antes</strong> do <code>USER</code> (precisa de root) e deixe <code>USER</code> perto do fim.</li>
+    <li>Uma porta abaixo de 1024 não se abre como não-root em muitos ambientes; use 8080 e mapeie.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p><code>RUN rm</code> de um segredo ou arquivo grande em outra instrução não apaga nada da imagem: ele continua na camada anterior e qualquer um extrai com <code>docker save</code>. Quem diz "eu deletei" geralmente está olhando só o sistema de arquivos final.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"COPY ou ADD?" COPY, porque é explícito. ADD extrai tarballs locais e baixa URLs, comportamentos implícitos que surpreendem. "Por que juntar comandos num RUN?" Porque cada RUN é uma camada imutável: o que se apaga depois continua ocupando espaço, e <code>apt-get update</code> separado quebra o cache.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>"Não roda como root" deve ser requisito de definição de pronto de qualquer imagem. Dá para verificar com um teste automatizado de CI (<code>docker run --rm imagem id -u</code> diferente de 0) ou por política no cluster, sem depender de revisão manual.</p></div>
+</section>
+
+<section class="chap" id="expose-label-health">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>EXPOSE, LABEL, HEALTHCHECK, VOLUME, SHELL e STOPSIGNAL</h2>
+  <h3>EXPOSE: só documentação</h3>
+<pre><code class="dockerfile">EXPOSE 8080
+EXPOSE 5353/udp</code></pre>
+  <p><code>EXPOSE</code> <strong>não publica nada</strong>. Ele grava nos metadados "esta aplicação escuta na 8080" e serve a humanos e ferramentas. Quem abre a porta para o host é <code>docker run -p 8080:8080</code> ou <code>ports:</code> no Compose. A única ação automática é o <code>-P</code> (maiúsculo), que publica todas as portas expostas em portas aleatórias do host. Um container escutando numa porta funciona na rede interna do Docker mesmo sem <code>EXPOSE</code> (redes no <a href="05-dados-redes.html">módulo 5</a>).</p>
+
+  <h3>LABEL e anotações OCI</h3>
+<pre><code class="dockerfile">ARG VERSION=dev
+ARG REVISION=unknown
+LABEL org.opencontainers.image.title="api-agenda" \
+      org.opencontainers.image.description="API de agendamento" \
+      org.opencontainers.image.source="https://github.com/exemplo/api-agenda" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.licenses="Apache-2.0"</code></pre>
+  <p>Labels são pares chave-valor nos metadados da imagem. A convenção é usar as chaves <code>org.opencontainers.image.*</code> da especificação OCI: <code>source</code> (de que repositório veio), <code>revision</code> (commit), <code>version</code>, <code>created</code>, <code>title</code>, <code>description</code>, <code>licenses</code>, <code>vendor</code>. Registries e scanners (GitHub Container Registry, por exemplo, liga a imagem ao repositório pelo <code>source</code>) usam isso. Alimente <code>version</code> e <code>revision</code> por <code>--build-arg</code> na CI. O Buildx também sabe gravar <strong>anotações</strong> no manifesto e no índice da imagem com <code>--annotation</code> (confira a sintaxe na versão instalada). Um resumo operacional está no <a href="04-multi-stage.html">módulo 4</a>.</p>
+
+  <h3>HEALTHCHECK</h3>
+<pre><code class="dockerfile">HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD wget -q --spider http://localhost:8080/health || exit 1</code></pre>
+  <p>Define um comando que o Docker executa dentro do container em intervalos. Código de saída 0 = saudável, 1 = não saudável. O estado aparece em <code>docker ps</code> (<code>healthy</code>/<code>unhealthy</code>, e <code>starting</code> no período inicial).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Padrão</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td><code>--interval</code></td><td>30s</td><td>tempo entre execuções</td></tr>
+      <tr><td><code>--timeout</code></td><td>30s</td><td>depois disso a execução conta como falha</td></tr>
+      <tr><td><code>--start-period</code></td><td>0s</td><td>carência de inicialização: falhas nesse período não contam</td></tr>
+      <tr><td><code>--retries</code></td><td>3</td><td>falhas consecutivas até virar <code>unhealthy</code></td></tr>
+      <tr><td><code>--start-interval</code></td><td>5s</td><td>intervalo durante o start-period (Engine recente, 25 ou superior)</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="text">$ docker ps
+CONTAINER ID   IMAGE     STATUS                    PORTS                    NAMES
+3f9c1a7b2d10   api:1.4   Up 2 minutes (healthy)    0.0.0.0:8080-&gt;8080/tcp   api</code></pre>
+  <ul>
+    <li>O <strong>docker standalone não reinicia</strong> um container <code>unhealthy</code>; só marca. Quem age: o Swarm, o <code>depends_on: condition: service_healthy</code> do Compose, e scripts. O <strong>Kubernetes ignora</strong> o HEALTHCHECK e usa suas próprias probes (liveness/readiness/startup).</li>
+    <li>A ferramenta do check (<code>curl</code>, <code>wget</code>) precisa existir na imagem. Em distroless/scratch, faça o check pelo próprio binário da aplicação (por exemplo, um subcomando <code>healthcheck</code>) ou deixe para as probes do orquestrador.</li>
+    <li>O endpoint deve checar o que importa sem ser caro: um <code>/health</code> que consulta o banco inteiro a cada 30 s vira carga.</li>
+    <li>Só vale um HEALTHCHECK por estágio (o último). <code>HEALTHCHECK NONE</code> desliga o herdado da base.</li>
+  </ul>
+
+  <h3>VOLUME e seus efeitos colaterais</h3>
+<pre><code class="dockerfile">VOLUME /var/lib/dados</code></pre>
+  <p>Marca o caminho como ponto de montagem. Quando o container sobe sem um volume nomeado ou bind mount nesse caminho, o Docker cria um <strong>volume anônimo</strong>. Os efeitos que surpreendem:</p>
+  <ul>
+    <li><strong>Acúmulo de volumes anônimos:</strong> cada <code>docker run</code> cria um novo, e eles ficam órfãos (<code>docker volume ls</code> cheio de hashes). Sem <code>docker rm -v</code> ou <code>docker volume prune</code>, ocupam disco.</li>
+    <li><strong>Alterações posteriores se perdem:</strong> o que um <code>RUN</code> ou <code>COPY</code> escrever nesse caminho <em>depois</em> do <code>VOLUME</code> não persiste na imagem final.</li>
+    <li><strong>Irreversível numa imagem derivada:</strong> quem faz <code>FROM</code> na sua imagem não consegue "desfazer" o VOLUME.</li>
+    <li>Imagens de banco de dados oficiais declaram VOLUME de propósito para proteger os dados contra um <code>docker rm</code>. Em imagens de aplicação, evite: declare o volume no Compose ou no <code>docker run</code>, onde fica visível.</li>
+  </ul>
+  <p>Armazenamento persistente, bind mounts e tmpfs: <a href="05-dados-redes.html">módulo 5</a>.</p>
+
+  <h3>SHELL</h3>
+<pre><code class="dockerfile">SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN curl -fsSL https://exemplo.com/install.sh | bash</code></pre>
+  <p>Troca o shell usado pela <strong>forma shell</strong> (o padrão em Linux é <code>["/bin/sh", "-c"]</code>). O uso clássico é ligar o <code>pipefail</code> para o <code>RUN</code> falhar se qualquer comando do pipe falhar. Exige que o <code>bash</code> exista na imagem (não existe em Alpine puro nem em distroless). No Windows, alterna entre <code>cmd</code> e <code>powershell</code>.</p>
+
+  <h3>STOPSIGNAL</h3>
+<pre><code class="dockerfile">STOPSIGNAL SIGINT</code></pre>
+  <p>Define o sinal que o <code>docker stop</code> envia para pedir o encerramento. O padrão é <code>SIGTERM</code>; depois de 10 s (ajustável com <code>docker stop -t</code> ou <code>stop_grace_period</code> no Compose), vem o <code>SIGKILL</code>. Mude só quando a aplicação define o encerramento limpo em outro sinal (o Nginx oficial usa <code>SIGQUIT</code> para encerrar de forma graciosa). Veja a relação com o PID 1 na próxima seção.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Achar que <code>EXPOSE 5432</code> torna o banco acessível de fora, ou que <code>HEALTHCHECK</code> reinicia o serviço sozinho. Nenhum dos dois faz isso: o primeiro documenta, o segundo só informa.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que o EXPOSE faz?" Documenta a porta nos metadados; publicar é <code>-p</code> ou <code>ports:</code>. "E o HEALTHCHECK?" O Docker executa o comando periodicamente e marca <code>healthy</code>/<code>unhealthy</code>; o Compose usa isso em <code>depends_on</code>, o Swarm reage, o Kubernetes tem probes próprias.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina um contrato mínimo de imagem para o time: porta documentada, endpoint de saúde, labels OCI de origem e versão, usuário não-root. Isso padroniza o que a operação precisa para monitorar e rastrear uma imagem em produção até o commit que a gerou.</p></div>
+</section>
+
+<section class="chap" id="entrypoint-cmd">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>ENTRYPOINT, CMD e o PID 1</h2>
+  <p><code>ENTRYPOINT</code> e <code>CMD</code> definem o que o container executa ao iniciar. A diferença está em quem é substituído por argumentos do <code>docker run</code>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Dockerfile</th><th><code>docker run img</code></th><th><code>docker run img x y</code></th></tr></thead>
+    <tbody>
+      <tr><td><code>CMD ["node","server.js"]</code></td><td>node server.js</td><td>x y (substitui tudo)</td></tr>
+      <tr><td><code>ENTRYPOINT ["node"]</code></td><td>node</td><td>node x y</td></tr>
+      <tr><td><code>ENTRYPOINT ["node"]</code><br><code>CMD ["server.js"]</code></td><td>node server.js</td><td>node x y (substitui só o CMD)</td></tr>
+      <tr><td>nenhum dos dois</td><td>herda o da base (ou erro)</td><td>executa x y</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sh">docker run api                       # node server.js
+docker run api worker.js             # node worker.js   (CMD substituído)
+docker run --entrypoint sh -it api   # sh               (ENTRYPOINT substituído)</code></pre>
+  <ul>
+    <li>Só <code>CMD</code>: comando padrão e totalmente substituível. O mais comum para aplicações.</li>
+    <li><code>ENTRYPOINT</code> + <code>CMD</code>: a imagem vira um "executável" e o CMD dá os argumentos padrão. Bom para ferramentas de linha de comando (<code>ENTRYPOINT ["migrate"]</code>, <code>CMD ["up"]</code>).</li>
+    <li>Substituir o entrypoint exige <code>--entrypoint</code> explícito; é a forma de abrir um shell de depuração.</li>
+  </ul>
+
+  <h3>Forma exec x forma shell</h3>
+<pre><code class="dockerfile"># forma exec: node é o PID 1 e recebe os sinais
+CMD ["node", "server.js"]
+
+# forma shell: vira /bin/sh -c "node server.js"
+# o PID 1 é o sh, que não repassa SIGTERM ao node
+CMD node server.js</code></pre>
+  <p>Na forma exec (array JSON, aspas duplas obrigatórias) o processo é executado diretamente, sem shell: sem expansão de variáveis (<code>$HOME</code> não funciona) e sem <code>&amp;&amp;</code>. Na forma shell, a aplicação roda como filha do <code>/bin/sh -c</code>. Use a <strong>forma exec</strong> em <code>CMD</code> e <code>ENTRYPOINT</code>.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>No Dockerfile, <code>#</code> só é comentário no <strong>início da linha</strong>. <code>CMD ["node","server.js"] # inicia</code> não é um comentário: o texto passa a fazer parte da instrução e quebra o JSON (o Docker acaba tratando como forma shell). Comente sempre em linha própria.</p></div>
+
+  <h3>O PID 1 e o encerramento limpo</h3>
+  <p>O primeiro processo do container é o PID 1, e o Linux o trata de modo especial: <strong>sinais sem handler explícito são ignorados</strong> (o comportamento padrão de matar o processo não vale para o PID 1) e ele deve "recolher" filhos órfãos (zumbis). Na prática:</p>
+  <ol class="seq">
+    <li><div><strong><code>docker stop</code></strong> envia o <code>STOPSIGNAL</code> (SIGTERM) ao PID 1 do container.</div></li>
+    <li><div>Se o PID 1 é um <code>sh</code> da forma shell, ele <strong>não repassa</strong> o sinal ao filho; a aplicação nem fica sabendo.</div></li>
+    <li><div>Passados 10 s o Docker manda <strong>SIGKILL</strong>: encerramento brusco, requisições cortadas, conexões abertas, transação perdida. Sintoma clássico: "o container demora 10 s para parar".</div></li>
+  </ol>
+  <p>A correção: forma exec, aplicação tratando SIGTERM (parar de aceitar requisições, concluir as em andamento, fechar conexões e sair) e, se ela cria subprocessos ou não trata sinais, <code>docker run --init</code> (ou <code>init: true</code> no Compose), que coloca um init mínimo (<code>tini</code>) como PID 1. Detalhes de graceful shutdown em APIs: <a href="../apis/06-confiabilidade.html">trilha APIs, módulo 6</a>.</p>
+
+  <h3>Script de entrypoint com exec "$@"</h3>
+  <p>Um padrão consagrado (usado nas imagens oficiais de Postgres, Redis e outras): um script que prepara o ambiente e, no fim, <strong>substitui o próprio processo</strong> pelo comando recebido.</p>
+<pre data-file="docker-entrypoint.sh"><code class="sh">#!/bin/sh
+set -e
+
+# 1. valida configuração obrigatória
+: "${DATABASE_URL:?DATABASE_URL não definida}"
+
+# 2. gera configuração a partir de variáveis
+envsubst &lt; /etc/app/config.tpl &gt; /tmp/config.json
+
+# 3. entrega o controle: o comando vira o PID 1 (sem shell no meio)
+exec "$@"</code></pre>
+<pre data-file="Dockerfile"><code class="dockerfile">COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["node", "server.js"]</code></pre>
+  <ul>
+    <li><code>exec "$@"</code> faz o shell ser <strong>substituído</strong> pelo comando (o CMD); sem o <code>exec</code>, o shell continuaria como PID 1 e engoliria os sinais.</li>
+    <li>As aspas em <code>"$@"</code> preservam argumentos com espaços.</li>
+    <li><code>docker run api sh</code> ainda funciona: o entrypoint roda o preparo e depois executa <code>sh</code>. Boa propriedade para depuração.</li>
+    <li>O script precisa de permissão de execução e fim de linha LF (um <code>\r</code> do Windows causa "no such file or directory" no shebang).</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que meu container demora 10 segundos para parar?" O processo PID 1 não está tratando o SIGTERM, geralmente por causa da forma shell ou de um script sem <code>exec</code>. O Docker espera o timeout e envia SIGKILL. Solução: forma exec, <code>exec "$@"</code>, handler de SIGTERM ou <code>--init</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Encerramento limpo é o que separa um deploy invisível de uma onda de erros 5xx a cada release. Inclua "responde a SIGTERM em menos de N segundos" nos critérios de aceite de qualquer serviço e teste com <code>time docker stop</code>.</p></div>
+</section>
+
+<section class="chap" id="cache-ordem">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cache de build: invalidação em cascata e ordem das instruções</h2>
+  <p>Builds são caros (baixar dependências, compilar). O BuildKit reaproveita o resultado de um passo quando a <strong>chave do passo e de todos os anteriores</strong> não mudou. O que compõe a chave:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Instrução</th><th>A chave leva em conta</th></tr></thead>
+    <tbody>
+      <tr><td><code>FROM</code></td><td>o digest da imagem base (uma tag que mudou de conteúdo invalida)</td></tr>
+      <tr><td><code>RUN</code></td><td>o <em>texto</em> do comando, não o resultado dele</td></tr>
+      <tr><td><code>COPY</code> / <code>ADD</code></td><td>o checksum do conteúdo e metadados dos arquivos copiados (não a data de modificação)</td></tr>
+      <tr><td><code>ARG</code> / <code>ENV</code></td><td>o valor; muda o valor, muda tudo que o usa e vem depois</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Quando um passo é invalidado, todos os seguintes são refeitos</strong>, mesmo que as instruções deles não tenham mudado.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 290" role="img" aria-label="Duas situações de cache: mudar só o código refaz a partir do COPY ponto ponto; mudar o lockfile refaz desde o COPY dos manifestos">
+      <text class="ttl" x="20" y="20">Instrução</text>
+      <text class="ttl" x="410" y="20" text-anchor="middle">Mudou src/app.ts</text>
+      <text class="ttl" x="585" y="20" text-anchor="middle">Mudou o lockfile</text>
+      <rect class="box" x="20" y="32" width="300" height="30" rx="4"/><text x="32" y="52">FROM node:22-alpine</text>
+      <rect class="box" x="20" y="72" width="300" height="30" rx="4"/><text x="32" y="92">WORKDIR /app</text>
+      <rect class="box" x="20" y="112" width="300" height="30" rx="4"/><text x="32" y="132">COPY package*.json ./</text>
+      <rect class="box" x="20" y="152" width="300" height="30" rx="4"/><text x="32" y="172">RUN npm ci</text>
+      <rect class="box" x="20" y="192" width="300" height="30" rx="4"/><text x="32" y="212">COPY . .</text>
+      <rect class="box" x="20" y="232" width="300" height="30" rx="4"/><text x="32" y="252">RUN npm run build</text>
+      <rect class="box-a" x="340" y="32" width="140" height="30" rx="4"/><text x="410" y="52" text-anchor="middle">cache</text>
+      <rect class="box-a" x="340" y="72" width="140" height="30" rx="4"/><text x="410" y="92" text-anchor="middle">cache</text>
+      <rect class="box-a" x="340" y="112" width="140" height="30" rx="4"/><text x="410" y="132" text-anchor="middle">cache</text>
+      <rect class="box-a" x="340" y="152" width="140" height="30" rx="4"/><text x="410" y="172" text-anchor="middle">cache</text>
+      <rect class="box-b" x="340" y="192" width="140" height="30" rx="4"/><text x="410" y="212" text-anchor="middle">refaz</text>
+      <rect class="box-b" x="340" y="232" width="140" height="30" rx="4"/><text x="410" y="252" text-anchor="middle">refaz</text>
+      <rect class="box-a" x="515" y="32" width="140" height="30" rx="4"/><text x="585" y="52" text-anchor="middle">cache</text>
+      <rect class="box-a" x="515" y="72" width="140" height="30" rx="4"/><text x="585" y="92" text-anchor="middle">cache</text>
+      <rect class="box-b" x="515" y="112" width="140" height="30" rx="4"/><text x="585" y="132" text-anchor="middle">refaz</text>
+      <rect class="box-b" x="515" y="152" width="140" height="30" rx="4"/><text x="585" y="172" text-anchor="middle">refaz</text>
+      <rect class="box-b" x="515" y="192" width="140" height="30" rx="4"/><text x="585" y="212" text-anchor="middle">refaz</text>
+      <rect class="box-b" x="515" y="232" width="140" height="30" rx="4"/><text x="585" y="252" text-anchor="middle">refaz</text>
+      <text class="lbl" x="20" y="282">O instalar dependências (RUN npm ci) fica antes do código: mexer em src/ não o invalida.</text>
+    </svg>
+    <figcaption>Cascata: da primeira camada invalidada em diante, tudo é refeito. A ordem decide quanto custa uma mudança típica.</figcaption>
+  </figure>
+
+  <h3>A regra: o que muda pouco vem primeiro</h3>
+<div class="tabs">
+<pre data-label="Ruim"><code class="dockerfile">FROM node:22-alpine
+WORKDIR /app
+# qualquer alteração no código invalida esta camada e todas as seguintes
+COPY . .
+# então as dependências são reinstaladas a cada build
+RUN npm ci
+CMD ["node", "server.js"]</code></pre>
+<pre data-label="Bom"><code class="dockerfile">FROM node:22-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+# só roda de novo se package*.json mudar
+RUN npm ci
+# o código muda sempre, mas só esta camada é refeita
+COPY . .
+CMD ["node", "server.js"]</code></pre>
+</div>
+  <p>A sequência ideal: base → pacotes do sistema → <strong>manifestos de dependência</strong> → instalar dependências → código-fonte → compilar. O mesmo vale em qualquer stack:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Stack</th><th>Copie antes</th><th>Depois instale/baixe</th></tr></thead>
+    <tbody>
+      <tr><td>Node</td><td><code>package.json</code>, <code>package-lock.json</code></td><td><code>npm ci</code></td></tr>
+      <tr><td>Python</td><td><code>requirements.txt</code> (ou <code>pyproject.toml</code> + lock)</td><td><code>pip install -r requirements.txt</code></td></tr>
+      <tr><td>Java (Maven)</td><td><code>pom.xml</code></td><td><code>mvn dependency:go-offline</code></td></tr>
+      <tr><td>Go</td><td><code>go.mod</code>, <code>go.sum</code></td><td><code>go mod download</code></td></tr>
+      <tr><td>.NET</td><td><code>*.csproj</code> (e <code>nuget.config</code>)</td><td><code>dotnet restore</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Em monorepos com vários manifestos, copie cada um em seu próprio caminho antes do código (<code>COPY packages/api/package.json packages/api/</code>), ou use um mount <code>bind</code> do lockfile no <code>RUN</code> (seção 7).</p>
+
+  <h3>Cache "velho demais" e "sem efeito"</h3>
+  <ul>
+    <li>O cache do <code>RUN</code> se baseia no <em>texto</em>. <code>RUN curl https://site/latest.tar.gz</code> não baixa de novo se o texto não mudou, mesmo que o arquivo remoto tenha mudado; <code>apt-get install</code> também não pega pacotes novos. Para reconstruir sem cache e com base atualizada: <code>docker build --no-cache --pull</code>, tipicamente num build agendado semanal para pegar correções de segurança.</li>
+    <li>Um <code>ARG BUILD_DATE</code> ou <code>ARG COMMIT</code> declarado cedo e usado cedo invalida o cache a cada build. Declare ARGs voláteis o mais tarde possível (de preferência só em <code>LABEL</code>, no fim).</li>
+    <li>Cópia de arquivos geradores de ruído (<code>.git</code>, logs) pelo <code>COPY . .</code> invalida sem motivo: ajuste o <code>.dockerignore</code>.</li>
+    <li>Num runner de CI novo, não há cache local nenhum; veja a seção 8.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Ordene as instruções por frequência de mudança, da mais estável para a mais volátil. Pergunte: "se só o código mudar, quais passos precisam rodar?" Só a cópia do código e o build. Tudo acima disso deve vir do cache.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como acelerar um build?" Ordeno as camadas para que dependências venham antes do código, uso <code>.dockerignore</code>, cache mounts do BuildKit para os gerenciadores de pacote e cache externo no CI. "O que invalida o cache?" Mudança no texto da instrução, no conteúdo dos arquivos copiados, em ARG/ENV usados ou na imagem base; e invalida tudo que vem depois.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tempo de build é custo: minutos de CI multiplicados por desenvolvedores e pushes por dia, mais o tempo de espera para o feedback. Meça o tempo médio de build e a taxa de acerto de cache; uma refatoração de duas linhas no Dockerfile costuma pagar o esforço em dias.</p></div>
+</section>
+
+<section class="chap" id="buildkit-avancado">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>BuildKit avançado: mounts, segredos, SSH e heredocs</h2>
+  <h3>A diretiva syntax</h3>
+<pre><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM alpine:3.20</code></pre>
+  <p>Deve ser a <strong>primeira linha</strong> do arquivo (antes de qualquer comentário ou linha em branco). Diz ao BuildKit para usar a versão atual do <em>frontend</em> do Dockerfile, baixando-o como uma imagem (<code>docker/dockerfile</code>), em vez da que veio embutida no Docker instalado. Assim os recursos novos funcionam mesmo num Docker mais velho. Duas consequências: o build precisa alcançar o registry nessa etapa (atenção em redes isoladas ou com limite de pull), e a tag <code>:1</code> flutua entre releases menores; fixe uma versão exata se precisar de reprodutibilidade total.</p>
+
+  <h3>Segredos nunca em ARG/ENV</h3>
+  <p>ARG e ENV ficam gravados em metadados da imagem. Demonstração do vazamento:</p>
+<pre><code class="dockerfile">ARG NPM_TOKEN
+RUN echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" &gt; ~/.npmrc \
+ &amp;&amp; npm ci \
+ &amp;&amp; rm ~/.npmrc</code></pre>
+<pre><code class="text">$ docker history --no-trunc api:dev | grep NPM_TOKEN
+&lt;missing&gt;  RUN |1 NPM_TOKEN=npm_a1b2c3... /bin/sh -c echo ... # buildkit</code></pre>
+  <p>Mesmo apagando o <code>.npmrc</code>, o valor está no histórico. A forma correta é o <strong>mount de segredo</strong>: o arquivo existe só durante aquele <code>RUN</code>, num tmpfs, e <strong>não entra em camada nenhuma</strong>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 218" role="img" aria-label="Um RUN com mount de cache e mount de segredo: só o resultado do comando vira camada da imagem">
+      <defs><marker id="ah-mnt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="22" width="200" height="50" rx="5"/><text x="120" y="44" text-anchor="middle">cache mount</text><text x="120" y="60" text-anchor="middle">/root/.npm</text>
+      <rect class="box-m" x="20" y="134" width="200" height="50" rx="5"/><text x="120" y="156" text-anchor="middle">secret mount</text><text x="120" y="172" text-anchor="middle">/run/secrets/npmrc</text>
+      <rect class="box-w" x="260" y="78" width="160" height="50" rx="5"/><text x="340" y="100" text-anchor="middle">RUN npm ci</text><text x="340" y="116" text-anchor="middle">(durante o build)</text>
+      <rect class="box" x="460" y="78" width="200" height="50" rx="5"/><text x="560" y="100" text-anchor="middle">camada da imagem</text><text x="560" y="116" text-anchor="middle">só node_modules</text>
+      <line class="ln-a" x1="220" y1="52" x2="290" y2="78" marker-end="url(#ah-mnt)"/>
+      <line class="ln" x1="220" y1="154" x2="290" y2="128" marker-end="url(#ah-mnt)"/>
+      <line class="ln" x1="420" y1="103" x2="460" y2="103" marker-end="url(#ah-mnt)"/>
+      <text class="lbl" x="20" y="90">persiste entre builds</text>
+      <text class="lbl" x="20" y="202">existe só durante o RUN</text>
+      <text class="lbl" x="560" y="148" text-anchor="middle">cache e segredo ficam fora</text>
+    </svg>
+    <figcaption>Mounts são visíveis ao comando enquanto ele roda e desaparecem depois; só o que o comando escreve no sistema de arquivos da imagem vira camada.</figcaption>
+  </figure>
+
+  <h3>RUN --mount=type=secret</h3>
+<pre data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci --omit=dev</code></pre>
+<pre><code class="sh"># a partir de um arquivo
+docker build --secret id=npmrc,src=$HOME/.npmrc -t api:dev .
+# ou de uma variável de ambiente do shell (BuildKit/Buildx recente)
+docker build --secret id=npm_token,env=NPM_TOKEN -t api:dev .</code></pre>
+  <p>Sem <code>target</code>, o segredo aparece em <code>/run/secrets/&lt;id&gt;</code>. O comando precisa lê-lo de lá. Em CI, o segredo vem do cofre da pipeline, nunca do repositório. O segredo também não entra na chave de cache do passo, o que é bom para o cache e exige cuidado se o resultado depender do valor.</p>
+
+  <h3>RUN --mount=type=ssh</h3>
+<pre><code class="dockerfile">RUN mkdir -p -m 0700 ~/.ssh &amp;&amp; ssh-keyscan github.com &gt;&gt; ~/.ssh/known_hosts
+RUN --mount=type=ssh git clone git@github.com:exemplo/biblioteca-privada.git /src/lib</code></pre>
+<pre><code class="sh">docker build --ssh default -t api:dev .</code></pre>
+  <p>Encaminha o agente SSH do seu host para o <code>RUN</code> (a chave privada nunca entra na imagem). O <code>ssh-keyscan</code> do exemplo confia no primeiro host visto; em pipelines rígidas, grave o fingerprint esperado e verifique.</p>
+
+  <h3>RUN --mount=type=cache</h3>
+<pre><code class="dockerfile"># Node
+RUN --mount=type=cache,target=/root/.npm npm ci
+# Python
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
+# Maven
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -q package -DskipTests
+# Go (módulos e cache de compilação)
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -o /out/api ./cmd/api</code></pre>
+  <p>Mantém num diretório persistente do builder o cache do gerenciador de pacotes entre execuções <strong>do mesmo passo</strong>, mesmo quando o passo é invalidado. Resultado: mudou uma dependência, só ela é baixada; o resto vem do cache local. O diretório não entra na imagem. Opções úteis: <code>id</code> (compartilhar entre passos), <code>sharing=locked</code> (um build por vez, necessário para o <code>apt</code>), <code>uid</code>/<code>gid</code>/<code>mode</code> para usuário não-root.</p>
+<pre><code class="dockerfile">RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update &amp;&amp; apt-get install -y --no-install-recommends curl</code></pre>
+  <p>No exemplo do <code>apt</code> a limpeza manual deixa de ser necessária, porque as listas ficam no mount. (O <code>rm</code> do <code>docker-clean</code> é preciso nas imagens Debian/Ubuntu, que apagam o cache do apt por padrão.)</p>
+  <div class="note trap"><b>Armadilha comum</b><p>O cache mount mora no <strong>builder</strong>. Num runner de CI efêmero ele some a cada job, então o ganho local não aparece na pipeline sem uma estratégia explícita (builder persistente, ou salvar/restaurar o diretório com uma ação de terceiros). Dependa do cache de camadas externo (seção 8) para o CI e do cache mount para a máquina do desenvolvedor.</p></div>
+
+  <h3>Outros mounts úteis</h3>
+  <ul>
+    <li><code>--mount=type=bind,source=package.json,target=package.json</code>: expõe arquivos do contexto sem copiá-los para a imagem; bom para lockfiles em <code>npm ci</code> sem uma camada <code>COPY</code> extra (adicione <code>,rw</code> se o comando escrever).</li>
+    <li><code>--mount=type=tmpfs,target=/tmp</code>: área temporária em memória que não vira camada.</li>
+  </ul>
+
+  <h3>Heredocs</h3>
+  <p>Scripts de várias linhas sem a cadeia de <code>&amp;&amp; \</code> (suportado pelo frontend 1.4 em diante; com <code>syntax=docker/dockerfile:1</code> já funciona).</p>
+<pre><code class="dockerfile">RUN &lt;&lt;EOF
+set -eux
+apt-get update
+apt-get install -y --no-install-recommends curl ca-certificates
+rm -rf /var/lib/apt/lists/*
+EOF
+
+COPY &lt;&lt;EOF /etc/app/config.ini
+[server]
+port = 8080
+EOF
+
+RUN &lt;&lt;EOF
+#!/usr/bin/env python3
+print("script Python inline")
+EOF</code></pre>
+  <p>O corpo roda como um script com o shell padrão; com um shebang na primeira linha, usa o interpretador indicado. É a mesma camada e o mesmo cache de um <code>RUN</code> comum, só mais legível. <code>COPY &lt;&lt;EOF</code> cria um arquivo direto na imagem sem arquivo auxiliar no contexto. Para impedir a expansão de variáveis no heredoc, cite o delimitador (<code>&lt;&lt;"EOF"</code>).</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Como passar um token privado para o build sem vazar?" <code>RUN --mount=type=secret</code> com <code>docker build --secret</code>: o arquivo existe só durante o passo, não vai para camada nem histórico. ARG e ENV ficam visíveis em <code>docker history</code>. Para repositório Git privado, <code>--mount=type=ssh</code> com <code>--ssh default</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Segredo em imagem é incidente de segurança com rotação obrigatória. Adicione à pipeline um scanner de segredos (e revise <code>docker history</code> de amostras) e padronize o uso de <code>--secret</code> no template de Dockerfile do time. Mais sobre supply chain no <a href="08-registry-ci.html">módulo 8</a>.</p></div>
+</section>
+
+<section class="chap" id="ci-flags-inspecao">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cache no CI, flags úteis, inspeção de camadas e erros comuns</h2>
+  <h3>Cache externo (prévia)</h3>
+  <p>Num runner novo, o cache local não existe e o build refaz tudo. O BuildKit consegue <strong>exportar</strong> o cache para fora e <strong>importar</strong> no build seguinte.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Runner 1 exporta cache ao registry com cache-to; runner 2 importa com cache-from">
+      <defs><marker id="ah-ci" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="54" width="170" height="54" rx="5"/><text x="105" y="77" text-anchor="middle">Runner 1</text><text x="105" y="95" text-anchor="middle">build de segunda</text>
+      <rect class="box-a" x="255" y="54" width="170" height="54" rx="5"/><text x="340" y="77" text-anchor="middle">Registry</text><text x="340" y="95" text-anchor="middle">app:buildcache</text>
+      <rect class="box" x="490" y="54" width="170" height="54" rx="5"/><text x="575" y="77" text-anchor="middle">Runner 2</text><text x="575" y="95" text-anchor="middle">build de terça</text>
+      <line class="ln-a" x1="190" y1="81" x2="255" y2="81" marker-end="url(#ah-ci)"/>
+      <line class="ln-a" x1="425" y1="81" x2="490" y2="81" marker-start="url(#ah-ci)"/>
+      <text class="lbl" x="222" y="46" text-anchor="middle">cache-to</text>
+      <text class="lbl" x="458" y="46" text-anchor="middle">cache-from</text>
+      <text class="lbl" x="20" y="140">type=registry: guarda o cache como uma imagem especial; type=gha: usa o cache do GitHub Actions.</text>
+      <text class="lbl" x="20" y="160">mode=max exporta também camadas intermediárias (estágios que não vão para a imagem final).</text>
+      <text class="lbl" x="20" y="180">Exige builder com driver docker-container (o driver docker padrão não exporta cache externo).</text>
+    </svg>
+    <figcaption>O cache vira um artefato compartilhado: qualquer runner pode reaproveitar o trabalho que outro já fez.</figcaption>
+  </figure>
+<pre><code class="sh">docker buildx create --use --name ci --driver docker-container
+
+docker buildx build \
+  --cache-from type=registry,ref=registry.exemplo.com/api:buildcache \
+  --cache-to   type=registry,ref=registry.exemplo.com/api:buildcache,mode=max \
+  -t registry.exemplo.com/api:1.4.2 --push .
+
+# no GitHub Actions
+docker buildx build \
+  --cache-from type=gha \
+  --cache-to   type=gha,mode=max \
+  -t api:ci --load .</code></pre>
+  <p>Outros tipos: <code>type=local</code> (pasta, bom para o cache do CI que restaura diretórios) e <code>type=inline</code> (embute o cache na própria imagem; simples, mas só cobre a última camada final, sem <code>mode=max</code>). O backend <code>gha</code> depende da integração com o GitHub Actions e já mudou de versão da API; consulte a documentação do Buildx atual antes de adotar. A pipeline completa fica no <a href="08-registry-ci.html">módulo 8</a>.</p>
+
+  <h3>Flags de docker build que você vai usar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Flag</th><th>Para que serve</th></tr></thead>
+    <tbody>
+      <tr><td><code>-t nome:tag</code></td><td>nomeia a imagem; pode repetir (<code>-t api:1.4.2 -t api:latest</code>)</td></tr>
+      <tr><td><code>-f arquivo</code></td><td>Dockerfile com outro nome ou caminho</td></tr>
+      <tr><td><code>--target estágio</code></td><td>para o build no estágio indicado (<code>test</code>, <code>dev</code>); o módulo 4 explora</td></tr>
+      <tr><td><code>--build-arg K=V</code></td><td>define um ARG declarado no Dockerfile</td></tr>
+      <tr><td><code>--no-cache</code></td><td>ignora todo o cache (build do zero)</td></tr>
+      <tr><td><code>--pull</code></td><td>sempre verifica se a imagem base tem versão mais nova</td></tr>
+      <tr><td><code>--progress=plain</code></td><td>log completo, sem painel; ideal em CI e para depurar</td></tr>
+      <tr><td><code>--platform linux/arm64</code></td><td>constrói para outra arquitetura (módulo 4)</td></tr>
+      <tr><td><code>--secret</code>, <code>--ssh</code></td><td>entrega segredos e agente SSH aos mounts</td></tr>
+      <tr><td><code>--load</code> / <code>--push</code></td><td>(Buildx) guarda no Docker local ou envia ao registry</td></tr>
+      <tr><td><code>--check</code></td><td>valida o Dockerfile (boas práticas) sem construir; BuildKit/Buildx recente</td></tr>
+    </tbody>
+  </table></div>
+  <p>Complementos: <strong>hadolint</strong> faz lint de Dockerfile (inclusive no CI) e <code>docker buildx bake</code> descreve vários builds em arquivo (<code>docker-bake.hcl</code>), temas do módulo 8.</p>
+
+  <h3>Inspecionar camadas</h3>
+<pre><code class="text">$ docker history api:1.4.2
+IMAGE          CREATED        CREATED BY                                      SIZE
+8d2f0a91c3b4   2 hours ago    CMD ["node" "dist/server.js"]                   0B
+&lt;missing&gt;      2 hours ago    COPY . . # buildkit                             4.1MB
+&lt;missing&gt;      2 hours ago    RUN /bin/sh -c npm ci --omit=dev # buildkit     96.3MB
+&lt;missing&gt;      2 hours ago    COPY package*.json ./ # buildkit                412kB
+&lt;missing&gt;      2 hours ago    WORKDIR /app                                    0B
+&lt;missing&gt;      3 weeks ago    /bin/sh -c #(nop)  CMD ["node"]                 0B
+&lt;missing&gt;      3 weeks ago    /bin/sh -c apk add --no-cache ...               8.2MB</code></pre>
+  <ul>
+    <li><code>docker history --no-trunc</code> mostra o comando inteiro (útil para auditar vazamentos).</li>
+    <li><code>docker image inspect api:1.4.2 --format '{{json .Config}}'</code> exibe ENV, labels, entrypoint, usuário, portas.</li>
+    <li><code>dive api:1.4.2</code> (ferramenta externa) abre um navegador interativo camada a camada, mostra arquivos adicionados e removidos e calcula "espaço desperdiçado". Com <code>CI=true dive api:1.4.2</code> dá para falhar a pipeline se o desperdício passar de um limite.</li>
+    <li><code>docker system df -v</code> lista imagens, volumes e quanto ocupam.</li>
+  </ul>
+
+  <h3>Erros comuns e como corrigir</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Erro</th><th>Consequência</th><th>Correção</th></tr></thead>
+    <tbody>
+      <tr><td><code>apt-get update</code> numa instrução e <code>install</code> em outra</td><td>A lista de pacotes fica em cache e ultrapassada; o <code>install</code> falha com 404 semanas depois.</td><td>Sempre juntos no mesmo <code>RUN</code>.</td></tr>
+      <tr><td>Não limpar o cache do gerenciador</td><td>Dezenas de MB inúteis na camada.</td><td><code>rm -rf /var/lib/apt/lists/*</code>, <code>apk add --no-cache</code>, <code>pip --no-cache-dir</code>, ou cache mount.</td></tr>
+      <tr><td><code>FROM node:latest</code> / tag sem versão</td><td>Build muda sozinho; "ontem funcionava".</td><td>Tag específica; digest quando precisar de reprodutibilidade total.</td></tr>
+      <tr><td><code>COPY . .</code> no início</td><td>Qualquer edição invalida a instalação de dependências.</td><td>Manifestos primeiro, código depois.</td></tr>
+      <tr><td>Segredo em <code>ARG</code>/<code>ENV</code>/<code>COPY .env</code></td><td>Vaza em <code>docker history</code> e na camada.</td><td><code>--mount=type=secret</code> e <code>.dockerignore</code>.</td></tr>
+      <tr><td>Rodar como root</td><td>Superfície maior se a aplicação for comprometida.</td><td><code>USER</code> numérico não-root.</td></tr>
+      <tr><td><code>CMD node app.js</code> (forma shell)</td><td>SIGTERM não chega à aplicação; stop leva 10 s.</td><td>Forma exec <code>["node","app.js"]</code>.</td></tr>
+      <tr><td><code>RUN apt-get upgrade</code> genérico</td><td>Build não reproduzível, camada grande.</td><td>Atualize a base (tag nova) em vez de atualizar na hora do build.</td></tr>
+      <tr><td>Muitas ferramentas de build na imagem final</td><td>Imagem gorda, mais vulnerabilidades.</td><td>Multi-stage (<a href="04-multi-stage.html">módulo 4</a>).</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O build no CI está lento e o local, rápido. Por quê?" O runner começa sem cache local. Soluções: <code>--cache-from/--cache-to</code> com registry ou <code>gha</code>, runner com cache persistente, e garantir que a ordem das camadas não invalide dependências a cada commit. Mostre que você leria o <code>--progress=plain</code> para achar qual passo não vem do cache.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina um orçamento de build ("main em menos de 5 minutos") e acompanhe a tendência. Imagens base sem patch por meses são dívida de segurança: agende um rebuild semanal com <code>--pull --no-cache</code> e um scan, em vez de depender de commits para atualizar a base.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios práticos. Faça no seu terminal; abra a resolução só depois de tentar. Use um projeto Node pequeno (qualquer API com <code>package.json</code> e <code>package-lock.json</code>) ou adapte para sua linguagem.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Meça o contexto de build e reduza-o com um .dockerignore.</span></summary><div class="ans">
+    <p>Num projeto com <code>node_modules</code> e <code>.git</code>, rode o build com o Dockerfile mais simples e observe a linha <code>transferring context</code>.</p>
+<pre><code class="sh">docker build --progress=plain -t lab:e1 . 2&gt;&amp;1 | grep "transferring context"
+# transferring context: 412.80MB done
+
+cat &gt; .dockerignore &lt;&lt;'EOF'
+.git
+node_modules
+dist
+*.log
+.env*
+EOF
+
+docker build --progress=plain -t lab:e1 . 2&gt;&amp;1 | grep "transferring context"
+# transferring context: 38.12kB done</code></pre>
+    <p>O contexto caiu de centenas de MB para dezenas de kB. Desafio extra: troque pela lista de permissão (<code>*</code> + <code>!src/</code> etc.) e confirme que o <code>docker run lab:e1 ls -a /app</code> não mostra <code>.env</code>.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Reordene o Dockerfile e prove o ganho de cache.</span></summary><div class="ans">
+    <p>Comece pelo Dockerfile "ruim" da seção 6 (<code>COPY . .</code> antes do <code>npm ci</code>). Faça um build, altere uma linha de código e rebuild: o <code>npm ci</code> reexecuta. Depois reordene (manifestos, <code>npm ci</code>, código) e repita.</p>
+<pre><code class="sh">docker build -t lab:e2 .
+echo "// edição" &gt;&gt; src/index.js
+docker build --progress=plain -t lab:e2 . 2&gt;&amp;1 | grep -E "^#[0-9]+ (\[|CACHED|DONE)"</code></pre>
+    <p>No Dockerfile bom, o passo <code>RUN npm ci</code> aparece com <code>CACHED</code> e só o <code>COPY . .</code> é refeito. Anote os tempos antes e depois: a diferença é o ganho por commit. Teste também a mudança de <code>package-lock.json</code> e confirme a cascata do diagrama.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Faça o container parar rápido: forma exec e entrypoint com exec "$@".</span></summary><div class="ans">
+    <p>Primeiro reproduza o problema. Um Dockerfile com <code>CMD node server.js</code> (forma shell) e um servidor que trata SIGTERM:</p>
+<pre><code class="sh">docker run -d --name lab3 lab:e3
+time docker stop lab3
+# real    0m10.2s     &lt;- esperou o SIGKILL</code></pre>
+    <p>Troque para <code>CMD ["node", "server.js"]</code> e repita: <code>docker stop</code> deve levar menos de 1 s. Agora acrescente o <code>docker-entrypoint.sh</code> da seção 5 <strong>sem</strong> o <code>exec</code> e verifique que volta a demorar 10 s; com <code>exec "$@"</code>, volta a ser imediato. Confirme o PID 1:</p>
+<pre><code class="sh">docker exec lab3 ps -o pid,args
+#   1 node server.js</code></pre>
+    <p>Se aparecer <code>sh -c ...</code> como PID 1, o sinal está sendo engolido.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Injete um segredo no build sem deixá-lo na imagem.</span></summary><div class="ans">
+    <p>Crie um segredo falso e use-o num <code>RUN</code> com mount; depois prove que ele não está na imagem.</p>
+<pre data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM alpine:3.20
+RUN --mount=type=secret,id=token \
+    wc -c /run/secrets/token &gt; /tamanho.txt</code></pre>
+<pre><code class="sh">echo -n "segredo-de-teste-123" &gt; token.txt
+docker build --secret id=token,src=token.txt -t lab:e4 .
+
+docker run --rm lab:e4 cat /tamanho.txt          # 20 /run/secrets/token
+docker run --rm lab:e4 ls /run/secrets           # no such file or directory
+docker history --no-trunc lab:e4 | grep -c "segredo-de-teste"   # 0</code></pre>
+    <p>Depois refaça com <code>ARG TOKEN</code> + <code>--build-arg TOKEN=segredo-de-teste-123</code> e veja o valor aparecer em <code>docker history --no-trunc</code>. A comparação mostra por que ARG não serve.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Use um cache mount e meça o efeito ao mudar uma dependência.</span></summary><div class="ans">
+<pre data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM python:3.13-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt</code></pre>
+<pre><code class="sh">time docker build -t lab:e5 .          # 1º build: baixa tudo
+echo "tabulate==0.9.0" &gt;&gt; requirements.txt
+time docker build -t lab:e5 .          # camada invalidada, mas o pip usa o cache dos pacotes</code></pre>
+    <p>No segundo build o passo roda de novo (o <code>COPY</code> mudou), mas os pacotes já baixados vêm do cache do mount, e só o novo é baixado. Confirme com <code>--progress=plain</code>: o log do pip mostra "Using cached". Compare com o mesmo Dockerfile sem o mount. Lembre que o cache fica no builder, não na imagem: <code>docker history</code> não mostra os arquivos.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Adicione um HEALTHCHECK, observe o estado e o efeito do start-period.</span></summary><div class="ans">
+<pre data-file="Dockerfile"><code class="dockerfile">FROM nginx:1.27-alpine
+HEALTHCHECK --interval=5s --timeout=2s --start-period=10s --retries=2 \
+  CMD wget -q --spider http://localhost/ || exit 1</code></pre>
+<pre><code class="sh">docker build -t lab:e6 . &amp;&amp; docker run -d --name lab6 lab:e6
+docker ps --format "{{.Names}} {{.Status}}"      # lab6 Up 3 seconds (health: starting)
+sleep 8; docker ps --format "{{.Names}} {{.Status}}"   # lab6 Up 11 seconds (healthy)
+
+# derrube o processo web para simular falha
+docker exec lab6 nginx -s stop
+sleep 15; docker ps --format "{{.Names}} {{.Status}}"   # ... (unhealthy) ou container encerrado</code></pre>
+    <p>Observações: o container continua listado (o Docker não reinicia sozinho por <code>unhealthy</code>); se o nginx encerrar o processo principal, o container sai, e é a política de reinício que age, não o health. Para ver o histórico das últimas verificações: <code>docker inspect --format '{{json .State.Health}}' lab6</code>.</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <h3>Cenário 1: o build do CI levou de 3 para 14 minutos</h3>
+  <p>Ninguém mexeu no Dockerfile. A pipeline reinstala todas as dependências em todo build.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Rode o build local com <code>--progress=plain</code> e compare com o log do CI: qual passo deixou de vir de <code>CACHED</code>?</li>
+    <li>Veja se o runner mudou (runner novo e efêmero = cache zerado) ou se algum ARG volátil (data, commit) foi declarado no topo.</li>
+    <li>Adote <code>--cache-from/--cache-to</code> (registry ou <code>gha</code>) e mova os ARGs voláteis para o final, perto dos <code>LABEL</code>.</li>
+    <li>Acrescente cache mount para o gerenciador de pacotes e monitore o tempo de build como métrica.</li>
+  </ol></div>
+  <h3>Cenário 2: um token do registry privado apareceu no histórico da imagem</h3>
+  <p>Alguém passou <code>--build-arg NPM_TOKEN=...</code>; a imagem está num registry acessível à empresa toda.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li><strong>Revogue e rotacione o token agora</strong>: tratar como vazado, mesmo que "só a empresa" veja.</li>
+    <li>Identifique as imagens e tags afetadas (<code>docker history --no-trunc</code>), retire-as do registry e dos ambientes que as usam.</li>
+    <li>Corrija o Dockerfile para <code>RUN --mount=type=secret</code> e recompile. Confirme com <code>docker history</code> que o valor não aparece.</li>
+    <li>Prevenção: scanner de segredos na CI, template de Dockerfile do time e revisão de pipeline que proíba segredo por <code>--build-arg</code>.</li>
+  </ol></div>
+  <h3>Cenário 3: cada deploy causa uma rajada de erros 502 e o container demora para parar</h3>
+  <p>A API reinicia a cada release e o balanceador mostra requisições cortadas. <code>docker stop</code> leva 10 s.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Cheque o PID 1: <code>docker exec ... ps</code> ou <code>docker top</code>. Se for <code>sh -c</code>, o problema é a forma shell ou um entrypoint sem <code>exec</code>.</li>
+    <li>Troque para forma exec e <code>exec "$@"</code>; garanta que a aplicação trate SIGTERM (fechar o servidor sem derrubar conexões em curso).</li>
+    <li>Alinhe o <code>stop_grace_period</code> ao tempo real de drenagem e use health/readiness para tirar a instância do balanceador antes de matá-la.</li>
+  </ol></div>
+  <h3>Cenário 4: a imagem de homologação funciona, a de produção construída uma semana depois quebra</h3>
+  <p>O código é o mesmo. Um dev jura que "não mudou nada".</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Compare os metadados: <code>docker inspect</code> de ambas e o digest da base (<code>FROM</code>). Se o Dockerfile usa <code>latest</code> ou uma tag móvel, a base mudou entre os builds.</li>
+    <li>Procure comandos não determinísticos: <code>apt-get install</code> sem versão, <code>pip install</code> sem lockfile, <code>curl ... | sh</code>.</li>
+    <li>Corrija: tag específica (ou digest), lockfiles, <code>npm ci</code>, e <strong>promova a mesma imagem</strong> de homologação a produção em vez de reconstruir.</li>
+  </ol></div>
+  <h3>Cenário 5: o "docker build" demora 4 minutos antes de executar a primeira instrução</h3>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Olhe a linha <code>transferring context</code>: gigabytes indicam que <code>.git</code>, dumps, <code>node_modules</code> ou artefatos estão indo junto.</li>
+    <li>Escreva o <code>.dockerignore</code> (preferencialmente em modo lista de permissão), e se o contexto precisa mesmo ser grande, avalie um <code>-f</code> com contexto menor ou um builder local em vez de remoto.</li>
+  </ol></div>
+  <div class="note iv"><b>Na entrevista</b><p>Contar um destes cenários como história pessoal (sintoma, como investigou, o que mudou, como evitou a repetição) é mais forte que recitar definições. Prepare dois.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Transforme cada incidente de build em um item do template de Dockerfile e da pipeline (lint, scan, regra de segredo). O ganho de longo prazo é que o aprendizado deixa de depender da memória de quem estava de plantão.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Contexto de build</dt><dd>Pasta enviada ao builder; só ela é visível a <code>COPY</code>/<code>ADD</code>.</dd></div>
+    <div><dt>.dockerignore</dt><dd>Lista de padrões excluídos do contexto de build.</dd></div>
+    <div><dt>BuildKit</dt><dd>Motor de build moderno: grafo, cache por conteúdo, mounts, cache externo.</dd></div>
+    <div><dt>Frontend (syntax)</dt><dd>Interpretador do Dockerfile, selecionado por <code># syntax=</code>.</dd></div>
+    <div><dt>Camada</dt><dd>Diferença de arquivos imutável produzida por <code>RUN</code>, <code>COPY</code> ou <code>ADD</code>.</dd></div>
+    <div><dt>Cache de build</dt><dd>Reuso de resultado quando a chave do passo e dos anteriores não mudou.</dd></div>
+    <div><dt>Invalidação em cascata</dt><dd>Quando um passo muda, todos os seguintes são refeitos.</dd></div>
+    <div><dt>ARG</dt><dd>Variável só de build; visível no histórico; não é segredo.</dd></div>
+    <div><dt>ENV</dt><dd>Variável gravada na imagem e presente no container.</dd></div>
+    <div><dt>Forma exec</dt><dd>Array JSON em <code>CMD</code>/<code>ENTRYPOINT</code>: sem shell, o processo vira PID 1.</dd></div>
+    <div><dt>PID 1</dt><dd>Primeiro processo do container; não recebe ação padrão de sinais e recolhe zumbis.</dd></div>
+    <div><dt>tini / --init</dt><dd>Init mínimo que repassa sinais e recolhe zumbis.</dd></div>
+    <div><dt>Cache mount</dt><dd>Diretório persistente do builder para caches de pacotes, fora da imagem.</dd></div>
+    <div><dt>Secret mount</dt><dd>Arquivo de segredo disponível só durante um <code>RUN</code>, fora das camadas.</dd></div>
+    <div><dt>Heredoc</dt><dd>Bloco multilinha em <code>RUN</code>/<code>COPY</code> com <code>&lt;&lt;EOF</code>.</dd></div>
+    <div><dt>Cache externo</dt><dd>Cache exportado para registry/gha/local e reimportado em outro runner.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Das mais básicas às de liderança. Responda em voz alta antes de abrir.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>Para que serve um Dockerfile?</span></summary><div class="ans"><p>É a receita declarativa para construir uma imagem: parte de uma base (<code>FROM</code>) e aplica instruções (<code>RUN</code>, <code>COPY</code>...) que viram camadas, mais metadados (<code>ENV</code>, <code>CMD</code>, <code>EXPOSE</code>). Versionado no repositório, torna o build repetível.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre RUN, CMD e ENTRYPOINT?</span></summary><div class="ans"><p><code>RUN</code> executa no <em>build</em> e grava uma camada. <code>CMD</code> e <code>ENTRYPOINT</code> definem o que roda quando o container <em>inicia</em>. O ENTRYPOINT é o executável fixo; o CMD, os argumentos ou o comando padrão, substituível no <code>docker run</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>COPY ou ADD?</span></summary><div class="ans"><p>COPY, que só copia. ADD também extrai tarballs locais e baixa URLs, comportamentos implícitos. Uso ADD apenas para extrair um tar local ou baixar com <code>--checksum</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>ARG ou ENV?</span></summary><div class="ans"><p>ARG existe só no build (<code>--build-arg</code>); ENV vai para a imagem e o container. Nenhum protege segredo: ambos aparecem em <code>docker history</code>/<code>inspect</code>. Um ARG antes do <code>FROM</code> só vale nas linhas <code>FROM</code>, a menos que seja redeclarado.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>O que o EXPOSE faz?</span></summary><div class="ans"><p>Só documenta a porta nos metadados. Para publicar é preciso <code>-p</code> ou <code>ports:</code>; o <code>-P</code> publica as expostas em portas aleatórias.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Como o cache de build funciona e o que o invalida?</span></summary><div class="ans"><p>Cada passo tem uma chave (texto do comando, checksum dos arquivos copiados, valores de ARG/ENV, digest da base) mais a do passo anterior. Se não mudou, reaproveita. Uma mudança invalida o passo e todos os seguintes (cascata).</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como ordenar as instruções para aproveitar o cache?</span></summary><div class="ans"><p>Do mais estável ao mais volátil: base, pacotes do sistema, manifestos de dependência, instalação, código, build. Assim uma edição de código só refaz do <code>COPY . .</code> em diante.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Por que <code>apt-get update</code> e <code>install</code> devem estar no mesmo RUN?</span></summary><div class="ans"><p>Se <code>update</code> ficar numa camada em cache, o <code>install</code> posterior usa uma lista antiga e pode falhar com 404 de pacote que mudou de versão. No mesmo <code>RUN</code>, a lista é sempre da mesma hora. E limpe <code>/var/lib/apt/lists</code> no mesmo comando.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Para que serve o .dockerignore?</span></summary><div class="ans"><p>Reduz o contexto enviado ao builder, impede que arquivos sensíveis ou desnecessários entrem na imagem e evita invalidações de cache por arquivos irrelevantes. Uma lista de permissão (<code>*</code> + exceções) é a opção mais segura.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Forma exec ou forma shell em CMD/ENTRYPOINT, e por quê?</span></summary><div class="ans"><p>Exec. A aplicação vira o PID 1 e recebe o SIGTERM do <code>docker stop</code>. Na forma shell, o PID 1 é <code>/bin/sh -c</code>, que não repassa o sinal; o container leva 10 s para morrer e é encerrado com SIGKILL.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>O que é e o que faz o <code>exec "$@"</code> num script de entrypoint?</span></summary><div class="ans"><p>No fim do script, substitui o processo do shell pelo comando recebido (o CMD), que passa a ser o PID 1 e recebe os sinais. Sem <code>exec</code>, o shell fica no meio e engole SIGTERM. As aspas preservam argumentos com espaços.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que o BuildKit trouxe em relação ao builder antigo?</span></summary><div class="ans"><p>Execução em grafo (paralelismo, pula estágios não usados), cache por conteúdo, mounts de cache/segredo/SSH, heredocs, cache externo e multi-plataforma. É o padrão desde o Docker Engine 23.0.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como passar um segredo para o build sem vazar?</span></summary><div class="ans"><p><code>RUN --mount=type=secret,id=x</code> com <code>docker build --secret id=x,src=arquivo</code> (ou <code>env=VAR</code>). O segredo aparece em <code>/run/secrets/x</code> só durante o passo e não entra na camada nem no histórico. Para Git privado, <code>--mount=type=ssh</code>. Nunca ARG/ENV/COPY.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>O que são cache mounts e quando não ajudam?</span></summary><div class="ans"><p>Diretórios persistentes do builder (<code>RUN --mount=type=cache,target=...</code>) que guardam o cache do gerenciador de pacotes entre builds, mesmo com o passo invalidado. Não ajudam em runners de CI efêmeros, onde o builder e o cache somem a cada job; lá vale o cache externo.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Como reaproveitar cache no CI?</span></summary><div class="ans"><p>Exportar/importar o cache do BuildKit com <code>--cache-to</code>/<code>--cache-from</code> (<code>type=registry</code>, <code>type=gha</code> ou <code>type=local</code>), com <code>mode=max</code> para incluir camadas intermediárias. Exige um builder com driver <code>docker-container</code>. Complemento: ordenar as camadas corretamente.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Uma imagem está maior do que deveria. Como você investiga?</span></summary><div class="ans"><p><code>docker history</code> para ver o tamanho por camada e <code>dive</code> para ver os arquivos de cada uma. Procuro caches de pacotes não limpos, arquivos apagados numa camada posterior (que continuam ocupando a anterior), <code>COPY . .</code> sem <code>.dockerignore</code> e ferramentas de build na imagem final. A correção estrutural é multi-stage e base enxuta.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Quais efeitos colaterais do VOLUME num Dockerfile?</span></summary><div class="ans"><p>Cria volumes anônimos a cada <code>docker run</code> (acúmulo de disco), descarta alterações feitas naquele caminho depois da instrução e não pode ser removido em imagens derivadas. Útil em imagens de banco; em apps, declare volumes no Compose ou no run.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Você assume um time cujas imagens demoram 15 minutos para construir e têm 1,5 GB. Qual seu plano?</span></summary><div class="ans"><p>Meço primeiro (tempo por passo com <code>--progress=plain</code>, tamanho por camada com <code>docker history</code>/<code>dive</code>) para atacar o que pesa de verdade. Ações em ordem de retorno: <code>.dockerignore</code>, ordem das camadas, cache mounts e cache externo no CI, multi-stage com base enxuta e usuário não-root. Depois institucionalizo: template de Dockerfile, lint (hadolint, <code>--check</code>), scan de vulnerabilidades e métricas de tempo e tamanho no painel do time, para o ganho não se perder.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

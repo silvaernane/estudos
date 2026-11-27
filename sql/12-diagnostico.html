@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 12: Diagnóstico e gestão</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 12 de 12 · Diagnóstico e gestão</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html" aria-current="page"><span class="n">12</span>Diagnóstico e gestão</a></li>
+    <li class="sub"><ol>
+      <li><a href="#roteiro"><span class="n">1</span>Roteiro de diagnóstico de uma consulta lenta</a></li>
+      <li><a href="#top-consultas"><span class="n">2</span>Achar as consultas que mais pesam e as métricas que importam</a></li>
+      <li><a href="#esperas"><span class="n">3</span>Wait events: o que o banco está esperando</a></li>
+      <li><a href="#aplicacao"><span class="n">4</span>Problemas na aplicação e revisão de SQL em code review</a></li>
+      <li><a href="#migracoes"><span class="n">5</span>Migrações de esquema sem downtime</a></li>
+      <li><a href="#homologacao"><span class="n">6</span>Homologação com dados realistas e anonimizados</a></li>
+      <li><a href="#gestao"><span class="n">7</span>SLOs de banco, capacidade, custo e organização do time</a></li>
+      <li><a href="#estudo"><span class="n">8</span>Roteiro de estudo, prática e laboratório com Docker</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios integradores</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 12 · <span class="lvl l3">Avançado</span></div>
+  <h1>Diagnóstico e gestão</h1>
+  <p class="lede">Fechamento da trilha: como transformar "o sistema está lento" em um diagnóstico com números, como achar as consultas que realmente pesam, como evitar que o problema nasça (revisão, migrações seguras, homologação com dados anonimizados) e como organizar time, metas e responsabilidades em torno do banco.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Conduzir o diagnóstico de uma consulta lenta com um roteiro fixo e saber quando o problema não está no SQL.</li>
+    <li>Listar as consultas que mais pesam em Oracle e PostgreSQL, ler wait events e distinguir tempo total, médio e p95.</li>
+    <li>Reconhecer os problemas típicos da aplicação (N+1, falta de bind, paginação, <code>SELECT *</code>, transações abertas) e revisar SQL em code review.</li>
+    <li>Aplicar migrações de esquema sem downtime (expand/contract, índice online) e preparar homologação com dados realistas e anonimizados, conforme a LGPD.</li>
+    <li>Definir SLOs de banco, organizar a divisão DBA e desenvolvedores e montar um laboratório com Docker para praticar.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="roteiro">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Roteiro de diagnóstico de uma consulta lenta</h2>
+  <p>Diagnóstico por intuição ("deve faltar um índice") acerta às vezes e custa caro quando erra: um índice novo pesa em toda escrita e pode mudar planos de outras consultas. O roteiro abaixo troca palpite por medição. A ordem importa: cada passo evita um erro do passo seguinte.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 345" role="img" aria-label="Fluxo de diagnóstico: medir, obter o plano real, comparar estimado e real, corrigir acesso ou estimativa, medir de novo e investigar esperas e aplicação">
+      <defs><marker id="ah-fluxo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="30" width="190" height="50" rx="5"/>
+      <text x="115" y="53" text-anchor="middle">1. Medir</text><text class="lbl" x="115" y="70" text-anchor="middle">tempo, chamadas, horário</text>
+      <rect class="box" x="245" y="30" width="190" height="50" rx="5"/>
+      <text x="340" y="53" text-anchor="middle">2. Plano real</text><text class="lbl" x="340" y="70" text-anchor="middle">ANALYZE / ALLSTATS LAST</text>
+      <rect class="box-w" x="470" y="30" width="190" height="50" rx="5"/>
+      <text x="565" y="53" text-anchor="middle">3. Estimado ≈ real?</text><text class="lbl" x="565" y="70" text-anchor="middle">diverge mais de 10x?</text>
+      <line class="ln-a" x1="210" y1="55" x2="243" y2="55" marker-end="url(#ah-fluxo)"/>
+      <line class="ln-a" x1="435" y1="55" x2="468" y2="55" marker-end="url(#ah-fluxo)"/>
+      <rect class="box" x="245" y="150" width="190" height="58" rx="5"/>
+      <text x="340" y="173" text-anchor="middle">4a. Acesso ruim</text><text class="lbl" x="340" y="192" text-anchor="middle">índice, sargável, reduzir</text>
+      <rect class="box-b" x="470" y="150" width="190" height="66" rx="5"/>
+      <text x="565" y="173" text-anchor="middle">4b. Estimativa errada</text><text class="lbl" x="565" y="192" text-anchor="middle">estatísticas, histograma,</text><text class="lbl" x="565" y="208" text-anchor="middle">conversão implícita</text>
+      <line class="ln" x1="500" y1="80" x2="400" y2="148" marker-end="url(#ah-fluxo)"/>
+      <text class="lbl" x="420" y="108">sim</text>
+      <line class="ln-b" x1="565" y1="80" x2="565" y2="148" marker-end="url(#ah-fluxo)"/>
+      <text class="lbl" x="575" y="116">não</text>
+      <rect class="box" x="245" y="262" width="190" height="50" rx="5"/>
+      <text x="340" y="285" text-anchor="middle">5. Medir de novo</text><text class="lbl" x="340" y="302" text-anchor="middle">leituras lógicas e tempo</text>
+      <rect class="box-m" x="20" y="262" width="190" height="50" rx="5"/>
+      <text x="115" y="285" text-anchor="middle">6. Ainda lento?</text><text class="lbl" x="115" y="302" text-anchor="middle">esperas, app, conexões</text>
+      <line class="ln" x1="340" y1="208" x2="340" y2="260" marker-end="url(#ah-fluxo)"/>
+      <path class="ln" d="M565,216 L565,287 L437,287" marker-end="url(#ah-fluxo)"/>
+      <line class="ln" x1="245" y1="287" x2="212" y2="287" marker-end="url(#ah-fluxo)"/>
+      <text class="lbl" x="20" y="338">Mude uma coisa por vez e meça no mesmo ambiente, com os mesmos parâmetros.</text>
+    </svg>
+    <figcaption>O diagnóstico é um laço: medir, localizar o primeiro ponto errado do plano, corrigir, medir de novo.</figcaption>
+  </figure>
+  <ol class="seq">
+    <li><div><strong>Defina "lento" com números.</strong> Quanto tempo leva, quantas linhas devolve, quantas vezes por dia roda, em que horário piora. Uma consulta de 50 ms executada 2 milhões de vezes por dia pesa mais que um relatório de 2 minutos executado uma vez.</div></li>
+    <li><div><strong>Ache as consultas que mais custam</strong> (próxima seção): Oracle <code>V$SQL</code>/<code>V$SQLSTATS</code>; PostgreSQL <code>pg_stat_statements</code>. Ordene por tempo total, não só pelo mais lento.</div></li>
+    <li><div><strong>Pegue o plano real</strong> (<code>ALLSTATS LAST</code> no Oracle; <code>EXPLAIN (ANALYZE, BUFFERS)</code> no PostgreSQL) com valores de parâmetros realistas, no ambiente em que o problema aparece. O plano estimado engana: o que importa é o que aconteceu.</div></li>
+    <li><div><strong>Ache o nó mais caro</strong> e o <em>primeiro</em> ponto onde estimado e real divergem mais de 10 vezes. Os nós acima desse ponto herdam o erro.</div></li>
+    <li><div><strong>Se a estimativa está errada:</strong> data das estatísticas, histogramas, colunas correlacionadas, função na coluna, conversão implícita de tipo, parâmetro atípico (bind peeking, plano genérico).</div></li>
+    <li><div><strong>Se a estimativa está certa e o acesso é ruim:</strong> falta índice, ordem de colunas inadequada, condição não sargável, <code>SELECT *</code> que impede index-only.</div></li>
+    <li><div><strong>Reduza o trabalho, não só o acesso:</strong> menos colunas, agregar antes de juntar, <code>EXISTS</code> no lugar de JOIN + DISTINCT, paginação por chave, <code>UNION ALL</code> no lugar de <code>UNION</code>, filtrar cedo.</div></li>
+    <li><div><strong>Meça de novo</strong> no mesmo ambiente e compare <em>leituras lógicas</em> (<code>Buffers</code> / <code>buffer_gets</code>), não só o tempo: o tempo varia com o cache, as leituras são mais estáveis.</div></li>
+    <li><div><strong>Considere o efeito colateral:</strong> índice novo pesa nas escritas; estatística nova muda outros planos; hint congela. Teste antes em homologação com volume parecido.</div></li>
+  </ol>
+  <p>Se o plano já é bom e a consulta continua lenta, o problema <strong>não está no plano</strong>: olhe as esperas (seção 3: locks, I/O, commit, conexões) e a aplicação (seção 4: N+1, falta de bind, transações abertas, rede). Diagnóstico completo inclui descartar o banco.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Antes de qualquer mudança, tenha três números: <strong>tempo por execução</strong>, <strong>leituras por execução</strong> e <strong>execuções por hora</strong>. O produto dos dois primeiros pelo terceiro diz o peso real da consulta no sistema.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uma consulta está lenta; o que você faz?" Estruture: (1) medir e achar a consulta certa, (2) plano real com buffers, (3) estimativa versus real, (4) causa (estatística, índice, SQL), (5) corrigir uma coisa, (6) medir de novo e checar efeitos colaterais. Fechar com "e se o plano estiver bom, olho esperas e a aplicação" mostra senioridade.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize o roteiro como <strong>modelo de ticket de lentidão</strong>: campos obrigatórios (consulta ou <code>sql_id</code>, horário, plano real, leituras por execução, frequência, impacto no usuário). Tickets "está lento" sem números voltam para o autor. Isso economiza horas do DBA e ensina o time a diagnosticar.</p></div>
+</section>
+
+<section class="chap" id="top-consultas">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l3">Avançado</span></div>
+  <h2>Achar as consultas que mais pesam e as métricas que importam</h2>
+  <p>Otimizar a consulta errada é o desperdício mais comum em tuning. O ranking precisa ser feito a partir das <strong>estatísticas acumuladas do próprio banco</strong>, que registram cada execução normalizada (com parâmetros trocados por marcadores).</p>
+
+  <h3>Métricas: o que ordenar e o que olhar</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Métrica</th><th>O que diz</th><th>Cuidado</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Tempo total</strong> = chamadas × tempo médio</td><td>Quanto da capacidade do banco aquela consulta consome. É o primeiro critério do ranking</td><td>Esconde consultas raras e muito lentas, que podem ser importantes para o negócio</td></tr>
+      <tr><td><strong>Tempo médio</strong> por execução</td><td>Experiência de cada chamada</td><td>Sozinho, leva a otimizar relatórios raros e ignorar a consulta quente</td></tr>
+      <tr><td><strong>p95 / p99</strong> (latência em percentil)</td><td>O que o usuário "azarado" sente. A média esconde a cauda: 95% rápidos e 5% de 10 s têm média boa</td><td>As visões acumuladas do banco trazem média e desvio, mas <em>não percentis</em>. Percentis vêm do APM, de traços da aplicação ou de logs de consultas lentas</td></tr>
+      <tr><td><strong>Leituras lógicas por execução</strong> (<code>buffer_gets</code>/blocos)</td><td>Trabalho real da consulta; estável entre execuções. Cai quando o plano melhora</td><td>Leitura "lógica" pode ser cache; leitura física é o disco</td></tr>
+      <tr><td><strong>Linhas devolvidas / linhas lidas</strong></td><td>Eficiência: ler milhões para devolver 10 é desperdício</td><td>Em agregações, devolver pouco é normal</td></tr>
+      <tr><td><strong>Taxa de acerto de cache</strong></td><td>Parece saúde (99%)</td><td>Enganosa: uma consulta que lê demais <em>no cache</em> também é ruim. Não é meta</td></tr>
+    </tbody></table></div>
+  <figure class="figure">
+    <svg viewBox="0 0 680 190" role="img" aria-label="Comparação do tempo total de três consultas: a consulta rápida e frequente domina o ranking">
+      <text class="ttl" x="20" y="20">Tempo total por dia (chamadas × tempo médio)</text>
+      <text class="lbl" x="20" y="55">A. agenda do médico</text>
+      <rect class="box-a" x="200" y="38" width="440" height="26" rx="3"/>
+      <text x="420" y="56" text-anchor="middle">2.000.000 × 50 ms = 100.000 s</text>
+      <text class="lbl" x="20" y="99">C. fila de exames</text>
+      <rect class="box-w" x="200" y="82" width="18" height="26" rx="3"/>
+      <text class="lbl" x="228" y="99">5.000 × 800 ms = 4.000 s</text>
+      <text class="lbl" x="20" y="143">B. relatório mensal</text>
+      <rect class="box-b" x="200" y="126" width="3" height="26" rx="1"/>
+      <text class="lbl" x="213" y="143">1 × 120 s = 120 s</text>
+      <text class="lbl" x="20" y="180">Por tempo médio, B seria o 1º; por tempo total, A é de longe a que mais consome.</text>
+    </svg>
+    <figcaption>Cada execução de A é rápida; a frequência faz dela a candidata nº 1 à otimização.</figcaption>
+  </figure>
+
+  <h3>Oracle</h3>
+  <p><code>V$SQL</code> (um registro por cursor filho) e <code>V$SQLSTATS</code> (agregado por <code>sql_id</code>, retém dados por mais tempo na memória) ficam no cache de cursores da SGA: mostram o que foi executado <em>desde que o cursor entrou no cache</em>. Consultar essas visões não exige pacote pago. O tempo é em microssegundos.</p>
+<pre><code class="sql">SELECT sql_id,
+       executions,
+       ROUND(elapsed_time / 1e6, 1)                         AS total_s,
+       ROUND(elapsed_time / NULLIF(executions, 0) / 1e3, 2) AS ms_por_exec,
+       ROUND(buffer_gets / NULLIF(executions, 0))           AS gets_por_exec,
+       SUBSTR(sql_text, 1, 50)                              AS texto
+FROM   v$sqlstats
+ORDER  BY elapsed_time DESC
+FETCH FIRST 5 ROWS ONLY;</code></pre>
+<pre><code class="text">SQL_ID          EXECUTIONS  TOTAL_S  MS_POR_EXEC  GETS_POR_EXEC  TEXTO
+8qk2x0f1abc9d      2104311  98211.4        46.67          1840  SELECT dt_atendimento, id_paciente, tipo FROM atend
+a7x9m2k4pqw1z         5012   4120.8       822.20         96310  SELECT e.* FROM exame e JOIN atendimento a ON ...
+...</code></pre>
+  <p>(Saída ilustrativa.) Com o <code>sql_id</code>, pegue o plano real do cursor: <code>SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR('8qk2x0f1abc9d', NULL, 'ALLSTATS LAST'))</code>; o <code>ALLSTATS</code> só tem linhas reais se a execução teve <code>/*+ GATHER_PLAN_STATISTICS */</code> ou <code>STATISTICS_LEVEL = ALL</code>.</p>
+  <div class="note trap"><b>Licenciamento: AWR, ASH, ADDM e SQL Monitor são pagos</b><p><strong>AWR</strong> (<em>Automatic Workload Repository</em>: relatórios de períodos com histórico), <strong>ASH</strong> (<em>Active Session History</em>: amostras de sessões ativas, <code>V$ACTIVE_SESSION_HISTORY</code> e <code>DBA_HIST_*</code>) e <strong>ADDM</strong> (diagnóstico automático sobre o AWR) fazem parte do <strong>Diagnostics Pack</strong>. O <strong>SQL Monitor</strong> (<code>V$SQL_MONITOR</code>, <code>DBMS_SQLTUNE.REPORT_SQL_MONITOR</code>) e o SQL Tuning Advisor fazem parte do <strong>Tuning Pack</strong> (que pressupõe o Diagnostics Pack). São opções da Enterprise Edition, <strong>licenciadas à parte</strong>. Consultar essas visões ou rodar os scripts de relatório sem licença é uso licenciável, mesmo que o banco deixe. O parâmetro <code>CONTROL_MANAGEMENT_PACK_ACCESS</code> controla o acesso (<code>NONE</code>, <code>DIAGNOSTIC</code>, <code>DIAGNOSTIC+TUNING</code>): deixe no valor que corresponde à licença. Confirme os termos da sua versão no documento oficial de licenciamento.</p></div>
+  <ul>
+    <li><strong>Gratuito e sempre disponível:</strong> <code>V$SQL</code>, <code>V$SQLSTATS</code>, <code>V$SESSION</code>, <code>V$SYSTEM_EVENT</code>, <code>EXPLAIN PLAN</code>, <code>DBMS_XPLAN.DISPLAY_CURSOR</code>, o trace SQL (10046) e o <code>tkprof</code>.</li>
+    <li><strong>Statspack:</strong> alternativa gratuita ao AWR. Tira "fotos" (snapshots) periódicas das estatísticas (<code>statspack.snap</code>) e gera relatório entre duas fotos (<code>spreport.sql</code>). Tem menos recursos (sem ASH, sem ADDM), mas ensina o mesmo raciocínio e serve a bancos sem licença de Diagnostics Pack, como a Standard Edition. É preciso agendar as fotos.</li>
+  </ul>
+
+  <h3>PostgreSQL</h3>
+  <p>A extensão <code>pg_stat_statements</code> faz o papel do ranking. Ela precisa estar em <code>shared_preload_libraries</code> (reinício do servidor) e ser criada com <code>CREATE EXTENSION pg_stat_statements</code>. Nomes de coluna de tempo: <code>total_exec_time</code>/<code>mean_exec_time</code> a partir do PostgreSQL 13 (antes, <code>total_time</code>/<code>mean_time</code>).</p>
+<pre><code class="sql">SELECT queryid,
+       calls,
+       ROUND(total_exec_time::numeric / 1000, 1)                         AS total_s,
+       ROUND(mean_exec_time::numeric, 2)                                 AS ms_medio,
+       ROUND((shared_blks_hit + shared_blks_read)::numeric / calls)      AS blocos_por_exec,
+       LEFT(query, 50)                                                   AS texto
+FROM   pg_stat_statements
+ORDER  BY total_exec_time DESC
+LIMIT  5;</code></pre>
+<pre><code class="text">       queryid        |  calls  | total_s | ms_medio | blocos_por_exec | texto
+----------------------+---------+---------+----------+-----------------+----------------------------------
+  5381992007432018561 | 2104311 | 98211.4 |    46.67 |            1840 | SELECT dt_atendimento, id_paciente, tipo FROM aten
+ -2740558831022149067 |    5012 |  4120.8 |   822.20 |           96310 | SELECT e.* FROM exame e JOIN atendimento a ON ...</code></pre>
+  <p>O texto vem normalizado (<code>WHERE id_medico = $1</code>), sem os valores. Para saber <em>com que valor</em> a consulta ficou lenta e qual plano usou, entram as outras ferramentas:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ferramenta</th><th>Para quê</th><th>Como ligar</th></tr></thead>
+    <tbody>
+      <tr><td><code>log_min_duration_statement</code></td><td>Registra no log toda consulta acima de N ms, com os valores reais dos parâmetros</td><td><code>ALTER SYSTEM SET log_min_duration_statement = '500ms'</code> + reload. <code>0</code> loga tudo (pesado); <code>-1</code> desliga. Ferramentas como pgBadger resumem o log</td></tr>
+      <tr><td><code>auto_explain</code></td><td>Grava o <em>plano</em> de consultas lentas no log, no momento em que ocorrem</td><td>Módulo carregado (<code>session_preload_libraries</code>, <code>shared_preload_libraries</code> ou <code>LOAD</code>); <code>auto_explain.log_min_duration</code>; <code>log_analyze</code> e <code>log_buffers</code> dão linhas reais (têm custo: use amostragem, <code>auto_explain.sample_rate</code>)</td></tr>
+      <tr><td><code>pg_stat_activity</code></td><td>O que está rodando <em>agora</em>: consulta, estado, tempo, espera</td><td>Sempre disponível (seção seguinte)</td></tr>
+      <tr><td><code>pg_stat_user_tables</code>/<code>pg_stat_user_indexes</code></td><td>Tabelas com muitos seq scans; índices nunca usados (<code>idx_scan = 0</code>)</td><td>Sempre disponível</td></tr>
+    </tbody></table></div>
+  <p>Limite honesto: <code>pg_stat_statements</code> só acumula médias, máximo e desvio. Não há histórico por hora nem percentis nativos. Serviços gerenciados e ferramentas de monitoramento guardam amostras periódicas desse ranking (para comparar "hoje" contra "semana passada"); sem isso, tire cópias periódicas da visão para uma tabela própria.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você acha as consultas problemáticas?" PostgreSQL: <code>pg_stat_statements</code> ordenado por <code>total_exec_time</code>, e depois <code>auto_explain</code>/<code>log_min_duration_statement</code> para o plano e os parâmetros. Oracle: <code>V$SQLSTATS</code>/<code>V$SQL</code> por tempo decorrido e leituras; AWR/ASH se licenciado, Statspack se não. Mencione <em>tempo total = chamadas × média</em> e o p95 vindo do APM.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Institua uma <strong>revisão semanal do top 10</strong> do banco: 30 minutos, DBA e líderes de squad, com o ranking por tempo total e por leituras. Cada consulta do top tem um dono (o time/serviço que a gerou), uma ação e um prazo. Em Oracle, confirme por escrito quais pacotes (Diagnostics/Tuning) estão licenciados antes de adotar AWR/ASH/SQL Monitor como rotina; se não estão, use Statspack e as visões <code>V$</code> livres.</p></div>
+</section>
+
+<section class="chap" id="esperas">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Wait events: o que o banco está esperando</h2>
+  <p>O tempo de uma sessão ativa se divide em dois: <strong>trabalhando na CPU</strong> ou <strong>esperando</strong> alguma coisa (leitura de disco, um lock, o log de transações, o cliente). Os dois bancos registram <em>o que</em> a sessão espera. É a pergunta que o plano não responde: "se o plano está bom, por que está lento?".</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 190" role="img" aria-label="Duas barras mostrando a divisão do tempo entre CPU, I/O, locks, commit e cliente, antes e depois de corrigir uma transação longa">
+      <text class="ttl" x="40" y="22">Antes: sessões ativas às 10h (ilustrativo)</text>
+      <rect class="box-a" x="40" y="32" width="180" height="36" rx="3"/><text x="130" y="55" text-anchor="middle">CPU</text>
+      <rect class="box" x="220" y="32" width="200" height="36" rx="3"/><text x="320" y="55" text-anchor="middle">I/O de leitura</text>
+      <rect class="box-b" x="420" y="32" width="100" height="36" rx="3"/><text x="470" y="55" text-anchor="middle">Locks</text>
+      <rect class="box-w" x="520" y="32" width="60" height="36" rx="3"/><text x="550" y="55" text-anchor="middle">Commit</text>
+      <rect class="box-m" x="580" y="32" width="60" height="36" rx="3"/><text x="610" y="55" text-anchor="middle">Cliente</text>
+      <text class="ttl" x="40" y="100">Depois de encurtar a transação que segurava os locks</text>
+      <rect class="box-a" x="40" y="110" width="180" height="36" rx="3"/><text x="130" y="133" text-anchor="middle">CPU</text>
+      <rect class="box" x="220" y="110" width="200" height="36" rx="3"/><text x="320" y="133" text-anchor="middle">I/O de leitura</text>
+      <rect class="box-b" x="420" y="110" width="10" height="36" rx="2"/>
+      <rect class="box-w" x="430" y="110" width="60" height="36" rx="3"/><text x="460" y="133" text-anchor="middle">Commit</text>
+      <rect class="box-m" x="490" y="110" width="60" height="36" rx="3"/><text x="520" y="133" text-anchor="middle">Cliente</text>
+      <text class="lbl" x="40" y="176">O tempo de resposta caiu por eliminar espera de lock, sem tocar em CPU nem em I/O.</text>
+    </svg>
+    <figcaption>Olhar só o plano não mostraria o problema: o tempo estava nas esperas.</figcaption>
+  </figure>
+
+  <h3>Oracle</h3>
+<pre><code class="sql">-- Em que as sessões ativas estão esperando agora (sem pacotes pagos)
+SELECT NVL(event, 'ON CPU') AS evento, wait_class, COUNT(*) AS sessoes
+FROM   v$session
+WHERE  type = 'USER' AND status = 'ACTIVE'
+GROUP  BY event, wait_class
+ORDER  BY sessoes DESC;
+
+-- Quem bloqueia quem
+SELECT sid, blocking_session, event, seconds_in_wait, sql_id
+FROM   v$session
+WHERE  blocking_session IS NOT NULL;
+
+-- Histórico por amostragem (cada amostra = ~1 s de uma sessão ativa). EXIGE Diagnostics Pack.
+SELECT NVL(event, 'ON CPU') AS evento, COUNT(*) AS amostras
+FROM   v$active_session_history
+WHERE  sample_time &gt; SYSDATE - 1/24
+GROUP  BY event ORDER BY amostras DESC FETCH FIRST 5 ROWS ONLY;</code></pre>
+  <p>A <code>V$SYSTEM_EVENT</code> acumula esperas desde a partida da instância, e a <code>V$SESSION_EVENT</code>, por sessão. Os eventos mais comuns:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Evento Oracle</th><th>Significa</th><th>Causa e ação típicas</th></tr></thead>
+    <tbody>
+      <tr><td><code>db file sequential read</code></td><td>Leitura de <em>um</em> bloco do disco (acesso por índice, por ROWID)</td><td>Normal em OLTP. Muito tempo aqui: índices pouco seletivos, nested loops enormes, cache pequeno</td></tr>
+      <tr><td><code>db file scattered read</code></td><td>Leitura de vários blocos (full scan)</td><td>Full scans: falta de índice ou consulta que realmente precisa ler tudo</td></tr>
+      <tr><td><code>direct path read</code></td><td>Leitura que pula o cache (scans grandes, paralelo)</td><td>Relatórios pesados. Atenção ao impacto em I/O</td></tr>
+      <tr><td><code>log file sync</code></td><td>Espera pelo COMMIT gravar no redo log</td><td>Commits demais (um por linha), disco de log lento. Agrupar commits</td></tr>
+      <tr><td><code>enq: TX - row lock contention</code></td><td>Sessão esperando outra liberar uma linha</td><td>Transações longas, ordem de atualização inconsistente (módulo 10)</td></tr>
+      <tr><td><code>library cache: mutex X</code> / <code>cursor: pin S wait on X</code></td><td>Contenção no cache de cursores</td><td>Hard parse excessivo: SQL sem bind variables</td></tr>
+      <tr><td><code>buffer busy waits</code> / <code>read by other session</code></td><td>Várias sessões disputando o mesmo bloco</td><td>Blocos quentes (índice com chave crescente, hash particionado ajuda)</td></tr>
+      <tr><td><code>SQL*Net message from client</code></td><td>O banco espera o <em>cliente</em> (classe Idle)</td><td>Não é o banco que está lento: aplicação ocupada, rede, ou N+1 (muitas idas e voltas)</td></tr>
+    </tbody></table></div>
+
+  <h3>PostgreSQL</h3>
+  <p>A <code>pg_stat_activity</code> mostra, para cada sessão, o <code>state</code> (<code>active</code>, <code>idle</code>, <code>idle in transaction</code>) e as colunas <code>wait_event_type</code> e <code>wait_event</code> (PostgreSQL 9.6+). Sessão ativa <em>sem</em> evento de espera está, em geral, usando CPU.</p>
+<pre><code class="sql">SELECT wait_event_type, wait_event, COUNT(*) AS sessoes
+FROM   pg_stat_activity
+WHERE  state = 'active' AND pid &lt;&gt; pg_backend_pid()
+GROUP  BY 1, 2
+ORDER  BY sessoes DESC;
+
+-- Quem está bloqueado e por quem
+SELECT pid, pg_blocking_pids(pid) AS bloqueado_por, wait_event, LEFT(query, 50) AS consulta
+FROM   pg_stat_activity
+WHERE  cardinality(pg_blocking_pids(pid)) &gt; 0;</code></pre>
+<pre><code class="text"> wait_event_type |   wait_event    | sessoes
+-----------------+-----------------+---------
+ Lock            | transactionid   |      14
+                 |                 |       6      (sem espera: CPU)
+ IO              | DataFileRead    |       3</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Evento PostgreSQL</th><th>Significa</th><th>Causa e ação típicas</th></tr></thead>
+    <tbody>
+      <tr><td><code>Lock: transactionid</code> / <code>Lock: tuple</code></td><td>Esperando uma linha ou transação alheia</td><td>Transação longa segurando lock; ver quem bloqueia (<code>pg_blocking_pids</code>)</td></tr>
+      <tr><td><code>IO: DataFileRead</code></td><td>Lendo página do disco</td><td>Índice ausente ou pouco seletivo, cache (<code>shared_buffers</code>/SO) pequeno</td></tr>
+      <tr><td><code>IO: WALSync</code> / <code>WALWrite</code></td><td>Commit gravando o WAL</td><td>Commits demais, disco de WAL lento</td></tr>
+      <tr><td><code>LWLock: *</code></td><td>Contenção em estruturas internas (buffers, WAL, lock manager)</td><td>Normalmente excesso de conexões ou de partições; ver pool</td></tr>
+      <tr><td><code>Client: ClientRead</code></td><td>O backend espera o cliente enviar o próximo comando</td><td>Estado <code>idle in transaction</code>: a aplicação abriu a transação e parou. Não é lentidão do banco</td></tr>
+    </tbody></table></div>
+  <p>O PostgreSQL não guarda histórico das esperas. Para ter um "ASH" gratuito, há a extensão <code>pg_wait_sampling</code> (de terceiros), e muitos serviços gerenciados oferecem painéis de carga por espera. Sem isso, amostre <code>pg_stat_activity</code> a cada segundo ou dois, durante o incidente.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Se a maior parte das sessões espera por <strong>lock</strong>, o problema é de concorrência (transação longa, ordem de atualização). Por <strong>I/O</strong>, de acesso (índice, cache). Por <strong>commit/log</strong>, de padrão de escrita ou disco. Por <strong>cliente</strong>, a aplicação. Por <strong>CPU</strong>, de volume de trabalho (consulta, paralelismo). Isso aponta a fila certa antes de tocar em SQL.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O banco está lento, mas as consultas parecem boas." Olho as esperas: sessões ativas por evento (<code>V$SESSION</code>/<code>pg_stat_activity</code>). Se predomina lock, procuro a sessão bloqueadora; se predomina espera de cliente, o banco não é o gargalo. Cite também que em Oracle o histórico de esperas (ASH) exige Diagnostics Pack.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Durante um incidente de lentidão, a primeira pergunta ao DBA não é "qual consulta?", e sim <strong>"o que as sessões estão esperando?"</strong>. A resposta decide quem entra na sala: aplicação (cliente, N+1), infraestrutura (I/O, rede) ou desenvolvimento (SQL, transações). E peça que o histórico de esperas seja <strong>capturado</strong> (ferramenta licenciada ou amostragem própria), para o pós-mortem não depender da memória.</p></div>
+</section>
+
+
+<section class="chap" id="aplicacao">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Problemas na aplicação e revisão de SQL em code review</h2>
+  <p>Grande parte da "lentidão do banco" nasce no código da aplicação. O banco recebe exatamente o que lhe pedem: milhares de consultas minúsculas, SQL montado por concatenação, páginas gigantes, transações que ficam abertas esperando outra coisa. Cinco padrões respondem pela maioria dos casos.</p>
+
+  <h3>1. N+1: uma consulta, mais N</h3>
+  <p>O ORM carrega uma lista (1 consulta) e, ao percorrê-la, busca um dado relacionado de cada item (N consultas). Em desenvolvimento, com 10 linhas, ninguém percebe; em produção, a tela de 50 atendimentos faz 51 idas ao banco, e cada uma paga latência de rede e de parse.</p>
+<pre><code class="text">-- log de SQL de uma única requisição "listar agenda do dia"
+SELECT * FROM atendimento WHERE id_medico = 7 AND dt_atendimento &gt;= '2026-11-26' ...   -- 1x
+SELECT * FROM paciente WHERE id_paciente = 4410                                         -- 50x, valores diferentes
+SELECT * FROM paciente WHERE id_paciente = 1873
+...</code></pre>
+  <p><strong>Como detectar:</strong> contar consultas por requisição (APM, log do ORM); no ranking do banco, uma consulta com milhões de chamadas e tempo médio de 1 ou 2 ms (<code>pg_stat_statements</code>, <code>V$SQLSTATS</code>). <strong>Como corrigir:</strong> trazer o relacionado junto, com JOIN ou com uma segunda consulta em lote (<code>WHERE id IN (...)</code>), e não item a item. Nos ORMs: <em>eager loading</em>: <code>JOIN FETCH</code>/<code>@EntityGraph</code> (JPA/Hibernate), <code>select_related</code>/<code>prefetch_related</code> (Django), <code>Include</code> (EF Core), <code>joinedload</code>/<code>selectinload</code> (SQLAlchemy).</p>
+<pre><code class="sql">-- no lugar de 51 idas ao banco: uma consulta com JOIN
+SELECT a.id_atendimento, a.dt_atendimento, a.tipo, p.id_paciente, p.nome
+FROM   atendimento a
+JOIN   paciente p ON p.id_paciente = a.id_paciente
+WHERE  a.id_medico = :med
+  AND  a.dt_atendimento &gt;= :ini AND a.dt_atendimento &lt; :fim;</code></pre>
+
+  <h3>2. Falta de bind variables</h3>
+  <p>Montar o SQL concatenando valores (<code>"... WHERE cpf = '" + cpf + "'"</code>) gera uma consulta <em>diferente</em> a cada valor. No Oracle, cada uma exige hard parse e ocupa um cursor na shared pool: a contenção aparece como <code>library cache</code>/<code>cursor: pin S wait on X</code>, e o banco gasta CPU em parse. No PostgreSQL, o custo de parse é menor, mas o planejamento se repete e o ranking do <code>pg_stat_statements</code> também se polui (ele normaliza literais, o que ajuda). Em qualquer banco, <strong>concatenar entrada do usuário é injeção de SQL</strong>, e numa empresa de saúde isso é vazamento de dado pessoal sensível.</p>
+<pre><code class="js">// ruim: concatena (injeção de SQL e um cursor novo por CPF)
+db.query(`SELECT id_paciente, nome FROM paciente WHERE cpf = '${cpf}'`);
+
+// bom: parâmetro vinculado. PostgreSQL: $1; Oracle: :cpf
+db.query("SELECT id_paciente, nome FROM paciente WHERE cpf = $1", [cpf]);</code></pre>
+  <p>Nem todo literal é problema: valores com distribuição muito desigual (status <code>'CANCELADO'</code> raro versus comum) às vezes se beneficiam de plano próprio; é o assunto de bind peeking e de plano genérico dos módulos de otimizador e de planos. A regra geral é <em>bind sempre</em>; trate exceções com conhecimento. Como band-aid para código legado, o Oracle tem <code>CURSOR_SHARING = FORCE</code>, que troca literais por binds no servidor (com efeitos colaterais nos planos).</p>
+
+  <h3>3. Paginação ruim</h3>
+  <ul>
+    <li><strong>OFFSET grande:</strong> <code>OFFSET 100000</code> obriga o banco a produzir e descartar 100 mil linhas. Cada página é mais lenta que a anterior. Use <strong>paginação por chave (keyset)</strong>: <code>WHERE (dt, id) &lt; (:ultimo_dt, :ultimo_id) ORDER BY dt DESC, id DESC FETCH FIRST 50 ROWS ONLY</code> (o PostgreSQL aceita a comparação de linhas; no Oracle, escreva a condição expandida). O lado da API está na trilha de APIs.</li>
+    <li><strong><code>COUNT(*)</code> a cada página</strong> para mostrar "página 3 de 200": é uma varredura repetida. Cacheie, aproxime, ou mostre apenas "próxima".</li>
+    <li><strong>Sem ORDER BY determinístico:</strong> páginas repetem ou perdem linhas. Sempre desempate pela PK.</li>
+    <li><strong>Sem limite máximo:</strong> permitir <code>?tamanho=1000000</code> é convite à indisponibilidade. Imponha um teto.</li>
+  </ul>
+
+  <h3>4. SELECT *</h3>
+  <p>Traz colunas que ninguém usa (textos longos, <code>CLOB</code>, evolução clínica), aumenta tráfego e memória, e <strong>impede o index-only scan</strong>: se o índice cobre as 3 colunas necessárias, mas a consulta pede todas, o banco vai à tabela em cada linha. Também quebra quando alguém adiciona uma coluna. Em ORMs, o equivalente é carregar a entidade inteira quando a tela precisa de dois campos: use projeções (DTOs, <code>select</code> de colunas específicas).</p>
+
+  <h3>5. Transações abertas demais</h3>
+  <p>Uma transação aberta segura locks, impede a limpeza de versões antigas (vacuum, undo) e ocupa uma conexão do pool. Causas frequentes: abrir a transação no início da requisição e chamar um serviço externo no meio; falta de <code>commit</code>/<code>rollback</code> em ramo de erro; <code>SELECT ... FOR UPDATE</code> com espera humana; ORM com sessão aberta durante a renderização. Sintoma: <code>idle in transaction</code> no PostgreSQL; sessões bloqueadoras no Oracle. Correções: transações <em>curtas</em> e só em torno do acesso ao banco; sem I/O externo dentro; <code>idle_in_transaction_session_timeout</code> no PostgreSQL como rede de segurança.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>"Filtro opcional" montado como <code>WHERE (:medico IS NULL OR id_medico = :medico) AND (:status IS NULL OR status = :status)</code>. Parece elegante (uma consulta para todas as combinações), mas o plano precisa servir a todos os casos e normalmente não usa o índice de nenhum. Monte o SQL dinamicamente <em>só com as condições presentes</em> (sempre com binds) ou use uma consulta por combinação frequente.</p></div>
+
+  <h3>Checklist para code review de SQL</h3>
+  <ol class="seq">
+    <li><div><strong>Binds, não concatenação.</strong> Nenhum valor do usuário entra no texto do SQL.</div></li>
+    <li><div><strong>Colunas explícitas</strong> (sem <code>SELECT *</code>), só as necessárias.</div></li>
+    <li><div><strong>Filtros sargáveis:</strong> sem função na coluna, sem conversão implícita, intervalo aberto à direita em datas.</div></li>
+    <li><div><strong>Índice existe para o filtro e a ordenação?</strong> Peça o plano real (<code>EXPLAIN ANALYZE</code>/<code>ALLSTATS</code>) em volume realista, não em tabela de 100 linhas.</div></li>
+    <li><div><strong>Sem N+1:</strong> nenhuma consulta dentro de laço; relacionamentos carregados em lote.</div></li>
+    <li><div><strong>Paginação por chave, com limite e ordem determinística.</strong> Nenhuma consulta sem <code>LIMIT</code>/<code>FETCH FIRST</code> numa tabela grande.</div></li>
+    <li><div><strong>JOINs corretos:</strong> chaves completas, <code>LEFT JOIN</code> com filtro no <code>ON</code>, sem produto cartesiano, <code>EXISTS</code> em vez de <code>IN</code> com NULL perigoso.</div></li>
+    <li><div><strong>Transação:</strong> escopo mínimo, commit explícito, sem chamada externa dentro, tratamento de erro com rollback, ordem consistente de atualização para evitar deadlock.</div></li>
+    <li><div><strong>Escritas em lote</strong> para volumes grandes (seção de operações em lote do módulo 11), e idempotência quando reprocessável.</div></li>
+    <li><div><strong>Impacto em índices e migração:</strong> índice novo pesa nas escritas; DDL em tabela grande segue o procedimento sem downtime (seção 5).</div></li>
+    <li><div><strong>Dados pessoais:</strong> a consulta devolve só o necessário (minimização); logs não imprimem CPF, nome ou resultado de exame.</div></li>
+  </ol>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você revisa uma consulta num PR?" Apresente o checklist resumido: binds, colunas, sargabilidade, índice/plano com volume real, N+1, paginação, transação. E acrescente a pergunta que separa nível: <em>"qual o volume de dados e a frequência desta consulta em produção?"</em> O que roda 10 vezes por dia em 1.000 linhas não precisa da mesma atenção que o que roda 10 mil vezes por hora em 100 milhões.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Coloque o checklist no <strong>template de pull request</strong> e peça revisão de DBA ou de dev sênior em mudanças que toquem tabelas grandes, índices ou migrações. Meça N+1 no APM (consultas por requisição) e dê um orçamento por endpoint (por exemplo, no máximo 10 consultas). Ferramentas que contam consultas nos testes automatizados barram o N+1 antes de produção.</p></div>
+</section>
+
+<section class="chap" id="migracoes">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Migrações de esquema sem downtime</h2>
+  <p>Alterar a estrutura de uma tabela com 200 milhões de linhas, com o sistema atendendo pacientes, é onde a teoria encontra a operação. Dois problemas: o <strong>DDL pode bloquear</strong> (ou reescrever a tabela inteira) e, durante um deploy gradual, <strong>duas versões da aplicação convivem</strong> e precisam funcionar com o mesmo esquema.</p>
+
+  <h3>Operações comuns: o que é seguro</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Operação</th><th>PostgreSQL</th><th>Oracle</th></tr></thead>
+    <tbody>
+      <tr><td>Adicionar coluna que aceita NULL, sem default</td><td>Instantâneo (só metadado)</td><td>Instantâneo</td></tr>
+      <tr><td>Adicionar coluna com <code>DEFAULT</code> constante</td><td>Instantâneo a partir do PG 11 (antes, reescrevia a tabela). Default <em>volátil</em> (ex.: <code>clock_timestamp()</code>) ainda reescreve</td><td>Em versões recentes é metadado para <code>NOT NULL DEFAULT</code> (desde o 11g) e, no 12c, também para colunas que aceitam NULL. Confirme na sua versão</td></tr>
+      <tr><td>Tornar coluna <code>NOT NULL</code></td><td>Varre a tabela sob lock forte. Truque: <code>CHECK (col IS NOT NULL) NOT VALID</code>, depois <code>VALIDATE CONSTRAINT</code> (lock leve) e então <code>SET NOT NULL</code> (PG 12+ aproveita o CHECK validado e não varre de novo)</td><td><code>MODIFY col NOT NULL</code> varre a tabela com lock; alternativa: <code>CHECK (col IS NOT NULL) ENABLE NOVALIDATE</code> e depois <code>VALIDATE</code></td></tr>
+      <tr><td>Criar índice em tabela grande</td><td><code>CREATE INDEX CONCURRENTLY</code>: não bloqueia escrita; mais lento; <strong>não roda dentro de transação</strong>; se falhar, deixa índice INVALID que precisa ser removido</td><td><code>CREATE INDEX ... ONLINE</code>; confirme a disponibilidade na sua edição</td></tr>
+      <tr><td>Adicionar chave estrangeira / CHECK</td><td><code>ADD CONSTRAINT ... NOT VALID</code> e depois <code>VALIDATE CONSTRAINT</code>: o primeiro é rápido, o segundo varre sem bloquear escrita</td><td><code>ENABLE NOVALIDATE</code>, depois <code>VALIDATE</code></td></tr>
+      <tr><td>Alterar tipo da coluna</td><td>Em geral reescreve a tabela sob lock forte (exceções, como aumentar <code>varchar</code>). Faça por expand/contract</td><td>Idem para muitos casos; alternativas: redefinição online (<code>DBMS_REDEFINITION</code>) ou expand/contract</td></tr>
+      <tr><td>Renomear ou remover coluna</td><td>Rápido, mas <strong>quebra a versão anterior</strong> da aplicação</td><td>Idem</td></tr>
+    </tbody></table></div>
+
+  <h3>O perigo da fila de locks</h3>
+  <p>Um <code>ALTER TABLE</code> precisa de um lock forte. Se houver uma transação longa tocando a tabela, o ALTER <em>espera</em> e, pior, <strong>tudo o que chega depois dele fica na fila atrás dele</strong>, inclusive simples <code>SELECT</code>s. Resultado: uma migração "instantânea" derruba a aplicação por minutos. Defesa: ser impaciente de propósito.</p>
+<pre><code class="sql">-- PostgreSQL: desiste em 3 s em vez de entupir a fila; repita a migração mais tarde
+SET lock_timeout = '3s';
+ALTER TABLE atendimento ADD COLUMN id_forma_pagamento bigint;
+
+-- Oracle: DDL espera N segundos pelo lock em vez de falhar na hora (ORA-00054)
+ALTER SESSION SET ddl_lock_timeout = 5;
+ALTER TABLE atendimento ADD (id_forma_pagamento NUMBER);</code></pre>
+  <p>No PostgreSQL, DDL é transacional (dá para desfazer um <code>ALTER</code> com <code>ROLLBACK</code>); no Oracle, todo DDL faz commit implícito, então uma migração que falha no meio deixa estado parcial, e os scripts precisam ser idempotentes ou ter reversão.</p>
+
+  <h3>Expand / contract: mudar sem quebrar quem está rodando</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 175" role="img" aria-label="Cinco etapas de expand/contract: expandir, dupla escrita, backfill, trocar leitura e contrair">
+      <defs><marker id="ah-expand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="10" y="20" width="116" height="70" rx="5"/>
+      <text class="ttl" x="68" y="42" text-anchor="middle">Expandir</text><text class="lbl" x="68" y="62" text-anchor="middle">add coluna nula</text><text class="lbl" x="68" y="80" text-anchor="middle">deploy 1</text>
+      <rect class="box" x="143" y="20" width="116" height="70" rx="5"/>
+      <text class="ttl" x="201" y="42" text-anchor="middle">Dupla escrita</text><text class="lbl" x="201" y="62" text-anchor="middle">grava nas duas</text><text class="lbl" x="201" y="80" text-anchor="middle">deploy 2</text>
+      <rect class="box" x="276" y="20" width="116" height="70" rx="5"/>
+      <text class="ttl" x="334" y="42" text-anchor="middle">Backfill</text><text class="lbl" x="334" y="62" text-anchor="middle">lotes, retomável</text><text class="lbl" x="334" y="80" text-anchor="middle">script</text>
+      <rect class="box" x="409" y="20" width="116" height="70" rx="5"/>
+      <text class="ttl" x="467" y="42" text-anchor="middle">Trocar leitura</text><text class="lbl" x="467" y="62" text-anchor="middle">app lê a nova</text><text class="lbl" x="467" y="80" text-anchor="middle">deploy 3</text>
+      <rect class="box-b" x="542" y="20" width="116" height="70" rx="5"/>
+      <text class="ttl" x="600" y="42" text-anchor="middle">Contrair</text><text class="lbl" x="600" y="62" text-anchor="middle">remove a antiga</text><text class="lbl" x="600" y="80" text-anchor="middle">deploy 4</text>
+      <line class="ln-a" x1="126" y1="55" x2="141" y2="55" marker-end="url(#ah-expand)"/>
+      <line class="ln-a" x1="259" y1="55" x2="274" y2="55" marker-end="url(#ah-expand)"/>
+      <line class="ln-a" x1="392" y1="55" x2="407" y2="55" marker-end="url(#ah-expand)"/>
+      <line class="ln-b" x1="525" y1="55" x2="540" y2="55" marker-end="url(#ah-expand)"/>
+      <text class="lbl" x="10" y="124">Cada etapa é compatível com a versão anterior da aplicação, então um deploy gradual não quebra.</text>
+      <text class="lbl" x="10" y="142">Se algo der errado, volta-se um passo sem perda de dados. Só o último passo é irreversível.</text>
+      <text class="lbl" x="10" y="164">Dias entre as etapas, até ter certeza de que nada lê a coluna antiga, nem relatórios.</text>
+    </svg>
+    <figcaption>Expand/contract divide uma mudança arriscada em passos pequenos, cada um seguro por si.</figcaption>
+  </figure>
+  <p>Exemplo: criar <code>id_forma_pagamento NOT NULL</code> em <code>atendimento</code> (200 milhões de linhas), no PostgreSQL:</p>
+<pre><code class="sql">-- 1) EXPANDIR: coluna nula (metadado, instantâneo) + índice sem bloquear
+SET lock_timeout = '3s';
+ALTER TABLE atendimento ADD COLUMN id_forma_pagamento bigint;
+CREATE INDEX CONCURRENTLY ix_atend_forma ON atendimento (id_forma_pagamento);   -- fora de transação
+
+-- 2) deploy da aplicação: passa a gravar a coluna nova em todo INSERT/UPDATE
+
+-- 3) BACKFILL do histórico, em lotes por faixa de id, com commit (módulo 11, operações em lote)
+UPDATE atendimento SET id_forma_pagamento = 1
+ WHERE id_atendimento &gt;= :ini AND id_atendimento &lt; :ini + 50000
+   AND id_forma_pagamento IS NULL;
+
+-- 4) restrições sem varredura bloqueante
+ALTER TABLE atendimento ADD CONSTRAINT fk_atend_forma FOREIGN KEY (id_forma_pagamento)
+  REFERENCES forma_pagamento (id_forma_pagamento) NOT VALID;
+ALTER TABLE atendimento VALIDATE CONSTRAINT fk_atend_forma;
+ALTER TABLE atendimento ADD CONSTRAINT ck_forma_nn CHECK (id_forma_pagamento IS NOT NULL) NOT VALID;
+ALTER TABLE atendimento VALIDATE CONSTRAINT ck_forma_nn;
+ALTER TABLE atendimento ALTER COLUMN id_forma_pagamento SET NOT NULL;   -- PG 12+: aproveita o CHECK
+ALTER TABLE atendimento DROP CONSTRAINT ck_forma_nn;</code></pre>
+  <p>O padrão serve também para trocar o tipo de uma coluna (criar a nova coluna, copiar com dupla escrita e backfill, trocar a leitura, remover a antiga) e para dividir uma tabela. A parte "contrair" só acontece <strong>depois</strong> de um período de observação.</p>
+
+  <h3>Ferramentas de migração: Flyway e Liquibase</h3>
+  <p>Migração manual ("rodei o script no banco de produção") não deixa histórico nem repete em outros ambientes. Ferramentas de <strong>migração versionada</strong> aplicam os scripts em ordem, registram o que foi executado numa tabela de controle e recusam executar um script alterado depois de aplicado (checksum).</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Flyway</th><th>Liquibase</th></tr></thead>
+    <tbody>
+      <tr><td>Estilo</td><td>Scripts SQL versionados (<code>V12__add_forma_pagamento.sql</code>) e repetíveis (<code>R__views.sql</code>)</td><td><em>Changelogs</em> com <em>changesets</em> (XML, YAML, JSON ou SQL formatado)</td></tr>
+      <tr><td>Reversão</td><td>Centrada em "roll forward": nova migração que corrige</td><td>Permite escrever <em>rollback</em> por changeset</td></tr>
+      <tr><td>Forte em</td><td>Simplicidade, SQL puro, mesma sintaxe do banco</td><td>Abstração multi-banco, condições, contextos</td></tr>
+      <tr><td>Como integrar</td><td colspan="2">No pipeline de deploy, como etapa anterior à subida da aplicação, com usuário de migração distinto do usuário da aplicação. Evite migrar dentro do startup de N réplicas ao mesmo tempo.</td></tr>
+    </tbody></table></div>
+  <div class="note trap"><b>Armadilha comum</b><p><code>CREATE INDEX CONCURRENTLY</code> não pode estar dentro de uma transação, e as ferramentas costumam envolver cada migração numa. Ambas permitem desabilitar a transação por script ou changeset (verifique a opção na versão que você usa). Outra: scripts que dependem de dados ou ordem diferente entre ambientes e <em>passam em homologação, falham em produção</em>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como adicionar uma coluna <code>NOT NULL</code> numa tabela enorme, sem downtime?" Adiciono nula (instantâneo), faço a aplicação gravar, preencho o histórico em lotes, valido uma constraint <code>NOT VALID</code>/<code>VALIDATE</code> e só então marco <code>NOT NULL</code>; <code>lock_timeout</code> em tudo. Mencionar a fila de locks e o expand/contract mostra experiência real.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina a regra: <strong>toda migração em tabela grande passa por revisão e ensaio</strong> num ambiente com volume parecido, com horário, plano de reversão e responsável. Regra complementar: nenhum <code>DROP</code>/<code>RENAME</code> no mesmo deploy que muda o código. Isso elimina a classe de incidentes "deploy com migração derrubou o sistema".</p></div>
+</section>
+
+<section class="chap" id="homologacao">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Homologação com dados realistas e anonimizados</h2>
+  <p>Testar desempenho exige dados parecidos com os de produção: volume, distribuição, correlações. Uma consulta que voa com 1.000 pacientes pode ser lenta com 3 milhões, porque o plano muda. A saída preguiçosa, <strong>copiar o banco de produção para homologação</strong>, leva dados pessoais e de saúde (dados sensíveis pela LGPD) para ambientes com menos controle: mais gente com acesso, backups soltos, laptops de desenvolvedores. É a origem de vazamentos reais.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>"É só para homologação, ninguém de fora acessa." A LGPD não distingue ambiente: dado pessoal em qualquer cópia tem de estar protegido (arts. 6º, necessidade, e 46, segurança), e a ANPD considera o incidente em qualquer base. Copiar <code>paciente</code>, <code>atendimento</code> e anotações de prontuário sem mascarar é, em regra, tratamento sem necessidade. <strong>Nunca copie dados de pacientes sem mascarar.</strong></p></div>
+
+  <h3>Opções, da mais segura à menos</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Abordagem</th><th>Realismo</th><th>Risco LGPD</th><th>Comentário</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Dados sintéticos</strong> gerados (<code>generate_series</code> / <code>CONNECT BY</code>) com a distribuição de produção</td><td>Boa, se você replicar volumes e cardinalidades</td><td>Nenhum</td><td>Primeira escolha para teste de desempenho. Exige conhecer a distribuição real (medida por consultas agregadas)</td></tr>
+      <tr><td><strong>Cópia de produção anonimizada</strong></td><td>Alta (preserva formas e correlações)</td><td>Baixo, se bem feita; alto se mal feita</td><td>Exige processo, ferramenta e validação</td></tr>
+      <tr><td><strong>Cópia pseudonimizada</strong></td><td>Alta</td><td>Médio: o dado ainda é pessoal (reversível com a chave)</td><td>Útil, mas o ambiente continua sob as regras da LGPD</td></tr>
+      <tr><td><strong>Cópia integral de produção</strong></td><td>Total</td><td><strong>Alto: evite</strong></td><td>Só em ambiente com o mesmo nível de controle de produção, e com justificativa</td></tr>
+    </tbody></table></div>
+  <p><strong>Anonimização</strong> (LGPD art. 12) torna o dado não identificável por meios técnicos razoáveis; deixa de ser dado pessoal, <em>mas</em> se a reidentificação for viável com esforço razoável, continua sendo. <strong>Pseudonimização</strong> (art. 13, §4º) separa a informação identificadora numa base à parte; o dado segue pessoal. Para homologação, o objetivo prático é: <em>ninguém consegue reconhecer um paciente real</em>, e as consultas se comportam como em produção.</p>
+
+  <h3>Técnicas de mascaramento</h3>
+  <ul>
+    <li><strong>Substituição</strong> por valores fictícios (nome, CPF, telefone, e-mail), <em>determinística</em> (mesmo paciente vira o mesmo fictício em todas as tabelas, para preservar relações e consultas).</li>
+    <li><strong>Embaralhamento</strong> (<em>shuffle</em>) de valores entre linhas, preservando a distribuição da coluna.</li>
+    <li><strong>Generalização</strong>: data de nascimento vira o ano (ou desloca ± dias), CEP vira região, idade vira faixa.</li>
+    <li><strong>Remoção ou anulação</strong> de campos sem uso nos testes.</li>
+    <li><strong>Texto livre</strong> (evolução clínica, observações, laudos): o mais perigoso, porque o nome do paciente aparece no meio da frase. Prefira <em>não copiar</em> (substitua por texto fictício de tamanho parecido).</li>
+    <li><strong>Preservar o que o plano usa</strong>: tamanho, tipo, nulidade e cardinalidade das colunas indexadas e filtradas. Trocar todos os CPFs por um único valor mudaria planos e invalidaria o teste.</li>
+  </ul>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Dados sintéticos: 1 milhão de pacientes fictícios
+INSERT /*+ APPEND */ INTO paciente (id_paciente, nome, cpf, dt_nascimento, cidade, uf)
+SELECT LEVEL,
+       'Paciente ' || LEVEL,
+       LPAD(TO_CHAR(LEVEL), 11, '0'),                       -- NÃO são CPFs reais
+       DATE '1940-01-01' + MOD(LEVEL * 37, 28000),
+       'Cidade ' || MOD(LEVEL, 300),
+       CASE MOD(LEVEL, 3) WHEN 0 THEN 'SP' WHEN 1 THEN 'MG' ELSE 'RJ' END
+FROM   dual CONNECT BY LEVEL &lt;= 1000000;
+COMMIT;
+
+-- Mascarar uma CÓPIA já restaurada em ambiente isolado (jamais a produção!)
+UPDATE paciente
+SET    nome = 'Paciente ' || id_paciente,
+       cpf = LPAD(TO_CHAR(id_paciente), 11, '0'),
+       dt_nascimento = dt_nascimento + (MOD(id_paciente, 61) - 30);</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Dados sintéticos: 1 milhão de pacientes fictícios
+INSERT INTO paciente (id_paciente, nome, cpf, dt_nascimento, cidade, uf)
+SELECT g,
+       'Paciente ' || g,
+       lpad(g::text, 11, '0'),                              -- NÃO são CPFs reais
+       DATE '1940-01-01' + (g * 37 % 28000),
+       'Cidade ' || (g % 300),
+       (ARRAY['SP','MG','RJ'])[g % 3 + 1]
+FROM   generate_series(1, 1000000) AS g;
+
+-- Mascarar uma CÓPIA já restaurada em ambiente isolado (jamais a produção!)
+UPDATE paciente
+SET    nome = 'Paciente ' || id_paciente,
+       cpf = lpad(id_paciente::text, 11, '0'),
+       dt_nascimento = dt_nascimento + ((id_paciente % 61)::int - 30);</code></pre>
+  </div>
+  <p><strong>Ferramentas:</strong> no Oracle, existe o <em>Data Masking and Subsetting Pack</em> (opção paga do Enterprise Manager; confirme licença) e o serviço Data Safe, em nuvem. No PostgreSQL, a extensão <code>PostgreSQL Anonymizer</code> (de terceiros) permite declarar regras de mascaramento por coluna. Para casos simples, scripts SQL como o acima, revisados e versionados, bastam.</p>
+
+  <h3>Processo seguro</h3>
+  <ol class="seq">
+    <li><div><strong>Restaure o backup num ambiente isolado de mascaramento</strong>, com acesso restrito (nunca mascarar dentro da produção).</div></li>
+    <li><div><strong>Aplique as regras</strong> (script versionado e revisado pelo DPO/segurança), incluindo tabelas de log, auditoria, filas e anexos.</div></li>
+    <li><div><strong>Valide:</strong> procure dados reais remanescentes (consultas que busquem CPFs com formato real, nomes comuns, e-mails reais), compare contagens e distribuições com a origem, e teste uma amostra manualmente.</div></li>
+    <li><div><strong>Atualize as estatísticas</strong> (<code>DBMS_STATS</code>/<code>ANALYZE</code>) e confirme que planos de consultas-chave se parecem com os de produção.</div></li>
+    <li><div><strong>Libere</strong> para homologação e <strong>destrua</strong> a cópia intermediária e os backups dela. Registre a execução (quem, quando, qual versão das regras).</div></li>
+    <li><div><strong>Repita</strong> com periodicidade definida; não deixe uma cópia "esquecida" por anos.</div></li>
+  </ol>
+  <div class="note iv"><b>Na entrevista</b><p>"Posso usar produção em homologação?" Não sem mascarar: é dado sensível, e a LGPD vale em qualquer ambiente. Apresento a escada: sintético com distribuição realista, depois cópia anonimizada com mascaramento determinístico e validação; texto livre removido; estatísticas recalculadas para o plano ficar parecido.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Registre isso na <strong>política de dados de teste</strong>: proibição de cópia crua de produção, processo de mascaramento com dono, e aprovação do DPO. Verifique também <em>onde estão</em> hoje as cópias: dumps em laptops, buckets, ambientes de fornecedor. Em auditoria, o ambiente de homologação com dados reais sem controle é um achado grave, e o risco de incidente é real.</p></div>
+</section>
+
+
+<section class="chap" id="gestao">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>SLOs de banco, capacidade, custo e organização do time</h2>
+  <p>Tudo o que vimos até aqui vira rotina só se alguém for <em>dono</em> e houver <em>metas</em>. Esta seção é a do gestor: como transformar desempenho em compromisso mensurável e dividir as responsabilidades entre quem escreve o SQL e quem opera o banco.</p>
+
+  <h3>SLI, SLO e orçamento de erro</h3>
+  <p>Um <strong>SLI</strong> (indicador) é uma medida do serviço do ponto de vista do usuário. O <strong>SLO</strong> (objetivo) é a meta para esse indicador num período. O <strong>orçamento de erro</strong> é a folga: se o SLO é 99% das requisições abaixo de 300 ms, 1% pode estourar. Gastou o orçamento? Prioridade da próxima sprint passa a ser estabilidade, não funcionalidade. O SLO precisa ser <em>medido onde o usuário sente</em>: na aplicação (APM), não só no banco.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Área</th><th>SLI</th><th>Exemplo de SLO (ilustrativo)</th></tr></thead>
+    <tbody>
+      <tr><td>Latência</td><td>Percentil de tempo das consultas/endpoints críticos (agenda, cadastro, resultado de exame)</td><td>95% abaixo de 300 ms; 99% abaixo de 1 s, na janela de 30 dias</td></tr>
+      <tr><td>Disponibilidade</td><td>Proporção de requisições que concluem sem erro de banco</td><td>99,9% mensal para fluxos assistenciais</td></tr>
+      <tr><td>Réplica</td><td>Lag de replicação</td><td>Abaixo de 5 s em 99% do tempo</td></tr>
+      <tr><td>Recuperação</td><td>RPO (perda máxima de dados) e RTO (tempo para voltar), <strong>testados</strong></td><td>RPO de 15 min, RTO de 2 h, restore de teste mensal com sucesso</td></tr>
+      <tr><td>Manutenção</td><td>Idade das estatísticas, bloat das 5 maiores tabelas, tempo desde o último vacuum (PG)</td><td>Sem tabela quente com estatística de mais de 7 dias</td></tr>
+      <tr><td>Segurança/LGPD</td><td>Cópias com dados de pacientes sem mascarar fora de produção</td><td>Zero</td></tr>
+    </tbody></table></div>
+  <p>Escolha poucos SLOs, de fluxos que importam para a assistência. Um painel com 40 indicadores não é lido por ninguém.</p>
+
+  <h3>Capacidade: prever em vez de apagar incêndio</h3>
+  <ul>
+    <li><strong>O que medir:</strong> crescimento mensal em GB por tabela e total (inclusive índices, logs e backups), CPU (p95 e pico), memória, IOPS e latência de disco, conexões (usadas, ativas, <em>idle in transaction</em>), tamanho de WAL/redo gerado por dia, lag da réplica.</li>
+    <li><strong>Projetar:</strong> 12 meses à frente, com o crescimento observado e o impacto de novos projetos (nova unidade, novo convênio, novo módulo). Disco enchendo é a causa mais comum de parada total; alerte em 70% e em 85%.</li>
+    <li><strong>Testar:</strong> uma vez por ano, ensaie a carga de pico (fim de mês, campanha de vacinação) em homologação com volume parecido.</li>
+  </ul>
+
+  <h3>Custo</h3>
+  <ul>
+    <li><strong>Oracle:</strong> licenciamento por processador (núcleos, com fator de conversão) ou usuário nomeado, mais opções e pacotes (Partitioning, Diagnostics, Tuning, Active Data Guard...). Cada núcleo e cada opção custa caro e todo ano há suporte. <em>Consultas ruins viram compra de licença</em>: reduzir o consumo de CPU pode evitar licenciar mais núcleos. E <strong>usar recurso sem licença é passivo</strong>; mantenha o inventário.</li>
+    <li><strong>PostgreSQL:</strong> sem licença, mas com custo de pessoas, operação, extensões e, na nuvem, de instância, IOPS provisionado, réplicas e transferência. O custo de uma consulta ruim é o tamanho da instância que você precisa para escondê-la.</li>
+    <li><strong>Em ambos:</strong> armazenamento de histórico que ninguém consulta (arquivar), réplicas ociosas, ambientes de teste do tamanho de produção e cópias esquecidas.</li>
+  </ul>
+
+  <h3>Como organizar o time: DBA e desenvolvedor</h3>
+  <p>Dois modelos extremos falham. No <strong>DBA como porteiro</strong>, toda mudança passa pelo DBA: vira gargalo, o time de desenvolvimento não aprende, e o DBA conhece pouco do negócio. No <strong>"cada um por si"</strong>, sem DBA ou sem padrão, aparecem N+1, índices duplicados, migrações perigosas, backup nunca testado. O modelo saudável é de <strong>responsabilidade compartilhada com papéis claros</strong>: o time dono do serviço é dono do desempenho de <em>suas</em> consultas; o DBA (ou plataforma) é dono da saúde do banco e da prática.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Responsabilidade</th><th>Time de desenvolvimento</th><th>DBA / plataforma de dados</th></tr></thead>
+    <tbody>
+      <tr><td>Qualidade do SQL e das consultas do serviço</td><td><strong>Dono</strong>: escreve, mede, revisa, corrige</td><td>Apoia: ensina, dá ferramentas, revisa casos difíceis</td></tr>
+      <tr><td>Modelagem e índices de novas funcionalidades</td><td><strong>Propõe</strong> com plano e volume estimado</td><td><strong>Revisa</strong> (tabelas grandes, índices, particionamento)</td></tr>
+      <tr><td>Migrações de esquema</td><td>Escreve (expand/contract) e ensaia</td><td>Revisa DDL de risco; executa/acompanha em tabelas grandes</td></tr>
+      <tr><td>Backup, restore, alta disponibilidade, patches</td><td>Informa necessidades (RPO/RTO)</td><td><strong>Dono</strong>: executa e <em>testa</em> restauração</td></tr>
+      <tr><td>Parâmetros, estatísticas, vacuum, capacidade</td><td>Informa mudanças de carga</td><td><strong>Dono</strong></td></tr>
+      <tr><td>Licenciamento e inventário de recursos (Oracle)</td><td>Não usa recurso pago sem aprovação</td><td><strong>Dono</strong>, junto com compras/jurídico</td></tr>
+      <tr><td>Incidentes de desempenho</td><td>Primeira linha para código/consultas</td><td>Primeira linha para banco e infraestrutura; conduz o diagnóstico de esperas</td></tr>
+      <tr><td>Segurança e LGPD dos dados</td><td>Minimização, logs sem dado pessoal</td><td>Acesso, criptografia, mascaramento de cópias, auditoria; junto ao DPO</td></tr>
+    </tbody></table></div>
+
+  <h3>Quando chamar o DBA</h3>
+  <ul>
+    <li><strong>Imediatamente:</strong> lentidão geral sem causa aparente; sessões bloqueadas em produção; disco, redo/WAL ou conexões perto do limite; réplica atrasada; erro de corrupção ou de replicação.</li>
+    <li><strong>Antes de fazer:</strong> índice, DDL ou carga em tabela grande; particionamento; mudança de parâmetro; uso de recurso licenciável; cópia de dados para outro ambiente.</li>
+    <li><strong>Depois de tentar o roteiro:</strong> quando o plano é incompreensível, quando estatísticas e índices parecem certos e o plano continua ruim, ou há regressão após mudança de versão.</li>
+    <li><strong>Leve:</strong> <code>sql_id</code> ou <code>queryid</code>, o texto, o plano real, o horário e a duração do problema, a frequência, o impacto, o que já foi tentado.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Todo problema de banco tem <strong>um dono nomeado</strong>: a consulta pertence a um time; a saúde do banco, ao DBA; o prazo de retenção, ao DPO. Se o dono é "todo mundo", é "ninguém".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você divide responsabilidades entre desenvolvedores e DBA?" Desenvolvedores são donos das suas consultas e migrações, com revisão; o DBA é dono de backup/restore testado, capacidade, parâmetros e prática. Cite SLOs medidos na aplicação, revisão semanal do top de consultas e um canal claro para acionar o DBA, para não virar gargalo nem terra de ninguém.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Comece pequeno: <strong>(1)</strong> um painel com 5 SLIs; <strong>(2)</strong> uma reunião semanal de 30 min do top 10 de consultas; <strong>(3)</strong> o checklist de SQL no PR; <strong>(4)</strong> um restore testado por mês; <strong>(5)</strong> o inventário de licenças Oracle atualizado e a política de retenção/dados de teste assinadas pelo DPO. Cinco hábitos que previnem a maioria dos incidentes deste módulo.</p></div>
+</section>
+
+<section class="chap" id="estudo">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Roteiro de estudo, prática e laboratório com Docker</h2>
+  <p>Ler não basta: desempenho se aprende rodando consultas, olhando planos e quebrando coisas num ambiente seguro. Aqui estão uma sugestão de ordem de estudo, um laboratório local com os dois bancos e a forma de praticar.</p>
+
+  <h3>Ordem de estudo da trilha</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Bloco</th><th>Módulos</th><th>Prática que fixa</th></tr></thead>
+    <tbody>
+      <tr><td>1. Leitura de dados</td><td>01 a 05: fundamentos, JOINs, agregação, CTEs, janelas</td><td>Reescrever 10 consultas do seu trabalho; resolver os exercícios de cada módulo sem olhar</td></tr>
+      <tr><td>2. Escrita e modelagem</td><td>06: escrita, transações, modelagem</td><td>Desenhar uma tabela nova com constraints e transações; simular erro no meio</td></tr>
+      <tr><td>3. Desempenho</td><td>07 a 09: execução, índices, planos</td><td>Para cada consulta lenta: plano real, hipótese, índice, plano novo. Anotar leituras antes/depois</td></tr>
+      <tr><td>4. Concorrência</td><td>10: locks, MVCC, deadlock</td><td>Reproduzir deadlock e espera de lock com duas sessões</td></tr>
+      <tr><td>5. Escala e operação</td><td>11: partições, MVs, lotes, vacuum, pool</td><td>Particionar uma tabela de teste, arquivar uma partição, medir bloat e vacuum</td></tr>
+      <tr><td>6. Diagnóstico e gestão</td><td>12: este módulo</td><td>Resolver os exercícios integradores; simular entrevista em voz alta</td></tr>
+    </tbody></table></div>
+  <p>Ritmo sugerido: de 6 a 8 semanas, 4 a 5 sessões de 1 h por semana, <strong>metade lendo, metade no laboratório</strong>. Ao fim de cada módulo, responda em voz alta as perguntas de entrevista antes de abrir as respostas.</p>
+
+  <h3>Laboratório com Docker: Oracle Free e PostgreSQL em containers</h3>
+  <p>Subir os dois bancos em containers evita instalar nada na máquina e permite destruir e recriar o ambiente. A trilha Docker deste repositório explica imagens, volumes, redes, <code>healthcheck</code> e Compose; aqui vai o essencial para o laboratório. <strong>Oracle Database Free</strong> é a edição gratuita do Oracle para aprendizado e desenvolvimento, com limites de recursos e <em>sem todos os recursos da Enterprise</em>: confira no comparativo oficial se um recurso (particionamento, pacotes de diagnóstico) está disponível antes de contar com ele no laboratório. Há imagem oficial no registro da Oracle e imagens mantidas pela comunidade (como <code>gvenzl/oracle-free</code>).</p>
+<pre data-file="compose.yaml"><code class="yaml">services:
+  postgres:
+    image: postgres:16
+    command: ["postgres",
+              "-c", "shared_preload_libraries=pg_stat_statements,auto_explain",
+              "-c", "auto_explain.log_min_duration=200ms",
+              "-c", "log_min_duration_statement=500ms"]
+    environment:
+      POSTGRES_PASSWORD: ${PG_SENHA:?defina PG_SENHA no arquivo .env}
+      POSTGRES_DB: hospital
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hospital"]
+      interval: 5s
+      retries: 10
+
+  oracle:
+    image: gvenzl/oracle-free:slim            # confira as tags disponíveis; há também a imagem oficial da Oracle
+    environment:
+      ORACLE_PASSWORD: ${ORA_SENHA:?defina ORA_SENHA no arquivo .env}
+      APP_USER: app
+      APP_USER_PASSWORD: ${ORA_SENHA_APP:?defina ORA_SENHA_APP no arquivo .env}
+    ports: ["1521:1521"]
+    volumes: ["oradata:/opt/oracle/oradata"]
+
+volumes:
+  pgdata:
+  oradata:</code></pre>
+<pre><code class="sh"># senhas de laboratório no .env (que NÃO vai para o git: coloque no .gitignore)
+docker compose up -d                       # Compose v2: "docker compose", sem hífen
+docker compose ps                          # confira "healthy"
+docker compose exec postgres psql -U postgres -d hospital
+docker compose exec oracle sqlplus app@//localhost:1521/FREEPDB1   # pede a senha; FREEPDB1 é o serviço padrão desta imagem
+
+# dentro do psql: habilitar o ranking de consultas
+#   CREATE EXTENSION pg_stat_statements;
+
+# gerar carga com o pgbench (incluído na imagem do PostgreSQL)
+docker compose exec postgres pgbench -i -s 50 -U postgres hospital
+docker compose exec postgres pgbench -c 10 -T 60 -U postgres hospital</code></pre>
+  <ul>
+    <li><strong>Esquema e dados:</strong> crie as tabelas da trilha e preencha com dados sintéticos (seção de homologação). Dados <em>fictícios</em>, nunca reais.</li>
+    <li><strong>O que praticar no laboratório:</strong> plano com e sem índice; particionar e arquivar; MV com e sem <code>CONCURRENTLY</code>; deadlock com duas sessões; <code>idle in transaction</code> e vacuum travado; migração com <code>lock_timeout</code>; <code>pg_stat_statements</code> sobre a carga do <code>pgbench</code>.</li>
+    <li><strong>Oracle:</strong> para gerar carga, existem ferramentas gratuitas como o SwingBench (da própria Oracle, para testes de carga). Lembre que AWR/ASH/SQL Monitor exigem licença; no laboratório, confirme o que a edição Free oferece.</li>
+    <li><strong>Windows/macOS:</strong> o Docker Desktop (no Windows, com WSL 2) roda os containers; volumes nomeados têm melhor desempenho de disco que pastas do host.</li>
+  </ul>
+
+  <h3>Como praticar com consultas reais</h3>
+  <ol>
+    <li>Escolha uma consulta real e lenta do seu dia a dia, num banco de homologação (com dados mascarados).</li>
+    <li>Tire o plano real e anote tempo, linhas e leituras.</li>
+    <li>Aplique o roteiro da seção 1 e mude uma coisa de cada vez.</li>
+    <li>Compare os planos antes e depois e anote o que mudou e por quê.</li>
+  </ol>
+  <p>Fazer isso com dez consultas reais ensina mais que qualquer livro.</p>
+
+  <h3>Para ir além</h3>
+  <ul>
+    <li><strong>Use The Index, Luke</strong> (use-the-index-luke.com), de Markus Winand: o melhor material gratuito sobre índices e desempenho, com exemplos para Oracle e PostgreSQL. Aprofunda o módulo de índices e o de planos.</li>
+    <li><strong>Documentação do PostgreSQL</strong>, capítulos "Using EXPLAIN" e "Performance Tips", e as seções de manutenção de rotina (vacuum) e de particionamento.</li>
+    <li><strong>Oracle Database SQL Tuning Guide</strong>, na documentação oficial da Oracle: a referência de planos, estatísticas e otimizador. Consulte também o <em>Licensing Information</em> da versão em uso, antes de usar qualquer pacote de diagnóstico.</li>
+    <li><strong>Modern SQL</strong> (modern-sql.com), também de Winand: funções de janela, CTEs e recursos do padrão SQL e qual banco suporta cada um.</li>
+    <li><strong>Trilhas do repositório:</strong> Docker (laboratório e contêineres), Web (redes, HTTP e infraestrutura) e APIs (paginação keyset, idempotência, confiabilidade e observabilidade).</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você estuda e pratica desempenho de banco?" Um laboratório local com os dois bancos em Docker, dados sintéticos, consultas reais mascaradas, e o hábito de anotar leituras antes e depois de cada mudança. Contar um caso concreto (consulta, plano, causa, correção, ganho medido) vale mais que recitar conceitos.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Dê ao time um <strong>ambiente de laboratório permitido</strong> (containers com dados sintéticos) e tempo protegido para ele. Quem treina em produção aprende em incidente. Um laboratório padronizado (um <code>compose.yaml</code> no repositório) também serve para integração de novos membros e para reproduzir problemas.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Exercícios integradores</h2>
+  <p>Cinco casos que juntam vários módulos da trilha. Tente resolver antes de abrir a resposta.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>A tela de agenda está lenta. O <code>pg_stat_statements</code> mostra a consulta abaixo no topo; o plano real mostra <code>Seq Scan on atendimento</code> com 150 milhões de linhas lidas. Diagnostique, corrija e prove a melhora.</span></summary><div class="ans">
+<pre><code class="text">calls    | total_s | ms_medio | blocos_por_exec | query
+ 2104311 | 98211.4 |    46.67 |          1840   | SELECT dt_atendimento, id_paciente, tipo FROM atendimento
+                                                   WHERE id_medico = $1 AND status = 'AGENDADO'
+                                                     AND dt_atendimento &gt;= $2 AND dt_atendimento &lt; $3
+                                                   ORDER BY dt_atendimento</code></pre>
+    <ol>
+      <li><strong>Peso:</strong> 2 milhões de chamadas × 47 ms = 98 mil s. É a consulta nº 1 do sistema; vale otimizar (roteiro, seção 1).</li>
+      <li><strong>Plano real</strong> com valores típicos (<code>EXPLAIN (ANALYZE, BUFFERS)</code>): confirmar o seq scan e que a estimativa é razoável. Então o problema é <em>acesso</em>, não estatística.</li>
+      <li><strong>Índice:</strong> igualdades primeiro, depois o intervalo, que atende o ORDER BY: <code>CREATE INDEX CONCURRENTLY ix_agenda ON atendimento (id_medico, status, dt_atendimento) INCLUDE (id_paciente, tipo)</code> (Oracle: colunas extras no fim do índice). Um índice parcial <code>WHERE status = 'AGENDADO'</code> fica menor.</li>
+      <li><strong>Prova:</strong> novo plano com <code>Index Only Scan</code>, blocos por execução despencando (de 1.840 para algumas dezenas), e o ranking do <code>pg_stat_statements</code> (zerado com <code>pg_stat_statements_reset()</code> antes) mostrando <code>ms_medio</code> menor.</li>
+      <li><strong>Efeito colateral:</strong> índice pesa nas escritas de <code>atendimento</code> (tabela com muita escrita); conferir se algum índice antigo ficou redundante. Em produção, criar com <code>CONCURRENTLY</code>, com <code>lock_timeout</code>, fora de pico.</li>
+    </ol></div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Projete o ciclo de vida de <code>atendimento</code> e <code>atendimento_item</code> (200 milhões e 800 milhões de linhas, crescendo) com um painel mensal de faturamento. Cubra particionamento, arquivamento, painel e LGPD.</span></summary><div class="ans">
+    <ul>
+      <li><strong>Partição:</strong> range mensal por <code>dt_atendimento</code> em <code>atendimento</code>; <code>atendimento_item</code> particionada igual (Oracle: reference partitioning; PostgreSQL: copiar a data para a tabela de itens). PG: criar partições antecipadamente por job, com alerta; Oracle: <code>INTERVAL</code>, confirmando a licença de Partitioning.</li>
+      <li><strong>Índices:</strong> locais; PK composta com a data no PG. Acesso por <code>id_paciente</code> com a data no filtro sempre que possível, para podar.</li>
+      <li><strong>Painel:</strong> tabela de resumo diária atualizada incrementalmente (janela dos últimos dias), ou MV com refresh <code>CONCURRENTLY</code> (PG) / <code>FAST</code> (Oracle). Exibir "atualizado em".</li>
+      <li><strong>Arquivamento:</strong> partições com mais de 24 meses vão para armazenamento mais barato (tablespace, tabela destacada, exportação comprimida) mantendo acesso sob demanda. <strong>Eliminação</strong> só após o prazo de retenção do prontuário (mínimo de 20 anos desde o último registro, pela Lei 13.787/2018), com aval do DPO e do jurídico, e registro.</li>
+      <li><strong>Operação:</strong> vacuum/estatísticas incrementais; monitorar tamanho por partição; teste de restauração do arquivo; cópia de arquivo com criptografia e controle de acesso.</li>
+    </ul></div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>No PostgreSQL, adicione <code>id_forma_pagamento bigint NOT NULL</code> com FK em <code>atendimento</code> (200 milhões de linhas), sem downtime. Liste os passos e os riscos.</span></summary><div class="ans">
+    <ol>
+      <li><code>SET lock_timeout = '3s'</code>; <code>ADD COLUMN id_forma_pagamento bigint</code> (nula, instantâneo). Se falhar por timeout, repetir depois: <em>não</em> deixar o ALTER na fila.</li>
+      <li><code>CREATE INDEX CONCURRENTLY</code> na coluna nova (fora de transação; se falhar, remover o índice INVALID).</li>
+      <li>Deploy da aplicação gravando a coluna em todo INSERT/UPDATE (dupla escrita).</li>
+      <li>Backfill do histórico em lotes por faixa de id, com commit e pausa, monitorando lag da réplica e WAL; autovacuum acompanhando.</li>
+      <li><code>ADD CONSTRAINT ... FOREIGN KEY ... NOT VALID</code> e <code>VALIDATE CONSTRAINT</code>; <code>CHECK (col IS NOT NULL) NOT VALID</code>, <code>VALIDATE</code>, <code>SET NOT NULL</code> (PG 12+), remover o CHECK.</li>
+      <li><strong>Riscos:</strong> fila de locks por transação longa; backfill gerando bloat e lag; aplicação antiga inserindo nulo antes do passo 3 completar (por isso o NOT NULL só no fim); partições: o DDL na tabela-mãe propaga às partições, e o índice por partição deve ser criado com <code>ON ONLY</code> e anexado (módulo 11).</li>
+    </ol></div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>A equipe de qualidade pede uma cópia do banco de produção para testes de desempenho. Escreva o plano para entregar dados realistas sem violar a LGPD.</span></summary><div class="ans">
+    <ol>
+      <li><strong>Necessidade:</strong> qual teste? Desempenho precisa de volume e distribuição, não de pessoas reais. Opção 1: dados sintéticos com distribuição medida em produção (consultas agregadas: cardinalidades, assimetrias, proporção de nulos).</li>
+      <li>Se for preciso partir de produção: restaurar o backup em <strong>ambiente isolado</strong>, aplicar mascaramento determinístico (nome, CPF, contato, datas deslocadas), <strong>excluir ou substituir texto livre e anexos</strong>, cobrir tabelas de log, auditoria e filas.</li>
+      <li><strong>Validar:</strong> varrer por CPFs com formato real, e-mails e nomes reais remanescentes; comparar contagens e distribuições com a origem; revisão do DPO/segurança.</li>
+      <li><strong>Plano parecido:</strong> recalcular estatísticas, conferir os planos de 5 consultas-chave contra produção.</li>
+      <li><strong>Governança:</strong> acesso restrito, cópia intermediária destruída, registro da execução, repetição periódica. Nada de dump em laptop.</li>
+    </ol></div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Segunda-feira, 8h: "o sistema está lento". <code>pg_stat_activity</code> mostra 40 sessões ativas, 30 delas com <code>Lock: transactionid</code>, e uma sessão <code>idle in transaction</code> há 2 horas. Conduza a resposta e a prevenção.</span></summary><div class="ans">
+    <ol>
+      <li><strong>Esperas:</strong> a maioria está esperando lock, então não é plano nem índice. Descubra o bloqueador raiz: <code>pg_blocking_pids(pid)</code> nas sessões esperando; siga a cadeia até quem não está bloqueado.</li>
+      <li><strong>Identificar:</strong> <code>application_name</code>, usuário, <code>xact_start</code>, última consulta. Provavelmente um job ou tela que abriu transação, atualizou linhas e ficou parado (chamada externa, falta de commit).</li>
+      <li><strong>Contenção:</strong> com aviso ao dono, <code>pg_terminate_backend(pid)</code> do bloqueador. O rollback libera as 30. Verificar se o impacto (dados do job) é reprocessável.</li>
+      <li><strong>Confirmar o fim:</strong> sessões voltam a <code>active</code> sem espera; latência normaliza no APM. Registrar a linha do tempo.</li>
+      <li><strong>Prevenção:</strong> <code>idle_in_transaction_session_timeout</code>; transações curtas e sem I/O externo no código (checklist de revisão); alerta para transação aberta há mais de X minutos; ordem consistente de atualização; incluir no pós-mortem sem culpados.</li>
+    </ol></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>Cenário 1 · "O deploy derrubou o sistema por 5 minutos"</h3>
+  <p>Uma migração <code>ALTER TABLE atendimento ADD COLUMN ...</code> rodou no pipeline. Todas as telas travaram até a migração terminar.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Entender: o ALTER esperou um lock atrás de uma transação longa, e tudo o que chegou depois ficou na fila atrás dele.</li>
+    <li>Imediato: cancelar a migração (ou a transação longa) para liberar a fila; repetir fora de pico.</li>
+    <li>Corrigir o processo: <code>lock_timeout</code> (PG) ou <code>ddl_lock_timeout</code> (Oracle) em toda migração, tentativas repetidas, revisão de DDL por quem conhece o banco, ensaio em homologação com carga.</li>
+    <li>Padrão: expand/contract, sem <code>DROP</code>/<code>RENAME</code> no mesmo deploy do código.</li>
+  </ol>
+
+  <h3>Cenário 2 · "O banco está lento, mas o DBA diz que está tudo bem"</h3>
+  <p>Usuários reclamam de lentidão; CPU e I/O do banco estão baixos; as consultas no ranking parecem rápidas.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Olhar as esperas: sessões esperando o <em>cliente</em> (<code>SQL*Net message from client</code>, <code>Client: ClientRead</code>) apontam a aplicação.</li>
+    <li>Contar consultas por requisição no APM: provável N+1 ou chamadas em laço; muitas idas e voltas com 1 ms cada somam segundos.</li>
+    <li>Checar o pool (tempo de espera por conexão) e <code>idle in transaction</code>.</li>
+    <li>Entregar ao time de desenvolvimento a evidência (endpoint, número de consultas, a consulta repetida) e acompanhar a correção. A conversa é com dados, não com culpa.</li>
+  </ol>
+
+  <h3>Cenário 3 · O fornecedor pede uma cópia de produção</h3>
+  <p>Um fornecedor de software, para "reproduzir um bug", pede acesso ou dump do banco de pacientes.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Não entregar. Dado de saúde fora do seu controle é transferência a terceiro, com base legal, contrato (operador) e medidas de segurança a verificar com DPO e jurídico.</li>
+    <li>Oferecer o caminho seguro: reproduzir com dados sintéticos ou subconjunto mascarado (seção de homologação), ou depurar com o fornecedor dentro do seu ambiente, com acesso auditado.</li>
+    <li>Se houver contrato de operador, conferir cláusulas de LGPD, local de armazenamento, retorno/eliminação dos dados.</li>
+    <li>Registrar a decisão.</li>
+  </ol>
+
+  <h3>Cenário 4 · "Quem é responsável pelo desempenho?"</h3>
+  <p>Desenvolvedores dizem que lentidão é "problema do banco"; o DBA diz que é "problema do SQL". Os incidentes se repetem.</p>
+  <p><strong>O que fazer:</strong></p>
+  <ol>
+    <li>Definir donos: cada consulta do top 10 pertence a um time; o DBA é dono da saúde do banco e da prática (tabela de responsabilidades da seção 7).</li>
+    <li>Criar a revisão semanal do top 10, com ações e prazos, e o modelo de ticket de lentidão com números.</li>
+    <li>Adicionar o checklist de SQL ao PR e orçamento de consultas por endpoint.</li>
+    <li>Medir: SLOs de latência na aplicação. Os números encerram a discussão de quem tem razão e mostram onde agir.</li>
+  </ol>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Wait event</dt><dd>Evento pelo qual uma sessão espera (lock, I/O, log, cliente). Mostra onde o tempo é gasto fora da CPU.</dd></div>
+    <div><dt>AWR</dt><dd>Automatic Workload Repository do Oracle: snapshots e relatórios de carga. Exige Diagnostics Pack.</dd></div>
+    <div><dt>ASH</dt><dd>Active Session History: amostras por segundo das sessões ativas (Oracle, Diagnostics Pack).</dd></div>
+    <div><dt>ADDM</dt><dd>Diagnóstico automático do Oracle sobre dados do AWR (Diagnostics Pack).</dd></div>
+    <div><dt>SQL Monitor</dt><dd>Relatório detalhado de execução de um SQL em tempo real (Oracle, Tuning Pack).</dd></div>
+    <div><dt>Statspack</dt><dd>Alternativa gratuita ao AWR: fotos periódicas das estatísticas e relatório entre duas fotos.</dd></div>
+    <div><dt>pg_stat_statements</dt><dd>Extensão do PostgreSQL que acumula estatísticas por consulta normalizada.</dd></div>
+    <div><dt>auto_explain</dt><dd>Módulo do PostgreSQL que grava no log o plano de consultas lentas.</dd></div>
+    <div><dt>N+1</dt><dd>Anti-padrão: 1 consulta para a lista mais N para os detalhes de cada item.</dd></div>
+    <div><dt>Bind variable</dt><dd>Parâmetro vinculado ao SQL, em vez de valor concatenado. Evita hard parse e injeção.</dd></div>
+    <div><dt>Expand/contract</dt><dd>Técnica de migração em etapas compatíveis (expandir, migrar, contrair) para não quebrar versões em convivência.</dd></div>
+    <div><dt>Flyway / Liquibase</dt><dd>Ferramentas de migração versionada de esquema, com histórico e checksum.</dd></div>
+    <div><dt>SLI / SLO</dt><dd>Indicador de serviço e a meta para ele. O orçamento de erro é a folga permitida.</dd></div>
+    <div><dt>p95 / p99</dt><dd>Latência abaixo da qual ficam 95% / 99% das requisições; mostra a cauda que a média esconde.</dd></div>
+    <div><dt>Anonimização</dt><dd>Torna o dado não identificável por meios razoáveis (LGPD, art. 12); deixa de ser dado pessoal.</dd></div>
+    <div><dt>Pseudonimização</dt><dd>Separa o que identifica o titular; o dado segue sendo pessoal (LGPD, art. 13, §4º).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Das de nível júnior às de sênior e gestão. Responda em voz alta antes de abrir.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Uma consulta está lenta. Qual o seu roteiro?</span></summary><div class="ans"><p>Definir "lento" com números; achar a consulta pelo ranking; plano real com buffers; localizar o primeiro ponto em que estimado e real divergem; corrigir (estatística, índice, SQL) uma coisa por vez; medir de novo por leituras e tempo; checar efeitos colaterais. Se o plano é bom, olhar esperas e aplicação.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Por que olhar o tempo total e não só o mais lento?</span></summary><div class="ans"><p>Tempo total = chamadas × tempo médio. Uma consulta de 50 ms com 2 milhões de chamadas consome muito mais do banco que um relatório de 2 minutos. Otimizar o topo do ranking por tempo total dá o maior ganho.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Como você encontra as consultas problemáticas em PostgreSQL e em Oracle?</span></summary><div class="ans"><p>PostgreSQL: <code>pg_stat_statements</code> por <code>total_exec_time</code>, mais <code>auto_explain</code> e <code>log_min_duration_statement</code> para plano e parâmetros. Oracle: <code>V$SQLSTATS</code>/<code>V$SQL</code> por tempo e leituras; AWR/ASH se houver Diagnostics Pack, senão Statspack.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>O que exige licença no Oracle para diagnóstico?</span></summary><div class="ans"><p>AWR, ASH e ADDM: Diagnostics Pack. SQL Monitor e SQL Tuning Advisor: Tuning Pack (com Diagnostics Pack). São opções pagas da Enterprise Edition; usar sem licença é passivo. Livres: <code>V$SQL</code>, <code>V$SESSION</code>, <code>DBMS_XPLAN</code>, trace/tkprof e Statspack. Confirmar no documento de licenciamento da versão.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>O que são wait events e por que importam?</span></summary><div class="ans"><p>Registram o que a sessão espera: lock, leitura de disco, commit, cliente. Respondem "se o plano está bom, por que está lento?". Lock indica concorrência, I/O indica acesso, log indica padrão de commits, cliente indica a aplicação.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>A média de latência está boa, mas usuários reclamam. Por quê?</span></summary><div class="ans"><p>A média esconde a cauda. É preciso olhar p95/p99 (APM, logs), que mostram os 5% ou 1% lentos. As visões do banco trazem média e desvio, não percentis.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>O que é o problema N+1 e como corrigir?</span></summary><div class="ans"><p>Uma consulta para a lista e N consultas para os relacionados. Corrige-se com JOIN ou carregamento em lote (eager loading do ORM). Detecta-se contando consultas por requisição ou vendo, no ranking, uma consulta com milhões de chamadas rápidas.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Por que usar bind variables?</span></summary><div class="ans"><p>Evitam parse repetido (no Oracle, contenção no library cache) e, principalmente, injeção de SQL. Exceções existem para colunas muito assimétricas, tratadas com conhecimento de bind peeking/plano genérico.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>O que você verifica ao revisar uma consulta em code review?</span></summary><div class="ans"><p>Binds, colunas explícitas, filtros sargáveis, índice e plano em volume realista, ausência de N+1, paginação por chave com limite e ordem determinística, escopo da transação, impacto de índice/migração e minimização de dados pessoais.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como paginar uma tabela de 200 milhões de linhas?</span></summary><div class="ans"><p>Paginação por chave (keyset) com índice em <code>(dt, id)</code>, ordem determinística e limite máximo. <code>OFFSET</code> grande lê e descarta linhas e piora a cada página; <code>COUNT(*)</code> a cada página também pesa.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Como adicionar uma coluna NOT NULL a uma tabela enorme sem downtime?</span></summary><div class="ans"><p>Expand/contract: coluna nula, aplicação grava, backfill em lotes, constraint <code>NOT VALID</code> e <code>VALIDATE</code>, depois <code>SET NOT NULL</code>. <code>lock_timeout</code> em tudo, para o ALTER não formar fila de locks e derrubar a aplicação.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como criar um índice em produção sem bloquear escritas?</span></summary><div class="ans"><p>PostgreSQL: <code>CREATE INDEX CONCURRENTLY</code> (fora de transação; limpar índice INVALID se falhar). Oracle: <code>CREATE INDEX ... ONLINE</code>, conferindo a edição. Em tabelas particionadas no PG, índice por partição e <code>ATTACH</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Posso copiar produção para homologação?</span></summary><div class="ans"><p>Não sem mascarar. Dado de saúde é sensível, e a LGPD vale em qualquer ambiente. Prefiro dados sintéticos com distribuição realista; se partir de produção, anonimizo em ambiente isolado, removo texto livre, valido, recalculo estatísticas e destruo a cópia intermediária.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Diferença entre anonimização e pseudonimização na LGPD?</span></summary><div class="ans"><p>Anonimizado não permite identificar o titular por meios razoáveis: deixa de ser dado pessoal (art. 12). Pseudonimizado mantém a informação identificadora separada: continua dado pessoal, sob as regras da lei (art. 13, §4º).</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>O que é um SLO e como você aplicaria a um banco?</span></summary><div class="ans"><p>Meta para um indicador de serviço medido onde o usuário sente. Exemplo: 95% das consultas da agenda abaixo de 300 ms; réplica com lag abaixo de 5 s; restore testado todo mês. Poucos SLOs, com orçamento de erro que orienta prioridade.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Como dividir responsabilidades entre desenvolvedores e DBA?</span></summary><div class="ans"><p>Desenvolvedores donos das consultas e migrações do serviço, com revisão; DBA dono de backup e restore testados, capacidade, parâmetros, vacuum/estatísticas, licenciamento e prática. Revisão semanal do top de consultas e canal claro de acionamento evitam gargalo e terra de ninguém.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>O sistema ficou lento na segunda de manhã e a maioria das sessões espera lock. O que faz?</span></summary><div class="ans"><p>Acho o bloqueador raiz (<code>pg_blocking_pids</code> ou <code>blocking_session</code>), identifico dono e tempo da transação, encerro com aviso, confirmo normalização e corrijo a causa: transação longa, falta de commit, chamada externa dentro da transação, timeouts como rede de segurança.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você, gestora, reduz incidentes de banco de forma sustentável?</span></summary><div class="ans"><p>Donos claros por consulta e por banco; SLOs medidos; revisão semanal do top 10; checklist de SQL no PR; migrações ensaiadas e com expand/contract; restore testado; dados de teste mascarados; inventário de licenças Oracle e política de retenção assinada pelo DPO. Hábitos pequenos e constantes, sustentados por números.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

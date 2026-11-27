@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 04: Multi-stage e imagens de produção</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 04 de 10 · Multi-stage e imagens de produção</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html" aria-current="page"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li class="sub"><ol>
+      <li><a href="#por-que-multistage"><span class="n">1</span>Por que multi-stage: COPY --from, estágios nomeados e --target</a></li>
+      <li><a href="#receitas-1"><span class="n">2</span>Receitas completas I: Node/TypeScript, SPA com Nginx e Python</a></li>
+      <li><a href="#receitas-2"><span class="n">3</span>Receitas completas II: Java, Go e .NET</a></li>
+      <li><a href="#escolha-base"><span class="n">4</span>Escolha da imagem base: debian, alpine, distroless, scratch e hardened</a></li>
+      <li><a href="#nao-root"><span class="n">5</span>Usuário não-root e permissões de arquivos</a></li>
+      <li><a href="#reprodutibilidade-tamanho"><span class="n">6</span>Reprodutibilidade e tamanho: medir antes de otimizar</a></li>
+      <li><a href="#multi-plataforma"><span class="n">7</span>Builds multi-plataforma com buildx: amd64 e arm64</a></li>
+      <li><a href="#labels-checklist"><span class="n">8</span>Labels, metadados e o checklist da imagem de produção</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 04 · <span class="lvl l2">Intermediário</span> → <span class="lvl l3">Avançado</span></div>
+  <h1>Multi-stage e imagens de produção</h1>
+  <p class="lede">Separar quem constrói de quem executa, escolher a base certa e fechar o ciclo com imagens pequenas, reproduzíveis, não-root e multi-plataforma.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Montar Dockerfiles multi-stage corretos para Node, SPA com Nginx, Python, Java, Go e .NET</li>
+    <li>Usar <code>COPY --from</code> e <code>--target</code> para ter estágios de dev, teste e produção no mesmo arquivo</li>
+    <li>Escolher entre debian-slim, alpine, distroless, scratch e imagens hardened, sabendo os custos de cada</li>
+    <li>Rodar como não-root com permissões corretas e fixar versões por digest e lockfile</li>
+    <li>Construir para amd64 e arm64 com buildx e aplicar o checklist de imagem de produção</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="por-que-multistage">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Por que multi-stage: COPY --from, estágios nomeados e --target</h2>
+  <p>Compilar exige compilador, SDK, cabeçalhos de bibliotecas, dependências de desenvolvimento e o código-fonte. <strong>Rodar não.</strong> Um Dockerfile de um só estágio entrega tudo isso na imagem de produção: imagem de mais de 1 GB, download lento a cada deploy e uma caixa de ferramentas pronta para quem invadir o container (compilador, <code>curl</code>, gerenciador de pacotes).</p>
+  <p>O multi-stage usa <strong>vários <code>FROM</code> no mesmo Dockerfile</strong>. Cada <code>FROM</code> abre um estágio com seu próprio sistema de arquivos. Só o <em>último</em> estágio vira a imagem publicada; os anteriores servem de bancada e ficam apenas no cache do builder.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Estágio de build grande copia só o binário para o estágio final pequeno, que vira a imagem publicada">
+      <defs><marker id="ah-ms1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-w" x="20" y="24" width="250" height="124" rx="6"/>
+      <text class="ttl" x="36" y="46">Estágio build</text>
+      <text x="36" y="72">golang:1.24 (~850 MB)</text>
+      <text x="36" y="92">código-fonte + compilador</text>
+      <text x="36" y="112">módulos e cache de build</text>
+      <text x="36" y="132">/out/api (o artefato)</text>
+      <rect class="box-a" x="410" y="24" width="250" height="124" rx="6"/>
+      <text class="ttl" x="426" y="46">Estágio final</text>
+      <text x="426" y="72">distroless/static (~2 MB)</text>
+      <text x="426" y="92">/api (poucos MB)</text>
+      <text x="426" y="112">sem shell, sem compilador</text>
+      <text x="426" y="132">USER nonroot</text>
+      <line class="ln-a" x1="270" y1="86" x2="410" y2="86" marker-end="url(#ah-ms1)"/>
+      <text class="lbl" x="340" y="76" text-anchor="middle">COPY --from=build</text>
+      <text class="lbl" x="340" y="106" text-anchor="middle">só o artefato</text>
+      <text class="lbl" x="20" y="176">descartado: fica só no cache do builder</text>
+      <text class="lbl" x="410" y="176">é a imagem publicada em produção</text>
+    </svg>
+    <figcaption>Valores aproximados e ilustrativos. O estágio de build pode ser enorme: o que importa é o que o estágio final copia.</figcaption>
+  </figure>
+
+  <h3>COPY --from</h3>
+<pre><code class="dockerfile"># de um estágio nomeado
+COPY --from=build /out/api /api
+# de uma imagem externa, sem precisar de FROM para ela
+COPY --from=nginx:1.28-alpine /etc/nginx/nginx.conf /tmp/nginx.conf.ref
+# com dono e permissão
+COPY --from=build --chown=10001:10001 --chmod=0755 /out/api /usr/local/bin/api</code></pre>
+  <ul>
+    <li>A origem pode ser um <strong>estágio</strong> (<code>AS nome</code>), um <strong>índice</strong> numérico (<code>--from=0</code>; evite, quebra ao reordenar) ou uma <strong>imagem</strong> qualquer (tag, digest, <code>scratch</code>-like).</li>
+    <li>Copie o mínimo: o binário, <code>dist/</code>, <code>node_modules</code> de produção. Copiar <code>/src</code> inteiro desfaz o benefício.</li>
+    <li>O comando <code>RUN --mount=type=bind,from=build,source=/out,target=/in</code> usa os arquivos de outro estágio durante um <code>RUN</code> sem copiá-los para uma camada (útil para instalar wheels, seção 2).</li>
+    <li>Uma imagem externa como fonte é bom para pegar um binário pronto (<code>COPY --from=busybox:1.36 /bin/busybox /bin/</code>, <code>COPY --from=ghcr.io/astral-sh/uv /uv /bin/</code>) sem instalar nada.</li>
+  </ul>
+
+  <h3>Estágios nomeados, grafo e --target</h3>
+  <p>Com nomes, o mesmo Dockerfile serve a vários propósitos. O BuildKit monta um <strong>grafo</strong> e executa só os estágios de que o alvo depende, em paralelo quando possível.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 246" role="img" aria-label="Grafo de estágios: base alimenta deps e prod-deps; deps alimenta dev, test e build; build e prod-deps alimentam prod">
+      <defs><marker id="ah-ms2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="108" width="110" height="34" rx="5"/><text x="75" y="130" text-anchor="middle">base</text>
+      <rect class="box" x="160" y="56" width="110" height="34" rx="5"/><text x="215" y="78" text-anchor="middle">deps</text>
+      <rect class="box" x="160" y="170" width="110" height="34" rx="5"/><text x="215" y="192" text-anchor="middle">prod-deps</text>
+      <rect class="box-w" x="320" y="10" width="110" height="34" rx="5"/><text x="375" y="32" text-anchor="middle">dev</text>
+      <rect class="box-w" x="320" y="56" width="110" height="34" rx="5"/><text x="375" y="78" text-anchor="middle">test</text>
+      <rect class="box" x="320" y="102" width="110" height="34" rx="5"/><text x="375" y="124" text-anchor="middle">build</text>
+      <rect class="box-a" x="500" y="150" width="150" height="40" rx="5"/><text x="575" y="175" text-anchor="middle">prod (final)</text>
+      <line class="ln" x1="130" y1="119" x2="160" y2="76" marker-end="url(#ah-ms2)"/>
+      <line class="ln" x1="130" y1="131" x2="160" y2="182" marker-end="url(#ah-ms2)"/>
+      <line class="ln" x1="270" y1="68" x2="320" y2="28" marker-end="url(#ah-ms2)"/>
+      <line class="ln" x1="270" y1="73" x2="320" y2="73" marker-end="url(#ah-ms2)"/>
+      <line class="ln" x1="270" y1="78" x2="320" y2="116" marker-end="url(#ah-ms2)"/>
+      <line class="ln-a" x1="430" y1="124" x2="500" y2="160" marker-end="url(#ah-ms2)"/>
+      <line class="ln-a" x1="270" y1="187" x2="500" y2="175" marker-end="url(#ah-ms2)"/>
+      <text class="lbl" x="440" y="32">docker build --target dev</text>
+      <text class="lbl" x="440" y="78">docker build --target test</text>
+      <text class="lbl" x="575" y="208" text-anchor="middle">sem --target: o último estágio</text>
+      <text class="lbl" x="20" y="236">Sem --target, o BuildKit só constrói o que o prod usa; dev e test nem rodam.</text>
+    </svg>
+    <figcaption>O mesmo Dockerfile gera a imagem de desenvolvimento, o ambiente de testes e a imagem de produção.</figcaption>
+  </figure>
+<pre><code class="sh">docker build --target dev  -t api:dev .          # hot reload no Compose
+docker build --target test -t api:test .         # roda os testes; falha o build se quebrarem
+docker build -t api:1.4.2 .                      # último estágio = produção</code></pre>
+  <ul>
+    <li><strong>Estágio de teste:</strong> <code>FROM build AS test</code> + <code>RUN npm test</code>. O build falha quando um teste quebra, e o cache evita reexecutar se nada mudou. Como a produção não depende do <code>test</code>, ela não o executa: no CI, rode <code>--target test</code> antes (ou em paralelo) e só publique se passar.</li>
+    <li><strong>Estágio de dev:</strong> imagem com ferramentas e código montado por bind mount; no Compose, <code>build: { target: dev }</code> (módulo 6).</li>
+    <li><strong>Extrair artefatos de teste:</strong> um estágio <code>FROM scratch AS reports</code> com <code>COPY --from=test /app/coverage /</code> e <code>docker build --target reports --output type=local,dest=./out .</code> grava relatório de cobertura no host, sem container extra.</li>
+    <li><strong>Herança:</strong> <code>FROM base AS deps</code> herda o sistema de arquivos do estágio base; isso evita repetir <code>WORKDIR</code> e instalação de pacotes comuns.</li>
+    <li>O ARG de versão declarado antes do primeiro <code>FROM</code> pode alimentar todos os estágios (<code>FROM node:${NODE_VERSION}-alpine</code>), como visto no <a href="03-dockerfile.html">módulo 3</a>.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>O último estágio do arquivo é o padrão. Se alguém adiciona um estágio <code>debug</code> ou <code>test</code> <em>depois</em> do <code>prod</code>, o <code>docker build</code> sem <code>--target</code> passa a construir o estágio errado e publicar uma imagem de teste. Deixe o estágio de produção por último ou sempre use <code>--target prod</code> no CI.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Multi-stage separa build de runtime no mesmo Dockerfile. O estágio final copia só o artefato com <code>COPY --from</code>, então a imagem fica menor, baixa mais rápido e tem menos superfície de ataque, porque compilador e dependências de dev não vão para produção. Com <code>--target</code>, o mesmo arquivo serve dev, teste e produção."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Imagem menor significa deploy e escala mais rápidos (menos tempo de pull em nós novos), menos custo de registry e menos CVEs para triar. Exija multi-stage como padrão do template de repositório; um Dockerfile de estágio único em produção deve ser exceção justificada.</p></div>
+</section>
+
+<section class="chap" id="receitas-1">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Receitas completas I: Node/TypeScript, SPA com Nginx e Python</h2>
+  <p>Todas as receitas seguem o mesmo esqueleto: (1) instalar dependências com cache mount, (2) compilar, (3) copiar só o necessário para uma base de runtime, (4) rodar sem root. Os números de versão são exemplos; use a versão suportada pelo seu time e fixe-a.</p>
+  <div class="tabs">
+<pre data-label="Node / TypeScript" data-file="api/Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+ARG NODE_VERSION=22
+
+FROM node:${NODE_VERSION}-alpine AS base
+WORKDIR /app
+
+# todas as dependências (inclusive dev), para compilar e testar
+FROM base AS deps
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# alvo de desenvolvimento: usado pelo Compose com hot reload
+FROM deps AS dev
+COPY . .
+CMD ["npm", "run", "dev"]
+
+# testes: falha o build se quebrarem
+FROM deps AS test
+COPY . .
+RUN npm test
+
+# compila TypeScript para dist/
+FROM deps AS build
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
+
+# só dependências de produção
+FROM base AS prod-deps
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+
+# imagem final: sem código TS, sem devDependencies
+FROM node:${NODE_VERSION}-alpine AS prod
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package.json ./
+USER node
+EXPOSE 3000
+CMD ["node", "dist/server.js"]</code></pre>
+<pre data-label="SPA + Nginx" data-file="web/Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+# 1. build do front-end (React, Vue, Angular...)
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+COPY . .
+# variáveis VITE_* são embutidas no JavaScript no momento do build
+ARG VITE_API_URL=/api
+RUN npm run build
+
+# 2. só os arquivos estáticos, servidos por um Nginx que roda sem root
+FROM nginxinc/nginx-unprivileged:1.28-alpine AS prod
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 8080</code></pre>
+<pre data-label="Python (venv)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM python:3.13-slim AS build
+WORKDIR /src
+# o venv precisa estar no mesmo caminho nos dois estágios
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+FROM python:3.13-slim AS prod
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+RUN groupadd --system --gid 10001 app \
+ &amp;&amp; useradd --system --uid 10001 --gid app --no-create-home app
+WORKDIR /app
+COPY --from=build /opt/venv /opt/venv
+COPY . .
+USER 10001
+EXPOSE 8000
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]</code></pre>
+<pre data-label="Python (wheels)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+# estágio com compilador: gera wheels de tudo
+FROM python:3.13-slim AS build
+RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends build-essential libpq-dev \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip wheel --wheel-dir /wheels -r requirements.txt
+
+# runtime: só a biblioteca compartilhada, sem compilador
+FROM python:3.13-slim AS prod
+RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends libpq5 \
+ &amp;&amp; rm -rf /var/lib/apt/lists/* \
+ &amp;&amp; groupadd --system --gid 10001 app \
+ &amp;&amp; useradd --system --uid 10001 --gid app --no-create-home app
+WORKDIR /app
+COPY requirements.txt .
+# o mount bind lê as wheels do outro estágio sem gravá-las numa camada
+RUN --mount=type=bind,from=build,source=/wheels,target=/wheels \
+    pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
+COPY . .
+USER 10001
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]</code></pre>
+  </div>
+<pre data-file="web/nginx.conf"><code class="text">server {
+  listen 8080;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  # arquivos com hash no nome: cache longo
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+  # rotas do SPA caem no index.html
+  location / {
+    try_files $uri /index.html;
+  }
+}</code></pre>
+
+  <h3>O que cada receita ensina</h3>
+  <ul>
+    <li><strong>Node:</strong> são <em>duas</em> instalações de dependências: a completa (compilar/testar) e a de produção (<code>--omit=dev</code>). O estágio final recebe só <code>node_modules</code> de produção e <code>dist/</code>. A imagem oficial já traz o usuário <code>node</code>. Em Alpine, módulos nativos precisam ser compilados ou ter binário musl (veja a seção 4). O Node como PID 1 não tem init: trate SIGTERM ou use <code>--init</code>.</li>
+    <li><strong>SPA:</strong> o resultado do build é só arquivos estáticos; a imagem final é o servidor e esses arquivos, sem Node. Variáveis <code>VITE_*</code> (ou equivalentes) são <strong>embutidas no JavaScript no build</strong>: trocar a URL da API exige novo build, o que quebra "uma imagem para todos os ambientes". Alternativas: servir <code>/config.js</code> gerado no start (um script em <code>/docker-entrypoint.d/</code> da imagem Nginx com <code>envsubst</code>) ou usar caminho relativo e deixar o proxy reverso decidir. A imagem <code>nginx-unprivileged</code> escuta na 8080 como não-root (confirme a tag vigente). A pasta de saída varia: <code>dist/</code> (Vite), <code>build/</code> (CRA), <code>dist/&lt;app&gt;/browser</code> (Angular recente).</li>
+    <li><strong>Python venv:</strong> a venv é copiada com o caminho absoluto e precisa ser <strong>a mesma versão do Python e o mesmo caminho</strong> nos dois estágios, senão os scripts quebram. Não há compilador no final, então pacotes que compilam extensões (C) precisam ter wheel pronta ou usar a receita das wheels.</li>
+    <li><strong>Python wheels:</strong> compila tudo no estágio de build e instala no final sem acesso à internet (<code>--no-index</code>), com dependência de sistema mínima (<code>libpq5</code>, não <code>libpq-dev</code>). A base do final precisa ser a mesma família da do build. Com <code>uv</code> o fluxo é parecido e mais rápido.</li>
+    <li>Para bancos: o driver <code>python-oracledb</code> em modo <em>thin</em> fala com Oracle sem Instant Client; já o modo <em>thick</em> exige as bibliotecas do cliente Oracle, que só têm build para glibc (um motivo para usar <code>slim</code> e não Alpine).</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>A imagem final recebe apenas: runtime da linguagem, dependências de <em>produção</em> e o artefato compilado. Se aparece <code>gcc</code>, <code>git</code>, <code>npm</code> ou o código-fonte TypeScript nela, algo vazou do estágio de build.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você faria o Dockerfile de uma API Node com TypeScript?" Estágios para dependências completas, build, dependências de produção e final; cache mount no <code>npm ci</code>, <code>COPY --from</code> só de <code>dist</code> e <code>node_modules</code> de produção, <code>USER node</code>, CMD em forma exec e um estágio <code>test</code> separado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Disponibilize um Dockerfile de referência por linguagem no repositório de templates (esta seção é o ponto de partida) e use revisão de pull request para checar apenas as diferenças. Quanto mais padronizado, mais barato fica automatizar scan, atualização de base e suporte.</p></div>
+</section>
+
+<section class="chap" id="receitas-2">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Receitas completas II: Java, Go e .NET</h2>
+  <p>Linguagens compiladas têm o melhor retorno do multi-stage: o artefato (jar, binário, DLLs) roda numa base muito menor que a do SDK.</p>
+  <div class="tabs">
+<pre data-label="Java (Maven)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /src
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+# camada de dependências: só refaz se o pom.xml mudar
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -q dependency:go-offline
+COPY src src
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -q package -DskipTests
+
+# só o runtime (JRE), sem o JDK
+FROM eclipse-temurin:21-jre AS prod
+WORKDIR /app
+# no pom.xml: &lt;finalName&gt;app&lt;/finalName&gt; para o nome do jar ser previsível
+COPY --from=build /src/target/app.jar app.jar
+USER 1000
+EXPOSE 8080
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]</code></pre>
+<pre data-label="Java (Gradle)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /src
+COPY gradlew settings.gradle* build.gradle* gradle.properties* ./
+COPY gradle gradle
+COPY src src
+# o cache mount mantém o ~/.gradle (dependências e wrapper) entre builds
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew --no-daemon bootJar -x test
+
+FROM eclipse-temurin:21-jre AS prod
+WORKDIR /app
+# no build.gradle: bootJar { archiveFileName = 'app.jar' }
+COPY --from=build /src/build/libs/app.jar app.jar
+USER 1000
+EXPOSE 8080
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]</code></pre>
+<pre data-label="Java (jlink, resumo)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+# (continuação do estágio "build" da aba Maven, que gera /src/target/app.jar)
+FROM eclipse-temurin:21-jdk-alpine AS jre-build
+COPY --from=build /src/target/app.jar /app.jar
+# descobre quais módulos Java o jar realmente usa
+RUN jdeps --ignore-missing-deps --multi-release 21 --print-module-deps /app.jar &gt; /modules.txt
+# monta um runtime mínimo só com eles
+RUN jlink --add-modules "$(cat /modules.txt),jdk.crypto.ec" \
+    --strip-debug --no-man-pages --no-header-files --compress=zip-6 \
+    --output /custom-jre
+
+FROM alpine:3.20 AS prod
+ENV PATH="/opt/jre/bin:$PATH"
+RUN apk add --no-cache libstdc++
+COPY --from=jre-build /custom-jre /opt/jre
+COPY --from=build /src/target/app.jar /app/app.jar
+USER 10001
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]</code></pre>
+<pre data-label="Go (distroless)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM golang:1.24 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+
+# binário estático: imagem final de poucos MB, sem shell, usuário não-root
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/api /api
+EXPOSE 8080
+ENTRYPOINT ["/api"]</code></pre>
+<pre data-label="Go (scratch)" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM golang:1.24 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+
+# imagem totalmente vazia: tudo que o binário precisa tem de ser copiado
+FROM scratch
+# certificados raiz, para chamadas HTTPS de saída
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# fusos horários, se o código usar time.LoadLocation (ou compile com -tags timetzdata)
+COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=build /out/api /api
+# scratch não tem /etc/passwd: use UID numérico
+USER 65532:65532
+EXPOSE 8080
+ENTRYPOINT ["/api"]</code></pre>
+<pre data-label=".NET" data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+# restaura primeiro: o cache só se perde se os .csproj mudarem
+COPY *.sln ./
+COPY src/Api/Api.csproj src/Api/
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore src/Api/Api.csproj
+COPY . .
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish src/Api/Api.csproj -c Release --no-restore -o /out /p:UseAppHost=false
+
+# só o runtime ASP.NET, sem SDK
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS prod
+WORKDIR /app
+COPY --from=build /out .
+# a imagem define APP_UID (usuário "app", sem privilégios)
+USER $APP_UID
+# as imagens .NET 8+ escutam na 8080 por padrão
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Api.dll"]</code></pre>
+  </div>
+
+  <h3>Pontos de atenção por linguagem</h3>
+  <ul>
+    <li><strong>Java:</strong> a JVM moderna enxerga os limites do container; <code>-XX:MaxRAMPercentage</code> define a fração da memória do container para o heap (o resto vai para metaspace, threads e memória nativa; 75% é um ponto de partida, não uma regra). O jar tem de ter nome previsível (<code>finalName</code> / <code>archiveFileName</code>), porque <code>COPY --from=build /src/target/*.jar</code> falha quando há mais de um jar. O <strong>jlink</strong> monta um runtime só com os módulos usados: reduz bastante o tamanho, mas exige que o jar não use módulos de forma dinâmica sem você saber; jars com dependências aninhadas (Spring Boot) precisam ser extraídos antes do <code>jdeps</code>. A base final precisa ser compatível com a libc do JDK que gerou o runtime (aqui, ambos musl) e pode exigir bibliotecas do sistema (<code>libstdc++</code>); teste. Imagens com camadas por tipo (<em>layered jars</em> do Spring Boot) melhoram o cache de camadas.</li>
+    <li><strong>Go:</strong> <code>CGO_ENABLED=0</code> gera binário estático, que roda em <code>scratch</code>/distroless estático. Com <code>cgo</code> (por exemplo, driver SQLite) o binário depende de glibc: use <code>distroless/base</code> ou <code>cc</code>. Em scratch, o erro <code>x509: certificate signed by unknown authority</code> quase sempre é falta do bundle de CAs. Compile com <code>-trimpath</code> e <code>-ldflags="-s -w"</code> para um binário menor e sem caminhos locais.</li>
+    <li><strong>.NET:</strong> as imagens da Microsoft têm um usuário sem privilégios pronto (<code>$APP_UID</code>) e escutam em 8080. Há variantes <em>chiseled</em> (Ubuntu mínima, sem shell nem gerenciador de pacotes) para reduzir a superfície. Ignore <code>bin/</code> e <code>obj/</code> no <code>.dockerignore</code>, ou o <code>COPY . .</code> sobrescreve os arquivos de restauração.</li>
+    <li>Testes: use o padrão do estágio <code>test</code> (seção 1) em todas as linguagens (<code>mvn test</code>, <code>go test ./...</code>, <code>dotnet test</code>), sem <code>-DskipTests</code> no CI.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Copiar o JDK inteiro (ou o SDK do .NET) para o estágio final "porque dá mais trabalho separar". É o erro mais frequente: a imagem fica com 400 a 700 MB a mais, com compilador e ferramentas de diagnóstico que não deveriam existir em produção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você containeriza uma aplicação Java?" Build com JDK e cache do Maven/Gradle; final com JRE (ou jlink), jar com nome previsível, usuário não-root, <code>MaxRAMPercentage</code> para respeitar o limite de memória e <code>SIGTERM</code> tratado pelo framework (shutdown gracioso do Spring).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina a política de versão de runtime (somente LTS suportadas) e quem atualiza as bases. Uma JVM ou .NET fora de suporte dentro de uma imagem esquecida é o tipo de dívida que só aparece em auditoria ou incidente.</p></div>
+</section>
+
+<section class="chap" id="escolha-base">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Escolha da imagem base: debian, alpine, distroless, scratch e hardened</h2>
+  <p>A base define o tamanho, a superfície de ataque, as bibliotecas disponíveis e como você depura. Não existe melhor em geral; existe a que combina com o que a aplicação precisa.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 190" role="img" aria-label="Espectro de bases: debian completa, slim, alpine, distroless e scratch, do maior e mais completo ao menor e mais restrito">
+      <defs><marker id="ah-base" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="116" height="62" rx="5"/><text x="78" y="54" text-anchor="middle">debian</text><text x="78" y="74" text-anchor="middle">~120 MB</text>
+      <rect class="box" x="150" y="30" width="116" height="62" rx="5"/><text x="208" y="54" text-anchor="middle">debian-slim</text><text x="208" y="74" text-anchor="middle">~75 MB</text>
+      <rect class="box-w" x="280" y="30" width="116" height="62" rx="5"/><text x="338" y="54" text-anchor="middle">alpine</text><text x="338" y="74" text-anchor="middle">~8 MB</text>
+      <rect class="box-a" x="410" y="30" width="116" height="62" rx="5"/><text x="468" y="54" text-anchor="middle">distroless</text><text x="468" y="74" text-anchor="middle">~2 MB</text>
+      <rect class="box-a" x="540" y="30" width="116" height="62" rx="5"/><text x="598" y="54" text-anchor="middle">scratch</text><text x="598" y="74" text-anchor="middle">0 B</text>
+      <text class="lbl" x="78" y="110" text-anchor="middle">glibc, apt, shell</text>
+      <text class="lbl" x="208" y="110" text-anchor="middle">glibc, apt, shell</text>
+      <text class="lbl" x="338" y="110" text-anchor="middle">musl, apk, busybox</text>
+      <text class="lbl" x="468" y="110" text-anchor="middle">sem shell nem apt</text>
+      <text class="lbl" x="598" y="110" text-anchor="middle">só o seu binário</text>
+      <line class="ln" x1="30" y1="140" x2="650" y2="140" marker-end="url(#ah-base)"/>
+      <text class="lbl" x="30" y="162">mais ferramentas, fácil de depurar</text>
+      <text class="lbl" x="650" y="162" text-anchor="end">menos superfície, mais difícil de depurar</text>
+      <text class="lbl" x="20" y="182">Tamanhos das bases puras, em ordem de grandeza (variam com a versão e a arquitetura).</text>
+    </svg>
+    <figcaption>A tendência é clara, mas "menor" não significa "mais simples de operar".</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Base</th><th>Tamanho (base)</th><th>Segurança</th><th>Depuração</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td>Debian/Ubuntu completa (<code>node:22</code>)</td><td>maior (centenas de MB)</td><td>mais pacotes = mais CVEs</td><td>excelente: shell, apt, curl</td><td>estágios de build; quando faltam ferramentas</td></tr>
+      <tr><td>Debian <code>-slim</code></td><td>pequena</td><td>boa, glibc, patches frequentes</td><td>boa (shell e apt)</td><td><strong>padrão seguro de runtime</strong> para Node, Python, Java</td></tr>
+      <tr><td>Alpine</td><td>muito pequena</td><td>poucos pacotes; musl</td><td>boa (busybox, apk)</td><td>binários estáticos ou apps testadas em musl</td></tr>
+      <tr><td>Distroless (Google)</td><td>muito pequena</td><td>sem shell nem gerenciador; menos CVEs</td><td>difícil (tag <code>:debug</code> traz busybox)</td><td>produção de Go, Java, Node, Python estático/runtime</td></tr>
+      <tr><td><code>scratch</code></td><td>zero</td><td>mínima possível</td><td>nenhuma dentro do container</td><td>binário estático (Go, Rust)</td></tr>
+      <tr><td>Hardened (Chainguard, Docker Hardened Images, chiseled)</td><td>pequena</td><td>minimalistas, foco em poucos CVEs, assinadas, com SBOM</td><td>variantes <code>-dev</code> com shell</td><td>quando a segurança/compliance exige e o time aceita o modelo do fornecedor</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Alpine e musl: os problemas reais</h3>
+  <p>Alpine usa <strong>musl</strong> em vez de <strong>glibc</strong>. Para código que você compila, tudo bem. O problema é o que vem pronto:</p>
+  <ul>
+    <li><strong>Binários e wheels para glibc não rodam.</strong> O <code>manylinux</code> do Python é glibc; hoje há wheels <code>musllinux</code> para muitos pacotes, mas não para todos, e o fallback é compilar do código-fonte (build lento, precisa de <code>gcc</code> e cabeçalhos). Módulos nativos do Node têm o mesmo risco.</li>
+    <li><strong>Oracle Instant Client</strong> (usado em modo thick por drivers como <code>oracledb</code>/<code>cx_Oracle</code>) é compilado para glibc: não é suportado em Alpine sem camadas de compatibilidade. Com Oracle na empresa, isso pesa a favor de <code>slim</code>.</li>
+    <li><strong>Resolvedor de DNS</strong> diferente do glibc (historicamente, no tratamento de <em>search domains</em> e do fallback para TCP). Já causou falhas intermitentes em clusters Kubernetes com versões antigas do Alpine; revise com a versão atual.</li>
+    <li><strong>Desempenho e limites:</strong> o alocador de memória do musl pode ser mais lento sob muita concorrência, e a pilha padrão das threads é pequena, o que derruba programas com recursão profunda.</li>
+    <li>Menos ferramentas (<code>bash</code> ausente; <code>ps</code>, <code>grep</code>, <code>sed</code> do busybox com flags diferentes) e locale/ICU mínimos.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Go/Rust estáticos: distroless ou scratch. Node/Python/Java em runtime: <code>-slim</code> (ou distroless se houver maturidade para depurar sem shell). Alpine: quando você <em>testou</em> a aplicação nela e o ganho de tamanho compensa. "É menor" não é motivo.</p></div>
+
+  <h3>Distroless, scratch e depuração</h3>
+  <p>Sem shell, não há <code>docker exec -it ... sh</code>. As alternativas:</p>
+<pre><code class="sh"># 1. variante :debug do distroless (traz busybox), só para investigar
+docker run --rm -it --entrypoint sh gcr.io/distroless/static-debian12:debug
+
+# 2. container de depuração que compartilha rede e processos com o alvo
+docker run --rm -it --pid=container:api --network=container:api nicolaka/netshoot
+
+# 3. Kubernetes: container efêmero anexado ao pod
+kubectl debug -it pod/api-7d9f --image=busybox:1.36 --target=api</code></pre>
+  <p>O Docker Desktop também oferece o <code>docker debug</code> (recurso do produto, pode depender de plano). A forma madura é depurar por <strong>logs, métricas e traces</strong>; o shell dentro do container de produção é exceção.</p>
+
+  <h3>Imagens hardened</h3>
+  <p>Projetos como <strong>Chainguard Images</strong> (<code>cgr.dev/chainguard/...</code>, baseadas em Wolfi, glibc) e as <strong>Docker Hardened Images</strong> publicam bases mínimas, reconstruídas com frequência, com SBOM e assinatura, e metas de poucas ou nenhuma CVE conhecida. O modelo de acesso (tags livres versus versões fixadas e suporte pago) muda conforme o fornecedor e o tempo: confira antes de padronizar. A Microsoft publica variantes <em>chiseled</em> do .NET com a mesma ideia. O ganho principal é menos ruído no scanner e atualização por conta do fornecedor, em troca de dependência dele.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Escolher distroless para "ficar seguro" e descobrir em um incidente que ninguém sabe depurar sem shell. A decisão precisa vir junto de observabilidade decente (logs estruturados, métricas, traces) e do procedimento de depuração (<code>:debug</code>, container efêmero).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Alpine ou slim?" Alpine é menor, mas usa musl: binários glibc e wheels prontas podem não rodar, o DNS e o alocador se comportam diferente, e há menos ferramentas. Para Node/Python eu parto de <code>slim</code> e só uso Alpine testada. Para Go, distroless ou scratch.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize <strong>poucas</strong> bases aprovadas (por exemplo, uma slim, uma distroless, uma de build) e um dono para atualizá-las. Cinco variantes de base significam cinco superfícies para corrigir quando sai uma CVE crítica. Segurança e troubleshooting em profundidade: <a href="09-seguranca-debug.html">módulo 9</a>.</p></div>
+</section>
+
+<section class="chap" id="nao-root">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Usuário não-root e permissões de arquivos</h2>
+  <p>O processo do container roda como <strong>root</strong> por padrão. Root dentro do container não é root do host, mas é o mesmo UID 0: se a aplicação for comprometida, o invasor pode alterar arquivos da imagem, instalar ferramentas, usar capabilities do kernel e, havendo uma falha de isolamento ou um volume montado sem cuidado, alcançar o host. Rodar sem root reduz o dano e é requisito de muitas políticas (PSA <em>restricted</em> do Kubernetes, benchmarks CIS, OpenShift).</p>
+
+  <h3>Como criar e usar o usuário</h3>
+<div class="tabs">
+<pre data-label="Debian / Ubuntu"><code class="dockerfile">RUN groupadd --system --gid 10001 app \
+ &amp;&amp; useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+USER 10001:10001</code></pre>
+<pre data-label="Alpine"><code class="dockerfile">RUN addgroup -S -g 10001 app \
+ &amp;&amp; adduser -S -u 10001 -G app -H -s /sbin/nologin app
+USER 10001:10001</code></pre>
+<pre data-label="Já existe na imagem"><code class="dockerfile"># node: usuário "node" (UID 1000)
+USER node
+# distroless: tag :nonroot (UID 65532)
+FROM gcr.io/distroless/static-debian12:nonroot
+# nginx-unprivileged: UID 101 e porta 8080
+FROM nginxinc/nginx-unprivileged:1.28-alpine
+# .NET 8+: variável com o UID do usuário "app"
+USER $APP_UID</code></pre>
+</div>
+  <ul>
+    <li><strong>Prefira o UID numérico:</strong> o Kubernetes só consegue verificar <code>runAsNonRoot</code> se o <code>USER</code> for numérico; em <code>scratch</code> não existe <code>/etc/passwd</code>.</li>
+    <li><code>USER</code> vale por estágio: o estágio final precisa declará-lo, e instalações (<code>apt-get</code>) devem acontecer <em>antes</em>, como root.</li>
+    <li>Portas abaixo de 1024 exigem privilégio em muitos ambientes: escute em 8080 e mapeie na publicação.</li>
+  </ul>
+
+  <h3>Quem é dono do quê</h3>
+  <p>Permissão de arquivo é onde o não-root costuma dar errado. O princípio: o <strong>código e as dependências ficam read-only para a aplicação</strong> (donos root, modo 644/755). Só os diretórios onde ela precisa escrever (uploads, cache, temporário) pertencem ao usuário da aplicação.</p>
+<pre data-file="Dockerfile"><code class="dockerfile">FROM python:3.13-slim AS prod
+RUN groupadd --system --gid 10001 app \
+ &amp;&amp; useradd --system --uid 10001 --gid app --no-create-home app
+WORKDIR /app
+
+# código: dono root, a aplicação só lê; sem chown, sem camada extra
+COPY --from=build /opt/venv /opt/venv
+COPY . .
+
+# diretório gravável criado já com o dono certo
+RUN install -d -o app -g app -m 0750 /app/uploads /app/tmp
+
+USER 10001:10001
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Técnica</th><th>Custo</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td><code>COPY --chown=10001:10001 src dest</code></td><td>nenhum (mesma camada)</td><td>ideal para arquivos que o app precisa alterar</td></tr>
+      <tr><td><code>COPY --chmod=0755 script dest</code></td><td>nenhum</td><td>entrypoint e binários executáveis</td></tr>
+      <tr><td><code>RUN chown -R app:app /app</code></td><td><strong>duplica</strong> todos os arquivos numa nova camada</td><td>evite; a mudança de dono grava uma cópia de cada arquivo</td></tr>
+      <tr><td><code>RUN install -d -o app -g app</code></td><td>quase nenhum (só diretórios)</td><td>para criar pastas graváveis</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Problemas típicos</h3>
+  <ul>
+    <li><strong>Bind mount e volumes:</strong> a pasta do host pertence a outro UID, e o processo (10001) não escreve nela. Solução: ajustar o dono no host, usar <code>user:</code> no Compose ou volume nomeado (módulo 5). Volume nomeado novo herda o dono do diretório da imagem no ponto de montagem na primeira criação.</li>
+    <li><strong>Escrita em caminhos do sistema</strong> (<code>/var/log</code>, <code>/root/.cache</code>, <code>/tmp</code> com <code>readOnlyRootFilesystem</code>): redirecione para uma pasta gravável, monte um <code>tmpfs</code> ou configure a aplicação para logar em stdout.</li>
+    <li><strong>Home inexistente:</strong> algumas ferramentas gravam em <code>$HOME</code>. Defina <code>HOME=/tmp</code> ou crie o diretório.</li>
+    <li><strong>Sistema de arquivos root somente leitura</strong> (<code>docker run --read-only</code>, <code>readOnlyRootFilesystem</code>) é o passo seguinte: funciona bem quando só <code>/tmp</code> e as pastas de dados são graváveis.</li>
+  </ul>
+<pre><code class="sh">docker run --rm api:1.4.2 id
+# uid=10001(app) gid=10001(app) groups=10001(app)
+
+docker image inspect api:1.4.2 --format '{{.Config.User}}'
+# 10001:10001
+
+docker run --rm --read-only --tmpfs /tmp --cap-drop=ALL --security-opt no-new-privileges api:1.4.2</code></pre>
+  <p>Capabilities, <code>no-new-privileges</code>, seccomp e o restante do endurecimento ficam no <a href="09-seguranca-debug.html">módulo 9</a>.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que não rodar como root?" Se o processo é comprometido, o invasor herda o UID 0 do container: pode alterar a imagem em execução, usar capabilities e tentar escapar. Sem root, o impacto é menor. Cuidado com permissões: <code>COPY --chown</code> em vez de <code>RUN chown -R</code>, e código somente leitura para a aplicação.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Torne "não-root" verificável: teste de CI com <code>id -u</code> diferente de zero e política no cluster (admission) que rejeita pods com root. Combine com um período de migração e uma lista de exceções com prazo, em vez de uma proibição que quebra tudo no dia seguinte.</p></div>
+</section>
+
+<section class="chap" id="reprodutibilidade-tamanho">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Reprodutibilidade e tamanho: medir antes de otimizar</h2>
+  <h3>Reprodutibilidade</h3>
+  <p>O objetivo prático não é um build idêntico bit a bit (raro e caro), e sim <strong>"a mesma entrada produz o mesmo comportamento"</strong>: se o código não mudou, a imagem de hoje e a de seis meses atrás devem se comportar igual. Três fontes de variação precisam ser fixadas:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Fonte de variação</th><th>Como fixar</th></tr></thead>
+    <tbody>
+      <tr><td>Imagem base</td><td>tag específica e, melhor, <strong>digest</strong>: <code>FROM node:22-alpine@sha256:...</code></td></tr>
+      <tr><td>Dependências da linguagem</td><td>lockfile + instalação estrita: <code>npm ci</code>, <code>pip install --require-hashes</code> (ou uv/pip-tools), <code>go.sum</code>, lock do Gradle/Maven, <code>dotnet restore --locked-mode</code></td></tr>
+      <tr><td>Pacotes do sistema</td><td>poucos e necessários; versões fixadas (<code>apt-get install pacote=versão</code>) ou um espelho/snapshot datado (como o <code>snapshot.debian.org</code>); idealmente nenhum no estágio final</td></tr>
+      <tr><td>Downloads (<code>curl</code>, <code>ADD</code>)</td><td>versão explícita e checksum (<code>ADD --checksum=sha256:...</code> ou <code>sha256sum -c</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Digest: o que é e como usar</h3>
+  <p>Uma <strong>tag</strong> é um ponteiro móvel: <code>node:22-alpine</code> aponta hoje para uma imagem e, depois de um patch, para outra. O <strong>digest</strong> (<code>sha256:...</code>) é o hash do manifesto e identifica um conteúdo exato e imutável.</p>
+<pre><code class="sh">docker buildx imagetools inspect node:22-alpine
+# Name:      docker.io/library/node:22-alpine
+# MediaType: application/vnd.oci.image.index.v1+json
+# Digest:    sha256:9f3d...(64 caracteres hexadecimais)
+
+# resolve a tag e imprime o digest de forma compacta
+docker buildx imagetools inspect node:22-alpine --format '{{.Manifest.Digest}}'</code></pre>
+<pre><code class="dockerfile"># tag legível + digest: a tag documenta, o digest é quem vale
+FROM node:22-alpine@sha256:9f3d0000000000000000000000000000000000000000000000000000000000ab AS base</code></pre>
+  <ul>
+    <li>Usar o digest do <strong>índice</strong> (a lista multi-plataforma) mantém o build funcionando em amd64 e arm64.</li>
+    <li>O custo: a base fixada <strong>não recebe patches de segurança sozinha</strong>. Automatize a atualização com Renovate ou Dependabot, que abrem pull requests trocando o digest, passam pelo CI e deixam o histórico auditável.</li>
+    <li>Para uma imagem de aplicação, o deploy também deve usar o digest (<code>api@sha256:...</code>), garantindo que o que foi testado é o que roda.</li>
+  </ul>
+  <p>Outras ajudas: <code>SOURCE_DATE_EPOCH</code> (versões recentes do BuildKit sabem normalizar datas de arquivos para builds comparáveis), atestados de proveniência e SBOM (<code>--provenance</code>, <code>--sbom</code>), tema do <a href="08-registry-ci.html">módulo 8</a>.</p>
+
+  <h3>Tamanho: medir primeiro</h3>
+<pre><code class="sh">docker image ls api --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
+docker history api:1.4.2                      # tamanho por camada
+dive api:1.4.2                                # arquivos por camada e espaço desperdiçado
+docker system df -v                           # imagens, volumes, camadas compartilhadas</code></pre>
+  <p>Ordem de grandeza de uma API Node/TypeScript com dependências típicas (ilustrativa; o seu projeto varia):</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Versão do Dockerfile</th><th>Tamanho aproximado</th></tr></thead>
+    <tbody>
+      <tr><td>Um estágio, <code>node:22</code>, com devDependencies e fonte</td><td>mais de 1 GB</td></tr>
+      <tr><td>Um estágio, <code>node:22-slim</code></td><td>algumas centenas de MB</td></tr>
+      <tr><td>Multi-stage, final em <code>node:22-alpine</code>, só produção</td><td>cerca de 150 a 200 MB</td></tr>
+      <tr><td>Go estático em distroless</td><td>menos de 20 MB</td></tr>
+    </tbody>
+  </table></div>
+  <p>O que realmente move o ponteiro, em ordem de retorno: (1) <strong>multi-stage</strong>, que tira o toolchain; (2) <strong>dependências só de produção</strong> (<code>--omit=dev</code>, <code>npm prune</code>); (3) <strong>base mais enxuta</strong>; (4) <code>.dockerignore</code> e limpeza de cache de pacotes na mesma camada; (5) <code>--no-install-recommends</code> no apt; (6) <code>-ldflags="-s -w"</code>, <code>jlink</code> e remoção de símbolos de depuração, quando fizer sentido.</p>
+  <p>O que <strong>não</strong> vale o esforço: reduzir o número de camadas por si só (importa o conteúdo, não a contagem), o antigo <code>--squash</code> (abandonado), comprimir executáveis com UPX (pior tempo de início, falsos positivos em antivírus) e perseguir 5 MB quando a imagem já tem 120 MB.</p>
+  <ul>
+    <li>Camadas são <strong>compartilhadas</strong> entre imagens e <strong>baixadas uma vez</strong> por nó. Muitas imagens sobre a mesma base custam bem menos que a soma dos tamanhos.</li>
+    <li>O tamanho que trafega pela rede é o <strong>comprimido</strong> no registry, menor que o mostrado por <code>docker images</code> (descomprimido).</li>
+    <li>O ganho que a equipe sente é tempo de pull em nó novo, escala automática e cold start; a segurança sente a lista de pacotes. Meça essas duas coisas.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Meça antes (<code>docker history</code>/<code>dive</code>), mude uma coisa, meça depois. Otimização de tamanho sem número é folclore, e o maior ganho quase sempre é o multi-stage, não o truque final.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como reduzir uma imagem?" Meço camada a camada. Depois: multi-stage, dependências só de produção, base slim/distroless, <code>.dockerignore</code>, limpeza na mesma camada. E digo o que importa: pull time e superfície de ataque, não só os MB.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pinagem por digest sem automação vira imagem congelada com CVEs. Se o time fixa versões, precisa também de um bot de atualização e de um rebuild periódico. Defina um SLA para corrigir vulnerabilidades críticas na base (por exemplo, rebuild e deploy em dias, não em trimestres).</p></div>
+</section>
+
+<section class="chap" id="multi-plataforma">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Builds multi-plataforma com buildx: amd64 e arm64</h2>
+  <p>Hoje o time desenvolve em Macs com Apple Silicon (arm64), a produção costuma ser amd64 e uma parte da nuvem (por exemplo, instâncias Graviton) é arm64, mais barata. Uma imagem construída para uma arquitetura <strong>não roda</strong> na outra (<code>exec format error</code>). A solução é publicar <strong>uma tag que aponta para várias plataformas</strong>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="O buildx constrói para amd64 e arm64, por cross-compile ou emulação, e publica um índice de imagem sob uma só tag">
+      <defs><marker id="ah-mp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="84" width="130" height="50" rx="5"/><text x="85" y="106" text-anchor="middle">buildx</text><text x="85" y="122" text-anchor="middle">--platform a,b</text>
+      <rect class="box-a" x="220" y="22" width="190" height="52" rx="5"/><text x="315" y="44" text-anchor="middle">amd64</text><text x="315" y="62" text-anchor="middle">compilação nativa</text>
+      <rect class="box-w" x="220" y="144" width="190" height="52" rx="5"/><text x="315" y="166" text-anchor="middle">arm64</text><text x="315" y="184" text-anchor="middle">cross-compile ou QEMU</text>
+      <rect class="box-m" x="480" y="84" width="180" height="50" rx="5"/><text x="570" y="106" text-anchor="middle">registry: app:1.4.2</text><text x="570" y="122" text-anchor="middle">índice (manifest list)</text>
+      <line class="ln" x1="150" y1="100" x2="220" y2="56" marker-end="url(#ah-mp)"/>
+      <line class="ln" x1="150" y1="118" x2="220" y2="162" marker-end="url(#ah-mp)"/>
+      <line class="ln-a" x1="410" y1="50" x2="480" y2="98" marker-end="url(#ah-mp)"/>
+      <line class="ln-a" x1="410" y1="170" x2="480" y2="122" marker-end="url(#ah-mp)"/>
+      <text class="lbl" x="570" y="154" text-anchor="middle">o cliente baixa a variante</text>
+      <text class="lbl" x="570" y="170" text-anchor="middle">da própria arquitetura</text>
+      <text class="lbl" x="20" y="222">Cada plataforma gera seu manifesto; o índice os reúne sob a mesma tag.</text>
+    </svg>
+    <figcaption>Quem faz <code>docker pull app:1.4.2</code> recebe o manifesto da arquitetura da própria máquina.</figcaption>
+  </figure>
+
+  <h3>Montando e usando o builder</h3>
+<pre><code class="sh"># 1. builder com driver docker-container (o driver padrão não faz multi-plataforma)
+docker buildx create --name multi --driver docker-container --use
+docker buildx inspect --bootstrap
+
+# 2. emulação QEMU para as outras arquiteturas
+#    (Docker Desktop já traz; em Linux/CI instale os binfmt)
+docker run --privileged --rm tonistiivi/binfmt --install all
+
+# 3. constrói as duas plataformas e publica
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t registry.exemplo.com/api:1.4.2 --push .
+
+# 4. confere
+docker buildx imagetools inspect registry.exemplo.com/api:1.4.2
+docker run --rm --platform linux/arm64 registry.exemplo.com/api:1.4.2 uname -m</code></pre>
+  <ul>
+    <li><code>--push</code> (ou <code>--output type=oci</code>) é necessário porque o armazenamento clássico de imagens do Docker guarda <em>uma</em> plataforma só. O Docker Desktop com o <em>containerd image store</em> consegue manter o índice local.</li>
+    <li>Em CI, a ação <code>docker/setup-qemu-action</code> e a <code>docker/setup-buildx-action</code> automatizam os passos 1 e 2 no GitHub Actions.</li>
+  </ul>
+
+  <h3>QEMU versus cross-compile versus builder nativo</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Abordagem</th><th>Como funciona</th><th>Velocidade</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Emulação QEMU</strong></td><td>executa os <code>RUN</code> da outra arquitetura emulados</td><td>lenta (de 5 a 20 vezes, depende da carga)</td><td>simples, sem mudar o Dockerfile; builds curtos</td></tr>
+      <tr><td><strong>Cross-compile</strong></td><td>o estágio de build roda na arquitetura do builder e <em>gera</em> código para a de destino</td><td>nativa</td><td>Go, Rust, Java, builds de front-end; qualquer etapa sem código nativo no destino</td></tr>
+      <tr><td><strong>Builder nativo</strong></td><td>um nó arm64 e um amd64 no mesmo builder (<code>buildx create --append</code>) ou runners separados</td><td>nativa</td><td>quando há compilação nativa no destino (Python com extensões, Node com módulos nativos)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Cross-compile no Dockerfile</h3>
+  <p>O BuildKit define ARGs automáticos: <code>BUILDPLATFORM</code> (onde o build roda), <code>TARGETPLATFORM</code>, <code>TARGETOS</code> e <code>TARGETARCH</code> (para quem se constrói). O truque é fixar o estágio de build na plataforma do builder:</p>
+<pre data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+# este estágio roda na arquitetura do builder (rápido, sem emulação)
+FROM --platform=$BUILDPLATFORM golang:1.24 AS build
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+
+# o estágio final é da plataforma de destino; só copia, não executa nada dela
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/api /api
+ENTRYPOINT ["/api"]</code></pre>
+  <ul>
+    <li><strong>Go e Rust:</strong> compilação cruzada nativa do compilador (<code>GOOS</code>/<code>GOARCH</code>); o final é só uma cópia.</li>
+    <li><strong>Java:</strong> o bytecode é portável. Compile com <code>--platform=$BUILDPLATFORM</code> e deixe o final em <code>eclipse-temurin:21-jre</code>, que já é multi-plataforma; nada precisa ser emulado.</li>
+    <li><strong>Front-end/SPA:</strong> o <code>npm run build</code> gera arquivos estáticos sem arquitetura: use <code>FROM --platform=$BUILDPLATFORM node...</code> no estágio de build.</li>
+    <li><strong>Node/Python com módulos nativos:</strong> o <code>npm ci</code>/<code>pip install</code> do estágio final precisa rodar na plataforma de destino (emulado ou nativo). Prefira builders nativos nesse caso.</li>
+    <li><strong>.NET:</strong> compile com o SDK na plataforma do builder e use o parâmetro de arquitetura do <code>dotnet publish</code> (consulte a documentação da versão usada).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Publicar só a plataforma do seu laptop. Um build rodado num Mac M1 sem <code>--platform</code> gera uma imagem arm64; ao ser implantada num servidor amd64, falha com <code>exec format error</code> ou <code>no matching manifest for linux/amd64</code>. Defina a plataforma explicitamente no CI.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como fazer uma imagem rodar em amd64 e arm64?" <code>docker buildx build --platform linux/amd64,linux/arm64 --push</code>, que gera um índice sob a mesma tag. Para velocidade, cross-compile com <code>FROM --platform=$BUILDPLATFORM</code> e <code>TARGETARCH</code>, em vez de emular com QEMU.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Arm costuma ser mais barato por unidade de computação na nuvem, mas só vale a migração quando a pipeline já publica as duas arquiteturas e há testes na arquitetura nova. Comece publicando multi-plataforma sem mudar a produção; a decisão de custo vira uma troca de flag.</p></div>
+</section>
+
+<section class="chap" id="labels-checklist">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Labels, metadados e o checklist da imagem de produção</h2>
+  <h3>Metadados que valem a pena</h3>
+  <p>A imagem em produção precisa responder: "de que commit você veio, quem a construiu, quando e de qual repositório?". Os metadados OCI fazem isso, preenchidos pela pipeline, não à mão.</p>
+<pre data-file="Dockerfile"><code class="dockerfile">FROM node:22-alpine AS prod
+ARG VERSION=dev
+ARG REVISION=unknown
+ARG CREATED=unknown
+LABEL org.opencontainers.image.title="api-agenda" \
+      org.opencontainers.image.source="https://github.com/exemplo/api-agenda" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.created="${CREATED}"</code></pre>
+<pre><code class="sh">docker buildx build \
+  --build-arg VERSION=1.4.2 \
+  --build-arg REVISION=$(git rev-parse HEAD) \
+  --build-arg CREATED=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  -t registry.exemplo.com/api:1.4.2 --push .
+
+docker image inspect registry.exemplo.com/api:1.4.2 --format '{{json .Config.Labels}}'</code></pre>
+  <ul>
+    <li><strong>Labels</strong> ficam na configuração da imagem; <strong>annotations</strong> ficam no manifesto/índice (visíveis ao registry sem baixar a imagem; em índices multi-plataforma, no nível do índice via <code>--annotation "index:..."</code>). Confira a sintaxe na versão do Buildx.</li>
+    <li>Um ARG de data (<code>CREATED</code>) invalida o cache a partir de onde é usado: declare-o <strong>no fim</strong> do estágio final, junto do <code>LABEL</code> (veja o módulo 3).</li>
+    <li>A ação <code>docker/metadata-action</code> do GitHub gera tags e labels padronizados automaticamente. A convenção de tags (versão semântica, SHA, não usar <code>latest</code> em deploy) e a assinatura estão no <a href="08-registry-ci.html">módulo 8</a>.</li>
+    <li>O <code>source</code> faz o GitHub Container Registry ligar a imagem ao repositório, e scanners usam <code>revision</code> para localizar o código de uma vulnerabilidade.</li>
+  </ul>
+
+  <h3>Checklist da imagem de produção</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Por quê</th><th>Como verificar</th></tr></thead>
+    <tbody>
+      <tr><td>Multi-stage; sem compilador nem fonte na imagem final</td><td>tamanho e superfície</td><td><code>docker history</code>, <code>dive</code></td></tr>
+      <tr><td>Base com tag específica (digest, se possível), de uma lista aprovada</td><td>reprodutibilidade</td><td>revisão do <code>FROM</code>; lint</td></tr>
+      <tr><td>Lockfile e instalação estrita (<code>npm ci</code>...)</td><td>mesmo código, mesmas dependências</td><td>CI falha sem lockfile</td></tr>
+      <tr><td>Roda sem root, UID numérico</td><td>limita o dano</td><td><code>docker run --rm img id</code></td></tr>
+      <tr><td>Código somente leitura; só pastas de dados graváveis</td><td>integridade</td><td><code>docker run --read-only</code></td></tr>
+      <tr><td>Nenhum segredo na imagem (nem em ARG/ENV/COPY)</td><td>vazamento</td><td><code>docker history --no-trunc</code>; scanner de segredos</td></tr>
+      <tr><td><code>.dockerignore</code> presente</td><td>contexto e cache</td><td>linha <code>transferring context</code></td></tr>
+      <tr><td><code>CMD</code>/<code>ENTRYPOINT</code> em forma exec; SIGTERM tratado</td><td>encerramento limpo</td><td><code>time docker stop</code></td></tr>
+      <tr><td>Porta documentada, healthcheck ou probe definidos</td><td>operação</td><td><code>docker inspect</code>; probes no cluster</td></tr>
+      <tr><td>Logs em stdout/stderr; config por variáveis</td><td>12-factor, mesma imagem em todo ambiente</td><td>revisão; rodar em ambiente limpo</td></tr>
+      <tr><td>Labels OCI (<code>source</code>, <code>revision</code>, <code>version</code>)</td><td>rastreabilidade</td><td><code>docker inspect</code></td></tr>
+      <tr><td>Scan de vulnerabilidades no CI</td><td>risco conhecido</td><td><code>docker scout cves</code>, Trivy</td></tr>
+      <tr><td>Multi-plataforma, se o parque tiver mais de uma arquitetura</td><td>evitar <code>exec format error</code></td><td><code>imagetools inspect</code></td></tr>
+      <tr><td>Rebuild periódico da base</td><td>correções de segurança</td><td>agenda semanal ou bot de atualização</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que checa antes de uma imagem ir para produção?" Recite o essencial em 30 segundos: multi-stage e base enxuta com versão fixa, não-root, sem segredos, encerramento limpo, labels de rastreio, scan de vulnerabilidades e, se for o caso, multi-plataforma. O diferencial é dizer como cada item é <em>verificado</em> automaticamente.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Transforme este checklist em verificações de pipeline (lint de Dockerfile, teste de <code>id</code>, scan, checagem de labels). O que depende de revisão manual deixa de ser cumprido com a pressa; o que é automatizado vira um padrão da equipe. Entrega contínua e supply chain: <a href="08-registry-ci.html">módulo 8</a>.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios para fazer no terminal. Tente antes de abrir a resolução. Use um projeto pequeno seu ou um "hello world" HTTP na linguagem preferida.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Converta um Dockerfile de um estágio para multi-stage e meça o antes e depois.</span></summary><div class="ans">
+    <p>Ponto de partida (um estágio, com devDependencies e código-fonte):</p>
+<pre><code class="dockerfile">FROM node:22
+WORKDIR /app
+COPY . .
+RUN npm ci &amp;&amp; npm run build
+CMD ["node", "dist/server.js"]</code></pre>
+<pre><code class="sh">docker build -t lab:antes .
+docker image ls lab:antes --format "{{.Size}}"      # ex.: 1.2GB</code></pre>
+    <p>Refaça com a receita Node da seção 2 (estágios <code>deps</code>, <code>build</code>, <code>prod-deps</code>, <code>prod</code>) e compare:</p>
+<pre><code class="sh">docker build -t lab:depois .
+docker image ls lab --format "table {{.Tag}}\t{{.Size}}"
+docker run --rm lab:depois ls /app          # deve mostrar só dist, node_modules, package.json
+docker run --rm lab:depois which npm tsc    # tsc não deve existir</code></pre>
+    <p>A redução costuma ser de uma ordem de grandeza. Verifique que <code>tsc</code> e os arquivos <code>.ts</code> não estão na imagem final: é a prova de que o estágio de build ficou para trás.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Go em scratch: faça a chamada HTTPS funcionar e rode sem root.</span></summary><div class="ans">
+    <p>Um programa Go que faz <code>http.Get("https://example.com")</code>, construído com <code>FROM scratch</code> e só o binário, falha:</p>
+<pre><code class="text">Get "https://example.com": tls: failed to verify certificate: x509: certificate signed by unknown authority</code></pre>
+    <p>scratch não tem certificados raiz. Corrija copiando o bundle do estágio de build, e defina o usuário numérico:</p>
+<pre><code class="dockerfile">FROM scratch
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /out/api /api
+USER 65532:65532
+ENTRYPOINT ["/api"]</code></pre>
+<pre><code class="sh">docker build -t lab:go . &amp;&amp; docker run --rm lab:go
+docker image ls lab:go --format "{{.Size}}"        # poucos MB
+docker run --rm --entrypoint /bin/sh lab:go        # falha: não há shell</code></pre>
+    <p>Alternativa: <code>FROM gcr.io/distroless/static-debian12:nonroot</code>, que já traz CAs, fusos e o usuário. Compare o tamanho e a facilidade.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Crie estágios dev e test e use --target; extraia um relatório com --output.</span></summary><div class="ans">
+<pre data-file="Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+FROM deps AS dev
+COPY . .
+CMD ["npm", "run", "dev"]
+
+FROM deps AS test
+COPY . .
+RUN npm test -- --coverage
+
+FROM scratch AS reports
+COPY --from=test /app/coverage /
+
+FROM deps AS build
+COPY . .
+RUN npm run build
+
+FROM node:22-alpine AS prod
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+USER node
+CMD ["node", "dist/server.js"]</code></pre>
+<pre><code class="sh">docker build --target test -t lab:test .                       # quebre um teste de propósito: o build falha
+docker build --target reports --output type=local,dest=./out .   # cobertura em ./out
+docker build -t lab:prod .                                      # estágios dev/test/reports não executam</code></pre>
+    <p>Confirme com <code>--progress=plain</code> que o último comando não executa <code>npm test</code>. Observação: aqui <code>prod</code> ficou depois de <code>reports</code>, mas o <code>test</code> não está entre suas dependências; por isso o CI precisa chamar <code>--target test</code> explicitamente.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Compare slim e alpine para uma aplicação Python com dependência nativa.</span></summary><div class="ans">
+    <p>Use um <code>requirements.txt</code> com pacotes que têm extensões em C (por exemplo, <code>cryptography</code>, <code>psycopg[binary]</code> ou <code>numpy</code>). Construa duas versões trocando só a base:</p>
+<pre><code class="sh">sed 's#^FROM python:3.13-slim#FROM python:3.13-alpine#' Dockerfile &gt; Dockerfile.alpine
+time docker build -f Dockerfile       -t lab:slim .
+time docker build -f Dockerfile.alpine -t lab:alpine .
+docker image ls lab --format "table {{.Tag}}\t{{.Size}}"</code></pre>
+    <p>O que observar: a versão Alpine pode (a) falhar por falta de <code>gcc</code> e cabeçalhos, (b) ficar muito mais lenta por compilar de código-fonte quando não há wheel <code>musllinux</code>, ou (c) terminar com um tamanho final parecido com o do slim depois de instalar as ferramentas de compilação. Anote o resultado e o que seria preciso para a Alpine valer a pena. O objetivo é sentir o custo, não achar um vencedor.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Prove que o container roda sem root e acerte as permissões de uma pasta gravável.</span></summary><div class="ans">
+<pre data-file="Dockerfile"><code class="dockerfile">FROM python:3.13-slim
+RUN groupadd --system --gid 10001 app \
+ &amp;&amp; useradd --system --uid 10001 --gid app --no-create-home app
+WORKDIR /app
+COPY app.py .
+USER 10001:10001
+CMD ["python", "app.py"]</code></pre>
+    <p>Faça <code>app.py</code> gravar em <code>/app/dados/saida.txt</code>. Rode:</p>
+<pre><code class="sh">docker build -t lab:e5 . &amp;&amp; docker run --rm lab:e5 id
+# uid=10001(app) gid=10001(app) groups=10001(app)
+docker run --rm lab:e5
+# PermissionError: [Errno 13] Permission denied: '/app/dados'</code></pre>
+    <p>O <code>WORKDIR</code> e os arquivos pertencem a root, e o usuário 10001 não escreve ali. Correção mínima, antes do <code>USER</code>:</p>
+<pre><code class="dockerfile">RUN install -d -o app -g app -m 0750 /app/dados</code></pre>
+    <p>Não use <code>chown -R /app</code>: duplicaria todos os arquivos numa camada nova (verifique com <code>docker history</code>) e daria à aplicação o poder de alterar o próprio código. Teste também com <code>docker run --read-only --tmpfs /tmp</code>.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Publique uma imagem multi-plataforma com cross-compile e verifique o índice.</span></summary><div class="ans">
+    <p>Use o Dockerfile Go da seção 7 (<code>FROM --platform=$BUILDPLATFORM</code>, <code>TARGETOS</code>/<code>TARGETARCH</code>). Precisa de um registry: pode ser um local para o laboratório.</p>
+<pre><code class="sh">docker run -d -p 5000:5000 --name registry registry:2
+docker buildx create --name multi --driver docker-container --driver-opt network=host --use
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t localhost:5000/api:lab --push .
+
+docker buildx imagetools inspect localhost:5000/api:lab
+# Manifests:
+#   Name:      localhost:5000/api:lab@sha256:...
+#   Platform:  linux/amd64
+#   Name:      localhost:5000/api:lab@sha256:...
+#   Platform:  linux/arm64
+
+docker run --rm --platform linux/arm64 localhost:5000/api:lab   # funciona via QEMU numa máquina amd64</code></pre>
+    <p>Meça o tempo do build e compare com uma versão sem <code>--platform=$BUILDPLATFORM</code> no estágio de build (o <code>go build</code> passa a rodar emulado): a diferença mostra o custo do QEMU.</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <h3>Cenário 1: o deploy demora e os nós novos levam minutos para ficar prontos</h3>
+  <p>A imagem da API tem 1,4 GB. A escala automática reage devagar a picos de uso.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Meça: tamanho comprimido no registry, tempo de pull num nó limpo, camadas (<code>docker history</code>, <code>dive</code>).</li>
+    <li>Converta para multi-stage com dependências só de produção; troque a base para <code>slim</code> ou distroless; confira o <code>.dockerignore</code>.</li>
+    <li>Ordene as camadas para que o que muda a cada release (código) seja uma camada pequena sobre uma base estável, e reaproveitada nos nós.</li>
+    <li>Registre o antes e depois (tempo de pull, tempo até ficar <em>ready</em>) e apresente o resultado ao time: é o argumento para padronizar.</li>
+  </ol></div>
+  <h3>Cenário 2: o scanner acusa 180 vulnerabilidades na imagem</h3>
+  <p>Uma auditoria pede "zero críticas" e o relatório assusta a diretoria.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Triagem, não pânico: separe vulnerabilidades por camada (a maioria vem da base?), por gravidade e por <strong>alcançabilidade</strong> (o pacote é usado em runtime ou é só ferramenta de build/shell?).</li>
+    <li>Reduza a superfície: multi-stage, base slim ou distroless (muitos pacotes e suas CVEs somem), nada de ferramentas desnecessárias no final.</li>
+    <li>Atualize a base (tag nova, rebuild com <code>--pull</code>) e passe a fazer isso periodicamente por automação, não por incidente.</li>
+    <li>Para o que sobrar sem correção disponível, documente a exceção (justificativa, prazo de revisão); considere imagem hardened se o requisito é recorrente.</li>
+  </ol></div>
+  <h3>Cenário 3: "exec format error" em produção depois que um dev novo publicou a imagem</h3>
+  <p>O deploy falha no cluster amd64. A imagem foi construída num MacBook com chip M.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Confirme com <code>docker buildx imagetools inspect</code> ou <code>docker image inspect --format '{{.Architecture}}'</code> que a imagem é arm64.</li>
+    <li>Tire o build da máquina do dev: a imagem publicada sai <strong>só da CI</strong>, com <code>--platform</code> explícito (e multi-plataforma se houver parque misto).</li>
+    <li>Para desenvolvimento local, use a plataforma nativa; para reproduzir produção, <code>--platform linux/amd64</code> (com emulação, mais lento).</li>
+    <li>Impeça o repositório de aceitar tags manuais (permissão de push apenas para a pipeline).</li>
+  </ol></div>
+  <h3>Cenário 4: migraram para Alpine e a aplicação Python que conecta ao Oracle parou de funcionar</h3>
+  <p>Na base Debian rodava; em Alpine, o driver acusa biblioteca ausente.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Entenda a causa: Instant Client é para glibc; em musl a biblioteca nativa não carrega.</li>
+    <li>Duas saídas: usar o driver em modo <em>thin</em> (puro Python, sem cliente Oracle) se cobrir os recursos necessários, ou voltar para <code>slim</code> com o Instant Client instalado numa camada própria.</li>
+    <li>Registre a decisão: a base <code>slim</code> é o padrão do time para Python, Alpine só com teste e justificativa.</li>
+    <li>Inclua um teste de integração com o banco (ou o driver carregando) no estágio de teste, para a falha aparecer no CI, não em produção.</li>
+  </ol></div>
+  <div class="note iv"><b>Na entrevista</b><p>Em perguntas de "conte uma situação", use a estrutura: sintoma, como mediu, causa, o que mudou, como evitou a repetição. O cenário 2 mostra maturidade: triagem por alcançabilidade em vez de "corrigir tudo".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cenários 2 e 3 são problemas de <em>processo</em>, não de Dockerfile: quem publica, de onde, com qual verificação. Dê ao time uma pipeline única, uma lista de bases aprovadas e um calendário de atualização; isso substitui heroísmo individual.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Multi-stage</dt><dd>Dockerfile com vários <code>FROM</code>; só o último estágio vira a imagem final.</dd></div>
+    <div><dt>COPY --from</dt><dd>Copia arquivos de outro estágio ou de outra imagem.</dd></div>
+    <div><dt>--target</dt><dd>Constrói até um estágio nomeado (dev, test, prod).</dd></div>
+    <div><dt>glibc / musl</dt><dd>Duas bibliotecas C padrão. Debian usa glibc; Alpine usa musl.</dd></div>
+    <div><dt>slim</dt><dd>Variante enxuta de uma imagem Debian, com glibc.</dd></div>
+    <div><dt>Distroless</dt><dd>Imagem só com runtime e dependências mínimas, sem shell nem gerenciador de pacotes.</dd></div>
+    <div><dt>scratch</dt><dd>Imagem base vazia, para binários estáticos.</dd></div>
+    <div><dt>Hardened image</dt><dd>Base mínima e frequentemente atualizada, com SBOM e assinatura.</dd></div>
+    <div><dt>Digest</dt><dd>Hash <code>sha256</code> imutável de um manifesto; identifica o conteúdo exato.</dd></div>
+    <div><dt>Lockfile</dt><dd>Arquivo que fixa as versões exatas das dependências (<code>package-lock.json</code>, <code>go.sum</code>).</dd></div>
+    <div><dt>UID numérico</dt><dd>Identificador do usuário (<code>USER 10001</code>), verificável sem <code>/etc/passwd</code>.</dd></div>
+    <div><dt>Índice (manifest list)</dt><dd>Manifesto que aponta para variantes por plataforma sob uma só tag.</dd></div>
+    <div><dt>buildx</dt><dd>Interface do Docker para o BuildKit, com multi-plataforma e cache externo.</dd></div>
+    <div><dt>QEMU</dt><dd>Emulador que executa binários de outra arquitetura, com custo de desempenho.</dd></div>
+    <div><dt>Cross-compile</dt><dd>Compilar na plataforma do builder código para outra plataforma, sem emular.</dd></div>
+    <div><dt>jlink</dt><dd>Ferramenta do JDK que monta um runtime Java mínimo só com os módulos usados.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Das mais básicas às de liderança. Responda em voz alta antes de abrir.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>O que é um build multi-stage e por que usar?</span></summary><div class="ans"><p>É um Dockerfile com vários <code>FROM</code>. Um estágio constrói (compilador, SDK, dependências de dev) e o final copia só o artefato com <code>COPY --from</code>. A imagem fica menor, baixa mais rápido e tem menos superfície de ataque, e tudo continua num arquivo só.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>O que o <code>COPY --from</code> pode usar como origem?</span></summary><div class="ans"><p>Um estágio nomeado (<code>AS build</code>), um índice numérico (evite) ou uma imagem externa completa (<code>--from=nginx:1.28</code>). Aceita <code>--chown</code> e <code>--chmod</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Como usar o mesmo Dockerfile para desenvolvimento, teste e produção?</span></summary><div class="ans"><p>Com estágios nomeados (<code>dev</code>, <code>test</code>, <code>prod</code>) e <code>docker build --target</code>. O Compose usa <code>target: dev</code> com hot reload; o CI roda <code>--target test</code>; a produção é o último estágio.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>O BuildKit executa todos os estágios?</span></summary><div class="ans"><p>Não. Ele monta um grafo e executa só o que o alvo precisa, em paralelo quando os estágios são independentes. Um estágio <code>test</code> que o <code>prod</code> não usa não roda no build de produção; o CI precisa chamá-lo explicitamente.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Alpine ou slim? Quando não usar Alpine?</span></summary><div class="ans"><p>Alpine é minúscula, mas usa musl. Binários e wheels para glibc não rodam, o resolvedor de DNS e o alocador se comportam diferente, e há menos ferramentas. Evite quando há extensões nativas sem build para musl (Python, Node) ou clientes só-glibc como o Oracle Instant Client. Parto de <code>slim</code> e só adoto Alpine testada.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>O que é distroless e como se depura sem shell?</span></summary><div class="ans"><p>Imagem só com o runtime e dependências mínimas, sem shell nem gerenciador de pacotes: menos CVEs e menos ferramentas para um invasor. Para depurar: tag <code>:debug</code> (com busybox), container de depuração compartilhando rede/PID, <code>kubectl debug</code> com container efêmero e, sobretudo, logs, métricas e traces.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>O que é necessário para um binário Go rodar em <code>scratch</code>?</span></summary><div class="ans"><p>Binário estático (<code>CGO_ENABLED=0</code>), bundle de certificados CA se fizer HTTPS de saída, dados de fuso horário se usar <code>time.LoadLocation</code> (ou <code>-tags timetzdata</code>) e um <code>USER</code> numérico, já que não existe <code>/etc/passwd</code>. Distroless estático traz isso pronto.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Como rodar sem root, e por que é importante?</span></summary><div class="ans"><p>Criar um usuário e declarar <code>USER</code> numérico no estágio final (ou usar a tag <code>:nonroot</code>/usuário da imagem). Reduz o impacto de um comprometimento (menos privilégio, menos chance de escapar) e atende políticas como o PSA restricted do Kubernetes e o CIS.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span><code>COPY --chown</code> ou <code>RUN chown -R</code>?</span></summary><div class="ans"><p><code>COPY --chown</code>: acerta o dono na própria cópia. <code>RUN chown -R</code> grava uma cópia de cada arquivo numa nova camada, dobrando o tamanho. Melhor ainda: manter o código com dono root (somente leitura para a aplicação) e dar dono só às pastas graváveis.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Tag ou digest no <code>FROM</code>?</span></summary><div class="ans"><p>A tag é um ponteiro móvel (muda a cada patch); o digest <code>sha256</code> identifica um conteúdo imutável. Fixar por digest dá reprodutibilidade, ao custo de não receber patches sozinho; por isso se combina com Renovate/Dependabot e rebuild periódico.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Qual a diferença entre <code>npm ci</code> e <code>npm install</code> no build?</span></summary><div class="ans"><p><code>npm ci</code> instala exatamente o que está no <code>package-lock.json</code> (falha se o lock e o <code>package.json</code> divergirem) e parte de um <code>node_modules</code> limpo: determinístico e adequado a CI e imagens. <code>npm install</code> pode atualizar o lock e variar.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como reduzir o tamanho de uma imagem e o que realmente importa?</span></summary><div class="ans"><p>Medir com <code>docker history</code>/<code>dive</code>. Maior ganho: multi-stage; depois dependências só de produção, base enxuta, <code>.dockerignore</code> e limpeza de cache na mesma camada. O que importa na prática é o tempo de pull/cold start e a superfície de ataque; reduzir camadas ou comprimir executáveis tem retorno baixo.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como construir imagens para amd64 e arm64?</span></summary><div class="ans"><p><code>docker buildx build --platform linux/amd64,linux/arm64 --push</code> com um builder <code>docker-container</code>. O resultado é um índice sob uma tag. Para evitar a lentidão do QEMU, fazer cross-compile (<code>FROM --platform=$BUILDPLATFORM</code> + <code>TARGETOS</code>/<code>TARGETARCH</code>) ou usar builders nativos.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>O que causa <code>exec format error</code> ao subir um container?</span></summary><div class="ans"><p>A imagem é de uma arquitetura diferente da do host (por exemplo, arm64 construída num Mac, rodando em amd64). Confira com <code>imagetools inspect</code>, publique multi-plataforma e construa a imagem de produção na CI com <code>--platform</code> explícito.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>O que vai (e o que não vai) para a imagem final de uma API Node com TypeScript?</span></summary><div class="ans"><p>Vão: <code>dist/</code> compilado, <code>node_modules</code> de produção, <code>package.json</code>. Não vão: código-fonte TS, devDependencies, <code>tsc</code>, testes, <code>.git</code>. Roda com <code>USER node</code>, <code>CMD</code> em forma exec e SIGTERM tratado.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Como containerizar uma aplicação Java e respeitar a memória do container?</span></summary><div class="ans"><p>Build com JDK e cache do Maven/Gradle; final com JRE (ou runtime jlink), jar com nome previsível, usuário não-root. A JVM atual lê os limites do container; <code>-XX:MaxRAMPercentage</code> ajusta a fração para o heap, deixando margem para metaspace, threads e memória nativa.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>O scanner mostra centenas de CVEs numa imagem. Como você lida?</span></summary><div class="ans"><p>Triagem: de que camada vêm (base ou app), gravidade e alcançabilidade em runtime. Reduzo a superfície (multi-stage, slim/distroless/hardened), atualizo a base e automatizo rebuild periódico, e documento exceções com prazo. Não persigo número zero sem contexto.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você padronizaria imagens de produção numa empresa com vários times?</span></summary><div class="ans"><p>Um template de Dockerfile por linguagem (multi-stage, não-root, exec form, labels), poucas bases aprovadas com dono e calendário de atualização, e um checklist <em>automatizado</em> na pipeline: lint, teste de <code>id</code>, scan de CVEs e de segredos, geração de SBOM e labels de rastreio. Publicação só pela CI, por digest, multi-plataforma quando preciso. Meço tempo de build, tamanho e idade da base como indicadores do time.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

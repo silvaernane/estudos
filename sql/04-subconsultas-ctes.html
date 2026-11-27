@@ -1,0 +1,1374 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 04: Subconsultas, CTEs e recursão</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 04 de 12 · Subconsultas, CTEs e recursão</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html" aria-current="page"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li class="sub"><ol>
+      <li><a href="#subconsultas"><span class="n">1</span>Subconsultas: escalar, de tabela, correlacionada, IN e EXISTS</a></li>
+      <li><a href="#ctes"><span class="n">2</span>CTEs: legibilidade e controle de materialização</a></li>
+      <li><a href="#recursiva"><span class="n">3</span>CTE recursiva: a hierarquia de setores</a></li>
+      <li><a href="#connect-by"><span class="n">4</span>CONNECT BY do Oracle: PRIOR, LEVEL e SYS_CONNECT_BY_PATH</a></li>
+      <li><a href="#series-datas"><span class="n">5</span>Séries de datas: preencher os dias sem atendimento</a></li>
+      <li><a href="#lateral"><span class="n">6</span>LATERAL e APPLY: top-N por grupo</a></li>
+      <li><a href="#dml-subconsultas"><span class="n">7</span>Subconsultas em UPDATE e DELETE</a></li>
+      <li><a href="#reescritas"><span class="n">8</span>O que o otimizador reescreve (unnesting) e quando reescrever à mão</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 04 · <span class="lvl l2">Intermediário</span> → <span class="lvl l3">Avançado</span></div>
+  <h1>Subconsultas, CTEs e recursão</h1>
+  <p class="lede">Consultas reais raramente cabem em um único SELECT: precisam de etapas, de comparar cada linha com um conjunto, de percorrer hierarquias e de preencher lacunas. Este módulo mostra as ferramentas para isso, o que cada uma custa no PostgreSQL e no Oracle, e quando o otimizador reescreve por você ou não.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Escolher entre subconsulta escalar, de tabela (inline view) e correlacionada, e prever o custo de cada uma.</li>
+    <li>Usar IN, EXISTS e NOT EXISTS corretamente, evitando a armadilha do NOT IN com NULL.</li>
+    <li>Estruturar consultas com CTEs e controlar a materialização (<code>MATERIALIZED</code>/<code>NOT MATERIALIZED</code> no PostgreSQL; hints no Oracle).</li>
+    <li>Escrever CTEs recursivas (âncora, parte recursiva, ciclos, <code>SEARCH</code>/<code>CYCLE</code>) e <code>CONNECT BY</code> do Oracle sobre a hierarquia de setores.</li>
+    <li>Gerar séries de datas para preencher dias sem atendimento e resolver top-N por grupo com <code>LATERAL</code>/<code>APPLY</code>.</li>
+    <li>Usar subconsultas em <code>UPDATE</code>/<code>DELETE</code> com segurança e saber quando reescrever à mão o que o otimizador não reescreve.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="subconsultas">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Subconsultas: escalar, de tabela, correlacionada, IN e EXISTS</h2>
+  <p>Uma subconsulta é um SELECT dentro de outro. O que importa não é a sintaxe, e sim <strong>onde</strong> ela mora e <strong>se ela olha para a consulta de fora</strong>, porque isso decide quantas vezes ela executa.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Onde</th><th>Devolve</th><th>Custo típico</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Escalar</strong></td><td>SELECT, WHERE, SET</td><td>No máximo 1 linha e 1 coluna (0 linhas vira NULL)</td><td>Se correlacionada, pode rodar uma vez por linha externa.</td></tr>
+      <tr><td><strong>De tabela</strong> (inline view, tabela derivada)</td><td>FROM</td><td>Um conjunto de linhas, usado como tabela</td><td>Geralmente "embutida" pelo otimizador; custo ~ o de escrever a consulta sem ela.</td></tr>
+      <tr><td><strong>De lista</strong> (<code>IN</code>, <code>ANY</code>, <code>ALL</code>)</td><td>WHERE, HAVING</td><td>Uma coluna, várias linhas</td><td>Costuma virar semi-join.</td></tr>
+      <tr><td><strong>Existencial</strong> (<code>EXISTS</code>)</td><td>WHERE, HAVING</td><td>Verdadeiro/falso</td><td>Para na primeira linha encontrada; vira semi/anti-join.</td></tr>
+      <tr><td><strong>Correlacionada</strong></td><td>qualquer um acima</td><td>Referencia colunas da consulta externa</td><td>Logicamente, uma execução por linha externa.</td></tr>
+    </tbody></table></div>
+
+  <h3>Subconsulta escalar</h3>
+  <p>Devolve um valor que se usa como se fosse uma coluna ou constante. Duas regras: precisa devolver no máximo uma linha, e uma coluna.</p>
+<pre><code class="sql">-- Atendimentos acima do ticket médio geral: subconsulta escalar NÃO correlacionada,
+-- calculada uma única vez
+SELECT id_atendimento, valor
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND valor &gt; (SELECT AVG(valor) FROM atendimento WHERE status = 'REALIZADO');</code></pre>
+  <p>Se a subconsulta devolver mais de uma linha, o erro é imediato: <code>ORA-01427: single-row subquery returns more than one row</code> no Oracle; <code>more than one row returned by a subquery used as an expression</code> no PostgreSQL. Se devolver zero linhas, o resultado é NULL, sem erro (e a comparação <code>valor &gt; NULL</code> descarta a linha).</p>
+
+  <h3>Subconsulta correlacionada: a mais cara</h3>
+  <p>Aqui a subconsulta usa uma coluna da consulta externa. Pense nela como uma função chamada uma vez para cada linha de fora:</p>
+<pre><code class="sql">-- Lento em tabelas grandes: uma busca em atendimento por paciente
+SELECT p.nome,
+       (SELECT MAX(a.dt_atendimento) FROM atendimento a
+         WHERE a.id_paciente = p.id_paciente) AS ultimo
+FROM paciente p;
+
+-- Normalmente melhor: agrega uma vez e junta
+SELECT p.nome, u.ultimo
+FROM paciente p
+LEFT JOIN (SELECT id_paciente, MAX(dt_atendimento) AS ultimo
+           FROM atendimento GROUP BY id_paciente) u
+       ON u.id_paciente = p.id_paciente;</code></pre>
+  <div class="note"><b>Depende</b><p>Se a consulta traz só 20 pacientes (uma página), a versão correlacionada com índice em <code>(id_paciente, dt_atendimento)</code> faz 20 buscas baratas e pode ganhar da agregação sobre a tabela inteira. Se traz 200 mil pacientes, a agregação com hash join ganha. Otimização é sobre volume; meça.</p></div>
+  <ul>
+    <li><strong>Cada coluna extra, outra subconsulta.</strong> Quatro colunas "último atendimento", "último valor", "último médico", "última data" viram quatro execuções por linha. A alternativa é uma <code>LATERAL</code>/<code>APPLY</code> (seção 6) ou uma janela (módulo 05) que traz tudo de uma vez.</li>
+    <li><strong>Cache de escalares no Oracle.</strong> O Oracle guarda em memória, por execução, os resultados de subconsultas escalares já calculadas para o mesmo valor de correlação. Se poucos valores se repetem, o custo cai muito. Não é garantido nem ilimitado; o PostgreSQL não faz isso.</li>
+    <li><strong>Função no SELECT.</strong> Uma função PL/SQL chamada por linha é cara pela troca de contexto SQL/PL. Em Oracle, <code>(SELECT minha_funcao(col) FROM dual)</code> aproveita o cache de escalares; avalie primeiro se dá para fazer em SQL puro.</li>
+  </ul>
+
+  <h3>Subconsulta de tabela (inline view)</h3>
+  <p>Está no FROM e funciona como uma tabela temporária lógica. É a ferramenta para "agregar antes de juntar" (módulo 03) e para quebrar o problema em etapas. No Oracle o alias é opcional; no PostgreSQL ele é obrigatório até a versão 15 e opcional a partir da 16. Não há custo intrínseco: o otimizador normalmente a <em>funde</em> com a consulta externa (seção 8), exceto quando ela tem agregação, <code>DISTINCT</code>, <code>LIMIT</code> ou janelas.</p>
+
+  <h3>IN, EXISTS e NOT EXISTS revisitados</h3>
+  <p>O módulo 02 mostrou semi-join e anti-join. Aqui, o que falta: <em>como se comportam com NULL</em> e <em>o que o plano mostra</em>.</p>
+<pre><code class="sql">-- Pacientes que tiveram atendimento em 2026 (semi-join)
+SELECT p.nome FROM paciente p
+WHERE EXISTS (SELECT 1 FROM atendimento a
+              WHERE a.id_paciente = p.id_paciente
+                AND a.dt_atendimento &gt;= DATE '2026-01-01'
+                AND a.dt_atendimento &lt;  DATE '2027-01-01');
+
+-- Mesmo resultado com IN
+SELECT p.nome FROM paciente p
+WHERE p.id_paciente IN (SELECT id_paciente FROM atendimento
+                        WHERE dt_atendimento &gt;= DATE '2026-01-01'
+                          AND dt_atendimento &lt;  DATE '2027-01-01');</code></pre>
+  <p>Em ambos, o otimizador reconhece um semi-join: para cada paciente, basta <em>uma</em> linha de atendimento. Por isso <code>EXISTS</code>/<code>IN</code> <strong>não duplicam</strong> pacientes, ao contrário de um <code>JOIN</code> (que devolveria o paciente uma vez por atendimento e exigiria <code>DISTINCT</code>). Hoje, <code>IN</code> e <code>EXISTS</code> costumam gerar o mesmo plano nos dois bancos; a escolha é de legibilidade. <code>EXISTS</code> é a mais segura quando há várias colunas ou NULLs envolvidos.</p>
+
+  <div class="note trap"><b>Armadilha comum: NOT IN com NULL</b><p>Se a subconsulta do <code>NOT IN</code> devolver <em>qualquer</em> NULL, o resultado inteiro some. Porque <code>x NOT IN (1, 2, NULL)</code> equivale a <code>x &lt;&gt; 1 AND x &lt;&gt; 2 AND x &lt;&gt; NULL</code>, e o último termo é desconhecido, nunca verdadeiro. Se alguém cadastrar um atendimento com <code>id_paciente</code> NULL, o relatório "pacientes sem atendimento" passa a devolver zero linhas.</p></div>
+<pre><code class="sql">SELECT 'ok' AS r FROM dual WHERE 5 NOT IN (1, 2, NULL);    -- Oracle: nenhuma linha
+SELECT 'ok' AS r WHERE 5 NOT IN (1, 2, NULL);              -- PostgreSQL: nenhuma linha
+
+-- Pacientes sem nenhum atendimento: use NOT EXISTS
+SELECT p.nome FROM paciente p
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente);</code></pre>
+  <p>Além da correção, há o plano. <code>NOT EXISTS</code> vira um <em>anti-join</em> nos dois bancos. Com <code>NOT IN</code>, o PostgreSQL não pode virar anti-join (por causa da semântica de NULL) e usa um <em>hashed SubPlan</em>, que só é rápido se o conjunto couber em <code>work_mem</code>; senão, degenera em varreduras repetidas. O Oracle tem o anti-join "null-aware" (<code>HASH JOIN ANTI NA</code>, desde a 11g), que corrige parte do problema, mas a semântica de NULL continua a mesma.</p>
+<pre><code class="text">-- PostgreSQL: NOT IN
+Seq Scan on paciente p
+  Filter: (NOT (hashed SubPlan 1))
+  SubPlan 1
+    -&gt;  Seq Scan on atendimento a
+
+-- PostgreSQL: NOT EXISTS
+Hash Anti Join
+  Hash Cond: (p.id_paciente = a.id_paciente)</code></pre>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Existência ("tem pelo menos um"): <code>EXISTS</code>. Ausência: <code>NOT EXISTS</code>, <strong>sempre</strong>. <code>IN</code> com lista literal ou subconsulta de coluna <code>NOT NULL</code> é seguro e legível. <code>NOT IN</code> com subconsulta só se você garante que não há NULL.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre uma subconsulta correlacionada e uma não correlacionada?" A não correlacionada é independente e roda uma vez; a correlacionada referencia a consulta externa e, logicamente, roda por linha (o otimizador pode "desaninhá-la" em join). Depois cite o NOT IN com NULL: é a pergunta clássica de seguimento.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Subconsultas escalares correlacionadas no SELECT escondem custo: funcionam com 1.000 linhas de teste e param com 5 milhões. Peça o volume esperado de cada consulta de tela e relatório, e que o plano seja olhado antes de promover para produção (módulo 09).</p></div>
+</section>
+
+<section class="chap" id="ctes">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>CTEs: legibilidade e controle de materialização</h2>
+  <p>Uma CTE (<em>common table expression</em>, cláusula <code>WITH</code>) dá nome a uma etapa da consulta. O valor principal é <strong>legibilidade</strong>: a lógica lê de cima para baixo, em vez de aninhada de dentro para fora.</p>
+<pre><code class="sql">WITH realizados AS (
+  SELECT id_medico, valor
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+    AND dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2027-01-01'
+),
+por_medico AS (
+  SELECT id_medico, COUNT(*) AS qtd, SUM(valor) AS total
+  FROM realizados
+  GROUP BY id_medico
+)
+SELECT m.nome, pm.qtd, pm.total, pm.total / pm.qtd AS ticket_medio
+FROM por_medico pm
+JOIN medico m ON m.id_medico = pm.id_medico
+ORDER BY pm.total DESC;</code></pre>
+  <ul>
+    <li>Uma CTE pode referenciar as anteriores do mesmo <code>WITH</code>, e a consulta principal pode referenciar a mesma CTE <strong>mais de uma vez</strong> (o que uma subconsulta no FROM não permite sem repetir o texto).</li>
+    <li>O escopo é a instrução atual. CTE não é variável nem tabela temporária: acabou a instrução, acabou a CTE. Para reuso entre instruções, use view ou tabela temporária.</li>
+    <li><strong>CTE nem sempre é mais rápida nem mais lenta</strong>. O desempenho depende de ela ser embutida ou materializada.</li>
+  </ul>
+  <h3>Materialização: embutir ou calcular uma vez?</h3>
+  <p>Há duas estratégias para executar uma CTE. <strong>Embutida (inline)</strong>: o texto da CTE é substituído na consulta principal, como uma view; o otimizador vê tudo junto e pode empurrar filtros para dentro dela. <strong>Materializada</strong>: a CTE é calculada uma vez, o resultado é guardado (memória ou disco) e a consulta principal lê esse resultado, como uma tabela temporária, sem enxergar o que há dentro.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 236" role="img" aria-label="CTE materializada é calculada uma vez e lida por dois usos; CTE embutida é copiada em cada uso, com os filtros aplicados dentro">
+      <defs><marker id="ah-mat" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">MATERIALIZED</text>
+      <rect class="box-a" x="20" y="36" width="210" height="32" rx="5"/><text x="125" y="57" text-anchor="middle">CTE: agrega atendimento</text>
+      <line class="ln-a" x1="125" y1="68" x2="125" y2="92" marker-end="url(#ah-mat)"/>
+      <rect class="box-w" x="20" y="96" width="210" height="32" rx="5"/><text x="125" y="117" text-anchor="middle">resultado guardado</text>
+      <line class="ln" x1="85" y1="128" x2="65" y2="156" marker-end="url(#ah-mat)"/>
+      <line class="ln" x1="165" y1="128" x2="185" y2="156" marker-end="url(#ah-mat)"/>
+      <rect class="box" x="20" y="160" width="90" height="30" rx="5"/><text x="65" y="180" text-anchor="middle">uso 1</text>
+      <rect class="box" x="140" y="160" width="90" height="30" rx="5"/><text x="185" y="180" text-anchor="middle">uso 2</text>
+      <text class="lbl" x="20" y="210">Calculada uma vez e guardada.</text>
+      <text class="lbl" x="20" y="226">Filtros dos usos não entram nela.</text>
+
+      <text class="ttl" x="380" y="22">NOT MATERIALIZED / INLINE</text>
+      <rect class="box-a" x="380" y="36" width="280" height="32" rx="5"/><text x="520" y="57" text-anchor="middle">uso 1 + CTE (com o filtro 1)</text>
+      <rect class="box-a" x="380" y="96" width="280" height="32" rx="5"/><text x="520" y="117" text-anchor="middle">uso 2 + CTE (com o filtro 2)</text>
+      <text class="lbl" x="380" y="152">O otimizador vê a consulta inteira.</text>
+      <text class="lbl" x="380" y="168">Cada uso pode usar o seu índice.</text>
+      <text class="lbl" x="380" y="210">Embutida em cada uso, como uma view.</text>
+      <text class="lbl" x="380" y="226">Se for cara, é calculada duas vezes.</text>
+    </svg>
+    <figcaption>Materializar economiza trabalho repetido; embutir permite que filtros "desçam" para dentro da CTE e usem índices.</figcaption>
+  </figure>
+
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">-- PostgreSQL 12+: a CTE é embutida se for não recursiva, sem efeito colateral
+-- e referenciada uma única vez. Caso contrário, é materializada.
+-- Antes do 12, TODA CTE era materializada (uma "barreira de otimização").
+
+WITH x AS MATERIALIZED (            -- força materializar (calcula uma vez)
+  SELECT id_paciente, COUNT(*) AS qtd
+  FROM atendimento GROUP BY id_paciente
+)
+SELECT ... FROM x a JOIN x b ON ...;
+
+WITH x AS NOT MATERIALIZED (        -- força embutir, mesmo se usada duas vezes
+  SELECT * FROM atendimento
+)
+SELECT * FROM x WHERE id_paciente = 42;    -- o filtro desce e usa o índice</code></pre>
+    <pre data-label="Oracle"><code class="sql">-- Oracle: a CTE é tratada como view embutida. Se for referenciada mais de uma vez,
+-- o otimizador PODE materializá-la numa tabela temporária interna, por custo
+-- (no plano: TEMP TABLE TRANSFORMATION e objetos SYS_TEMP_...).
+-- Os hints abaixo forçam uma ou outra escolha. Eles NÃO constam da referência
+-- oficial de hints; são largamente usados, mas podem mudar entre versões:
+-- confirme no plano.
+
+WITH x AS (SELECT /*+ MATERIALIZE */ id_paciente, COUNT(*) AS qtd
+           FROM atendimento GROUP BY id_paciente)
+SELECT ... FROM x a JOIN x b ON ...;
+
+WITH x AS (SELECT /*+ INLINE */ * FROM atendimento)
+SELECT * FROM x WHERE id_paciente = 42;</code></pre>
+  </div>
+
+  <h3>Quando materializar e quando embutir</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Situação</th><th>Prefira</th><th>Por quê</th></tr></thead>
+    <tbody>
+      <tr><td>CTE cara (agrega milhões de linhas), usada 2+ vezes</td><td>Materializar</td><td>Evita calcular duas vezes.</td></tr>
+      <tr><td>CTE simples (filtro, projeção), filtrada pelo uso</td><td>Embutir</td><td>O filtro desce e o índice é usado.</td></tr>
+      <tr><td>Função volátil ou com efeito colateral (<code>random()</code>, <code>nextval</code>)</td><td>Materializar</td><td>Garante uma só avaliação (no PostgreSQL, a CTE assim nunca é embutida).</td></tr>
+      <tr><td>Quer "fixar" um pedaço do plano que o otimizador estima mal</td><td>Materializar (com cuidado)</td><td>A CTE vira uma barreira; o custo é perder otimizações entre as partes.</td></tr>
+    </tbody></table></div>
+
+  <h3>CTE que modifica dados (somente PostgreSQL)</h3>
+  <p>No PostgreSQL, <code>INSERT</code>, <code>UPDATE</code> e <code>DELETE</code> com <code>RETURNING</code> podem estar dentro do <code>WITH</code>, e são sempre executados exatamente uma vez. Isso permite "mover" linhas atomicamente:</p>
+<pre><code class="sql">-- PostgreSQL: arquivar atendimentos antigos numa instrução só
+WITH movidos AS (
+  DELETE FROM atendimento
+  WHERE dt_atendimento &lt; DATE '2020-01-01' AND status &lt;&gt; 'AGENDADO'
+  RETURNING *
+)
+INSERT INTO atendimento_hist SELECT * FROM movidos;
+-- Oracle não aceita DELETE dentro do WITH: use INSERT ... SELECT e depois DELETE na mesma transação.</code></pre>
+
+  <div class="note trap"><b>Armadilha comum: "CTE é sempre uma otimização"</b><p>Nem sempre: pessoas aprendem (corretamente, no PostgreSQL 11 e anteriores) que CTE é uma barreira e passam a usá-la de propósito como "dica de desempenho". No PostgreSQL 12+, a mesma consulta pode ficar lenta ou rápida por mudar o plano. Ao migrar de versão, reveja as CTEs críticas e use <code>MATERIALIZED</code> de forma explícita onde a barreira é desejada.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A CTE é materializada?" Depende do banco e da versão. PostgreSQL 12+: embutida se for referenciada uma vez e sem efeito colateral, com <code>MATERIALIZED</code>/<code>NOT MATERIALIZED</code> para forçar; até o 11, sempre materializada. Oracle: decide por custo, com hints <code>MATERIALIZE</code>/<code>INLINE</code>. Mostre que você olha o plano para saber.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Não aceite "reescrevi com CTE para ficar mais rápido" sem o antes/depois do plano. CTE é ferramenta de clareza; o ganho de desempenho vem de menos linhas lidas, não da sintaxe. Em atualização de versão do banco, inclua as consultas críticas na bateria de testes de regressão de desempenho.</p></div>
+</section>
+
+<section class="chap" id="recursiva">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>CTE recursiva: a hierarquia de setores</h2>
+  <p>A tabela <code>setor</code> aponta para si mesma (<code>id_setor_pai</code>): Hospital contém Ambulatório, que contém Cardiologia, e assim por diante. Perguntas como "todos os subsetores do Ambulatório" ou "o caminho de Tomografia até a raiz" têm profundidade desconhecida, e um número fixo de JOINs não resolve. A CTE recursiva resolve.</p>
+  <pre><code class="text">setor
+id_setor | nome                    | id_setor_pai
+       1 | Hospital                | NULL
+       2 | Ambulatório             | 1
+       3 | Cardiologia             | 2
+       4 | Pediatria               | 2
+       5 | Diagnóstico por Imagem  | 1
+       6 | Ressonância             | 5
+       7 | Tomografia              | 5</code></pre>
+
+  <h3>Anatomia: âncora, parte recursiva e iteração</h3>
+  <ol class="seq">
+    <li><div><strong>Âncora.</strong> Um SELECT não recursivo que produz as linhas iniciais (aqui, os setores sem pai).</div></li>
+    <li><div><strong>UNION ALL.</strong> Une a âncora à parte recursiva.</div></li>
+    <li><div><strong>Parte recursiva.</strong> Um SELECT que referencia a própria CTE. A cada iteração, ela enxerga <em>apenas as linhas produzidas pela iteração anterior</em> (a "tabela de trabalho"), não o acumulado.</div></li>
+    <li><div><strong>Término.</strong> Quando uma iteração não produz nenhuma linha nova, a recursão acaba. O resultado é a união de todas as iterações.</div></li>
+  </ol>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Três iterações da CTE recursiva sobre a hierarquia de setores: âncora com Hospital, depois os filhos diretos, depois os netos">
+      <defs><marker id="ah-rec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Iteração 0 (âncora)</text>
+      <text class="ttl" x="250" y="22">Iteração 1</text>
+      <text class="ttl" x="500" y="22">Iteração 2</text>
+      <rect class="box-a" x="20" y="92" width="150" height="26" rx="4"/><text x="95" y="109" text-anchor="middle">Hospital</text>
+      <rect class="box" x="250" y="60" width="190" height="26" rx="4"/><text x="345" y="77" text-anchor="middle">Ambulatório</text>
+      <rect class="box" x="250" y="124" width="190" height="26" rx="4"/><text x="345" y="141" text-anchor="middle">Diagnóstico por Imagem</text>
+      <rect class="box" x="500" y="44" width="160" height="26" rx="4"/><text x="580" y="61" text-anchor="middle">Cardiologia</text>
+      <rect class="box" x="500" y="76" width="160" height="26" rx="4"/><text x="580" y="93" text-anchor="middle">Pediatria</text>
+      <rect class="box" x="500" y="108" width="160" height="26" rx="4"/><text x="580" y="125" text-anchor="middle">Ressonância</text>
+      <rect class="box" x="500" y="140" width="160" height="26" rx="4"/><text x="580" y="157" text-anchor="middle">Tomografia</text>
+      <line class="ln-a" x1="170" y1="102" x2="248" y2="76" marker-end="url(#ah-rec)"/>
+      <line class="ln-a" x1="170" y1="108" x2="248" y2="136" marker-end="url(#ah-rec)"/>
+      <line class="ln-a" x1="440" y1="70" x2="498" y2="58" marker-end="url(#ah-rec)"/>
+      <line class="ln-a" x1="440" y1="76" x2="498" y2="88" marker-end="url(#ah-rec)"/>
+      <line class="ln-a" x1="440" y1="134" x2="498" y2="120" marker-end="url(#ah-rec)"/>
+      <line class="ln-a" x1="440" y1="140" x2="498" y2="152" marker-end="url(#ah-rec)"/>
+      <text class="lbl" x="20" y="196">Cada seta é o JOIN setor.id_setor_pai = tabela_de_trabalho.id_setor.</text>
+      <text class="lbl" x="20" y="214">A iteração 3 não encontra filhos: a recursão termina e o resultado é a união de todas as linhas.</text>
+    </svg>
+    <figcaption>Cada iteração parte só das linhas da anterior. A profundidade da árvore define o número de iterações.</figcaption>
+  </figure>
+
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">WITH RECURSIVE arvore AS (
+  SELECT id_setor, nome, id_setor_pai,
+         1 AS nivel,
+         nome::text AS caminho                      -- cast: o tipo precisa cobrir as linhas seguintes
+  FROM setor
+  WHERE id_setor_pai IS NULL                        -- âncora
+  UNION ALL
+  SELECT s.id_setor, s.nome, s.id_setor_pai,
+         a.nivel + 1,
+         a.caminho || ' &gt; ' || s.nome
+  FROM setor s
+  JOIN arvore a ON s.id_setor_pai = a.id_setor      -- parte recursiva
+)
+SELECT nivel, caminho FROM arvore ORDER BY caminho;</code></pre>
+    <pre data-label="Oracle"><code class="sql">-- Oracle 11g R2+: sem a palavra RECURSIVE, com a lista de colunas obrigatória
+WITH arvore (id_setor, nome, id_setor_pai, nivel, caminho) AS (
+  SELECT id_setor, nome, id_setor_pai,
+         1,
+         CAST(nome AS VARCHAR2(4000))               -- largura do tipo definida pela âncora
+  FROM setor
+  WHERE id_setor_pai IS NULL
+  UNION ALL
+  SELECT s.id_setor, s.nome, s.id_setor_pai,
+         a.nivel + 1,
+         a.caminho || ' &gt; ' || s.nome
+  FROM setor s
+  JOIN arvore a ON s.id_setor_pai = a.id_setor
+)
+SELECT nivel, caminho FROM arvore ORDER BY caminho;</code></pre>
+  </div>
+  <pre><code class="text">nivel | caminho
+    1 | Hospital
+    2 | Hospital &gt; Ambulatório
+    3 | Hospital &gt; Ambulatório &gt; Cardiologia
+    3 | Hospital &gt; Ambulatório &gt; Pediatria
+    2 | Hospital &gt; Diagnóstico por Imagem
+    3 | Hospital &gt; Diagnóstico por Imagem &gt; Ressonância
+    3 | Hospital &gt; Diagnóstico por Imagem &gt; Tomografia</code></pre>
+  <p>Sobre os tipos: no PostgreSQL, se a âncora produz <code>varchar(100)</code> e a parte recursiva produz <code>text</code>, o erro é "recursive query column has type ... in non-recursive term but type ... overall". O cast na âncora resolve. No Oracle, o tipo de cada coluna vem da âncora: dê a ela largura suficiente.</p>
+
+  <h3>Subir a árvore e totalizar com os descendentes</h3>
+  <p>Para o <em>caminho até a raiz</em> a partir de um setor, inverta a direção do JOIN (âncora = o setor; recursão = o pai). Para o relatório gerencial mais pedido, <strong>faturamento de cada setor incluindo todos os subsetores</strong>, expanda cada setor em todos os seus descendentes (um "fecho") e agregue:</p>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">WITH RECURSIVE descendentes (id_raiz, id_setor) AS (
+  SELECT id_setor, id_setor FROM setor              -- cada setor é descendente de si mesmo
+  UNION ALL
+  SELECT d.id_raiz, s.id_setor
+  FROM descendentes d
+  JOIN setor s ON s.id_setor_pai = d.id_setor
+)
+SELECT r.nome AS setor,
+       COUNT(a.id_atendimento)     AS atendimentos,
+       COALESCE(SUM(a.valor), 0)   AS faturado
+FROM descendentes d
+JOIN setor r ON r.id_setor = d.id_raiz
+LEFT JOIN atendimento a
+       ON a.id_setor = d.id_setor AND a.status = 'REALIZADO'
+GROUP BY r.id_setor, r.nome;</code></pre>
+    <pre data-label="Oracle"><code class="sql">WITH descendentes (id_raiz, id_setor) AS (
+  SELECT id_setor, id_setor FROM setor
+  UNION ALL
+  SELECT d.id_raiz, s.id_setor
+  FROM descendentes d
+  JOIN setor s ON s.id_setor_pai = d.id_setor
+)
+SELECT r.nome AS setor,
+       COUNT(a.id_atendimento)     AS atendimentos,
+       COALESCE(SUM(a.valor), 0)   AS faturado
+FROM descendentes d
+JOIN setor r ON r.id_setor = d.id_raiz
+LEFT JOIN atendimento a
+       ON a.id_setor = d.id_setor AND a.status = 'REALIZADO'
+GROUP BY r.id_setor, r.nome;</code></pre>
+  </div>
+  <p>Cada atendimento é contado uma vez em <strong>cada ancestral</strong> do seu setor, de propósito: "Hospital" mostra tudo, "Ambulatório" só a sua subárvore. Por isso <em>os totais dos setores não somam entre si</em> (um atendimento de Cardiologia aparece em Cardiologia, Ambulatório e Hospital). Esse é um tipo legítimo de fan-out, o oposto do erro do módulo 03: aqui a multiplicação é o objetivo.</p>
+
+  <h3>Ciclos, SEARCH e CYCLE</h3>
+  <p>Se o dado estiver errado (por exemplo, o pai do Hospital apontando para uma Cardiologia que descende dele), a recursão <strong>nunca termina</strong>. No PostgreSQL ela roda até estourar disco ou memória (ou até um <code>LIMIT</code> na consulta externa); no Oracle, a recursão detecta o ciclo e falha com <code>ORA-32044</code>. As defesas, da mais simples à mais declarativa:</p>
+  <ul>
+    <li><strong>Limite de profundidade:</strong> <code>WHERE a.nivel &lt; 20</code> na parte recursiva. Barato, mas esconde o dado ruim.</li>
+    <li><strong>Caminho percorrido:</strong> acumular os ids visitados e recusar os repetidos (array no PostgreSQL: <code>NOT s.id_setor = ANY(a.caminho_ids)</code>).</li>
+    <li><strong><code>UNION</code> em vez de <code>UNION ALL</code></strong> (só PostgreSQL): descarta linhas repetidas, mas só funciona quando <em>toda</em> a linha se repete, o que não ocorre se houver coluna de nível ou caminho.</li>
+    <li><strong>Cláusula <code>CYCLE</code></strong>: PostgreSQL 14+ e Oracle 11.2+. Marca (e não segue) as linhas que fecham um ciclo.</li>
+    <li><strong>Cláusula <code>SEARCH</code></strong> (mesmas versões): gera uma coluna de ordenação em profundidade (<code>DEPTH FIRST</code>) ou em largura (<code>BREADTH FIRST</code>), sem montar o caminho em texto.</li>
+  </ul>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">WITH RECURSIVE arvore AS (
+  SELECT id_setor, nome, id_setor_pai, 1 AS nivel FROM setor WHERE id_setor_pai IS NULL
+  UNION ALL
+  SELECT s.id_setor, s.nome, s.id_setor_pai, a.nivel + 1
+  FROM setor s JOIN arvore a ON s.id_setor_pai = a.id_setor
+)
+SEARCH DEPTH FIRST BY nome SET ordem                -- coluna "ordem" para ordenar em profundidade
+CYCLE id_setor SET em_ciclo USING trilha            -- "em_ciclo" (true/false) e "trilha" (array)
+SELECT nivel, nome, em_ciclo FROM arvore
+WHERE NOT em_ciclo
+ORDER BY ordem;</code></pre>
+    <pre data-label="Oracle"><code class="sql">WITH arvore (id_setor, nome, id_setor_pai, nivel) AS (
+  SELECT id_setor, nome, id_setor_pai, 1 FROM setor WHERE id_setor_pai IS NULL
+  UNION ALL
+  SELECT s.id_setor, s.nome, s.id_setor_pai, a.nivel + 1
+  FROM setor s JOIN arvore a ON s.id_setor_pai = a.id_setor
+)
+SEARCH DEPTH FIRST BY nome SET ordem
+CYCLE id_setor SET em_ciclo TO 'Y' DEFAULT 'N'      -- Oracle exige os dois valores
+SELECT nivel, nome, em_ciclo FROM arvore
+WHERE em_ciclo = 'N'
+ORDER BY ordem;</code></pre>
+  </div>
+  <p>As cláusulas vêm logo depois do parêntese que fecha a CTE. No PostgreSQL, <code>SEARCH</code>/<code>CYCLE</code> exigem a versão 14 ou superior; antes disso, use caminho em array. A ordenação por <code>BY nome</code> é a dos irmãos no mesmo nível.</p>
+
+  <div class="note trap"><b>Armadilha comum: parte recursiva sem índice</b><p>Cada iteração faz um JOIN com <code>setor</code> por <code>id_setor_pai</code>. Com um cadastro pequeno, tudo é rápido. Em hierarquias grandes (por exemplo, plano de contas ou estruturas de produto com centenas de milhares de nós), crie um índice em <code>id_setor_pai</code>; senão, cada nível varre a tabela inteira.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como listar todos os subsetores de um setor?" CTE recursiva: âncora com o setor, recursão juntando pelo <code>id_setor_pai</code>, <code>UNION ALL</code>. Cite o risco de ciclo e as defesas (limite de nível, <code>CYCLE</code>), e que no Oracle também existe <code>CONNECT BY</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Hierarquia no banco relacional funciona bem até certo tamanho e leitura moderada. Se a árvore é grande e consultada o tempo todo (por exemplo, permissões por setor em toda requisição), discuta modelagens alternativas (caminho materializado, tabela de fecho, tipo <code>ltree</code> no PostgreSQL) com o time. E exija uma restrição que impeça ciclos na origem do cadastro.</p></div>
+</section>
+
+
+<section class="chap" id="connect-by">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>CONNECT BY do Oracle: PRIOR, LEVEL e SYS_CONNECT_BY_PATH</h2>
+  <p>Antes da CTE recursiva (Oracle 11g R2), o Oracle já tinha uma sintaxe própria para hierarquias: <code>START WITH ... CONNECT BY</code>. Ela é compacta, muito usada em código legado e tem funções prontas. O PostgreSQL não tem equivalente nativo (a extensão <code>tablefunc</code> traz <code>connectby()</code>, raramente usada); lá, use a CTE recursiva. Como a empresa tem os dois bancos, você vai ler as duas formas.</p>
+<pre><code class="sql">SELECT LEVEL                                          AS nivel,
+       LPAD(' ', 2 * (LEVEL - 1)) || nome             AS setor_indentado,
+       SYS_CONNECT_BY_PATH(nome, ' &gt; ')               AS caminho,
+       CONNECT_BY_ISLEAF                              AS eh_folha
+FROM setor
+START WITH id_setor_pai IS NULL                       -- onde começa (âncora)
+CONNECT BY PRIOR id_setor = id_setor_pai              -- como descer: o filho aponta para o pai
+ORDER SIBLINGS BY nome;                               -- ordena irmãos, preservando a árvore</code></pre>
+  <pre><code class="text">NIVEL | SETOR_INDENTADO           | CAMINHO                                  | EH_FOLHA
+    1 | Hospital                  |  &gt; Hospital                              |        0
+    2 |   Ambulatório             |  &gt; Hospital &gt; Ambulatório                 |        0
+    3 |     Cardiologia           |  &gt; Hospital &gt; Ambulatório &gt; Cardiologia    |        1
+    3 |     Pediatria             |  &gt; Hospital &gt; Ambulatório &gt; Pediatria      |        1
+    2 |   Diagnóstico por Imagem  |  &gt; Hospital &gt; Diagnóstico por Imagem      |        0
+    3 |     Ressonância           |  &gt; Hospital &gt; Diagnóstico por Imagem &gt; Ressonância |  1
+    3 |     Tomografia            |  &gt; Hospital &gt; Diagnóstico por Imagem &gt; Tomografia  |  1</code></pre>
+
+  <h3>As peças</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Elemento</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>START WITH</code></td><td>Define as linhas-raiz (a âncora). Sem ele, todas as linhas viram raiz.</td></tr>
+      <tr><td><code>CONNECT BY</code></td><td>Define a relação pai-filho. <code>PRIOR</code> marca a coluna do <em>pai</em> (a linha anterior no caminho).</td></tr>
+      <tr><td><code>PRIOR id_setor = id_setor_pai</code></td><td>Desce: dado o pai, ache os filhos.</td></tr>
+      <tr><td><code>id_setor = PRIOR id_setor_pai</code></td><td>Sobe: dado o filho, ache o pai (do setor até a raiz).</td></tr>
+      <tr><td><code>LEVEL</code></td><td>Nível na árvore (1 = raiz).</td></tr>
+      <tr><td><code>SYS_CONNECT_BY_PATH(col, sep)</code></td><td>Caminho da raiz até a linha, com o separador (inclui o separador inicial).</td></tr>
+      <tr><td><code>CONNECT_BY_ROOT col</code></td><td>Valor da coluna na linha-raiz do ramo.</td></tr>
+      <tr><td><code>CONNECT_BY_ISLEAF</code></td><td>1 se a linha não tem filhos.</td></tr>
+      <tr><td><code>ORDER SIBLINGS BY</code></td><td>Ordena só os irmãos entre si, mantendo cada filho logo abaixo do pai (um <code>ORDER BY</code> comum quebraria a árvore).</td></tr>
+      <tr><td><code>NOCYCLE</code> e <code>CONNECT_BY_ISCYCLE</code></td><td>Sem <code>NOCYCLE</code>, um ciclo gera <code>ORA-01436: CONNECT BY loop in user data</code>. Com ele, o ciclo é ignorado e <code>CONNECT_BY_ISCYCLE</code> marca a linha.</td></tr>
+    </tbody></table></div>
+<pre><code class="sql">-- Subir: do setor 6 (Ressonância) até a raiz
+SELECT LEVEL, id_setor, nome
+FROM setor
+START WITH id_setor = 6
+CONNECT BY id_setor = PRIOR id_setor_pai;
+
+-- Só a subárvore do Ambulatório, com a raiz do ramo em cada linha
+SELECT nome, CONNECT_BY_ROOT nome AS ramo_raiz, LEVEL
+FROM setor
+START WITH nome = 'Ambulatório'
+CONNECT BY NOCYCLE PRIOR id_setor = id_setor_pai;</code></pre>
+
+  <h3>WHERE e CONNECT BY filtram coisas diferentes</h3>
+  <p>O <code>WHERE</code> é aplicado <em>depois</em> que a árvore é montada: ele remove linhas do resultado, mas a travessia continua passando por elas. Uma condição dentro do <code>CONNECT BY</code> <strong>poda o ramo</strong>: o Oracle não desce a partir da linha que a viola.</p>
+<pre><code class="sql">-- Remove "Diagnóstico por Imagem" do resultado, mas Ressonância e Tomografia continuam
+SELECT LEVEL, nome FROM setor
+WHERE nome &lt;&gt; 'Diagnóstico por Imagem'
+START WITH id_setor_pai IS NULL
+CONNECT BY PRIOR id_setor = id_setor_pai;
+
+-- Poda o ramo: nada abaixo de "Diagnóstico por Imagem" é visitado
+SELECT LEVEL, nome FROM setor
+START WITH id_setor_pai IS NULL
+CONNECT BY PRIOR id_setor = id_setor_pai AND nome &lt;&gt; 'Diagnóstico por Imagem';</code></pre>
+
+  <h3>CONNECT BY ou CTE recursiva?</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th><code>CONNECT BY</code></th><th>CTE recursiva</th></tr></thead>
+    <tbody>
+      <tr><td>Disponível em</td><td>Somente Oracle</td><td>Oracle 11g R2+, PostgreSQL, SQL padrão</td></tr>
+      <tr><td>Concisão</td><td>Muito concisa, com funções prontas</td><td>Mais verbosa; você monta nível e caminho</td></tr>
+      <tr><td>Flexibilidade</td><td>Hierarquia por junção simples</td><td>Qualquer lógica na recursão (grafos, acumuladores, vários JOINs)</td></tr>
+      <tr><td>Ciclos</td><td><code>NOCYCLE</code> / <code>CONNECT_BY_ISCYCLE</code></td><td><code>CYCLE</code> (e <code>SEARCH</code> para ordem)</td></tr>
+      <tr><td>Portabilidade</td><td>Nenhuma</td><td>Alta</td></tr>
+    </tbody></table></div>
+  <p>Para código novo que um dia possa rodar nos dois bancos, prefira a CTE. Para ler e manter o legado Oracle, domine o <code>CONNECT BY</code>. O mapeamento é direto: <code>LEVEL</code> ≈ coluna <code>nivel</code> acumulada; <code>SYS_CONNECT_BY_PATH</code> ≈ coluna <code>caminho</code> acumulada; <code>CONNECT_BY_ROOT</code> ≈ coluna da âncora propagada; <code>CONNECT_BY_ISLEAF</code> ≈ <code>NOT EXISTS</code> de filhos.</p>
+  <div class="note trap"><b>Armadilha comum: ORDER BY quebra a árvore</b><p>Em consulta hierárquica, <code>ORDER BY nome</code> reordena tudo e destrói a ordem pai-filho. Use <code>ORDER SIBLINGS BY</code> para ordenar dentro de cada nível. Cuidado também com <code>CONNECT BY LEVEL &lt;= n</code> sem <code>START WITH</code> em tabelas com várias linhas (multiplica as linhas); veja a seção de séries de datas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como percorrer hierarquia no Oracle?" <code>START WITH ... CONNECT BY PRIOR pai = filho</code>, com <code>LEVEL</code> e <code>SYS_CONNECT_BY_PATH</code>; para subir, inverta o <code>PRIOR</code>. Diferencie o filtro no <code>WHERE</code> (depois) do filtro no <code>CONNECT BY</code> (poda). Acrescente que a CTE recursiva é o equivalente portável.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em migrações de Oracle para PostgreSQL (ou o contrário), consultas com <code>CONNECT BY</code> e <code>(+)</code> são as que mais exigem reescrita manual. Faça um inventário delas antes de estimar o prazo.</p></div>
+</section>
+
+<section class="chap" id="series-datas">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Séries de datas: preencher os dias sem atendimento</h2>
+  <p>Um <code>GROUP BY</code> só devolve grupos que <em>existem</em>. Se não houve atendimento no domingo, o domingo não aparece: um gráfico diário fica com buracos, uma média diária sai inflada (divide só pelos dias com movimento) e um alerta de "dias sem atendimento" não tem o que mostrar. A solução é gerar o calendário e fazer <code>LEFT JOIN</code> com os dados.</p>
+
+  <h3>Gerando o calendário</h3>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">-- generate_series devolve timestamp (ou timestamptz); converta para date
+SELECT d::date AS dia
+FROM generate_series(DATE '2026-11-01', DATE '2026-11-30', INTERVAL '1 day') AS g(d);
+
+-- Meses e horas funcionam da mesma forma:
+SELECT generate_series(DATE '2026-01-01', DATE '2026-12-01', INTERVAL '1 month')::date;
+SELECT generate_series(TIMESTAMP '2026-11-17 08:00', TIMESTAMP '2026-11-17 18:00', INTERVAL '1 hour');</code></pre>
+    <pre data-label="Oracle"><code class="sql">-- CONNECT BY LEVEL gera 1, 2, 3, ... até o limite (em dual, uma linha só)
+SELECT DATE '2026-11-01' + LEVEL - 1 AS dia
+FROM dual
+CONNECT BY LEVEL &lt;= DATE '2026-11-30' - DATE '2026-11-01' + 1;
+
+-- Meses e horas:
+SELECT ADD_MONTHS(DATE '2026-01-01', LEVEL - 1) AS mes FROM dual CONNECT BY LEVEL &lt;= 12;
+SELECT TIMESTAMP '2026-11-17 08:00:00' + NUMTODSINTERVAL(LEVEL - 1, 'HOUR')
+FROM dual CONNECT BY LEVEL &lt;= 11;</code></pre>
+  </div>
+  <p>A alternativa portável é a CTE recursiva (seção 3): âncora com a primeira data, recursão somando 1 dia (<code>dia + 1</code> no Oracle e em colunas <code>date</code> do PostgreSQL) até o fim. É mais verbosa, mas roda em qualquer banco.</p>
+
+  <h3>O relatório completo</h3>
+<pre><code class="sql">-- PostgreSQL
+WITH dias AS (
+  SELECT d::date AS dia
+  FROM generate_series(DATE '2026-11-01', DATE '2026-11-30', INTERVAL '1 day') AS g(d)
+)
+SELECT d.dia,
+       COUNT(a.id_atendimento)   AS atendimentos,
+       COALESCE(SUM(a.valor), 0) AS faturado
+FROM dias d
+LEFT JOIN atendimento a
+       ON a.dt_atendimento &gt;= d.dia
+      AND a.dt_atendimento &lt;  d.dia + 1
+      AND a.status = 'REALIZADO'
+GROUP BY d.dia
+ORDER BY d.dia;
+
+-- Oracle: troque a CTE por
+--   WITH dias AS (SELECT DATE '2026-11-01' + LEVEL - 1 AS dia FROM dual CONNECT BY LEVEL &lt;= 30)
+-- e o resto é idêntico (d.dia + 1 soma um dia em DATE).</code></pre>
+  <pre><code class="text">dia        | atendimentos | faturado
+2026-11-01 |            0 |     0.00      -- domingo, sem atendimento
+2026-11-02 |           41 |  6150.00
+2026-11-03 |           38 |  5700.00
+...</code></pre>
+  <p>Três cuidados, os mesmos do módulo 02:</p>
+  <ul>
+    <li>O filtro de <code>status</code> e o período vão no <code>ON</code>, não no <code>WHERE</code>. No <code>WHERE</code>, eles descartariam o dia sem atendimento (linha com NULL) e o LEFT JOIN viraria INNER JOIN.</li>
+    <li>O JOIN por intervalo (<code>&gt;= dia AND &lt; dia + 1</code>) é <em>sargável</em>. A forma "ingênua" <code>TRUNC(a.dt_atendimento) = d.dia</code> aplica uma função à coluna e impede o uso do índice.</li>
+    <li><code>COUNT(a.id_atendimento)</code>, não <code>COUNT(*)</code>: o dia vazio tem uma linha de NULLs, e <code>COUNT(*)</code> devolveria 1.</li>
+  </ul>
+
+  <h3>Tabela de calendário permanente</h3>
+  <p>Em sistemas de relatório, é comum manter uma tabela <code>dim_data</code> (uma linha por dia, por vários anos) com colunas como <code>dia_util</code>, <code>feriado</code>, <code>semana_iso</code>, <code>mes</code>, <code>trimestre</code>. Ela dispensa gerar a série em toda consulta e permite regras de negócio (dias úteis, feriados municipais) que nenhuma função calcula. Gerada uma vez, com centenas de milhares de linhas no máximo, é barata.</p>
+  <div class="note trap"><b>Armadilha comum: CONNECT BY LEVEL com uma tabela de várias linhas</b><p>No Oracle, <code>SELECT ... FROM medico CONNECT BY LEVEL &lt;= 30</code> não gera 30 linhas: gera um número enorme (cada linha de <code>medico</code> é raiz de seu próprio ramo). Use <code>FROM dual</code>, que tem uma linha. No PostgreSQL, a armadilha é esquecer que <code>generate_series</code> inclui o limite final, o que costuma gerar um dia a mais em intervalos semiabertos.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como listar todos os dias de um mês, mesmo sem atendimento?" <code>generate_series</code> no PostgreSQL, <code>CONNECT BY LEVEL</code> sobre <code>dual</code> no Oracle (ou CTE recursiva nos dois), com <code>LEFT JOIN</code> e a condição de data no <code>ON</code>. Mencione <code>COUNT(coluna)</code> em vez de <code>COUNT(*)</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>"Dias sem registro" também é um sinal operacional: uma clínica sem lançamentos num dia útil pode significar falha de integração, não ausência de pacientes. Relatórios de monitoramento com calendário completo detectam esse tipo de falha antes de o financeiro perceber.</p></div>
+</section>
+
+<section class="chap" id="lateral">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>LATERAL e APPLY: top-N por grupo</h2>
+  <p>Problema clássico: os <strong>3 últimos atendimentos de cada paciente</strong>. Um <code>JOIN</code> comum não resolve, pois a subconsulta do FROM não pode "olhar" para o paciente de fora: ela é avaliada uma vez, sem conhecer o contexto. O <code>LATERAL</code> (padrão SQL) permite que uma subconsulta no FROM referencie as tabelas que aparecem <em>antes dela</em> na mesma cláusula FROM. Logicamente, ela roda uma vez por linha externa.</p>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">-- LATERAL desde o PostgreSQL 9.3
+SELECT p.nome, u.dt_atendimento, u.tipo, u.valor
+FROM paciente p
+CROSS JOIN LATERAL (
+  SELECT a.dt_atendimento, a.tipo, a.valor
+  FROM atendimento a
+  WHERE a.id_paciente = p.id_paciente          -- referencia a linha de fora
+  ORDER BY a.dt_atendimento DESC
+  LIMIT 3
+) u;
+
+-- Para manter também quem não tem atendimento:
+--   FROM paciente p LEFT JOIN LATERAL ( ... ) u ON true</code></pre>
+    <pre data-label="Oracle"><code class="sql">-- CROSS APPLY / OUTER APPLY e LATERAL: Oracle 12c+
+SELECT p.nome, u.dt_atendimento, u.tipo, u.valor
+FROM paciente p
+CROSS APPLY (
+  SELECT a.dt_atendimento, a.tipo, a.valor
+  FROM atendimento a
+  WHERE a.id_paciente = p.id_paciente
+  ORDER BY a.dt_atendimento DESC
+  FETCH FIRST 3 ROWS ONLY
+) u;
+
+-- Para manter pacientes sem atendimento: OUTER APPLY ( ... ) u</code></pre>
+  </div>
+  <p><code>CROSS JOIN LATERAL</code>/<code>CROSS APPLY</code> descartam o paciente se a subconsulta devolver zero linhas (como um INNER JOIN); <code>LEFT JOIN LATERAL ... ON true</code>/<code>OUTER APPLY</code> mantêm o paciente com NULLs (como um LEFT JOIN).</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 236" role="img" aria-label="Para cada paciente de fora, uma busca limitada no índice de atendimento devolve as três últimas linhas">
+      <defs><marker id="ah-lat" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Linhas externas</text>
+      <text class="ttl" x="250" y="22">Índice em atendimento</text>
+      <text class="ttl" x="520" y="22">Saída</text>
+      <rect class="box" x="20" y="44" width="150" height="30" rx="5"/><text x="95" y="64" text-anchor="middle">paciente 7</text>
+      <rect class="box" x="20" y="94" width="150" height="30" rx="5"/><text x="95" y="114" text-anchor="middle">paciente 12</text>
+      <rect class="box" x="20" y="144" width="150" height="30" rx="5"/><text x="95" y="164" text-anchor="middle">paciente 31</text>
+      <rect class="box-a" x="250" y="40" width="210" height="140" rx="6"/>
+      <text x="355" y="90" text-anchor="middle">(id_paciente,</text>
+      <text x="355" y="110" text-anchor="middle">dt_atendimento DESC)</text>
+      <text class="lbl" x="355" y="134" text-anchor="middle">uma busca por paciente</text>
+      <text class="lbl" x="355" y="150" text-anchor="middle">lê 3 entradas e para</text>
+      <line class="ln-a" x1="170" y1="59" x2="248" y2="70" marker-end="url(#ah-lat)"/>
+      <line class="ln-a" x1="170" y1="109" x2="248" y2="110" marker-end="url(#ah-lat)"/>
+      <line class="ln-a" x1="170" y1="159" x2="248" y2="150" marker-end="url(#ah-lat)"/>
+      <rect class="box" x="520" y="44" width="140" height="30" rx="5"/><text x="590" y="64" text-anchor="middle">3 linhas (7)</text>
+      <rect class="box" x="520" y="94" width="140" height="30" rx="5"/><text x="590" y="114" text-anchor="middle">3 linhas (12)</text>
+      <rect class="box" x="520" y="144" width="140" height="30" rx="5"/><text x="590" y="164" text-anchor="middle">3 linhas (31)</text>
+      <line class="ln-a" x1="460" y1="70" x2="518" y2="59" marker-end="url(#ah-lat)"/>
+      <line class="ln-a" x1="460" y1="110" x2="518" y2="109" marker-end="url(#ah-lat)"/>
+      <line class="ln-a" x1="460" y1="150" x2="518" y2="159" marker-end="url(#ah-lat)"/>
+      <text class="lbl" x="20" y="204">Custo ~ (linhas externas) x (N linhas lidas por busca). Sem o índice, cada busca ordena todos os</text>
+      <text class="lbl" x="20" y="222">atendimentos do paciente, e o LATERAL perde para a função de janela.</text>
+    </svg>
+    <figcaption>LATERAL com índice: para cada linha de fora, uma leitura curta e ordenada do índice; sem varrer a tabela.</figcaption>
+  </figure>
+
+  <h3>LATERAL ou função de janela?</h3>
+  <p>O top-N por grupo também se resolve com <code>ROW_NUMBER() OVER (PARTITION BY id_paciente ORDER BY dt_atendimento DESC)</code> e filtro <code>rn &lt;= 3</code> (módulo 05). As duas formas têm lugares próprios:</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>LATERAL / APPLY</th><th>Função de janela</th></tr></thead>
+    <tbody>
+      <tr><td>Como executa</td><td>Uma busca limitada por linha externa</td><td>Uma passada: ordena/particiona tudo e numera</td></tr>
+      <tr><td>Melhor quando</td><td>Poucas linhas externas (uma página, um filtro seletivo) e índice <code>(chave, ordem)</code></td><td>Quase todos os grupos são necessários (relatório completo)</td></tr>
+      <tr><td>Pior quando</td><td>Milhões de linhas externas</td><td>Só alguns grupos interessam (lê e numera a tabela toda)</td></tr>
+      <tr><td>Várias colunas e vários "últimos"</td><td>Natural: a subconsulta devolve o que quiser</td><td>Exige repetir <code>rn</code> ou fazer pivot</td></tr>
+    </tbody></table></div>
+  <p>Outros usos do <code>LATERAL</code>/<code>APPLY</code>: aplicar uma função que devolve conjunto a cada linha (no PostgreSQL, <code>unnest</code>, <code>jsonb_array_elements</code> e <code>generate_series</code> em FROM já são laterais implícitos), calcular uma expressão uma vez e reutilizá-la em vários pontos (<code>CROSS JOIN LATERAL (SELECT expressão AS x) t</code>) e substituir várias subconsultas escalares correlacionadas por uma só.</p>
+<pre><code class="sql">-- Uma única busca por paciente traz 3 colunas, em vez de 3 subconsultas escalares
+SELECT p.nome, u.dt_atendimento, u.valor, m.nome AS medico
+FROM paciente p
+LEFT JOIN LATERAL (
+  SELECT a.dt_atendimento, a.valor, a.id_medico
+  FROM atendimento a
+  WHERE a.id_paciente = p.id_paciente
+  ORDER BY a.dt_atendimento DESC
+  LIMIT 1
+) u ON true
+LEFT JOIN medico m ON m.id_medico = u.id_medico;     -- (Oracle: OUTER APPLY + FETCH FIRST 1 ROW ONLY)</code></pre>
+
+  <div class="note trap"><b>Armadilha comum: LATERAL sem índice de apoio</b><p>Com milhões de pacientes e sem índice em <code>(id_paciente, dt_atendimento)</code>, cada execução da subconsulta varre e ordena os atendimentos do paciente (ou a tabela inteira). O LATERAL é elegante e pode ser muito lento. Confira no plano um <em>Index Scan</em> (ou <code>INDEX RANGE SCAN DESCENDING</code>) com <em>Limit</em> dentro do Nested Loop.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como pegar os 3 últimos atendimentos de cada paciente?" Duas respostas: <code>ROW_NUMBER() ... WHERE rn &lt;= 3</code> e <code>LATERAL</code> (PostgreSQL) / <code>CROSS APPLY</code> (Oracle 12c+) com <code>LIMIT</code>/<code>FETCH FIRST</code> e índice de apoio. Diga quando escolher cada uma: poucos pacientes e índice, lateral; relatório completo, janela.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>"Últimos N eventos por entidade" aparece em telas de prontuário e painéis. Ao ver essa necessidade, pergunte pelo índice <em>junto com</em> a consulta. Uma boa consulta sem o índice certo é um incidente esperando por volume.</p></div>
+</section>
+
+<section class="chap" id="dml-subconsultas">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Subconsultas em UPDATE e DELETE</h2>
+  <p>Subconsultas também decidem <em>quais linhas</em> escrever e <em>com qual valor</em>. Os riscos são maiores do que em leitura: um erro de lógica não devolve um relatório errado, destrói ou corrompe dados. O módulo 06 trata de transações e escrita; aqui ficam os padrões de subconsulta e as armadilhas.</p>
+
+  <h3>UPDATE com subconsulta escalar</h3>
+<div class="tabs">
+    <pre data-label="Oracle"><code class="sql">-- Recalcular o valor de atendimentos sem valor, a partir dos itens
+UPDATE atendimento a
+SET a.valor = (SELECT SUM(i.qtd * i.valor_unit)
+               FROM atendimento_item i
+               WHERE i.id_atendimento = a.id_atendimento)
+WHERE a.valor IS NULL
+  AND EXISTS (SELECT 1 FROM atendimento_item i
+              WHERE i.id_atendimento = a.id_atendimento);</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">-- No SET, a coluna alvo não leva prefixo de alias
+UPDATE atendimento a
+SET valor = (SELECT SUM(i.qtd * i.valor_unit)
+             FROM atendimento_item i
+             WHERE i.id_atendimento = a.id_atendimento)
+WHERE a.valor IS NULL
+  AND EXISTS (SELECT 1 FROM atendimento_item i
+              WHERE i.id_atendimento = a.id_atendimento);</code></pre>
+  </div>
+  <div class="note trap"><b>Armadilha comum: o UPDATE que apaga o que não tem correspondência</b><p>Sem o <code>EXISTS</code>, toda linha filtrada pelo WHERE sem itens receberia NULL da subconsulta. Aqui seria inofensivo (o valor já era NULL), mas num <code>UPDATE</code> sobre uma coluna que já tinha valor, o dado seria apagado. Se a subconsulta puder devolver mais de uma linha, o erro é imediato (ORA-01427 no Oracle).</p></div>
+  <p>Essa forma executa a subconsulta duas vezes por linha afetada. Em tabelas grandes, prefira o formato "juntar com uma agregação":</p>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">UPDATE atendimento a
+SET valor = x.total
+FROM (SELECT id_atendimento, SUM(qtd * valor_unit) AS total
+      FROM atendimento_item GROUP BY id_atendimento) x
+WHERE x.id_atendimento = a.id_atendimento
+  AND a.valor IS NULL;</code></pre>
+    <pre data-label="Oracle"><code class="sql">MERGE INTO atendimento a
+USING (SELECT id_atendimento, SUM(qtd * valor_unit) AS total
+       FROM atendimento_item GROUP BY id_atendimento) x
+ON (a.id_atendimento = x.id_atendimento)
+WHEN MATCHED THEN UPDATE SET a.valor = x.total
+  WHERE a.valor IS NULL;</code></pre>
+  </div>
+  <p>Aqui a agregação roda uma só vez e só as linhas correspondentes são tocadas. É também o remédio para o erro "subquery returns more than one row" em UPDATEs: a agregação garante uma linha por chave.</p>
+
+  <h3>DELETE com EXISTS / NOT EXISTS</h3>
+<pre><code class="sql">-- Remover agendamentos antigos que nunca tiveram itens lançados
+DELETE FROM atendimento a
+WHERE a.status = 'AGENDADO'
+  AND a.dt_atendimento &lt; DATE '2025-01-01'
+  AND NOT EXISTS (SELECT 1 FROM atendimento_item i
+                  WHERE i.id_atendimento = a.id_atendimento);</code></pre>
+  <p>Mesmas regras de leitura: <code>EXISTS</code>/<code>NOT EXISTS</code> sobre <code>IN</code>/<code>NOT IN</code> (NULL!), índice em <code>atendimento_item(id_atendimento)</code> para o anti-join.</p>
+
+  <h3>Remover duplicatas: a janela dentro da subconsulta</h3>
+  <p>Pacientes duplicados pelo mesmo CPF (dados fictícios). Mantém-se o de menor id e remove-se o resto. Primeiro, <strong>aponte as FKs dos duplicados para o que fica</strong> (atendimentos de um id removido bloqueariam o <code>DELETE</code>, ou ficariam órfãos se a FK permitisse).</p>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">DELETE FROM paciente
+WHERE ctid IN (
+  SELECT ctid FROM (
+    SELECT ctid,
+           ROW_NUMBER() OVER (PARTITION BY cpf ORDER BY id_paciente) AS rn
+    FROM paciente
+  ) t
+  WHERE rn &gt; 1
+);
+-- ctid é o endereço físico da linha; serve para identificar a linha exata. Use dentro de uma só instrução.</code></pre>
+    <pre data-label="Oracle"><code class="sql">DELETE FROM paciente
+WHERE ROWID IN (
+  SELECT rid FROM (
+    SELECT ROWID AS rid,
+           ROW_NUMBER() OVER (PARTITION BY cpf ORDER BY id_paciente) AS rn
+    FROM paciente
+  )
+  WHERE rn &gt; 1
+);</code></pre>
+  </div>
+  <p>Como a chave primária é <code>id_paciente</code>, também funciona usá-la: <code>DELETE ... WHERE id_paciente IN (SELECT id_paciente FROM (... ROW_NUMBER ...) WHERE rn &gt; 1)</code>, e é mais portável. Os identificadores físicos (<code>ctid</code>, <code>ROWID</code>) são úteis quando não há chave.</p>
+
+  <h3>Rotina segura antes de qualquer UPDATE/DELETE com subconsulta</h3>
+  <ol class="seq">
+    <li><div><strong>Rode o SELECT equivalente</strong> com o mesmo <code>WHERE</code> e confira a contagem e uma amostra.</div></li>
+    <li><div><strong>Abra uma transação</strong> e execute o DML. Compare "linhas afetadas" com a contagem esperada.</div></li>
+    <li><div><strong>Confirme (COMMIT) só depois de conferir</strong>; em dúvida, <code>ROLLBACK</code>.</div></li>
+    <li><div><strong>Em grandes volumes, faça em lotes</strong> (por faixa de id) para não segurar locks nem encher o log por muito tempo (módulos 06 e 10).</div></li>
+  </ol>
+  <div class="note iv"><b>Na entrevista</b><p>"Como atualizar uma tabela com valores de outra?" PostgreSQL: <code>UPDATE ... FROM</code>; Oracle: <code>MERGE</code> ou <code>UPDATE</code> com subconsulta correlacionada mais <code>EXISTS</code>. Aponte o risco de gravar NULL para linhas sem correspondência e o de "subquery returns more than one row".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina uma regra de trabalho: nenhum <code>UPDATE</code>/<code>DELETE</code> em produção sem o <code>SELECT</code> de conferência, a contagem esperada e um plano de reversão (backup lógico das linhas afetadas, por exemplo). A maioria dos incidentes de dados vem de uma subconsulta que casou mais (ou menos) linhas do que o autor imaginava.</p></div>
+</section>
+
+<section class="chap" id="reescritas">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>O que o otimizador reescreve (unnesting) e quando reescrever à mão</h2>
+  <p>O otimizador não executa o SQL como você o escreveu: ele o transforma em uma forma equivalente e mais barata. Saber <strong>quais transformações são seguras e quais não ocorrem</strong> explica por que duas consultas "equivalentes" têm tempos tão diferentes.</p>
+
+  <h3>Transformações comuns</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Transformação</th><th>O que faz</th><th>PostgreSQL / Oracle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Subquery unnesting</strong> (desaninhamento)</td><td>Troca <code>IN</code>/<code>EXISTS</code> por semi-join e <code>NOT EXISTS</code> por anti-join.</td><td>Ambos fazem. Hints <code>UNNEST</code>/<code>NO_UNNEST</code> no Oracle.</td></tr>
+      <tr><td><strong>View merging / pull-up</strong></td><td>Funde subconsultas do FROM (e views) na consulta externa.</td><td>Ambos. Não funde as que têm <code>LIMIT</code>/<code>FETCH</code>, <code>DISTINCT</code>, janelas ou agregação (casos típicos). Hints <code>MERGE</code>/<code>NO_MERGE</code> no Oracle.</td></tr>
+      <tr><td><strong>Predicate pushdown</strong></td><td>Empurra filtros para dentro de views/subconsultas.</td><td>Ambos, com limitações (barreiras como <code>LIMIT</code> e CTE materializada).</td></tr>
+      <tr><td><strong>Join elimination</strong></td><td>Remove um JOIN cujo resultado não é usado (ex.: <code>LEFT JOIN</code> por chave única sem colunas usadas).</td><td>Ambos, em casos conhecidos.</td></tr>
+      <tr><td><strong>Constant folding / simplificação</strong></td><td>Avalia expressões constantes, remove condições redundantes.</td><td>Ambos.</td></tr>
+    </tbody></table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="À esquerda, subconsulta correlacionada executada uma vez por linha; à direita, após o unnesting, uma agregação feita uma vez e um hash join">
+      <defs><marker id="ah-unn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Correlacionada, por linha</text>
+      <rect class="box" x="20" y="40" width="120" height="44" rx="5"/><text x="80" y="66" text-anchor="middle">paciente</text>
+      <rect class="box-b" x="200" y="40" width="130" height="44" rx="5"/>
+      <text x="265" y="59" text-anchor="middle">subconsulta</text>
+      <text x="265" y="75" text-anchor="middle">correlacionada</text>
+      <line class="ln-b" x1="140" y1="54" x2="198" y2="54" marker-end="url(#ah-unn)"/>
+      <line class="ln-b" x1="198" y1="72" x2="142" y2="72" marker-end="url(#ah-unn)"/>
+      <text class="lbl" x="20" y="112">1 execução por linha de paciente.</text>
+      <text class="lbl" x="20" y="128">N linhas externas = N execuções.</text>
+      <text class="lbl" x="20" y="144">No plano: SubPlan (PG) ou FILTER (Oracle).</text>
+
+      <text class="ttl" x="400" y="22">Depois do unnesting</text>
+      <rect class="box" x="400" y="40" width="110" height="44" rx="5"/><text x="455" y="66" text-anchor="middle">paciente</text>
+      <rect class="box-a" x="540" y="40" width="120" height="44" rx="5"/>
+      <text x="600" y="59" text-anchor="middle">atendimento</text>
+      <text x="600" y="75" text-anchor="middle">agregado 1x</text>
+      <rect class="box-a" x="450" y="116" width="170" height="32" rx="5"/><text x="535" y="137" text-anchor="middle">HASH JOIN</text>
+      <line class="ln-a" x1="455" y1="84" x2="495" y2="114" marker-end="url(#ah-unn)"/>
+      <line class="ln-a" x1="600" y1="84" x2="575" y2="114" marker-end="url(#ah-unn)"/>
+      <text class="lbl" x="400" y="172">Uma passada em cada tabela.</text>
+      <text class="lbl" x="20" y="204">A reescrita à mão (JOIN com agregação, LATERAL) faz o que o otimizador não alcança.</text>
+    </svg>
+    <figcaption>O ganho do unnesting é trocar "N execuções pequenas" por "uma execução grande" com join por hash.</figcaption>
+  </figure>
+
+  <h3>O que não é desaninhado (e custa caro)</h3>
+  <ul>
+    <li><strong>PostgreSQL:</strong> subconsulta escalar correlacionada com agregação no SELECT (<code>(SELECT MAX(...) FROM ... WHERE ... = p.id)</code>) continua como <em>SubPlan</em> executado por linha. <code>EXISTS</code>/<code>IN</code> combinados com <code>OR</code> a outras condições também não viram semi-join e ficam como SubPlan. <code>NOT IN</code> com subconsulta não vira anti-join (NULL). Subconsultas com <code>LIMIT</code>, <code>DISTINCT</code>, janelas e agregação não são fundidas na consulta externa.</li>
+    <li><strong>Oracle:</strong> o otimizador consegue desaninhar mais casos, incluindo escalares correlacionadas com agregação (transforma em um join com uma view agrupada), por heurística ou custo. Subconsultas correlacionadas que não são desaninhadas aparecem como operação <code>FILTER</code> no plano. Funções PL/SQL e subconsultas com <code>ROWNUM</code> também impedem a fusão.</li>
+  </ul>
+<pre><code class="text">-- PostgreSQL: subconsulta escalar correlacionada (executada por linha)
+Seq Scan on paciente p
+  SubPlan 1
+    -&gt;  Aggregate
+          -&gt;  Index Only Scan using ix_atend_pac_dt on atendimento a
+                Index Cond: (id_paciente = p.id_paciente)
+
+-- PostgreSQL: EXISTS desaninhado
+Hash Semi Join
+  Hash Cond: (p.id_paciente = a.id_paciente)
+
+-- Oracle: operação FILTER = correlacionada rodando por linha;  HASH JOIN SEMI = desaninhada</code></pre>
+
+  <h3>Quando reescrever à mão</h3>
+  <ol class="seq">
+    <li><div><strong>Escalar correlacionada com agregação sobre muitas linhas externas.</strong> Reescreva como JOIN com agregação (agrega uma vez) ou como <code>LATERAL</code>/<code>APPLY</code> com índice quando poucas linhas externas importam.</div></li>
+    <li><div><strong><code>EXISTS</code> ligado por <code>OR</code></strong> (PostgreSQL): troque por <code>UNION</code> (cada ramo vira semi-join) ou por <code>IN (SELECT ... UNION SELECT ...)</code>.
+<pre><code class="sql">-- Lento no PostgreSQL: cada EXISTS vira SubPlan por linha
+SELECT p.nome FROM paciente p
+WHERE EXISTS (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente AND a.status = 'CANCELADO')
+   OR EXISTS (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente AND a.tipo = 'EXAME');
+
+-- Reescrita: uma semi-junção sobre a união dos dois conjuntos
+SELECT p.nome FROM paciente p
+WHERE p.id_paciente IN (SELECT id_paciente FROM atendimento WHERE status = 'CANCELADO'
+                        UNION
+                        SELECT id_paciente FROM atendimento WHERE tipo = 'EXAME');</code></pre></div></li>
+    <li><div><strong><code>NOT IN</code> com subconsulta</strong>: troque por <code>NOT EXISTS</code> (correção e anti-join).</div></li>
+    <li><div><strong>Mesma subconsulta repetida</strong> em vários pontos: extraia como CTE (e decida sobre a materialização, seção 2).</div></li>
+    <li><div><strong>Função aplicada à coluna filtrada dentro da subconsulta</strong>: reescreva para ser sargável, e só então espere o desaninhamento ajudar.</div></li>
+  </ol>
+  <div class="note rule"><b>Regra de bolso</b><p>Não reescreva por superstição. Primeiro veja o plano: se há <code>SubPlan</code>/<code>FILTER</code> executando milhões de vezes, reescreva. Se o plano já mostra semi/anti-join com hash join, a reescrita não traz nada. Hints do Oracle como <code>UNNEST</code> são último recurso, depois de estatísticas e de reescrita.</p></div>
+  <div class="note trap"><b>Armadilha comum: confiar que "o otimizador resolve"</b><p>As transformações dependem de versão, de estatísticas e do formato exato do SQL. Uma consulta com a mesma lógica, mas com <code>OR</code> a mais ou com uma função no meio, perde o desaninhamento. Teste com volume parecido com o de produção, não com a base de homologação de 1.000 linhas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é subquery unnesting?" Transformação em que o otimizador converte uma subconsulta (<code>IN</code>/<code>EXISTS</code>, às vezes escalar correlacionada) em join (semi-join/anti-join ou join com visão agrupada), para executar em uma passada em vez de uma vez por linha. Cite o que impede (<code>OR</code>, <code>LIMIT</code>, <code>NOT IN</code> no PostgreSQL) e como confirmar no plano.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Reescrita de consulta é manutenção cara se feita sem critério: ela fixa uma forma que pode virar a pior quando os dados crescem. Exija um comentário no código com o motivo ("plano antes/depois, N linhas") e guarde o plano na revisão. O módulo 12 trata do roteiro completo de diagnóstico.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Use o esquema do módulo (<code>paciente</code>, <code>medico</code>, <code>convenio</code>, <code>setor</code>, <code>atendimento</code>, <code>atendimento_item</code>). Escreva antes de abrir a resposta.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Liste todos os pacientes com a data do último atendimento (NULL se nunca vieram). Escreva com subconsulta escalar e com JOIN agregado, e diga qual escolher para 20 pacientes e para 2 milhões.</span></summary>
+    <div class="ans">
+<pre><code class="sql">-- Escalar correlacionada
+SELECT p.nome,
+       (SELECT MAX(a.dt_atendimento) FROM atendimento a
+         WHERE a.id_paciente = p.id_paciente) AS ultimo
+FROM paciente p;
+
+-- JOIN com agregação (agrega uma vez, junta)
+SELECT p.nome, u.ultimo
+FROM paciente p
+LEFT JOIN (SELECT id_paciente, MAX(dt_atendimento) AS ultimo
+           FROM atendimento GROUP BY id_paciente) u
+       ON u.id_paciente = p.id_paciente;</code></pre>
+      <p>Para 20 pacientes (uma página), a escalar com índice em <code>(id_paciente, dt_atendimento)</code> faz 20 buscas e vence. Para 2 milhões, a agregação com hash join ganha, pois evita 2 milhões de execuções. O <code>LEFT JOIN</code> mantém quem nunca veio.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Liste os pacientes que não tiveram nenhum atendimento em 2026. Mostre por que <code>NOT IN</code> é perigoso aqui.</span></summary>
+    <div class="ans">
+<pre><code class="sql">SELECT p.nome
+FROM paciente p
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a
+                  WHERE a.id_paciente = p.id_paciente
+                    AND a.dt_atendimento &gt;= DATE '2026-01-01'
+                    AND a.dt_atendimento &lt;  DATE '2027-01-01');</code></pre>
+      <p>Com <code>p.id_paciente NOT IN (SELECT id_paciente FROM atendimento WHERE ...)</code>, basta uma linha de <code>atendimento</code> com <code>id_paciente</code> NULL no conjunto para o resultado inteiro ficar vazio (a comparação com NULL é desconhecida). O <code>NOT EXISTS</code> não tem esse problema e vira anti-join nos dois bancos.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Com uma CTE, liste os médicos cujo faturamento realizado em 2026 supera a média de faturamento por médico. Referencie a CTE duas vezes e diga como controlar a materialização.</span></summary>
+    <div class="ans">
+<pre><code class="sql">WITH fat AS (
+  SELECT id_medico, SUM(valor) AS total
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+    AND dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2027-01-01'
+  GROUP BY id_medico
+)
+SELECT m.nome, f.total
+FROM fat f
+JOIN medico m ON m.id_medico = f.id_medico
+WHERE f.total &gt; (SELECT AVG(total) FROM fat)
+ORDER BY f.total DESC;</code></pre>
+      <p>A CTE é lida duas vezes e é cara (agrega o ano inteiro), então materializá-la é o desejável. PostgreSQL 12+: como há duas referências, já é materializada; escreva <code>WITH fat AS MATERIALIZED (...)</code> para deixar a intenção explícita. Oracle: o otimizador decide por custo; <code>/*+ MATERIALIZE */</code> (não documentado) pode forçar. Observe que "média por médico" é média dos totais dos médicos, que é o que o enunciado pede; não confunda com ticket médio por atendimento.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Monte a árvore de setores com nível e caminho, nos dois bancos, e acrescente proteção contra ciclos.</span></summary>
+    <div class="ans">
+<pre><code class="sql">-- PostgreSQL 14+
+WITH RECURSIVE arvore AS (
+  SELECT id_setor, nome, id_setor_pai, 1 AS nivel, nome::text AS caminho
+  FROM setor WHERE id_setor_pai IS NULL
+  UNION ALL
+  SELECT s.id_setor, s.nome, s.id_setor_pai, a.nivel + 1, a.caminho || ' &gt; ' || s.nome
+  FROM setor s JOIN arvore a ON s.id_setor_pai = a.id_setor
+)
+CYCLE id_setor SET em_ciclo USING trilha
+SELECT nivel, caminho FROM arvore WHERE NOT em_ciclo ORDER BY caminho;
+
+-- Oracle 11g R2+
+WITH arvore (id_setor, nome, id_setor_pai, nivel, caminho) AS (
+  SELECT id_setor, nome, id_setor_pai, 1, CAST(nome AS VARCHAR2(4000))
+  FROM setor WHERE id_setor_pai IS NULL
+  UNION ALL
+  SELECT s.id_setor, s.nome, s.id_setor_pai, a.nivel + 1, a.caminho || ' &gt; ' || s.nome
+  FROM setor s JOIN arvore a ON s.id_setor_pai = a.id_setor
+)
+CYCLE id_setor SET em_ciclo TO 'Y' DEFAULT 'N'
+SELECT nivel, caminho FROM arvore WHERE em_ciclo = 'N' ORDER BY caminho;
+
+-- Oracle, forma alternativa
+SELECT LEVEL AS nivel, SYS_CONNECT_BY_PATH(nome, ' &gt; ') AS caminho
+FROM setor START WITH id_setor_pai IS NULL
+CONNECT BY NOCYCLE PRIOR id_setor = id_setor_pai
+ORDER SIBLINGS BY nome;</code></pre>
+      <p>Antes do PostgreSQL 14, use um limite de profundidade (<code>WHERE a.nivel &lt; 20</code>) ou um array de ids visitados. Os casts na âncora evitam erros de tipo na recursão.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Mostre o número de atendimentos realizados por dia em novembro de 2026, incluindo os dias com zero, nos dois bancos.</span></summary>
+    <div class="ans">
+<pre><code class="sql">-- PostgreSQL
+WITH dias AS (
+  SELECT d::date AS dia
+  FROM generate_series(DATE '2026-11-01', DATE '2026-11-30', INTERVAL '1 day') AS g(d)
+)
+SELECT d.dia, COUNT(a.id_atendimento) AS atendimentos
+FROM dias d
+LEFT JOIN atendimento a
+       ON a.dt_atendimento &gt;= d.dia AND a.dt_atendimento &lt; d.dia + 1
+      AND a.status = 'REALIZADO'
+GROUP BY d.dia ORDER BY d.dia;
+
+-- Oracle
+WITH dias AS (
+  SELECT DATE '2026-11-01' + LEVEL - 1 AS dia FROM dual CONNECT BY LEVEL &lt;= 30
+)
+SELECT d.dia, COUNT(a.id_atendimento) AS atendimentos
+FROM dias d
+LEFT JOIN atendimento a
+       ON a.dt_atendimento &gt;= d.dia AND a.dt_atendimento &lt; d.dia + 1
+      AND a.status = 'REALIZADO'
+GROUP BY d.dia ORDER BY d.dia;</code></pre>
+      <p>Pontos de correção: o filtro de <code>status</code> e o período estão no <code>ON</code> (não no WHERE); <code>COUNT(a.id_atendimento)</code> e não <code>COUNT(*)</code>; o JOIN por intervalo mantém o índice utilizável.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>Traga os 3 últimos atendimentos de cada paciente com LATERAL (PostgreSQL) e APPLY (Oracle). Que índice a consulta precisa e como confirmar no plano?</span></summary>
+    <div class="ans">
+<pre><code class="sql">-- PostgreSQL
+SELECT p.nome, u.dt_atendimento, u.tipo
+FROM paciente p
+CROSS JOIN LATERAL (
+  SELECT a.dt_atendimento, a.tipo FROM atendimento a
+  WHERE a.id_paciente = p.id_paciente
+  ORDER BY a.dt_atendimento DESC LIMIT 3
+) u;
+
+-- Oracle 12c+
+SELECT p.nome, u.dt_atendimento, u.tipo
+FROM paciente p
+CROSS APPLY (
+  SELECT a.dt_atendimento, a.tipo FROM atendimento a
+  WHERE a.id_paciente = p.id_paciente
+  ORDER BY a.dt_atendimento DESC FETCH FIRST 3 ROWS ONLY
+) u;
+
+CREATE INDEX ix_atend_pac_dt ON atendimento (id_paciente, dt_atendimento DESC);</code></pre>
+      <p>No plano deve aparecer um <em>Nested Loop</em> com <em>Limit</em> sobre um <em>Index Scan</em> (PostgreSQL) ou um <code>INDEX RANGE SCAN</code> com <code>COUNT STOPKEY</code> (Oracle) dentro do loop, sem <em>Sort</em> por paciente. Sem o índice, cada execução ordena os atendimentos do paciente. Para pacientes sem atendimento, troque por <code>LEFT JOIN LATERAL ... ON true</code> / <code>OUTER APPLY</code>. Alternativa: <code>ROW_NUMBER() ... WHERE rn &lt;= 3</code>, melhor quando quase todos os pacientes são necessários.</p>
+    </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>1. O relatório de setores trava o banco depois de uma correção de cadastro</h3>
+  <p>Um usuário "corrigiu" o setor pai do Hospital para apontar para Cardiologia. O relatório com CTE recursiva passou a consumir CPU e disco sem terminar (PostgreSQL) ou a falhar com <code>ORA-32044</code> (Oracle). <strong>O que fazer:</strong></p>
+  <ul>
+    <li>Contenção imediata: cancele a sessão, corrija o dado (volte o pai do Hospital para NULL).</li>
+    <li>Proteção na consulta: <code>CYCLE</code> (PostgreSQL 14+, Oracle) ou limite de profundidade. A consulta passa a terminar e sinaliza o ciclo.</li>
+    <li>Proteção na origem: uma validação (trigger ou regra na aplicação) que impeça gravar um pai que seja descendente do próprio nó; e uma consulta de auditoria periódica com <code>CYCLE</code> para achar ciclos.</li>
+    <li>Revisão: quem tem permissão para editar o cadastro de setores, e por quê.</li>
+  </ul>
+  <div class="note mgr"><b>Para gestores</b><p>O incidente é de integridade de dados, não de SQL. Priorize a restrição na origem; a defesa na consulta é a segunda linha.</p></div>
+
+  <h3>2. Depois de atualizar o PostgreSQL, um relatório ficou muito mais lento (ou mais rápido)</h3>
+  <p>A consulta usa três CTEs encadeadas e foi escrita no PostgreSQL 11, em que toda CTE era barreira. No 12+, o plano mudou. <strong>O que fazer:</strong></p>
+  <ol class="seq">
+    <li><div><strong>Compare os planos</strong> (<code>EXPLAIN (ANALYZE, BUFFERS)</code>) antes e depois, e veja se aparecem <em>CTE Scan</em> (materializada) ou a CTE embutida.</div></li>
+    <li><div><strong>Se piorou por perda da barreira</strong> (o otimizador escolheu um join ruim), marque a CTE com <code>MATERIALIZED</code> para restaurar o comportamento anterior.</div></li>
+    <li><div><strong>Se a CTE materializada impede um filtro de descer,</strong> use <code>NOT MATERIALIZED</code>.</div></li>
+    <li><div><strong>Registre no código</strong> o motivo da escolha e inclua a consulta na bateria de testes de desempenho de upgrades futuros.</div></li>
+  </ol>
+
+  <h3>3. A tela "últimos atendimentos" demora 12 segundos para carregar</h3>
+  <p>A consulta traz 5 colunas do último atendimento de cada paciente na página, cada uma por uma subconsulta escalar correlacionada. Quanto mais pacientes na lista, mais lenta. <strong>O que fazer:</strong> verificar o número de execuções no plano (um <code>SubPlan</code> ou <code>FILTER</code> por coluna por linha); substituir as cinco subconsultas por uma só <code>LATERAL</code>/<code>OUTER APPLY</code> com <code>LIMIT 1</code>/<code>FETCH FIRST 1 ROW ONLY</code>, ou por uma função de janela se a tela lista muitos pacientes; garantir o índice <code>(id_paciente, dt_atendimento DESC)</code>; e limitar a lista (paginação) para que o custo não cresça com a base.</p>
+
+  <h3>4. O relatório "pacientes sem atendimento" ficou vazio do dia para a noite</h3>
+  <p>Ninguém mexeu na consulta (<code>NOT IN</code>). <strong>O que fazer:</strong> procure uma linha nova de <code>atendimento</code> com <code>id_paciente</code> NULL (importação, falha de integração). O <code>NOT IN</code> com NULL devolve zero linhas. Corrija a consulta para <code>NOT EXISTS</code>; corrija a causa (<code>id_paciente NOT NULL</code> na tabela, se o negócio exige); limpe a linha problemática. Peça que o time revise o resto do código procurando <code>NOT IN (SELECT</code>.</p>
+
+  <h3>5. A diretoria quer o faturamento de cada setor incluindo os subsetores, atualizado a cada abertura do painel</h3>
+  <p><strong>O que fazer:</strong> a CTE recursiva "fecho" (seção 3) responde corretamente, mas, executada a cada abertura sobre milhões de atendimentos, é cara. Opções, da mais simples: (1) cache do relatório por alguns minutos; (2) tabela resumo diária (setor × dia) alimentada por carga, e o fecho aplicado sobre o resumo (poucas linhas); (3) se a hierarquia raramente muda, materializar o fecho em uma tabela (<code>id_raiz, id_setor</code>) mantida por trigger ou processo. Explique que os totais por setor não somam entre si porque cada atendimento conta em todos os ancestrais.</p>
+  <div class="note iv"><b>Na entrevista</b><p>Perguntas de cenário avaliam como você decide, não só a sintaxe. Mostre a sequência: medir o plano, identificar o que se repete por linha, escolher entre reescrever, pré-calcular ou mudar o modelo, e proteger o dado na origem.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Subconsulta escalar</dt><dd>Subconsulta que devolve um único valor (uma linha, uma coluna) e se usa como expressão.</dd></div>
+    <div><dt>Inline view</dt><dd>Subconsulta no FROM, usada como tabela. Também chamada tabela derivada.</dd></div>
+    <div><dt>Subconsulta correlacionada</dt><dd>Referencia colunas da consulta externa; logicamente roda uma vez por linha externa.</dd></div>
+    <div><dt>Semi-join</dt><dd>Mantém linhas da esquerda que têm correspondência na direita, sem duplicar. É o plano de <code>EXISTS</code>/<code>IN</code>.</dd></div>
+    <div><dt>Anti-join</dt><dd>Mantém linhas da esquerda sem correspondência na direita. É o plano de <code>NOT EXISTS</code>.</dd></div>
+    <div><dt>CTE</dt><dd>Common table expression: consulta nomeada pela cláusula <code>WITH</code>.</dd></div>
+    <div><dt>Materialização</dt><dd>Calcular a CTE uma vez e guardar o resultado, em vez de embuti-la em cada uso.</dd></div>
+    <div><dt>Inline (embutir)</dt><dd>Substituir a CTE ou subconsulta pelo seu texto, deixando o otimizador ver tudo.</dd></div>
+    <div><dt>Âncora</dt><dd>Parte não recursiva de uma CTE recursiva; produz as linhas iniciais.</dd></div>
+    <div><dt>Parte recursiva</dt><dd>Parte que referencia a própria CTE e roda até não produzir linhas novas.</dd></div>
+    <div><dt>CYCLE / SEARCH</dt><dd>Cláusulas (PostgreSQL 14+, Oracle 11.2+) para detectar ciclos e ordenar a recursão em profundidade ou largura.</dd></div>
+    <div><dt>CONNECT BY</dt><dd>Sintaxe hierárquica do Oracle com <code>PRIOR</code>, <code>LEVEL</code> e <code>START WITH</code>.</dd></div>
+    <div><dt>LATERAL / APPLY</dt><dd>Subconsulta no FROM que pode referenciar tabelas anteriores; uma execução por linha externa.</dd></div>
+    <div><dt>Unnesting</dt><dd>Transformação do otimizador que converte subconsulta em join.</dd></div>
+    <div><dt>Predicate pushdown</dt><dd>Empurrar um filtro para dentro de uma view ou subconsulta, reduzindo linhas cedo.</dd></div>
+    <div><dt>Tabela de calendário</dt><dd>Tabela com uma linha por dia e atributos (dia útil, feriado, semana).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Quais os tipos de subconsulta e onde cada uma pode aparecer?</span></summary><div class="ans"><p>Escalar (uma linha e uma coluna; no SELECT, WHERE ou SET), de tabela/inline view (no FROM), de lista (<code>IN</code>, <code>ANY</code>, <code>ALL</code>) e existencial (<code>EXISTS</code>). Qualquer uma pode ser correlacionada se referenciar a consulta externa.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre subconsulta correlacionada e não correlacionada?</span></summary><div class="ans"><p>A não correlacionada é independente e é avaliada uma vez; a correlacionada usa colunas da consulta externa e, logicamente, executa por linha. O otimizador pode desaninhar a correlacionada em join; quando não consegue, ela aparece como <code>SubPlan</code> (PostgreSQL) ou <code>FILTER</code> (Oracle) e custa N execuções.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>IN ou EXISTS? E NOT IN ou NOT EXISTS?</span></summary><div class="ans"><p>Hoje geram planos equivalentes (semi-join) e a escolha é de legibilidade. Para ausência, use sempre <code>NOT EXISTS</code>: <code>NOT IN</code> devolve vazio se a subconsulta tiver qualquer NULL e, no PostgreSQL, não vira anti-join (usa hashed SubPlan, que degenera se não couber em <code>work_mem</code>).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Por que o <code>NOT IN</code> pode devolver zero linhas?</span></summary><div class="ans"><p><code>x NOT IN (1, 2, NULL)</code> equivale a <code>x &lt;&gt; 1 AND x &lt;&gt; 2 AND x &lt;&gt; NULL</code>. O último termo é desconhecido, então a conjunção nunca é verdadeira. Basta um NULL no conjunto para eliminar todas as linhas.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Para que serve uma CTE? Ela melhora o desempenho?</span></summary><div class="ans"><p>Principalmente para legibilidade: nomeia etapas e permite reuso na mesma instrução. O desempenho depende da materialização: se embutida, é como uma subconsulta; se materializada, o resultado é calculado uma vez, o que ajuda quando é usado várias vezes e atrapalha quando impede filtros de descer.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>A CTE é materializada? Como controlar?</span></summary><div class="ans"><p>PostgreSQL 12+: embutida se não recursiva, sem efeito colateral e referenciada uma vez; senão, materializada. <code>MATERIALIZED</code> e <code>NOT MATERIALIZED</code> forçam. Antes do 12, sempre materializada. Oracle: por custo; os hints <code>MATERIALIZE</code> e <code>INLINE</code> (não documentados oficialmente) forçam. Confirmo no plano (<code>CTE Scan</code> no PostgreSQL; <code>TEMP TABLE TRANSFORMATION</code> no Oracle).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Como funciona uma CTE recursiva?</span></summary><div class="ans"><p>Âncora (linhas iniciais), <code>UNION ALL</code> e parte recursiva que junta a própria CTE. A cada iteração, a parte recursiva processa só as linhas da iteração anterior; termina quando não há linhas novas. O resultado é a união de todas. No Oracle, a lista de colunas é obrigatória e não se usa a palavra <code>RECURSIVE</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>O que acontece se a hierarquia tiver um ciclo? Como se proteger?</span></summary><div class="ans"><p>No PostgreSQL, a recursão não termina (consome recursos até um limite externo); no Oracle, falha com <code>ORA-32044</code>. Proteções: limite de profundidade, array de ids visitados, <code>CYCLE</code> (PostgreSQL 14+, Oracle 11.2+), <code>NOCYCLE</code> no <code>CONNECT BY</code>; e, na origem, impedir ciclos no cadastro.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Como percorrer uma hierarquia no Oracle com <code>CONNECT BY</code>? Qual a diferença entre filtrar no WHERE e no CONNECT BY?</span></summary><div class="ans"><p><code>START WITH</code> define as raízes e <code>CONNECT BY PRIOR pai = filho</code> descreve a descida; <code>LEVEL</code>, <code>SYS_CONNECT_BY_PATH</code>, <code>CONNECT_BY_ROOT</code> e <code>ORDER SIBLINGS BY</code> completam. O <code>WHERE</code> remove linhas depois de montar a árvore (a travessia continua passando por elas); condição no <code>CONNECT BY</code> poda o ramo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Como gerar todos os dias de um mês e usar isso para mostrar dias sem atendimento?</span></summary><div class="ans"><p>PostgreSQL: <code>generate_series(inicio, fim, interval '1 day')</code>. Oracle: <code>SELECT inicio + LEVEL - 1 FROM dual CONNECT BY LEVEL &lt;= n</code>. Em ambos, CTE recursiva também serve. Depois, <code>LEFT JOIN</code> com atendimentos, condição de data no <code>ON</code> e <code>COUNT(a.id)</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>O que é <code>LATERAL</code>? Como pegar os 3 últimos atendimentos por paciente?</span></summary><div class="ans"><p>Subconsulta no FROM que pode referenciar tabelas anteriores do mesmo FROM; executa por linha externa. <code>CROSS JOIN LATERAL (SELECT ... ORDER BY dt DESC LIMIT 3)</code> no PostgreSQL; <code>CROSS APPLY (... FETCH FIRST 3 ROWS ONLY)</code> no Oracle 12c+, com índice <code>(id_paciente, dt DESC)</code>. Alternativa: <code>ROW_NUMBER()</code> e <code>rn &lt;= 3</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Quando você prefere LATERAL e quando prefere função de janela para top-N?</span></summary><div class="ans"><p>LATERAL quando poucas linhas externas importam e há índice que entrega as N linhas ordenadas: custo proporcional ao que se lê. Janela quando quase todos os grupos são necessários: uma passada em vez de milhões de buscas. Meço com volume real.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Como atualizar uma tabela a partir de outra? Que cuidados com subconsultas no UPDATE?</span></summary><div class="ans"><p>PostgreSQL: <code>UPDATE ... FROM</code>. Oracle: <code>MERGE</code> ou <code>UPDATE</code> com subconsulta e <code>EXISTS</code>. Cuidados: sem <code>EXISTS</code>, linhas sem correspondência recebem NULL; subconsulta que devolve mais de uma linha dá erro; correlacionada em tabelas grandes executa por linha; sempre conferir com <code>SELECT</code> e usar transação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O que é subquery unnesting e o que a impede?</span></summary><div class="ans"><p>O otimizador converte a subconsulta em join (semi, anti ou join com view agrupada). No PostgreSQL, <code>IN</code>/<code>EXISTS</code> viram semi-join, mas escalares correlacionadas com agregação, <code>EXISTS</code> ligados por <code>OR</code> e <code>NOT IN</code> permanecem como SubPlan. No Oracle, o desaninhamento cobre mais casos (hints <code>UNNEST</code>/<code>NO_UNNEST</code>), e as não desaninhadas aparecem como <code>FILTER</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Uma consulta tem uma subconsulta escalar correlacionada em 5 colunas e é lenta. Como diagnostica e corrige?</span></summary><div class="ans"><p>Vejo o plano: um SubPlan/FILTER por coluna e por linha externa. Corrijo reduzindo as 5 a uma só <code>LATERAL</code>/<code>OUTER APPLY</code> (uma busca por linha) ou agregando uma vez e juntando; se quase todas as linhas externas são necessárias, uso agregação ou janela; garanto o índice de apoio; e limito o resultado com paginação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Um relatório ficou lento depois de migrar o PostgreSQL de 11 para 14. Suspeita de quê?</span></summary><div class="ans"><p>Mudança na semântica de CTE: no 12+, CTEs simples são embutidas, e o plano que dependia da barreira mudou. Comparo planos, e uso <code>MATERIALIZED</code>/<code>NOT MATERIALIZED</code> onde quero cada comportamento. Também verifico estatísticas (<code>ANALYZE</code>) e parâmetros que mudaram nas versões.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>(Gestão) Como evitar que subconsultas "que funcionam em teste" quebrem em produção?</span></summary><div class="ans"><p>Testar com volume representativo (cópia anonimizada ou gerador de dados), exigir plano nas revisões de consultas críticas, incluir testes de desempenho na entrega e revisar padrões de risco (<code>NOT IN</code>, escalares correlacionadas, <code>OR</code> com <code>EXISTS</code>, CTE recursiva sem proteção contra ciclo).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>(Gestão) Como tratar hierarquias (setores, plano de contas) no banco em um sistema que vai crescer?</span></summary><div class="ans"><p>CTE recursiva ou <code>CONNECT BY</code> bastam para árvores pequenas e leitura moderada. Se a hierarquia é grande ou consultada o tempo todo, avalie modelos alternativos (tabela de fecho, caminho materializado, <code>ltree</code> no PostgreSQL), com custo de manutenção na escrita. Em qualquer caso, garanta integridade na origem (sem ciclos) e índice em <code>id_setor_pai</code>.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

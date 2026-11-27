@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 05: Volumes e redes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 05 de 10 · Volumes e redes</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html" aria-current="page"><span class="n">05</span>Volumes e redes</a></li>
+    <li class="sub"><ol>
+      <li><a href="#efemero-tipos"><span class="n">1</span>Container efêmero: volumes, bind mounts e tmpfs</a></li>
+      <li><a href="#mount-onde-permissoes"><span class="n">2</span>--mount vs -v, onde ficam os dados e permissões</a></li>
+      <li><a href="#backup-migracao"><span class="n">3</span>Backup, restore e migração de volumes</a></li>
+      <li><a href="#bancos-em-container"><span class="n">4</span>Bancos de dados em container: quando faz sentido</a></li>
+      <li><a href="#redes"><span class="n">5</span>Redes: bridge, host, none, macvlan e overlay</a></li>
+      <li><a href="#portas"><span class="n">6</span>Publicação de portas e o que acontece por baixo</a></li>
+      <li><a href="#comunicacao-ipv6"><span class="n">7</span>Comunicação entre containers, com o host e IPv6</a></li>
+      <li><a href="#diagnostico-rede"><span class="n">8</span>Diagnóstico de rede</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 05 · <span class="lvl l2">Intermediário</span></div>
+  <h1>Volumes e redes</h1>
+  <p class="lede">Containers são descartáveis, mas os dados e as conexões entre eles não podem ser. Este módulo explica onde a informação de fato mora, como protegê-la e migrá-la, e como os containers se enxergam, se publicam e se diagnosticam na rede.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar por que a camada gravável é efêmera e escolher entre volume nomeado, bind mount e tmpfs, com <code>-v</code> ou <code>--mount</code>.</li>
+    <li>Localizar os dados no disco (inclusive dentro da VM do Docker Desktop) e resolver problemas de permissão e UID/GID.</li>
+    <li>Fazer backup, restore e migração de volumes, e decidir quando um banco de dados pode (ou não) rodar em container.</li>
+    <li>Distinguir bridge padrão, bridge definida pelo usuário, host, none, macvlan/ipvlan e overlay, e explicar o DNS interno.</li>
+    <li>Descrever como <code>-p</code> funciona por baixo (iptables, NAT, docker-proxy) e por que <code>EXPOSE</code> não publica nada.</li>
+    <li>Diagnosticar problemas de rede com <code>docker network inspect</code> e um container de depuração (netshoot).</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="efemero-tipos">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Container efêmero: volumes, bind mounts e tmpfs</h2>
+  <p>Um container é um processo com um sistema de arquivos montado em camadas: as camadas da imagem, todas <strong>somente leitura</strong>, e por cima uma única <strong>camada gravável</strong> criada junto com o container. Tudo o que o processo escreve sem montar nada (logs, uploads, o diretório de dados de um banco) vai para essa camada. Ela existe enquanto o container existe: <code>docker rm</code> apaga a camada e tudo que estava nela. Parar o container (<code>docker stop</code>) não apaga; remover e recriar apaga.</p>
+  <p>Isso é uma <strong>característica</strong>, não um defeito. Um container descartável pode ser recriado a partir da imagem a qualquer momento (atualização, queda, escala), sempre no mesmo estado inicial. O preço: tudo que não pode ser perdido precisa morar <strong>fora</strong> da camada gravável. Há ainda um motivo de desempenho: escrever na camada gravável passa pelo storage driver (copy-on-write, <code>overlay2</code> no Linux), mais lento que um volume para escritas pesadas e aleatórias, como as de um banco.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 260" role="img" aria-label="Sistema de arquivos de um container: camadas da imagem somente leitura, camada gravável descartável e três tipos de montagem vindos de fora">
+      <defs><marker id="ah05a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">Sistema de arquivos do container</text>
+      <text class="ttl" x="430" y="24">Montado por cima, fora da camada</text>
+      <rect class="box" x="20" y="34" width="380" height="170" rx="6"/>
+      <rect class="box-w" x="36" y="44" width="348" height="34" rx="4"/><text x="210" y="66" text-anchor="middle">camada gravável (some no docker rm)</text>
+      <rect class="box" x="36" y="82" width="348" height="34" rx="4"/><text x="210" y="104" text-anchor="middle">camada 3: COPY . /app (só leitura)</text>
+      <rect class="box" x="36" y="120" width="348" height="34" rx="4"/><text x="210" y="142" text-anchor="middle">camada 2: RUN npm ci (só leitura)</text>
+      <rect class="box" x="36" y="158" width="348" height="34" rx="4"/><text x="210" y="180" text-anchor="middle">camada 1: node:22-alpine (só leitura)</text>
+      <rect class="box-a" x="430" y="44" width="230" height="44" rx="4"/><text x="445" y="63">volume nomeado</text><text class="lbl" x="445" y="80">/var/lib/postgresql/data</text>
+      <rect class="box-a" x="430" y="100" width="230" height="44" rx="4"/><text x="445" y="119">bind mount</text><text class="lbl" x="445" y="136">/app/src  (pasta do host)</text>
+      <rect class="box-a" x="430" y="156" width="230" height="44" rx="4"/><text x="445" y="175">tmpfs</text><text class="lbl" x="445" y="192">/tmp  (memória RAM)</text>
+      <line class="ln-a" x1="428" y1="66" x2="402" y2="66" marker-end="url(#ah05a)"/>
+      <line class="ln-a" x1="428" y1="122" x2="402" y2="122" marker-end="url(#ah05a)"/>
+      <line class="ln-a" x1="428" y1="178" x2="402" y2="178" marker-end="url(#ah05a)"/>
+      <text class="lbl" x="20" y="228">Para o processo, tudo aparece como pasta comum. Só a camada gravável morre com o container;</text>
+      <text class="lbl" x="20" y="246">volume e bind mount sobrevivem a docker rm, e o tmpfs some ao parar o container.</text>
+    </svg>
+    <figcaption>As montagens se sobrepõem a um caminho do sistema de arquivos do container e escondem o que a imagem tinha ali.</figcaption>
+  </figure>
+
+  <h3>Os três tipos de montagem</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Sintaxe curta</th><th>Onde fica</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Volume nomeado</strong></td><td><code>-v pgdata:/var/lib/postgresql/data</code></td><td>Área gerenciada pelo Docker (<code>/var/lib/docker/volumes</code> no Linux)</td><td>Dados que precisam persistir: bancos, filas, uploads. Padrão em produção.</td></tr>
+      <tr><td><strong>Bind mount</strong></td><td><code>-v "$(pwd)/src:/app/src"</code></td><td>Um caminho absoluto do host</td><td>Desenvolvimento (editar no host, ver no container), arquivos de configuração e certificados.</td></tr>
+      <tr><td><strong>tmpfs</strong></td><td><code>--tmpfs /tmp</code></td><td>Memória RAM do host</td><td>Temporários e dados sensíveis que não devem tocar o disco. Some ao parar o container.</td></tr>
+      <tr><td><strong>Volume anônimo</strong></td><td><code>-v /dados</code></td><td>Como o nomeado, mas com nome aleatório (hash)</td><td>Quase sempre acidental (vem de <code>VOLUME</code> no Dockerfile). Vira lixo difícil de rastrear.</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh">docker volume create pgdata
+docker volume ls
+docker volume inspect pgdata
+docker run -d --name db -e POSTGRES_PASSWORD=dev -v pgdata:/var/lib/postgresql/data postgres:17
+
+# bind mount somente leitura (:ro) de um arquivo de configuração
+docker run -d -v "$(pwd)/nginx.conf:/etc/nginx/nginx.conf:ro" -p 8080:80 nginx
+
+# tmpfs com limite de tamanho (sintaxe longa)
+docker run -d --mount type=tmpfs,target=/tmp,tmpfs-size=64m minha-api</code></pre>
+  <pre><code class="text">$ docker volume inspect pgdata
+[
+    {
+        "CreatedAt": "2026-03-02T10:14:09Z",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/pgdata/_data",
+        "Name": "pgdata",
+        "Options": null,
+        "Scope": "local"
+    }
+]</code></pre>
+
+  <h3>Como as montagens se comportam</h3>
+  <ul>
+    <li><strong>Preenchimento inicial.</strong> Um volume nomeado <em>vazio</em> montado em um caminho que a imagem já tinha é <strong>populado com o conteúdo da imagem</strong> naquele caminho (inclusive donos e permissões). Isso só acontece na primeira montagem; depois, o volume manda. Um <strong>bind mount nunca é preenchido</strong>: ele simplesmente esconde o que a imagem tinha ali e mostra a pasta do host (vazia, se for o caso).</li>
+    <li><strong>Persistência.</strong> Volumes e bind mounts sobrevivem a <code>docker rm</code>. Um volume só some com <code>docker volume rm</code>, <code>docker volume prune</code> ou <code>docker compose down -v</code>.</li>
+    <li><strong>Compartilhamento.</strong> Vários containers podem montar o mesmo volume. O Docker não coordena escritas: dois processos gravando o mesmo arquivo é problema da aplicação.</li>
+    <li><strong>Ciclo de vida independente.</strong> Volume pertence ao Docker, não ao container. Um container novo que monte <code>pgdata</code> encontra os dados de antes: é assim que se atualiza a versão do Postgres dentro de uma mesma versão maior sem perder dados (troca de versão maior exige <code>pg_upgrade</code> ou dump/restore, veja a seção 4).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha: o init do Postgres só roda com o diretório vazio</b><p>Scripts em <code>/docker-entrypoint-initdb.d</code> e as variáveis <code>POSTGRES_USER</code>/<code>POSTGRES_PASSWORD</code>/<code>POSTGRES_DB</code> só têm efeito quando o volume de dados está <strong>vazio</strong>. Mudou a senha no compose e nada aconteceu? O volume antigo ainda tem o cluster inicializado com a senha velha. Para recomeçar do zero, apague o volume (e aceite perder os dados).</p></div>
+  <div class="note trap"><b>Armadilha: volumes anônimos e <code>VOLUME</code> no Dockerfile</b><p>Imagens como <code>postgres</code> e <code>mysql</code> declaram <code>VOLUME</code> no diretório de dados. Se você esquecer de nomear o volume, cada <code>docker run</code> cria um volume anônimo novo e o banco "perde" os dados a cada recriação (eles continuam em um volume órfão com nome hash). Sempre nomeie o volume do banco.</p></div>
+
+  <h3>Limpando volumes</h3>
+  <pre><code class="sh">docker volume ls -f dangling=true     # volumes sem nenhum container associado
+docker volume prune                  # remove volumes ANÔNIMOS sem uso (Docker Engine 23 ou superior)
+docker volume prune -a               # remove TODOS os volumes sem uso, inclusive os nomeados
+docker system df -v                  # quanto cada volume ocupa</code></pre>
+  <p>Até o Docker Engine 22, <code>docker volume prune</code> removia qualquer volume sem uso, inclusive os nomeados; a partir da 23 o padrão passou a poupar os nomeados e é preciso <code>-a</code> para removê-los. Em máquinas com versão antiga (ou scripts herdados), confira antes de rodar.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre volume e bind mount?" Volume é gerenciado pelo Docker (local e formato opaco, preenchido a partir da imagem, funciona igual em Linux, Mac e Windows). Bind mount é um caminho específico do host, dependente da estrutura de pastas e das permissões do host. Volume para dados que precisam persistir; bind mount para código em desenvolvimento e arquivos de configuração. Mencione também o tmpfs para dados sensíveis ou temporários.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A pergunta de revisão é: "onde está o estado desta aplicação e quem faz backup dele?". Todo serviço com estado precisa de um volume nomeado explícito, documentado, com política de backup e teste de restore. "Perdemos os dados porque recriamos o container" é falha de design, não de operação.</p></div>
+</section>
+
+<section class="chap" id="mount-onde-permissoes">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>--mount vs -v, onde ficam os dados e permissões</h2>
+  <h3><code>-v</code> versus <code>--mount</code></h3>
+  <p>As duas formas fazem o mesmo trabalho. A documentação do Docker recomenda <code>--mount</code> por ser explícita: cada opção tem nome. O <code>-v</code> é curto, antigo e ambíguo: o significado dos campos depende de quantos <code>:</code> aparecem e a primeira parte pode ser nome de volume ou caminho.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Aspecto</th><th><code>-v</code> / <code>--volume</code></th><th><code>--mount</code></th></tr></thead>
+    <tbody>
+      <tr><td>Formato</td><td><code>origem:destino[:opções]</code></td><td><code>type=...,source=...,target=...,readonly</code></td></tr>
+      <tr><td>Bind mount com origem inexistente</td><td>O Docker <strong>cria a pasta</strong> (como root). Erro de digitação vira pasta fantasma.</td><td><strong>Falha</strong> com erro claro (a origem precisa existir).</td></tr>
+      <tr><td>Tipo da montagem</td><td>Deduzido pela forma da origem (nome = volume, caminho = bind)</td><td>Explícito em <code>type=</code> (<code>volume</code>, <code>bind</code>, <code>tmpfs</code>)</td></tr>
+      <tr><td>tmpfs</td><td>Não usa <code>-v</code> (use <code>--tmpfs</code>)</td><td><code>type=tmpfs</code> com <code>tmpfs-size</code>, <code>tmpfs-mode</code></td></tr>
+      <tr><td>Opções avançadas</td><td>Poucas (<code>ro</code>, <code>z</code>, <code>Z</code>, propagação)</td><td>Mais (<code>volume-opt</code>, <code>bind-propagation</code>, etc.)</td></tr>
+      <tr><td>Somente leitura</td><td><code>:ro</code></td><td><code>readonly</code> (ou <code>ro</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh"># equivalentes
+docker run -v pgdata:/var/lib/postgresql/data postgres:17
+docker run --mount type=volume,source=pgdata,target=/var/lib/postgresql/data postgres:17
+
+# bind mount somente leitura: o container não consegue alterar o host
+docker run --mount type=bind,source="$(pwd)/conf",target=/etc/app,readonly minha-api
+docker run -v "$(pwd)/conf:/etc/app:ro" minha-api
+
+# se a origem não existe: -v cria a pasta; --mount falha
+docker run --mount type=bind,source=/nao/existe,target=/x alpine true
+# docker: Error response from daemon: invalid mount config for type "bind": bind source path does not exist: /nao/existe</code></pre>
+  <p>No Compose (módulo 06) a sintaxe curta e a longa também existem (<code>volumes: - pgdata:/dados</code> ou o formato com <code>type</code>, <code>source</code>, <code>target</code>, <code>read_only</code>).</p>
+  <div class="note rule"><b>Regra de bolso: monte somente leitura o que for só leitura</b><p>Configuração, certificados e código em ambientes que não precisam editar: <code>:ro</code>. Se um processo comprometido não consegue escrever, ele não altera o arquivo montado. Combine com <code>--read-only</code> no container inteiro (raiz somente leitura) e <code>--tmpfs /tmp</code> para o que precisar de escrita: é uma das medidas de endurecimento mais baratas (veja o módulo 09).</p></div>
+
+  <h3>Onde ficam os dados de verdade</h3>
+  <p>No <strong>Linux</strong>, o Docker Engine guarda tudo em <code>/var/lib/docker</code> (o "data-root", configurável em <code>daemon.json</code>): imagens e camadas em <code>overlay2/</code>, volumes em <code>volumes/&lt;nome&gt;/_data</code>. É possível ler os arquivos com <code>sudo</code>, mas <strong>não é um contrato</strong>: use <code>docker volume inspect</code> para descobrir o caminho e use o Docker ou um container auxiliar para mexer nos dados. Editar à mão arquivos de um banco rodando destrói bancos.</p>
+  <p>No <strong>Docker Desktop</strong> (Mac e Windows) não existe <code>/var/lib/docker</code> no seu sistema: o Docker Engine roda dentro de uma <strong>VM Linux</strong> (no Windows, com o backend WSL 2, uma distribuição dedicada; no Mac, uma VM leve) e os volumes ficam no disco virtual dela. Você não os enxerga no Explorer/Finder; a interface do Docker Desktop tem uma aba Volumes para inspecionar e exportar, e o caminho universal é um container auxiliar que monte o volume (veja a seção 3).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Comparação entre Linux nativo, onde volumes e bind mounts são discos locais, e Docker Desktop, onde o motor roda numa VM e os bind mounts atravessam o compartilhamento de arquivos">
+      <defs><marker id="ah05b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">Linux nativo</text>
+      <text class="ttl" x="350" y="24">Docker Desktop (Mac / Windows)</text>
+      <rect class="box" x="20" y="34" width="310" height="216" rx="6"/>
+      <rect class="box-a" x="95" y="52" width="160" height="36" rx="4"/><text x="175" y="75" text-anchor="middle">container</text>
+      <rect class="box-a" x="36" y="130" width="140" height="48" rx="4"/><text x="48" y="150">volume</text><text class="lbl" x="48" y="168">/var/lib/docker/volumes</text>
+      <rect class="box-w" x="186" y="130" width="130" height="48" rx="4"/><text x="198" y="150">bind mount</text><text class="lbl" x="198" y="168">~/projeto (host)</text>
+      <line class="ln-a" x1="106" y1="128" x2="140" y2="90" marker-end="url(#ah05b)"/>
+      <line class="ln-a" x1="250" y1="128" x2="210" y2="90" marker-end="url(#ah05b)"/>
+      <text class="lbl" x="36" y="206">Tudo é disco local do host: o bind mount</text>
+      <text class="lbl" x="36" y="224">é tão rápido quanto o próprio sistema de arquivos.</text>
+      <rect class="box" x="350" y="34" width="310" height="230" rx="6"/>
+      <rect class="box-w" x="364" y="46" width="282" height="32" rx="4"/><text x="505" y="67" text-anchor="middle">~/projeto no Mac ou Windows</text>
+      <rect class="box-m" x="364" y="116" width="282" height="138" rx="6"/>
+      <text class="ttl" x="384" y="134">VM Linux do Docker Desktop</text>
+      <rect class="box-a" x="380" y="142" width="250" height="34" rx="4"/><text x="505" y="164" text-anchor="middle">container</text>
+      <rect class="box-a" x="380" y="202" width="250" height="44" rx="4"/><text x="392" y="221">volume nomeado</text><text class="lbl" x="392" y="238">dentro do disco virtual da VM</text>
+      <line class="ln-a" x1="372" y1="80" x2="372" y2="140" marker-end="url(#ah05b)"/>
+      <text class="lbl" x="384" y="94">compartilhamento de arquivos</text>
+      <text class="lbl" x="384" y="109">(cada acesso cruza a VM)</text>
+      <line class="ln-a" x1="505" y1="200" x2="505" y2="178" marker-end="url(#ah05b)"/>
+    </svg>
+    <figcaption>No Docker Desktop o volume mora dentro da VM (rápido); o bind mount precisa atravessar a fronteira host-VM (mais lento).</figcaption>
+  </figure>
+  <pre><code class="sh">docker volume inspect pgdata --format '{{ .Mountpoint }}'
+docker system df -v | sed -n '/Local Volumes/,$p'
+
+# ver o conteúdo de um volume em QUALQUER sistema: container auxiliar que o monta
+docker run --rm -v pgdata:/dados:ro alpine ls -la /dados</code></pre>
+  <div class="note"><b>Saiba mais: drivers de volume</b><p>O driver padrão é <code>local</code>, mas ele aceita opções que montam NFS ou outros sistemas (<code>--opt type=nfs --opt o=addr=...,rw --opt device=:/export</code>), e há plugins de terceiros para storage de rede ou nuvem. Para um host único isso é raro; em clusters, o armazenamento persistente costuma vir do orquestrador (módulo 10).</p></div>
+
+  <h3>Permissões e UID/GID em bind mounts</h3>
+  <p>O kernel do Linux não conhece nomes de usuário, só <strong>números</strong>. O processo no container roda com um UID (por exemplo, <code>node</code> é 1000, e o <code>postgres</code> da imagem Debian costuma ser 999, enquanto na Alpine é 70) e os arquivos do bind mount pertencem a um UID do host. Se os números não coincidem, o container recebe <code>permission denied</code>, ou pior: grava arquivos como <code>root</code> na sua pasta de projeto, que você depois não consegue apagar sem <code>sudo</code>.</p>
+  <pre><code class="text">$ id -u            # no host
+1000
+$ docker run --rm -v "$(pwd)/dados:/dados" alpine sh -c 'id -u; touch /dados/a; ls -ln /dados'
+0
+-rw-r--r--    1 0        0                0 Mar  2 10:20 a      # criado por root (UID 0), dono 0 no host</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Solução</th><th>Como</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td>Rodar com o UID do host</td><td><code>docker run --user "$(id -u):$(id -g)" ...</code> (Compose: <code>user: "${UID}:${GID}"</code>, exportando as variáveis)</td><td>Desenvolvimento em Linux: o container escreve como você. A imagem precisa aceitar rodar sem ser root (HOME gravável, etc.).</td></tr>
+      <tr><td>Ajustar o dono da pasta</td><td><code>sudo chown -R 1000:1000 ./dados</code> (UID do usuário da imagem)</td><td>Pasta dedicada do container, quando o UID da imagem é fixo e conhecido.</td></tr>
+      <tr><td>Usar volume nomeado</td><td><code>-v dados:/dados</code></td><td>O volume é inicializado com o dono que a imagem definiu no caminho: costuma "simplesmente funcionar".</td></tr>
+      <tr><td>Ajustar no entrypoint</td><td>Script que roda como root, faz <code>chown</code> e troca para o usuário comum (<code>gosu</code>/<code>su-exec</code>)</td><td>Imagens que precisam funcionar com volumes de dono arbitrário. É o padrão das imagens oficiais de banco.</td></tr>
+      <tr><td>Rótulo SELinux</td><td><code>:z</code> (compartilhado) ou <code>:Z</code> (privado) no <code>-v</code></td><td>Fedora, RHEL e derivados: sem rótulo, mesmo com UID certo o acesso é negado pelo SELinux.</td></tr>
+      <tr><td>User namespace / rootless</td><td><code>userns-remap</code> no daemon, ou Docker/Podman em modo rootless</td><td>Endurecimento: o UID 0 do container vira um UID sem privilégio no host. Aumenta a complexidade de permissões em bind mounts.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha: <code>chmod 777</code> para "resolver"</b><p>É o conserto mais comum e o pior: funciona e deixa a pasta aberta a qualquer usuário do host. Descubra o UID/GID real (<code>docker run --rm imagem id</code>) e acerte o dono. No Docker Desktop (Mac e Windows) o problema quase não aparece, porque a camada de compartilhamento traduz os donos; ele reaparece quando o time leva a mesma configuração para um servidor Linux ou para o CI.</p></div>
+
+  <h3>Desempenho de bind mount no Mac e no Windows</h3>
+  <p>Como o diagrama mostra, em Mac e Windows cada acesso a arquivo de um bind mount cruza a fronteira host-VM. Para operações pequenas é imperceptível; para <code>node_modules</code> com dezenas de milhares de arquivos, <code>npm install</code>, <code>git status</code> em monorepos ou varreduras de um watcher, a diferença pode ser de ordens de grandeza.</p>
+  <ul>
+    <li><strong>Windows:</strong> mantenha o projeto <strong>dentro do sistema de arquivos do WSL 2</strong> (por exemplo <code>~/projetos</code> dentro da distro) e rode o Docker a partir dali. Bind mounts de pastas do Windows (<code>C:\...</code>) atravessam a ponte entre os dois sistemas de arquivos e são bem mais lentos.</li>
+    <li><strong>Mac:</strong> o Docker Desktop oferece implementações de compartilhamento diferentes (nas versões recentes, a VirtioFS é a recomendada); mantenha a configuração padrão atual e evite versões antigas do compartilhamento.</li>
+    <li><strong>Em qualquer sistema:</strong> deixe <strong>dependências e artefatos de build fora do bind mount</strong>. Monte só <code>./src</code>, ou cubra <code>/app/node_modules</code> com um volume nomeado (veja o módulo 06). Dependências instaladas dentro do container já são nativas do container.</li>
+    <li>Hot reload: no compartilhamento entre sistemas os eventos de arquivo (inotify) podem não chegar ao container. Configure o watcher em modo <em>polling</em> (<code>CHOKIDAR_USEPOLLING=true</code>, <code>--legacy-watch</code> no nodemon, <code>WATCHFILES_FORCE_POLLING=true</code> no Python) ou use o recurso <code>watch</code> do Compose (módulo 06).</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que seu container não consegue gravar na pasta montada?" Quase sempre UID/GID: o usuário do processo no container e o dono da pasta no host são números diferentes. Diagnostique com <code>id</code> no container e <code>ls -ln</code> na pasta; resolva com <code>--user</code>, <code>chown</code> do dono correto ou volume nomeado. Em RHEL/Fedora, lembre também do SELinux (<code>:z</code>).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize o ambiente de desenvolvimento do time (WSL 2 no Windows, Compose com volumes de dependências) para evitar "na minha máquina o Docker está lento". E exija que a mesma imagem rode como usuário não root: o problema de permissão que aparece em desenvolvimento é o mesmo que aparece em produção quando alguém endurece o container.</p></div>
+</section>
+
+<section class="chap" id="backup-migracao">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Backup, restore e migração de volumes</h2>
+  <p>O Docker não tem um comando "docker volume backup". O padrão universal é usar um <strong>container temporário</strong> que monta o volume (de origem) e uma pasta do host (de destino) e roda <code>tar</code>. Funciona igual no Linux, no Mac e no Windows, porque o container é quem enxerga o volume, mesmo quando ele está dentro da VM do Docker Desktop.</p>
+  <h3>Backup e restore com tar</h3>
+  <pre><code class="sh"># BACKUP: volume pgdata -> ./pgdata-2026-03-02.tar.gz
+docker run --rm \
+  -v pgdata:/dados:ro \
+  -v "$(pwd)":/backup \
+  alpine tar czf /backup/pgdata-2026-03-02.tar.gz -C /dados .
+
+# RESTORE em um volume NOVO (vazio)
+docker volume create pgdata_restaurado
+docker run --rm \
+  -v pgdata_restaurado:/dados \
+  -v "$(pwd)":/backup:ro \
+  alpine tar xzf /backup/pgdata-2026-03-02.tar.gz -C /dados
+
+# conferir o conteúdo do arquivo sem extrair
+tar tzf pgdata-2026-03-02.tar.gz | head</code></pre>
+  <ul>
+    <li>Monte o volume de origem como <code>:ro</code> no backup: o container auxiliar não pode alterar o que está protegendo.</li>
+    <li>Restaure sempre em um volume <strong>novo</strong>, valide e só então aponte o serviço para ele. Restaurar por cima do volume em uso mistura arquivos antigos e novos.</li>
+    <li><code>tar</code> preserva donos e permissões (UID/GID numéricos) quando roda como root, que é o caso do container. É o que se quer: o dono dos arquivos de um banco precisa voltar igual.</li>
+    <li><strong>Git Bash no Windows</strong> reescreve caminhos que começam com <code>/</code> (por exemplo, <code>/dados</code> vira <code>C:/Program Files/Git/dados</code>). Defina <code>MSYS_NO_PATHCONV=1</code> antes do comando, ou use PowerShell/WSL.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha: backup de arquivos de um banco rodando</b><p>Copiar o diretório de dados do Postgres ou do Oracle com o banco no ar pode produzir um backup <strong>inconsistente</strong>: arquivos copiados em instantes diferentes, páginas pela metade. O <code>tar</code> do volume só é seguro com o banco <strong>parado</strong> (<code>docker stop</code> com o desligamento limpo) ou com um snapshot atômico do storage. Com o banco no ar, use a ferramenta do próprio banco (próxima subseção).</p></div>
+
+  <h3>Backup de banco: use a ferramenta do banco</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Banco</th><th>Backup lógico</th><th>Backup físico / contínuo</th></tr></thead>
+    <tbody>
+      <tr><td>PostgreSQL</td><td><code>pg_dump</code> (um banco), <code>pg_dumpall</code> (cluster, inclui papéis)</td><td><code>pg_basebackup</code> + arquivamento de WAL (recuperação ponto no tempo); ferramentas como pgBackRest ou Barman</td></tr>
+      <tr><td>Oracle</td><td>Data Pump (<code>expdp</code>/<code>impdp</code>), que grava num diretório do servidor (objeto DIRECTORY)</td><td>RMAN. Confira quais recursos a edição usada (por exemplo, a Free) oferece; alguns recursos de backup e alta disponibilidade são da Enterprise Edition.</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh"># dump do Postgres rodando em container, gravado no host (formato custom, comprimido)
+docker exec db pg_dump -U app -Fc app &gt; app-2026-03-02.dump
+
+# restore em outro container/banco vazio
+docker exec -i db pg_restore -U app -d app_novo --no-owner &lt; app-2026-03-02.dump
+
+# dump em SQL puro (legível, restaurável com psql)
+docker exec db pg_dump -U app app | gzip &gt; app-2026-03-02.sql.gz
+gunzip -c app-2026-03-02.sql.gz | docker exec -i db psql -U app -d app_novo</code></pre>
+  <p>Dois cuidados: use <code>-i</code> (sem <code>-t</code>) quando houver redirecionamento de entrada ou saída, porque o pseudo-TTY corrompe a saída binária; e agende o backup <strong>fora</strong> do container do banco (um cron do host, um serviço de backup ou o agendador da plataforma), com cópia para fora do servidor.</p>
+
+  <h3>Migrar dados entre volumes e entre máquinas</h3>
+  <pre><code class="sh"># volume -> volume (mesma máquina), preservando donos e permissões
+docker volume create pgdata_v2
+docker run --rm -v pgdata:/de:ro -v pgdata_v2:/para alpine cp -a /de/. /para/
+
+# máquina A -> máquina B, sem arquivo intermediário, por SSH
+docker run --rm -v pgdata:/dados:ro alpine tar cz -C /dados . \
+  | ssh usuario@maquina-b 'docker run --rm -i -v pgdata:/dados alpine tar xz -C /dados'</code></pre>
+  <p>Não existe <code>docker volume rename</code>: renomear é criar o volume novo, copiar e remover o antigo depois de validar. Para trocar de <strong>versão maior</strong> do Postgres (por exemplo, 16 para 17) o formato do diretório de dados muda: não basta apontar a imagem nova para o volume antigo. Faça dump e restore, ou use <code>pg_upgrade</code>.</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você faz backup de um volume?" Container temporário que monta o volume em somente leitura e uma pasta do host, rodando <code>tar</code>. Para banco de dados, o backup correto é o da ferramenta do banco (<code>pg_dump</code>, <code>pg_basebackup</code>, Data Pump/RMAN), não a cópia de arquivos com o banco no ar. E conclua com: "backup que nunca foi restaurado não é backup".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina RPO e RTO por serviço (quanto de dado se aceita perder, em quanto tempo se precisa voltar) e cobre um <strong>teste de restore periódico</strong>, com registro. Dados de pacientes em dumps e arquivos <code>.tar.gz</code> são dados pessoais sensíveis (LGPD): criptografia, retenção e controle de acesso valem para o arquivo de backup tanto quanto para o banco.</p></div>
+</section>
+
+<section class="chap" id="bancos-em-container">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Bancos de dados em container: quando faz sentido</h2>
+  <p>Rodar PostgreSQL ou Oracle em container é rotina em <strong>desenvolvimento, testes e CI</strong>: sobe em segundos, é descartável, cada desenvolvedor tem o seu, o ambiente é igual para todos. Em <strong>produção</strong> a conversa é outra, porque o banco é exatamente o tipo de workload que o modelo "container descartável" não cobre bem.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Cenário</th><th>Container?</th><th>Por quê</th></tr></thead>
+    <tbody>
+      <tr><td>Desenvolvimento local</td><td>Sim</td><td>Rapidez, isolamento, mesma versão do banco de produção, reset fácil (apagar o volume).</td></tr>
+      <tr><td>Testes automatizados e CI</td><td>Sim</td><td>Banco limpo por execução (por exemplo, via Testcontainers ou serviço do CI). Sem estado entre execuções.</td></tr>
+      <tr><td>Homologação / demos</td><td>Em geral sim</td><td>Com dados fictícios ou anonimizados.</td></tr>
+      <tr><td>Produção, instância única</td><td>Possível, com ressalvas</td><td>Exige volume dedicado em disco confiável, backup testado, monitoramento, ajuste de memória, desligamento limpo. Você assume o que um banco gerenciado entrega pronto.</td></tr>
+      <tr><td>Produção crítica (HA, failover, PITR)</td><td>Prefira banco gerenciado, VM dedicada ou operador maduro</td><td>Replicação, failover automático, backup contínuo e atualização de versão sem perda são difíceis de acertar sozinho. Em Kubernetes só com um <em>operator</em> especializado.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>PostgreSQL com volume</h3>
+  <pre><code class="sh">docker run -d --name pg \
+  -e POSTGRES_USER=app -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=app \
+  -v pgdata:/var/lib/postgresql/data \
+  -p 127.0.0.1:5432:5432 \
+  --shm-size=256m \
+  postgres:17
+
+docker logs pg 2&gt;&amp;1 | tail -3
+docker exec -it pg psql -U app -d app -c "select version();"</code></pre>
+  <pre><code class="text">2026-03-02 10:31:07.512 UTC [1] LOG:  database system is ready to accept connections
+                                                 version
+----------------------------------------------------------------------------------------------------
+ PostgreSQL 17.4 (Debian 17.4-1.pgdg120+2) on x86_64-pc-linux-gnu, compiled by gcc ...</code></pre>
+  <ul>
+    <li><strong>Fixe a versão</strong> (<code>postgres:17</code> ou melhor, <code>17.4</code>), nunca <code>latest</code>: uma troca de versão maior com o volume antigo impede o banco de subir.</li>
+    <li><strong>Ponto de montagem na versão 18 em diante:</strong> as imagens mais recentes do Postgres mudaram o diretório de dados padrão para uma pasta com o número da versão e recomendam montar o volume em <code>/var/lib/postgresql</code> em vez de <code>/var/lib/postgresql/data</code>. Confira a página da imagem no Docker Hub antes de copiar um exemplo antigo para uma versão nova.</li>
+    <li><strong><code>--shm-size</code>:</strong> o <code>/dev/shm</code> de um container tem 64 MB por padrão, o que pode ser pouco para consultas paralelas ou grandes. O erro típico é "could not resize shared memory segment".</li>
+    <li><strong>Desligamento limpo:</strong> o <code>docker stop</code> envia um sinal e espera 10 segundos antes do <code>SIGKILL</code>. O banco precisa de tempo para finalizar checkpoints; com bancos grandes, aumente com <code>docker stop -t 60</code> (ou <code>stop_grace_period</code> no Compose). Matar o banco no meio força recuperação de crash na próxima subida.</li>
+    <li><strong>Porta:</strong> publicar <code>5432</code> só em <code>127.0.0.1</code> em desenvolvimento; entre containers, ninguém precisa de <code>-p</code> (seção 5).</li>
+    <li><strong>Memória:</strong> sem <code>shared_buffers</code> e <code>work_mem</code> ajustados, o Postgres usa os padrões, que são conservadores. Em produção, ajuste e defina limites de memória do container com atenção, para o OOM killer não matar o banco.</li>
+  </ul>
+
+  <h3>Oracle Database Free</h3>
+  <p>A Oracle publica a edição <strong>Oracle Database Free</strong> como imagem de container (no registro da Oracle, <code>container-registry.oracle.com</code>; há também imagens mantidas pela comunidade, como a <code>gvenzl/oracle-free</code>, com variáveis de ambiente diferentes). A edição Free é gratuita para uso inclusive comercial, mas tem <strong>limites de recursos</strong> (CPU, memória e volume de dados) e não inclui todos os recursos da Enterprise Edition: leia a licença e a matriz de recursos da versão que você usar. Para desenvolvimento e testes de aplicações que depois rodam em Oracle de produção, é uma ótima opção.</p>
+  <pre><code class="sh"># imagem oficial da Oracle (consulte a página da imagem para tag e variáveis atuais)
+docker run -d --name oracle-free \
+  -p 127.0.0.1:1521:1521 \
+  -e ORACLE_PWD='troque-esta-senha' \
+  -v oradata:/opt/oracle/oradata \
+  container-registry.oracle.com/database/free:latest
+
+docker logs -f oracle-free      # a primeira subida cria o banco e leva alguns minutos
+# aguarde a mensagem de que o banco está pronto e conecte ao PDB padrão
+sqlplus system/troque-esta-senha@localhost:1521/FREEPDB1</code></pre>
+  <ul>
+    <li><strong>Primeira subida lenta</strong> (criação do banco): healthcheck com <code>start_period</code> generoso e <code>depends_on: condition: service_healthy</code> no Compose (módulo 06).</li>
+    <li><strong>Dono dos arquivos:</strong> o processo do Oracle roda com um UID próprio da imagem. Com bind mount, o dono da pasta precisa coincidir (seção 2); com volume nomeado, isso é tratado na inicialização. Consulte a documentação da imagem para o UID.</li>
+    <li><strong>Tamanho:</strong> a imagem é grande (alguns GB) e o container consome memória relevante; em máquinas de desenvolvimento modestas, planeje os recursos.</li>
+    <li><strong>Versão do banco = versão do alvo.</strong> Um comportamento de SQL ou de PL/SQL que muda entre versões do Oracle só aparece se o container usar a mesma versão (ou próxima) da produção.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha: dado real de paciente em container de desenvolvimento</b><p>"Para reproduzir o bug, restaurei o dump de produção no meu Docker." Agora há dados de saúde em um notebook, em um volume que ninguém inventariou e em um backup esquecido numa pasta. Use dados fictícios, anonimizados ou pseudonimizados, e proíba dumps de produção fora do ambiente controlado.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Volume nomeado, versão fixada, porta em <code>127.0.0.1</code>, senha fora da imagem, backup pela ferramenta do banco e teste de restore. Se o negócio exige alta disponibilidade e recuperação ponto no tempo, esse trabalho tem dono: ou a equipe de plataforma, ou o serviço gerenciado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Você colocaria o banco de produção em Docker?" Resposta madura, sem dogma: "Em desenvolvimento e CI, sempre. Em produção, depende de quem opera. O container em si não prejudica o desempenho de forma relevante com volume, o problema é operacional: HA, backup, upgrade e tuning. Sem time para isso, prefiro um serviço gerenciado; com time, é viável com volume dedicado, desligamento limpo e backup testado."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Decisão de custo oculto: banco em container "de graça" vira horas de engenheiro em upgrades, backup e plantão. Compare o custo total com o serviço gerenciado e registre a decisão. Para ambientes de teste, a economia é real: banco efêmero por pipeline reduz conflito entre equipes e dados de teste "sujos".</p></div>
+</section>
+
+<section class="chap" id="redes">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Redes: bridge, host, none, macvlan e overlay</h2>
+  <p>Cada container tem seu próprio <strong>namespace de rede</strong>: interfaces, tabela de rotas e portas próprias. "Rede Docker" é a forma de escolher como esse namespace se liga ao host e aos demais containers. Os conceitos básicos (IP, NAT, portas, DNS) estão na trilha web: <a href="../web/01-internet.html">Web 01: Como a internet funciona</a> e <a href="../web/02-dns.html">Web 02: DNS e domínios</a>. Aqui só aparece o que é específico do Docker.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Driver</th><th>Como funciona</th><th>Quando usar</th></tr></thead>
+    <tbody>
+      <tr><td><code>bridge</code> (padrão, <code>docker0</code>)</td><td>Switch virtual no host; cada container recebe um IP privado e sai para fora por NAT.</td><td>Evite para aplicações: é a rede de quem não escolheu nada.</td></tr>
+      <tr><td><code>bridge</code> definida pelo usuário</td><td>Mesmo mecanismo, com <strong>DNS por nome</strong>, isolamento entre redes e conexão a quente.</td><td>Padrão para aplicações. É a que o Compose cria.</td></tr>
+      <tr><td><code>host</code></td><td>Sem namespace próprio: o container usa a pilha de rede do host. Sem NAT, sem <code>-p</code> (ignorado).</td><td>Desempenho de rede máximo ou aplicações que abrem muitas portas. Perde o isolamento.</td></tr>
+      <tr><td><code>none</code></td><td>Só a interface de loopback.</td><td>Jobs que não devem ter rede (processamento isolado, endurecimento).</td></tr>
+      <tr><td><code>macvlan</code> / <code>ipvlan</code></td><td>O container aparece na LAN física com IP e (macvlan) MAC próprios.</td><td>Legado que precisa de IP na rede da empresa. Raro e só em Linux.</td></tr>
+      <tr><td><code>overlay</code></td><td>Rede virtual (VXLAN) que une containers de <em>vários hosts</em>.</td><td>Swarm/multi-host. Prévia abaixo.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Bridge padrão versus bridge definida pelo usuário</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Duas redes bridge lado a lado: na padrão os containers só se encontram por IP, na definida pelo usuário o DNS embutido resolve nomes">
+      <defs><marker id="ah05c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">bridge padrão</text>
+      <text class="ttl" x="350" y="24">bridge definida pelo usuário</text>
+      <rect class="box" x="20" y="34" width="310" height="226" rx="6"/>
+      <rect class="box" x="40" y="52" width="120" height="48" rx="4"/><text x="100" y="72" text-anchor="middle">web</text><text class="lbl" x="100" y="90" text-anchor="middle">172.17.0.2</text>
+      <rect class="box" x="190" y="52" width="120" height="48" rx="4"/><text x="250" y="72" text-anchor="middle">api</text><text class="lbl" x="250" y="90" text-anchor="middle">172.17.0.3</text>
+      <line class="ln" x1="100" y1="100" x2="100" y2="140"/><line class="ln" x1="250" y1="100" x2="250" y2="140"/>
+      <rect class="box-a" x="40" y="140" width="270" height="30" rx="4"/><text x="175" y="160" text-anchor="middle">docker0 · 172.17.0.0/16</text>
+      <rect class="box-b" x="40" y="196" width="270" height="48" rx="4"/><text x="175" y="216" text-anchor="middle">web → ping api: não resolve</text><text class="lbl" x="175" y="234" text-anchor="middle">só por IP (ou o --link legado)</text>
+      <rect class="box" x="350" y="34" width="310" height="226" rx="6"/>
+      <rect class="box" x="370" y="52" width="120" height="48" rx="4"/><text x="430" y="72" text-anchor="middle">web</text><text class="lbl" x="430" y="90" text-anchor="middle">172.18.0.2</text>
+      <rect class="box" x="520" y="52" width="120" height="48" rx="4"/><text x="580" y="72" text-anchor="middle">api</text><text class="lbl" x="580" y="90" text-anchor="middle">172.18.0.3</text>
+      <line class="ln" x1="430" y1="100" x2="430" y2="140"/><line class="ln" x1="580" y1="100" x2="580" y2="140"/>
+      <rect class="box-a" x="370" y="140" width="270" height="30" rx="4"/><text x="505" y="160" text-anchor="middle">br-a1b2c3 · 172.18.0.0/16</text>
+      <rect class="box-a" x="370" y="196" width="270" height="48" rx="4"/><text x="505" y="216" text-anchor="middle">web → ping api: 172.18.0.3</text><text class="lbl" x="505" y="234" text-anchor="middle">DNS embutido do Docker (127.0.0.11)</text>
+    </svg>
+    <figcaption>Os endereços são exemplos. O DNS embutido atende cada container em 127.0.0.11 e encaminha o que não for nome de container ao DNS do host.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Característica</th><th>bridge padrão</th><th>bridge definida pelo usuário</th></tr></thead>
+    <tbody>
+      <tr><td>Resolução por nome de container</td><td><strong>Não</strong> (só IP, ou <code>--link</code> legado)</td><td><strong>Sim</strong> (nome do container e <code>--network-alias</code>)</td></tr>
+      <tr><td>Isolamento</td><td>Todos os containers sem rede explícita se enxergam</td><td>Só quem está na mesma rede se enxerga; redes diferentes ficam isoladas</td></tr>
+      <tr><td>Conectar/desconectar com o container rodando</td><td>Não</td><td>Sim: <code>docker network connect</code> / <code>disconnect</code></td></tr>
+      <tr><td>Configuração (sub-rede, gateway, MTU)</td><td>Global, no daemon</td><td>Por rede, na criação</td></tr>
+      <tr><td>Variáveis de ambiente compartilhadas</td><td>Só via <code>--link</code></td><td>Não há: use variáveis explícitas</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh">docker network create app-net
+docker run -d --name db  --network app-net -e POSTGRES_PASSWORD=dev postgres:17
+docker run -d --name api --network app-net -e DB_HOST=db -p 127.0.0.1:3000:3000 minha-api
+
+docker exec api getent hosts db
+# 172.18.0.2      db
+
+# um container em duas redes: ponte entre frontend e backend
+docker network create backend
+docker network connect backend api
+
+# rede sem saída para a internet (só comunicação interna)
+docker network create --internal so-interna
+
+# sub-rede e gateway explícitos (evita conflito com VPN e redes da empresa)
+docker network create --subnet 10.77.0.0/24 --gateway 10.77.0.1 app-net2</code></pre>
+  <ul>
+    <li><strong>Vários containers com o mesmo alias</strong> numa rede definida pelo usuário recebem resolução round-robin: uma forma simples de distribuição, sem health check.</li>
+    <li>O <strong>nome do container</strong> é o nome DNS. No Compose, o nome DNS é o do <strong>serviço</strong> (módulo 06).</li>
+    <li><strong>Conflito de sub-redes:</strong> o Docker escolhe sub-redes automaticamente em faixas privadas (como <code>172.x.0.0/16</code> e <code>192.168.x.0/20</code>). Se a VPN ou a rede da empresa usa a mesma faixa, o tráfego para o servidor interno "some" dentro do host. Sintoma: containers não acessam um sistema interno, ou a VPN derruba o acesso aos containers. Corrija com <code>default-address-pools</code> no <code>daemon.json</code> ou sub-redes explícitas por rede.</li>
+  </ul>
+
+  <h3>host, none, macvlan, ipvlan e overlay em resumo</h3>
+  <ul>
+    <li><strong><code>host</code>:</strong> <code>docker run --network host nginx</code> faz o nginx escutar direto na porta 80 do host. Sem NAT e sem <code>docker-proxy</code>: ganho de desempenho em alto volume de conexões, mas um container pode atrapalhar portas de outro e do host, e o isolamento de rede acaba. No Docker Desktop (Mac e Windows) o container está na VM, então "rede do host" é a rede da VM; versões recentes do Docker Desktop têm um suporte opcional a host networking que precisa ser habilitado, com restrições. Não conte com isso fora do Linux.</li>
+    <li><strong><code>none</code>:</strong> só <code>lo</code>. Útil para workloads que processam arquivos e não devem falar com ninguém.</li>
+    <li><strong><code>macvlan</code>:</strong> cada container ganha IP e MAC próprios na LAN física (<code>docker network create -d macvlan --subnet=192.168.1.0/24 --gateway=192.168.1.1 -o parent=eth0 lan</code>). Cuidados: o switch precisa aceitar vários MACs por porta (Wi-Fi geralmente não aceita); por padrão o <strong>host não consegue falar com seus próprios containers macvlan</strong>; é preciso gerenciar os IPs fora do DHCP. <strong><code>ipvlan</code></strong> é parecido, mas compartilha o MAC do host (modos L2 e L3), útil quando o switch limita MACs. Ambos são exclusivos de Linux e raros em aplicações novas.</li>
+    <li><strong><code>overlay</code> (prévia):</strong> rede virtual sobre VXLAN entre hosts diferentes, criada no modo Swarm (<code>docker network create -d overlay --attachable rede</code>). Containers em hosts distintos se falam pelo nome como se estivessem no mesmo switch. Requer portas abertas entre os hosts (2377/TCP, 7946 TCP e UDP, 4789/UDP) e tem criptografia opcional do tráfego de dados. Se o destino é Kubernetes, a rede é outro assunto (CNI); veja o módulo 10.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha: a bridge padrão "funciona" no teste e quebra depois</b><p>Dois containers sem <code>--network</code> se falam por IP, e o IP muda a cada recriação. Quem escreve o IP na configuração tem um sistema que quebra aleatoriamente. Sempre rede definida pelo usuário e sempre nomes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que dois containers na rede padrão não se enxergam pelo nome?" A bridge padrão (<code>docker0</code>) não tem o DNS embutido do Docker; só as redes definidas pelo usuário têm (o resolvedor em 127.0.0.11). Solução: <code>docker network create</code> e <code>--network</code>, ou Compose, que cria uma rede por projeto. Mencione também que redes diferentes isolam containers: dá para separar banco (rede interna) de proxy (rede de frente).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Segmentação de rede é controle de segurança barato: o banco numa rede <code>--internal</code> ou sem porta publicada reduz muito a superfície. Peça um desenho simples de redes por aplicação e cheque o conflito de sub-redes com a VPN antes que ele vire chamado de suporte ("o Docker derrubou minha VPN").</p></div>
+</section>
+
+<section class="chap" id="portas">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Publicação de portas e o que acontece por baixo</h2>
+  <p>Um container numa rede bridge tem um IP privado que só existe dentro do host. Para que algo <strong>de fora</strong> (seu navegador, outra máquina) o alcance, é preciso <strong>publicar</strong> a porta: pedir ao Docker que ligue uma porta do host a uma porta do container.</p>
+  <pre><code class="sh">-p 8080:80                 # host:8080 -> container:80, em TODAS as interfaces do host
+-p 127.0.0.1:8080:80       # só acessível da própria máquina
+-p 192.168.1.10:8080:80    # só pela interface com esse IP
+-p 80                      # porta aleatória no host (descubra com docker port)
+-p 8080:80/udp             # UDP em vez de TCP
+-p 8000-8010:8000-8010     # faixa de portas
+-P                         # publica todas as portas EXPOSE da imagem em portas aleatórias
+
+docker port web</code></pre>
+  <pre><code class="text">$ docker run -d --name web -p 8080:80 nginx
+$ docker ps --format 'table {{.Names}}\t{{.Ports}}'
+NAMES     PORTS
+web       0.0.0.0:8080-&gt;80/tcp, [::]:8080-&gt;80/tcp
+$ docker port web
+80/tcp -&gt; 0.0.0.0:8080
+80/tcp -&gt; [::]:8080</code></pre>
+  <div class="note trap"><b>Armadilha: <code>EXPOSE</code> não publica nada</b><p><code>EXPOSE 3000</code> no Dockerfile é <strong>documentação</strong>: diz a quem lê (e ao <code>-P</code>) em que porta a aplicação escuta. Não abre porta no host. Publicar é decisão de quem executa o container (<code>-p</code> ou <code>ports:</code>). Entre containers na mesma rede, <strong>nem é preciso publicar</strong>: eles se falam direto pela porta interna.</p></div>
+
+  <h3>Como funciona por baixo (Linux)</h3>
+  <p>No Linux, publicar uma porta é, essencialmente, uma <strong>regra de NAT do kernel</strong>. O Docker instala regras no <code>iptables</code> (as versões mais novas também têm suporte a <code>nftables</code>): na tabela <code>nat</code>, uma regra <strong>DNAT</strong> reescreve o destino dos pacotes que chegam na porta 8080 do host para o IP e a porta do container; uma regra <strong>MASQUERADE</strong> faz o caminho inverso para o tráfego que sai do container para a internet; e na tabela <code>filter</code> há cadeias próprias (<code>DOCKER</code>, <code>DOCKER-USER</code>, <code>DOCKER-ISOLATION-*</code>) que permitem ou bloqueiam o encaminhamento entre redes.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Caminho de um pacote vindo de fora até o container: interface do host, regra DNAT do iptables e container; e o caminho local pelo docker-proxy">
+      <defs><marker id="ah05d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">Tráfego vindo de fora (kernel, sem processo no caminho)</text>
+      <rect class="box" x="20" y="40" width="110" height="48" rx="4"/><text x="75" y="60" text-anchor="middle">cliente</text><text class="lbl" x="75" y="78" text-anchor="middle">192.168.0.10</text>
+      <rect class="box" x="170" y="40" width="140" height="48" rx="4"/><text x="240" y="60" text-anchor="middle">eth0 do host</text><text class="lbl" x="240" y="78" text-anchor="middle">destino :8080</text>
+      <rect class="box-w" x="350" y="40" width="150" height="48" rx="4"/><text x="425" y="60" text-anchor="middle">iptables (nat)</text><text class="lbl" x="425" y="78" text-anchor="middle">DNAT :8080 → 172.17.0.2:80</text>
+      <rect class="box-a" x="540" y="40" width="120" height="48" rx="4"/><text x="600" y="60" text-anchor="middle">container</text><text class="lbl" x="600" y="78" text-anchor="middle">:80 em 0.0.0.0</text>
+      <line class="ln-a" x1="130" y1="64" x2="168" y2="64" marker-end="url(#ah05d)"/>
+      <line class="ln-a" x1="310" y1="64" x2="348" y2="64" marker-end="url(#ah05d)"/>
+      <line class="ln-a" x1="500" y1="64" x2="538" y2="64" marker-end="url(#ah05d)"/>
+      <text class="ttl" x="20" y="136">Tráfego local (localhost e hairpin)</text>
+      <rect class="box" x="20" y="152" width="150" height="48" rx="4"/><text x="95" y="172" text-anchor="middle">curl no host</text><text class="lbl" x="95" y="190" text-anchor="middle">127.0.0.1:8080</text>
+      <rect class="box-m" x="230" y="152" width="170" height="48" rx="4"/><text x="315" y="172" text-anchor="middle">docker-proxy</text><text class="lbl" x="315" y="190" text-anchor="middle">processo em user space</text>
+      <rect class="box-a" x="540" y="152" width="120" height="48" rx="4"/><text x="600" y="172" text-anchor="middle">container</text><text class="lbl" x="600" y="190" text-anchor="middle">:80</text>
+      <line class="ln" x1="170" y1="176" x2="228" y2="176" marker-end="url(#ah05d)"/>
+      <line class="ln" x1="400" y1="176" x2="538" y2="176" marker-end="url(#ah05d)"/>
+      <text class="lbl" x="20" y="228">O docker-proxy (opção userland-proxy, ligada por padrão) cobre casos que o NAT sozinho não cobre bem.</text>
+      <text class="lbl" x="20" y="248">Com "userland-proxy": false no daemon.json o Docker dispensa o proxy e usa só regras do kernel.</text>
+    </svg>
+    <figcaption>Do lado de fora, quem trabalha é o NAT do kernel; o docker-proxy aparece em acessos locais e de "volta" do próprio host.</figcaption>
+  </figure>
+  <pre><code class="sh">sudo iptables -t nat -L DOCKER -n
+sudo iptables -t nat -L POSTROUTING -n | grep MASQUERADE
+sudo iptables -L DOCKER-USER -n      # cadeia reservada às SUAS regras; o Docker não a sobrescreve
+ps aux | grep docker-proxy           # um processo por porta publicada (se userland-proxy ligado)</code></pre>
+  <pre><code class="text">Chain DOCKER (2 references)
+target     prot opt source               destination
+RETURN     all  --  0.0.0.0/0            0.0.0.0/0
+DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:8080 to:172.17.0.2:80</code></pre>
+
+  <h3>Implicações práticas</h3>
+  <ul>
+    <li><strong>O Docker passa por cima do <code>ufw</code>/<code>firewalld</code> simples.</strong> As regras do Docker entram na frente das regras de firewall "normais" do host. Uma porta publicada com <code>-p 5432:5432</code> pode estar acessível da internet mesmo com o <code>ufw</code> bloqueando a 5432. Defesas: publicar com <code>127.0.0.1:</code>, não publicar o banco, e colocar regras de restrição na cadeia <code>DOCKER-USER</code> (ou usar um firewall de borda).</li>
+    <li><strong>A aplicação precisa escutar em <code>0.0.0.0</code></strong> dentro do container. Se escutar em <code>127.0.0.1</code>, só enxerga conexões do próprio container, e o <code>-p</code> não adianta (sintoma: "connection reset" ou conexão aceita e fechada). Em Node: <code>listen(3000, "0.0.0.0")</code>; em Flask: <code>--host 0.0.0.0</code>; em Spring: padrão já escuta em todas.</li>
+    <li><strong>Porta já em uso:</strong> <code>Bind for 0.0.0.0:5432 failed: port is already allocated</code> (outro container) ou <code>address already in use</code> (processo do host). Descubra o dono com <code>docker ps --filter publish=5432</code> e <code>ss -ltnp | grep 5432</code> (Linux), <code>lsof -i :5432</code> (Mac) ou <code>netstat -ano | findstr 5432</code> (Windows).</li>
+    <li><strong>Docker Desktop:</strong> não há iptables no seu Windows ou Mac; o Docker Desktop encaminha a porta do host para a VM. O comportamento visível (<code>localhost:8080</code> funciona) é igual, mas os detalhes de firewall e de IP do container acima valem só para Linux.</li>
+    <li><strong>Em produção</strong>, publique só o ponto de entrada (proxy reverso, balanceador) e deixe o resto em rede interna. Banco publicado na internet é incidente à espera de acontecer.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"O que o <code>-p 8080:80</code> faz?" Cria no host uma regra de NAT (DNAT) que encaminha o tráfego da porta 8080 do host para a porta 80 do IP privado do container, por padrão em todas as interfaces; <code>127.0.0.1:8080:80</code> restringe à máquina local. E: "EXPOSE publica?" Não, é só documentação. Se ainda sobrar tempo, mencione o docker-proxy e o fato de o Docker contornar o ufw.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Incluir no checklist de revisão: "quais portas esta aplicação publica e por quê?". Auditoria simples: <code>docker ps --format '{{.Names}} {{.Ports}}'</code> nos servidores, procurando <code>0.0.0.0:</code> em portas de banco, cache ou administração. Em ambientes regulados (dados de saúde), exposição indevida de porta é o tipo de falha que vira incidente reportável.</p></div>
+</section>
+
+<section class="chap" id="comunicacao-ipv6">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Comunicação entre containers, com o host e IPv6</h2>
+  <h3>Quem fala com quem e como</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Origem → destino</th><th>Endereço a usar</th><th>Precisa de <code>-p</code>?</th></tr></thead>
+    <tbody>
+      <tr><td>container → container (mesma rede definida pelo usuário)</td><td>Nome do container/serviço e porta <strong>interna</strong>: <code>db:5432</code></td><td>Não</td></tr>
+      <tr><td>container → container (redes diferentes)</td><td>Não se enxergam. Coloque ambos numa rede em comum.</td><td>Não resolve</td></tr>
+      <tr><td>host → container</td><td><code>localhost:PORTA_PUBLICADA</code> (no Linux também o IP do container, que não é estável)</td><td><strong>Sim</strong></td></tr>
+      <tr><td>container → serviço rodando no host</td><td><code>host.docker.internal:PORTA</code></td><td>Não</td></tr>
+      <tr><td>container → internet</td><td>Nome ou IP normais; sai por NAT</td><td>Não</td></tr>
+      <tr><td>outra máquina → container</td><td><code>IP_DO_HOST:PORTA_PUBLICADA</code></td><td><strong>Sim</strong> (sem <code>127.0.0.1:</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>O erro do <code>localhost</code></h3>
+  <p>Dentro de um container, <code>localhost</code> é <strong>o próprio container</strong>. Dois erros clássicos:</p>
+  <ol>
+    <li>A API tenta o banco em <code>localhost:5432</code>. Errado: no Compose, use o nome do serviço (<code>db:5432</code>). No sintoma, aparece <code>connection refused</code>, porque dentro do container da API nada escuta em 5432.</li>
+    <li>A aplicação escuta em <code>127.0.0.1</code> (ver seção 6): ela só aceita conexões de dentro do container.</li>
+  </ol>
+  <h3>Acessar o host: <code>host.docker.internal</code></h3>
+  <pre><code class="sh"># Docker Desktop (Mac e Windows): o nome já existe
+docker run --rm curlimages/curl -s http://host.docker.internal:8000/health
+
+# Linux: mapeie o nome para o gateway do host
+docker run --rm --add-host=host.docker.internal:host-gateway curlimages/curl \
+  -s http://host.docker.internal:8000/health</code></pre>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  api:
+    image: minha-api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # necessário no Linux; inofensivo no Desktop</code></pre>
+  <ul>
+    <li>No Linux, o serviço do host precisa escutar numa interface alcançável a partir da bridge (<code>0.0.0.0</code> ou o IP da bridge), não apenas em <code>127.0.0.1</code>: o container chega ao host pelo IP do gateway da bridge, e um serviço restrito ao loopback do host recusa a conexão.</li>
+    <li>Use isso para falar com um banco, um mock ou uma API local que roda fora do Docker durante o desenvolvimento. Em produção, <strong>não</strong> dependa do host: coloque o serviço na rede Docker ou use um endereço de rede estável.</li>
+  </ul>
+
+  <h3>IPv6 em resumo</h3>
+  <ul>
+    <li>O Docker <strong>não habilita IPv6 por padrão</strong> nas redes de containers: a rede bridge nasce só com IPv4.</li>
+    <li>Numa rede definida pelo usuário: <code>docker network create --ipv6 --subnet 2001:db8:1::/64 rede6</code> (o prefixo é de documentação; use um seu ou uma faixa ULA). Para a bridge padrão, ligue <code>"ipv6": true</code> e informe <code>fixed-cidr-v6</code> no <code>daemon.json</code>.</li>
+    <li>O suporte a IPv6 (publicação de portas, NAT e firewall) evoluiu nas versões recentes do Docker Engine. Confira a documentação da versão instalada antes de depender de detalhes. Em dúvida, mantenha o IPv4 e trate IPv6 como projeto à parte.</li>
+    <li>Cuidado inverso: se o host tem IPv6 e o nome resolve para IPv6 mas o container não tem rota, a conexão tenta o IPv6 primeiro e demora até cair no IPv4. Sintoma: lentidão de alguns segundos em chamadas externas.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Container fala com container por <strong>nome e porta interna</strong>; humano fala com container por <strong>porta publicada</strong>; container fala com o host por <code>host.docker.internal</code> (só em desenvolvimento).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Minha API em container não conecta ao banco em <code>localhost</code>. Por quê?" Porque <code>localhost</code> dentro do container é o próprio container. Use o nome do serviço do banco na mesma rede; se o banco estiver no host, <code>host.docker.internal</code> (com <code>host-gateway</code> no Linux).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Cobre configuração por variável de ambiente (host, porta, usuário) em vez de endereços fixos no código, e uma convenção de nomes de serviço. Isso torna a mesma imagem utilizável em desenvolvimento, homologação e produção, e elimina a classe de bugs "funciona na minha máquina porque o banco estava em localhost".</p></div>
+</section>
+
+<section class="chap" id="diagnostico-rede">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Diagnóstico de rede</h2>
+  <p>Problemas de rede em containers se resolvem com um método, de dentro para fora. Imagens de produção costumam ser enxutas (Alpine, distroless) e não têm <code>curl</code>, <code>dig</code> nem <code>ss</code>. Em vez de instalar ferramentas na imagem de produção, use um <strong>container de depuração</strong> que entra no mesmo namespace de rede.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Container netshoot compartilhando o namespace de rede do container api, com acesso ao banco e ao DNS embutido">
+      <defs><marker id="ah05e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">Namespace de rede de "api"</text>
+      <rect class="box-a" x="20" y="34" width="380" height="140" rx="6"/>
+      <rect class="box" x="36" y="50" width="160" height="48" rx="4"/><text x="116" y="70" text-anchor="middle">api</text><text class="lbl" x="116" y="88" text-anchor="middle">sem shell (distroless)</text>
+      <rect class="box-w" x="216" y="50" width="168" height="48" rx="4"/><text x="300" y="70" text-anchor="middle">netshoot</text><text class="lbl" x="300" y="88" text-anchor="middle">curl dig ss tcpdump</text>
+      <text x="36" y="132" >eth0 172.18.0.2 · resolv 127.0.0.11</text>
+      <text class="lbl" x="36" y="156">mesmas interfaces, rotas e DNS da api</text>
+      <rect class="box" x="470" y="44" width="190" height="48" rx="4"/><text x="565" y="64" text-anchor="middle">db:5432</text><text class="lbl" x="565" y="82" text-anchor="middle">172.18.0.3</text>
+      <rect class="box" x="470" y="116" width="190" height="48" rx="4"/><text x="565" y="136" text-anchor="middle">DNS embutido</text><text class="lbl" x="565" y="154" text-anchor="middle">nome → IP do container</text>
+      <line class="ln-a" x1="402" y1="68" x2="468" y2="68" marker-end="url(#ah05e)"/>
+      <line class="ln-a" x1="402" y1="140" x2="468" y2="140" marker-end="url(#ah05e)"/>
+      <text x="20" y="206">docker run --rm -it --network container:api nicolaka/netshoot</text>
+    </svg>
+    <figcaption>A opção <code>--network container:NOME</code> faz o container novo usar o namespace de rede do existente.</figcaption>
+  </figure>
+
+  <h3>Roteiro de diagnóstico</h3>
+  <ol class="seq">
+    <li><div><strong>O container está de pé e na rede certa?</strong> <code>docker ps</code>, <code>docker logs</code> e <code>docker inspect</code>. Um container reiniciando em loop não é problema de rede.</div></li>
+    <li><div><strong>Quem está em qual rede, com qual IP?</strong> <code>docker network inspect app-net</code>. Se origem e destino estão em redes diferentes, é isso.</div></li>
+    <li><div><strong>O nome resolve?</strong> <code>nslookup db</code> ou <code>dig db</code> de dentro do namespace. Falhou: bridge padrão, rede errada ou nome diferente do serviço.</div></li>
+    <li><div><strong>A porta responde?</strong> <code>curl -v http://api:3000/health</code> ou <code>nc -zv db 5432</code>. <em>Refused</em> = nada escutando (porta errada ou escutando em 127.0.0.1); <em>timeout</em> = rota ou firewall; <em>no route</em> = redes isoladas.</div></li>
+    <li><div><strong>A aplicação escuta onde deveria?</strong> <code>ss -ltnp</code> no namespace do destino: veja se é <code>0.0.0.0:3000</code> ou <code>127.0.0.1:3000</code>.</div></li>
+    <li><div><strong>De fora do container (porta publicada)?</strong> <code>docker port NOME</code>, <code>curl localhost:PORTA</code> no host; no Linux, as regras com <code>iptables -t nat -L DOCKER -n</code>.</div></li>
+  </ol>
+  <pre><code class="sh">docker network ls
+docker network inspect app-net
+docker network inspect app-net --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{"\n"}}{{end}}'
+docker inspect api --format '{{range $n, $c := .NetworkSettings.Networks}}{{$n}} {{$c.IPAddress}}{{"\n"}}{{end}}'
+
+# ferramentas dentro do namespace da api, sem tocar na imagem dela
+docker run --rm -it --network container:api nicolaka/netshoot
+#   dentro do netshoot:
+#   nslookup db              # resolução pelo DNS embutido
+#   dig +short db            # só o IP
+#   curl -sv http://localhost:3000/health   # a própria api (mesmo namespace)
+#   nc -zv db 5432           # a porta do banco está aberta?
+#   ss -ltnp                 # quem escuta o quê
+#   tcpdump -i eth0 -n port 5432            # tráfego real até o banco
+
+# ou entre na rede como um container novo, sem compartilhar o namespace da api
+docker run --rm -it --network app-net nicolaka/netshoot</code></pre>
+  <pre><code class="text">$ docker network inspect app-net --format '{{json .IPAM.Config}}'
+[{"Subnet":"172.18.0.0/16","Gateway":"172.18.0.1"}]
+$ docker network inspect app-net --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{"\n"}}{{end}}'
+db 172.18.0.3/16
+api 172.18.0.2/16
+$ nslookup db            # dentro do netshoot
+Server:         127.0.0.11
+Address:        127.0.0.11#53
+
+Non-authoritative answer:
+Name:   db
+Address: 172.18.0.3</code></pre>
+  <p>Se um nome não resolve fora do Docker (um domínio da empresa, via VPN), lembre que o DNS embutido encaminha ao DNS do host: confira <code>cat /etc/resolv.conf</code> no container e, se necessário, defina <code>--dns</code> ou <code>dns:</code> no Compose. Para os conceitos de resolução, TTL e cache, volte a <a href="../web/02-dns.html">Web 02: DNS e domínios</a>; para <code>curl</code>, <code>ss</code>, portas e <code>tcpdump</code> no modelo TCP/IP, veja <a href="../web/01-internet.html">Web 01: Como a internet funciona</a>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Sintoma</th><th>Causa provável</th><th>Teste</th></tr></thead>
+    <tbody>
+      <tr><td><code>could not resolve host</code> / <code>Name or service not known</code></td><td>Rede padrão, redes diferentes, nome errado</td><td><code>docker network inspect</code>, <code>nslookup</code></td></tr>
+      <tr><td><code>connection refused</code></td><td>Processo não escuta na porta ou escuta só em 127.0.0.1; serviço ainda subindo</td><td><code>ss -ltnp</code> no destino, logs</td></tr>
+      <tr><td>Timeout</td><td>Firewall, rede isolada, sub-rede em conflito com a VPN</td><td><code>nc -zv</code>, <code>tcpdump</code>, rotas (<code>ip route</code>)</td></tr>
+      <tr><td>Funciona de container para container, mas não do navegador</td><td>Porta não publicada, ou publicada em 127.0.0.1 numa máquina remota</td><td><code>docker port</code>, <code>docker ps</code></td></tr>
+      <tr><td>Lentidão de alguns segundos em chamadas externas</td><td>DNS (resolver lento ou IPv6 sem rota)</td><td><code>time nslookup</code>, <code>curl -4</code> vs <code>-6</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha: instalar ferramentas na imagem de produção</b><p>"Vou rodar <code>apt install curl</code> no container para testar." Some quando o container for recriado, aumenta a superfície de ataque se virar parte da imagem e esconde a causa. Prefira o container de depuração externo; em produção, o <code>docker debug</code> (Docker Desktop e versões recentes do CLI, recurso de assinatura) ou <code>kubectl debug</code> em Kubernetes cumprem o mesmo papel.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você depura rede de um container distroless?" Com um container auxiliar que compartilha o namespace de rede (<code>--network container:alvo</code>) usando uma imagem de ferramentas como <code>nicolaka/netshoot</code>. Então: <code>nslookup</code> para DNS, <code>curl</code>/<code>nc</code> para portas, <code>ss</code> para quem escuta, <code>tcpdump</code> para o tráfego. Seguir de dentro para fora e provar uma camada por vez é o que o entrevistador quer ouvir.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tenha um runbook curto de diagnóstico de rede no wiki (o roteiro acima, com os comandos do seu ambiente) e uma imagem de depuração aprovada pela segurança. Isso reduz o tempo de resolução e evita que, na pressa, alguém abra uma porta ou rode o container como root "só para testar".</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios para fazer no terminal (Linux, Mac ou WSL 2). Tente antes de abrir a resolução.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Prove que a camada gravável é efêmera e que o volume sobrevive. Grave um arquivo em um container sem volume, remova o container e verifique; depois repita com um volume nomeado.</span></summary><div class="ans">
+<pre><code class="sh"># sem volume
+docker run --name teste1 alpine sh -c 'echo ola &gt; /dados.txt'
+docker start -a teste1 ; docker cp teste1:/dados.txt - | head -c 20    # existe enquanto o container existe
+docker rm teste1
+docker run --rm alpine cat /dados.txt                                   # erro: o arquivo não existe numa instância nova
+
+# com volume
+docker volume create dados
+docker run --rm -v dados:/d alpine sh -c 'echo ola &gt; /d/dados.txt'     # --rm remove o container...
+docker run --rm -v dados:/d alpine cat /d/dados.txt                     # ...e o arquivo continua: "ola"
+docker volume rm dados</code></pre>
+  <p>O arquivo gravado na camada gravável some junto com o container; o do volume sobrevive a quantos containers forem removidos, enquanto o volume existir.</p></div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Monte uma pasta do host como somente leitura, tente gravar nela e depois monte como leitura e escrita observando o dono do arquivo criado. Em seguida faça o container escrever com o seu UID.</span></summary><div class="ans">
+<pre><code class="sh">mkdir -p lab && cd lab && echo conf &gt; app.conf
+
+# somente leitura: a escrita falha
+docker run --rm -v "$(pwd)":/cfg:ro alpine sh -c 'touch /cfg/novo'
+# touch: /cfg/novo: Read-only file system
+
+# leitura e escrita, como root (padrão): arquivo criado com dono 0
+docker run --rm -v "$(pwd)":/cfg alpine touch /cfg/como-root
+ls -ln          # dono 0 (root) no host (em Mac/Windows os donos são traduzidos)
+
+# com o seu UID/GID
+docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/cfg alpine touch /cfg/como-eu
+ls -ln          # dono = seu UID
+
+# limpeza (os arquivos de root podem exigir sudo no Linux)
+cd .. && sudo rm -rf lab</code></pre>
+  <p>Lição: o kernel compara números. Quem define o dono é o UID do processo, e não o nome do usuário.</p></div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Faça backup de um volume com tar, destrua o original e restaure em um volume novo. Valide o conteúdo.</span></summary><div class="ans">
+<pre><code class="sh">docker volume create origem
+docker run --rm -v origem:/d alpine sh -c 'echo a &gt; /d/a.txt; echo b &gt; /d/b.txt'
+
+# backup
+docker run --rm -v origem:/d:ro -v "$(pwd)":/b alpine tar czf /b/origem.tgz -C /d .
+tar tzf origem.tgz          # ./  ./a.txt  ./b.txt
+
+# destrói o original e restaura em um volume novo
+docker volume rm origem
+docker volume create restaurado
+docker run --rm -v restaurado:/d -v "$(pwd)":/b:ro alpine tar xzf /b/origem.tgz -C /d
+docker run --rm -v restaurado:/d:ro alpine sh -c 'cat /d/a.txt /d/b.txt'   # a  b
+
+docker volume rm restaurado; rm origem.tgz</code></pre>
+  <p>No Git Bash (Windows), defina <code>MSYS_NO_PATHCONV=1</code> antes dos comandos. Pergunta de reflexão: por que esse método não serve para um Postgres em execução?</p></div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Mostre a diferença entre a bridge padrão e uma rede definida pelo usuário: dois containers que tentam se encontrar pelo nome em cada uma.</span></summary><div class="ans">
+<pre><code class="sh"># bridge padrão
+docker run -d --name a1 alpine sleep 600
+docker run --rm alpine ping -c1 a1
+# ping: bad address 'a1'
+
+# rede definida pelo usuário
+docker network create lab-net
+docker run -d --name a2 --network lab-net alpine sleep 600
+docker run --rm --network lab-net alpine ping -c1 a2
+# 64 bytes from 172.x.0.2: seq=0 ttl=64 time=0.1 ms
+
+docker network inspect lab-net --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{"\n"}}{{end}}'
+
+docker rm -f a1 a2 ; docker network rm lab-net</code></pre>
+  <p>Na rede padrão não há DNS por nome; na definida pelo usuário o resolvedor embutido (127.0.0.11) atende.</p></div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Publique um nginx de três formas (<code>-p 8080:80</code>, <code>127.0.0.1:8081:80</code>, <code>-P</code>) e confira com <code>docker ps</code> e <code>docker port</code>. Depois explique por que um <code>EXPOSE</code> sozinho não torna o container acessível.</span></summary><div class="ans">
+<pre><code class="sh">docker run -d --name n1 -p 8080:80 nginx
+docker run -d --name n2 -p 127.0.0.1:8081:80 nginx
+docker run -d --name n3 -P nginx          # nginx já declara EXPOSE 80; o Docker escolhe a porta do host
+
+docker ps --format 'table {{.Names}}\t{{.Ports}}'
+docker port n3
+curl -sI localhost:8080 | head -1         # HTTP/1.1 200 OK
+
+# de outra máquina da LAN: n1 responde (todas as interfaces), n2 não (só loopback)
+
+docker rm -f n1 n2 n3</code></pre>
+  <p>O <code>EXPOSE</code> só registra a porta nos metadados da imagem. Sem <code>-p</code>, <code>-P</code> ou <code>ports:</code>, não existe regra de NAT nem porta aberta no host.</p></div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Simule o clássico "escuta em 127.0.0.1" e diagnostique com netshoot. Suba um servidor que escuta só no loopback do container, publique a porta e mostre que a conexão falha; depois corrija.</span></summary><div class="ans">
+<pre><code class="sh"># servidor Python que escuta SÓ em 127.0.0.1:8000 dentro do container
+docker run -d --name srv -p 8000:8000 python:3.13-alpine \
+  python -m http.server 8000 --bind 127.0.0.1
+
+curl -s -o /dev/null -w '%{http_code}\n' localhost:8000     # 000: conexão resetada/recusada
+
+# diagnóstico: quem escuta onde?
+docker run --rm --network container:srv nicolaka/netshoot ss -ltn
+# LISTEN 0 5 127.0.0.1:8000 0.0.0.0:*      &lt;-- só loopback
+
+# correção: escutar em todas as interfaces
+docker rm -f srv
+docker run -d --name srv -p 8000:8000 python:3.13-alpine \
+  python -m http.server 8000 --bind 0.0.0.0
+curl -s -o /dev/null -w '%{http_code}\n' localhost:8000     # 200
+docker rm -f srv</code></pre>
+  <p>O <code>ss</code> mostrou o endereço de escuta; a causa estava na aplicação, não na rede nem no <code>-p</code>.</p></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <h3>1. "Atualizamos a imagem do banco de homologação e os dados sumiram"</h3>
+  <p>O time trocou a tag da imagem e recriou o container; o banco voltou vazio.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Verifique se o diretório de dados estava num <strong>volume nomeado</strong> (<code>docker inspect</code> e a seção <code>Mounts</code>). Se estava anônimo, os dados ainda podem existir num volume com nome hash: <code>docker volume ls</code> e abra o conteúdo com um container auxiliar.</li>
+    <li>Se foi troca de <strong>versão maior</strong> do Postgres, o container novo se recusa a subir com o volume antigo (formato diferente): volte à imagem anterior, faça dump e restaure na versão nova.</li>
+    <li>Corrija a causa: volume nomeado explícito, tag de versão fixada, backup antes de qualquer troca de imagem e procedimento escrito de upgrade.</li>
+  </ul></div>
+  <h3>2. "A API não conecta no banco: connection refused em localhost:5432"</h3>
+  <p>Funciona fora do Docker; dentro, falha.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Explique o erro: <code>localhost</code> no container da API é a própria API. Use o <strong>nome do serviço/container do banco</strong> na mesma rede definida pelo usuário (<code>db:5432</code>).</li>
+    <li>Se o banco está mesmo no host (desenvolvimento), use <code>host.docker.internal</code> (com <code>extra_hosts: host-gateway</code> no Linux) e confirme que o banco aceita conexões fora do loopback.</li>
+    <li>Parametrize host, porta e credenciais por variáveis de ambiente, para não existir código dependente do ambiente.</li>
+  </ul></div>
+  <h3>3. "A auditoria achou o Postgres respondendo da internet, e o ufw bloqueava a porta"</h3>
+  <p>Um <code>-p 5432:5432</code> esquecido no servidor.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Contenção imediata: recriar o container sem a publicação (ou com <code>127.0.0.1:5432:5432</code>) e conferir de fora com um scan de portas. Troque as credenciais e revise os logs de acesso: se houve exposição de dados de saúde, acione o processo de incidente (LGPD).</li>
+    <li>Explique ao time que o Docker escreve suas regras de NAT antes das do <code>ufw</code>: o firewall "não via" o tráfego.</li>
+    <li>Prevenção: banco em rede interna sem <code>ports:</code>; restrições na cadeia <code>DOCKER-USER</code>; firewall de borda (security group); revisão de <code>docker ps</code> como parte do checklist de deploy.</li>
+  </ul></div>
+  <h3>4. "Depois que instalamos o Docker, a VPN parou / servidor interno some"</h3>
+  <p>Containers não acessam um sistema interno ou a máquina perdeu acesso à rede da empresa.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Compare as sub-redes: <code>docker network inspect bridge</code> e <code>ip route</code> contra a faixa usada pela VPN/rede interna. A sobreposição faz o tráfego ir para a bridge local em vez da rede da empresa.</li>
+    <li>Defina <code>default-address-pools</code> no <code>daemon.json</code> com uma faixa livre, ou sub-redes explícitas nas redes do Compose; recrie as redes.</li>
+    <li>Documente a faixa reservada ao Docker no padrão de rede da empresa, para valer para todos os desenvolvedores e servidores.</li>
+  </ul></div>
+  <h3>5. "No Mac funciona; no CI Linux dá permission denied no volume"</h3>
+  <p>O mesmo compose, o mesmo código, comportamentos diferentes.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>No Docker Desktop, a camada de compartilhamento mascara os donos; no Linux do CI, UID do processo e dono da pasta precisam coincidir. Confirme com <code>id</code> no container e <code>ls -ln</code> na pasta.</li>
+    <li>Corrija sem <code>chmod 777</code>: rodar com <code>user: "${UID}:${GID}"</code> exportado pelo CI, <code>chown</code> do dono correto na pasta, ou trocar o bind mount por volume nomeado.</li>
+    <li>Garanta que a imagem funciona como usuário não root e padronize isso no template do projeto.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Camada gravável</dt><dd>Camada de leitura e escrita criada com o container, por cima das camadas somente leitura da imagem. Some com o container.</dd></div>
+    <div><dt>Copy-on-write</dt><dd>Técnica do storage driver: um arquivo da imagem só é copiado para a camada gravável quando alguém o modifica.</dd></div>
+    <div><dt>Volume nomeado</dt><dd>Armazenamento gerenciado pelo Docker, com ciclo de vida independente dos containers.</dd></div>
+    <div><dt>Bind mount</dt><dd>Montagem de um caminho específico do host dentro do container.</dd></div>
+    <div><dt>tmpfs</dt><dd>Montagem em memória RAM: rápida, não persiste e some ao parar o container.</dd></div>
+    <div><dt>Volume anônimo</dt><dd>Volume criado sem nome (por exemplo, via <code>VOLUME</code> no Dockerfile); difícil de rastrear e fonte de lixo.</dd></div>
+    <div><dt>UID/GID</dt><dd>Identificadores numéricos de usuário e grupo que o kernel usa para decidir permissões em arquivos.</dd></div>
+    <div><dt>Bridge</dt><dd>Switch virtual do host ao qual os containers se ligam; a padrão é <code>docker0</code>.</dd></div>
+    <div><dt>DNS embutido</dt><dd>Resolvedor do Docker em 127.0.0.11 dentro dos containers de redes definidas pelo usuário; resolve nomes de containers e serviços.</dd></div>
+    <div><dt>NAT / DNAT</dt><dd>Reescrita de endereços de pacotes; o DNAT troca o destino (porta do host para IP:porta do container).</dd></div>
+    <div><dt>docker-proxy</dt><dd>Processo em user space que encaminha conexões de portas publicadas em alguns casos locais; pode ser desligado.</dd></div>
+    <div><dt>macvlan / ipvlan</dt><dd>Drivers que colocam containers diretamente na LAN física, com MAC próprio (macvlan) ou MAC do host (ipvlan).</dd></div>
+    <div><dt>overlay</dt><dd>Rede virtual (VXLAN) que conecta containers de vários hosts.</dd></div>
+    <div><dt>netshoot</dt><dd>Imagem de depuração (<code>nicolaka/netshoot</code>) com curl, dig, ss, tcpdump e outras ferramentas de rede.</dd></div>
+    <div><dt>host.docker.internal</dt><dd>Nome que resolve para o host a partir do container (automático no Docker Desktop; no Linux requer <code>host-gateway</code>).</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Entrevista</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>Por que os dados de um container se perdem e como evitar?</span></summary><div class="ans"><p>Porque ficam na camada gravável, que é criada com o container e removida com ele (<code>docker rm</code>). Para persistir, monte um volume nomeado (ou um bind mount) no diretório de dados. Em banco de dados, é obrigatório nomear o volume, para não criar um anônimo novo a cada recriação.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre volume nomeado, bind mount e tmpfs?</span></summary><div class="ans"><p>Volume: gerenciado pelo Docker (<code>/var/lib/docker/volumes</code>), portátil entre sistemas, preenchido a partir da imagem; para dados persistentes. Bind mount: um caminho do host; para código em desenvolvimento e configuração, dependente do host. tmpfs: memória RAM, não persiste, ótimo para temporários e segredos que não devem tocar o disco.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Quando usar <code>--mount</code> em vez de <code>-v</code>?</summary><div class="ans"><p>Quando se quer clareza e segurança: <code>--mount</code> é explícito (<code>type=</code>, <code>source=</code>, <code>target=</code>) e <strong>falha</strong> se a origem de um bind mount não existir, enquanto o <code>-v</code> cria uma pasta (como root) em silêncio. A documentação recomenda <code>--mount</code>; <code>-v</code> continua válido pela brevidade.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>O que acontece quando monto um volume vazio sobre um diretório que a imagem já tinha? E um bind mount?</span></summary><div class="ans"><p>O volume nomeado vazio é populado com o conteúdo da imagem naquele caminho (na primeira montagem). O bind mount não é populado: esconde o conteúdo da imagem e mostra a pasta do host, vazia ou não. Daí o clássico de montar <code>./</code> sobre <code>/app</code> e esconder as dependências instaladas na imagem.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>O container não consegue gravar na pasta montada. Como você investiga?</span></summary><div class="ans"><p>Verifico o UID do processo (<code>docker exec ... id</code>) e o dono e as permissões da pasta no host (<code>ls -ln</code>). No Linux são números que precisam coincidir. Resolvo com <code>--user</code> igual ao UID do host, <code>chown</code> correto, ou volume nomeado. Em RHEL/Fedora, checo SELinux (<code>:z</code>). Evito <code>chmod 777</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Onde ficam fisicamente os volumes? E no Docker Desktop?</span></summary><div class="ans"><p>No Linux, em <code>/var/lib/docker/volumes/&lt;nome&gt;/_data</code> (via <code>docker volume inspect</code>). No Docker Desktop, dentro do disco da VM Linux em que o motor roda, não no sistema de arquivos do Mac ou do Windows; para ver o conteúdo, uso a interface do Docker Desktop ou um container auxiliar que monte o volume.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Como fazer backup e restore de um volume?</span></summary><div class="ans"><p>Container temporário com o volume em <code>:ro</code> e uma pasta do host, rodando <code>tar czf</code>; restore em volume novo com <code>tar xzf</code>. Para banco rodando, a ferramenta do banco (<code>pg_dump</code>, <code>pg_basebackup</code>, Data Pump/RMAN), porque a cópia de arquivos com o banco ativo é inconsistente. E testar o restore periodicamente.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Por que a rede bridge padrão não resolve nomes e a definida pelo usuário resolve?</span></summary><div class="ans"><p>Só as redes definidas pelo usuário recebem o DNS embutido do Docker (127.0.0.11), que mapeia nomes de containers e aliases para IPs. A <code>docker0</code> é um legado: só IP (ou <code>--link</code>, obsoleto). O Compose cria uma rede definida pelo usuário por projeto, e por isso funciona por nome.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Qual a diferença entre <code>EXPOSE</code> e <code>-p</code>?</summary><div class="ans"><p><code>EXPOSE</code> é documentação de metadado: declara a porta em que a aplicação escuta (e alimenta o <code>-P</code>). <code>-p host:container</code> publica de fato, criando a regra de NAT do host para o container. Entre containers na mesma rede não é preciso publicar nem <code>EXPOSE</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como o <code>-p</code> funciona por baixo no Linux?</span></summary><div class="ans"><p>O Docker cria regras de iptables: uma DNAT na tabela <code>nat</code> que reescreve o destino (porta do host para IP:porta do container) e MASQUERADE para o tráfego de saída; também há regras de filtro nas cadeias <code>DOCKER*</code>. Para alguns acessos locais e hairpin existe o docker-proxy, em user space. Por isso a porta publicada contorna o <code>ufw</code>, e a restrição deve ir em <code>DOCKER-USER</code> ou no bind <code>127.0.0.1:</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Minha aplicação em container escuta em 127.0.0.1 e o <code>-p</code> não funciona. Por quê?</span></summary><div class="ans"><p>Porque o tráfego publicado chega pela interface <code>eth0</code> do container, e a aplicação, presa ao loopback, só aceita conexões de dentro do próprio container. Ela precisa escutar em <code>0.0.0.0</code>. Confirmo com <code>ss -ltn</code> dentro do namespace do container.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como um container acessa um serviço que roda no host?</span></summary><div class="ans"><p>Por <code>host.docker.internal</code>, que no Docker Desktop já existe; no Linux, adiciono <code>--add-host=host.docker.internal:host-gateway</code> (ou <code>extra_hosts</code> no Compose). O serviço no host precisa aceitar conexões fora do loopback. É prática de desenvolvimento, e não de produção.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Quando você usaria <code>host</code>, <code>macvlan</code> e <code>overlay</code>?</summary><div class="ans"><p><code>host</code>: desempenho máximo de rede ou muitas portas, aceitando perder isolamento (Linux). <code>macvlan</code>: legado que precisa de IP próprio na LAN, com limitações (host não alcança os containers por padrão, switch precisa aceitar vários MACs). <code>overlay</code>: comunicação entre containers em hosts diferentes (Swarm); em Kubernetes quem faz isso é o CNI.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Um container distroless não tem curl nem shell. Como você depura a rede dele?</span></summary><div class="ans"><p>Subo um container de ferramentas que compartilha o namespace de rede dele: <code>docker run --rm -it --network container:alvo nicolaka/netshoot</code>. De lá uso <code>nslookup</code>/<code>dig</code> (DNS), <code>curl</code>/<code>nc</code> (porta), <code>ss</code> (quem escuta) e <code>tcpdump</code> (tráfego), em ordem, de dentro para fora.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Você colocaria o banco de produção em container?</span></summary><div class="ans"><p>Em desenvolvimento e CI, sempre. Em produção, depende de quem opera: o container não é o problema, e sim HA, backup, upgrade de versão e tuning. Com volume dedicado, desligamento limpo, backup testado e time capaz, é viável em instância única; para alta disponibilidade e PITR, prefiro serviço gerenciado ou um operador maduro. Registro a decisão e o custo.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Containers sem acesso a um sistema interno depois de conectar a VPN. Qual a hipótese principal?</span></summary><div class="ans"><p>Sobreposição de sub-redes: a faixa que o Docker escolheu para a bridge coincide com a da VPN ou da rede da empresa, e o tráfego é roteado para a rede local do Docker. Corrijo com <code>default-address-pools</code> no <code>daemon.json</code> ou com sub-redes explícitas nas redes, e padronizo a faixa com a equipe de rede.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Gestão: que regras você exigiria do time para dados e portas em containers?</span></summary><div class="ans"><p>Todo serviço com estado tem volume nomeado documentado, backup pela ferramenta do banco e teste de restore com registro; versões de imagem fixadas; nenhum banco publicado em <code>0.0.0.0</code>; segmentação de redes (banco em rede interna); dados reais de pacientes nunca em ambientes de desenvolvimento (LGPD); runbook de diagnóstico de rede e faixa de sub-redes reservada ao Docker.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Fiz <code>docker compose down -v</code> por engano em homologação. O que aconteceu e como evitar?</span></summary><div class="ans"><p>O <code>-v</code> remove também os volumes nomeados declarados no compose: os dados foram apagados. Se houver backup, restauro em volume novo e valido; se não houver, a lição é institucional. Prevenção: backup automático, permissões de quem executa comandos em servidores, processo documentado (<code>down</code> sem <code>-v</code> por padrão), rótulos e nomes de volume que denunciem o ambiente e, em produção, volumes declarados como <code>external</code> (o Compose não os remove).</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

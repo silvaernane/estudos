@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 01: Containers e arquitetura</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+    <div class="topnote">Módulo 01 de 10 · Containers e arquitetura</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html" aria-current="page"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li class="sub"><ol>
+      <li><a href="#problema"><span class="n">1</span>O problema que os containers resolvem</a></li>
+      <li><a href="#vm-vs-container"><span class="n">2</span>Container x máquina virtual</a></li>
+      <li><a href="#container-processo"><span class="n">3</span>O que é um container de verdade</a></li>
+      <li><a href="#laboratorio-kernel"><span class="n">4</span>Laboratório: vendo o container como processo</a></li>
+      <li><a href="#arquitetura"><span class="n">5</span>Arquitetura do Docker e padrões OCI</a></li>
+      <li><a href="#engine-desktop"><span class="n">6</span>Docker Engine, Docker Desktop, Windows e Mac</a></li>
+      <li><a href="#alternativas"><span class="n">7</span>Alternativas que falam OCI</a></li>
+      <li><a href="#primeiro-container"><span class="n">8</span>Instalação e primeiros containers</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 01 · <span class="lvl l1">Básico</span> → <span class="lvl l2">Intermediário</span></div>
+  <h1>Containers e arquitetura</h1>
+  <p class="lede">Container não é uma máquina virtual pequena: é um processo comum do Linux com visão restrita do sistema e limites de consumo. Este módulo mostra o que realmente existe por baixo (namespaces, cgroups, camadas), como o Docker se divide em peças (CLI, dockerd, containerd, runc), o que é o padrão OCI e como instalar e rodar os primeiros containers entendendo cada passo.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar que problema os containers resolvem e comparar container e VM em isolamento, segurança e desempenho.</li>
+    <li>Demonstrar no terminal que um container é um processo do host, listar seus namespaces e ler seus limites de cgroup (v1 e v2).</li>
+    <li>Desenhar a cadeia CLI, API, dockerd, containerd, shim e runc e dizer o que cada peça faz e o que a OCI padroniza.</li>
+    <li>Diferenciar Docker Engine de Docker Desktop (incluindo a regra de licença), saber como o Docker roda no Windows e no Mac e citar alternativas que falam OCI.</li>
+    <li>Instalar o Docker, rodar hello-world, nginx e postgres e descrever passo a passo o que acontece em um <code>docker run</code>.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="problema">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O problema que os containers resolvem</h2>
+  <p>Todo time de software já ouviu (ou disse) "na minha máquina funciona". A aplicação depende de muito mais do que o código: versão do runtime (Python, JDK, Node), bibliotecas do sistema (OpenSSL, libpq), variáveis de ambiente, arquivos de configuração, fuso horário, locale. Quando cada ambiente (notebook de cada dev, homologação, produção) acumula essas coisas por instalação manual, os ambientes <strong>divergem</strong>, e a divergência aparece como bug que ninguém consegue reproduzir.</p>
+  <h3>Como era antes</h3>
+  <ul>
+    <li><strong>Instalar na mão no servidor</strong>: o servidor vira um "floco de neve", único e impossível de recriar com exatidão. Duas aplicações no mesmo servidor brigam por versões de biblioteca (a aplicação A precisa de Python 3.8, a B de 3.12).</li>
+    <li><strong>Documento de instalação</strong>: desatualiza no dia seguinte. Onboarding de dev leva dias.</li>
+    <li><strong>Uma VM por aplicação</strong>: resolve o conflito, mas custa um sistema operacional inteiro por aplicação (RAM, disco, patches, boot lento).</li>
+  </ul>
+  <h3>O que o container muda</h3>
+  <p>A ideia central é empacotar a aplicação <strong>junto com tudo o que ela precisa do espaço de usuário</strong> (runtime, bibliotecas, arquivos) em uma <strong>imagem</strong> imutável e versionada, e executá-la de forma isolada. O que não vai no pacote é o kernel: ele é o da máquina hospedeira. O mesmo artefato (identificado por um digest) roda no notebook, no CI e em produção.</p>
+  <pre><code class="sh"># dois runtimes incompatíveis lado a lado, sem instalar nada no sistema
+docker run --rm python:3.8-slim python --version
+docker run --rm python:3.12-slim python --version</code></pre>
+  <pre><code class="text">Python 3.8.x
+Python 3.12.x</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Ganho</th><th>Como o container entrega</th></tr></thead>
+    <tbody>
+      <tr><td>Reprodutibilidade</td><td>a imagem fixa runtime, bibliotecas e arquivos; "build once, run anywhere" (dentro da mesma arquitetura de CPU)</td></tr>
+      <tr><td>Isolamento de dependências</td><td>cada container tem seu próprio sistema de arquivos; versões diferentes convivem</td></tr>
+      <tr><td>Onboarding rápido</td><td><code>docker compose up</code> sobe banco, cache e API; sem instalar nada no notebook</td></tr>
+      <tr><td>Densidade</td><td>dezenas de containers por servidor, sem um SO por aplicação</td></tr>
+      <tr><td>Deploy e rollback simples</td><td>trocar a tag/digest da imagem é o deploy; voltar a tag anterior é o rollback</td></tr>
+      <tr><td>Padrão de entrega</td><td>CI produz uma imagem; Kubernetes, ECS e Cloud Run sabem executá-la</td></tr>
+    </tbody>
+  </table></div>
+  <h3>O que o container não resolve</h3>
+  <ul>
+    <li><strong>Estado</strong>: o que o container grava na própria camada some quando ele é removido. Bancos de dados exigem volumes (módulo 05).</li>
+    <li><strong>Segredos e configuração</strong>: continuam sendo problema seu (módulos 07 e 09).</li>
+    <li><strong>Segurança automática</strong>: isolamento por container é mais fraco que por VM (seção 2) e uma imagem com biblioteca vulnerável continua vulnerável.</li>
+    <li><strong>Compatibilidade de kernel e de CPU</strong>: container Linux precisa de kernel Linux; imagem <code>arm64</code> não roda em <code>amd64</code> sem emulação.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum: "Docker" e "container" não são sinônimos</b><p>Containers são um recurso do kernel Linux (namespaces e cgroups) que existia antes do Docker (LXC, Solaris Zones, FreeBSD jails têm ideias parecidas). O Docker popularizou a experiência: imagem em camadas, Dockerfile, registry, CLI simples. Hoje o formato é padronizado pela OCI e outras ferramentas (Podman, containerd, CRI-O) executam as mesmas imagens.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Container empacota a aplicação com suas dependências em uma imagem imutável e a executa isolada, compartilhando o kernel do host. Resolve a divergência entre ambientes e dá um artefato único que passa por dev, CI e produção. Não substitui volumes para estado nem é fronteira de segurança forte."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>O ganho gerencial é <strong>previsibilidade</strong>: menos "só acontece em produção", onboarding em horas e deploy como troca de versão de artefato. O custo é uma nova camada para operar (registry, scan de vulnerabilidades, orquestração, política de imagens). Cobre do time que a imagem de produção seja <em>a mesma</em> que passou nos testes, identificada por tag de versão ou digest, nunca reconstruída por ambiente.</p></div>
+</section>
+
+<section class="chap" id="vm-vs-container">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Container x máquina virtual</h2>
+  <p>Uma <strong>VM</strong> virtualiza o hardware: um hypervisor (KVM, Hyper-V, VMware, Xen) apresenta CPU, memória e disco virtuais, e dentro dela roda um sistema operacional completo com <strong>kernel próprio</strong>. Um <strong>container</strong> não virtualiza hardware: ele é um processo do kernel do host, só que com isolamento e limites. Por isso não há boot de SO nem kernel duplicado.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 640 262" role="img" aria-label="Comparação entre pilha de máquinas virtuais e pilha de containers">
+      <text class="ttl" x="156" y="18" text-anchor="middle">Máquinas virtuais</text>
+      <text class="ttl" x="476" y="18" text-anchor="middle">Containers</text>
+      <rect class="box-a" x="20" y="32" width="84" height="30" rx="4"/><text x="62" y="52" text-anchor="middle">App A</text>
+      <rect class="box-a" x="114" y="32" width="84" height="30" rx="4"/><text x="156" y="52" text-anchor="middle">App B</text>
+      <rect class="box-a" x="208" y="32" width="84" height="30" rx="4"/><text x="250" y="52" text-anchor="middle">App C</text>
+      <rect class="box" x="20" y="66" width="84" height="30" rx="4"/><text x="62" y="86" text-anchor="middle">Bins/libs</text>
+      <rect class="box" x="114" y="66" width="84" height="30" rx="4"/><text x="156" y="86" text-anchor="middle">Bins/libs</text>
+      <rect class="box" x="208" y="66" width="84" height="30" rx="4"/><text x="250" y="86" text-anchor="middle">Bins/libs</text>
+      <rect class="box-m" x="20" y="100" width="84" height="30" rx="4"/><text x="62" y="120" text-anchor="middle">Guest OS</text>
+      <rect class="box-m" x="114" y="100" width="84" height="30" rx="4"/><text x="156" y="120" text-anchor="middle">Guest OS</text>
+      <rect class="box-m" x="208" y="100" width="84" height="30" rx="4"/><text x="250" y="120" text-anchor="middle">Guest OS</text>
+      <rect class="box" x="20" y="140" width="272" height="30" rx="4"/><text x="156" y="160" text-anchor="middle">Hypervisor</text>
+      <rect class="box" x="20" y="176" width="272" height="30" rx="4"/><text x="156" y="196" text-anchor="middle">Hardware</text>
+      <text class="lbl" x="20" y="232">cada VM tem kernel próprio:</text>
+      <text class="lbl" x="20" y="248">GBs de disco, boot em dezenas de segundos</text>
+      <rect class="box-a" x="340" y="32" width="84" height="30" rx="4"/><text x="382" y="52" text-anchor="middle">App A</text>
+      <rect class="box-a" x="434" y="32" width="84" height="30" rx="4"/><text x="476" y="52" text-anchor="middle">App B</text>
+      <rect class="box-a" x="528" y="32" width="84" height="30" rx="4"/><text x="570" y="52" text-anchor="middle">App C</text>
+      <rect class="box" x="340" y="66" width="84" height="30" rx="4"/><text x="382" y="86" text-anchor="middle">Bins/libs</text>
+      <rect class="box" x="434" y="66" width="84" height="30" rx="4"/><text x="476" y="86" text-anchor="middle">Bins/libs</text>
+      <rect class="box" x="528" y="66" width="84" height="30" rx="4"/><text x="570" y="86" text-anchor="middle">Bins/libs</text>
+      <rect class="box" x="340" y="104" width="272" height="30" rx="4"/><text x="476" y="124" text-anchor="middle">Docker Engine / containerd</text>
+      <rect class="box-w" x="340" y="140" width="272" height="30" rx="4"/><text x="476" y="160" text-anchor="middle">Kernel do host (único)</text>
+      <rect class="box" x="340" y="176" width="272" height="30" rx="4"/><text x="476" y="196" text-anchor="middle">Hardware</text>
+      <text class="lbl" x="340" y="232">containers são processos no mesmo kernel:</text>
+      <text class="lbl" x="340" y="248">MBs de disco, início em segundos ou menos</text>
+    </svg>
+    <figcaption>A VM carrega um SO inteiro por aplicação; o container só carrega bibliotecas e aplicação e divide o kernel do host (caixa laranja).</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Máquina virtual</th><th>Container</th></tr></thead>
+    <tbody>
+      <tr><td>O que isola</td><td>hardware virtual e SO completo</td><td>processos sobre o kernel do host</td></tr>
+      <tr><td>Kernel</td><td>um por VM</td><td>um só, compartilhado</td></tr>
+      <tr><td>Tamanho típico</td><td>gigabytes</td><td>dezenas a centenas de MB (imagens mínimas: poucos MB)</td></tr>
+      <tr><td>Início</td><td>dezenas de segundos a minutos</td><td>milissegundos a poucos segundos</td></tr>
+      <tr><td>Densidade por servidor</td><td>dezenas</td><td>centenas</td></tr>
+      <tr><td>Overhead de CPU e memória</td><td>hypervisor + SO convidado</td><td>quase nenhum (é um processo)</td></tr>
+      <tr><td>Isolamento de segurança</td><td>forte: superfície pequena (interface do hypervisor)</td><td>mais fraco: superfície grande (toda a API de syscalls do kernel)</td></tr>
+      <tr><td>Outro SO</td><td>sim (Windows numa VM Linux)</td><td>não: container Linux precisa de kernel Linux</td></tr>
+            <tr><td>Uso típico</td><td>isolamento forte, SO diferente, workload legado, multi-tenant hostil</td><td>aplicações empacotadas, microsserviços, CI, ambientes de dev</td></tr>
+    </tbody>
+  </table></div>
+  <p>A prova mais simples de que o kernel é compartilhado:</p>
+  <pre><code class="sh">uname -r                          # kernel do host
+docker run --rm alpine uname -r   # kernel "dentro" do container</code></pre>
+  <pre><code class="text">6.8.0-45-generic
+6.8.0-45-generic</code></pre>
+  <p>Mesmo número, porque só existe um kernel. (No Docker Desktop do Windows e do Mac, "o host" é a VM Linux do Docker; a seção 6 explica.)</p>
+  <h3>Implicações de segurança</h3>
+  <p>O processo dentro do container conversa diretamente com o kernel do host por <em>syscalls</em>. Uma falha do kernel (escalada de privilégio, escape de namespace) afeta o host e todos os outros containers. Em uma VM, o invasor precisa antes escapar do hypervisor, uma superfície muito menor. O Docker reduz o risco com várias camadas, todas ativas por padrão ou facilmente ativáveis:</p>
+  <ul>
+    <li><strong>Capabilities reduzidas</strong>: o "root" do container recebe só um subconjunto das capabilities do Linux (sem <code>CAP_SYS_ADMIN</code>, por exemplo). <code>--cap-drop ALL</code> deixa o conjunto mínimo.</li>
+    <li><strong>Perfil seccomp padrão</strong>: bloqueia dezenas de syscalls perigosas ou raramente necessárias.</li>
+    <li><strong>AppArmor (Ubuntu/Debian) ou SELinux (RHEL/Fedora)</strong>: perfil de acesso obrigatório aplicado ao container.</li>
+    <li><strong>Usuário não-root</strong> (<code>USER</code> na imagem ou <code>--user</code>), sistema de arquivos somente leitura (<code>--read-only</code>), <code>--security-opt no-new-privileges</code>.</li>
+    <li><strong>User namespace remap e modo rootless</strong>: o root do container passa a ser um usuário comum do host. Não é o padrão do Docker.</li>
+    <li><strong>Runtimes com isolamento reforçado</strong>: gVisor (<code>runsc</code>, intercepta syscalls em espaço de usuário) e Kata Containers (cada container dentro de uma microVM) trocam desempenho por uma fronteira mais forte.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum: <code>--privileged</code> e o socket do Docker</b><p><code>docker run --privileged</code> desliga quase todo o isolamento (todas as capabilities, acesso a dispositivos). Montar <code>/var/run/docker.sock</code> dentro de um container dá a ele controle total do daemon, ou seja, <strong>root no host</strong>. O mesmo vale para quem pertence ao grupo <code>docker</code> no host. Trate ambos como acesso root (laboratório na seção 9).</p></div>
+  <h3>Implicações de desempenho</h3>
+  <ul>
+    <li><strong>CPU e memória</strong>: praticamente nativas. O container é um processo; não há tradução de instruções.</li>
+    <li><strong>Disco</strong>: o sistema de arquivos em camadas (overlay2) tem custo em escritas pequenas e em arquivos grandes alterados (copy-on-write). Banco de dados e cargas de I/O intenso devem usar <strong>volume</strong>, que escreve direto no sistema de arquivos do host.</li>
+    <li><strong>Rede</strong>: a rede bridge padrão usa NAT e veth; há um pequeno custo. <code>--network host</code> elimina o NAT (só em Linux) à custa do isolamento de rede.</li>
+    <li><strong>Windows e Mac</strong>: os containers rodam em uma VM; bind mounts de pastas do host atravessam a fronteira da VM e são bem mais lentos que no Linux.</li>
+    <li><strong>Início</strong>: um container sobe em milissegundos a segundos, o que viabiliza escalar sob demanda e rodar testes com ambiente novo a cada execução.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Mesma organização, mesma confiança entre cargas: containers. Código de terceiros ou de clientes diferentes no mesmo host: VM, microVM ou ao menos gVisor/Kata. Na nuvem os dois se combinam: containers rodam <em>dentro</em> de VMs.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A VM virtualiza hardware e tem kernel próprio, então isola mais e roda outro SO. O container é um processo isolado por namespaces e limitado por cgroups sobre o kernel do host: é mais leve e rápido, mas o isolamento de segurança é mais fraco. Por isso carga hostil vai para VM ou microVM."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em saúde, dados sensíveis (LGPD) pedem atenção ao isolamento: separar por <em>nó</em> ou por VM os workloads de sensibilidades diferentes é uma decisão de risco, não de tecnologia. Cobre do time: usuário não-root, sem <code>--privileged</code>, sem montar o socket do Docker, e imagens escaneadas. Economia de infraestrutura com containers é real, mas não deve vir às custas de misturar cargas de confiança diferente no mesmo kernel.</p></div>
+</section>
+
+<section class="chap" id="container-processo">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l1">Básico</span></div>
+  <h2>O que é um container de verdade</h2>
+  <p>Não existe uma "chamada de sistema container" no Linux. Um container é uma <strong>combinação de recursos do kernel</strong> aplicados a um processo:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ingrediente</th><th>Responde a</th><th>Mecanismo</th></tr></thead>
+    <tbody>
+      <tr><td>O que o processo <em>enxerga</em></td><td>processos, rede, mounts, hostname, IPC, usuários</td><td><strong>namespaces</strong></td></tr>
+      <tr><td>O que o processo pode <em>consumir</em></td><td>CPU, memória, I/O, número de processos</td><td><strong>cgroups</strong></td></tr>
+      <tr><td>Qual sistema de arquivos ele vê</td><td>a raiz <code>/</code> da imagem</td><td><strong>mount namespace + overlayfs</strong> (camadas) e <code>pivot_root</code></td></tr>
+      <tr><td>O que ele pode <em>fazer</em></td><td>operações privilegiadas e syscalls</td><td><strong>capabilities, seccomp, AppArmor/SELinux</strong></td></tr>
+    </tbody>
+  </table></div>
+  <h3>Namespaces: o que o processo enxerga</h3>
+  <p>Um namespace dá ao processo uma <em>visão própria</em> de um recurso global do kernel. Os processos são criados já dentro de novos namespaces com a syscall <code>clone</code> (ou <code>unshare</code>, que move o processo atual; <code>setns</code> entra em um namespace existente).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Namespace</th><th>Flag</th><th>Isola</th><th>Efeito no container</th></tr></thead>
+    <tbody>
+      <tr><td><code>pid</code></td><td><code>CLONE_NEWPID</code></td><td>árvore de processos</td><td>o processo principal é o PID 1; não vê processos do host</td></tr>
+      <tr><td><code>net</code></td><td><code>CLONE_NEWNET</code></td><td>interfaces, rotas, portas, iptables</td><td>tem <code>eth0</code> e <code>lo</code> próprios; porta 80 do container não conflita com a do host</td></tr>
+      <tr><td><code>mnt</code></td><td><code>CLONE_NEWNS</code></td><td>tabela de montagens</td><td>vê a raiz da imagem, não o disco do host</td></tr>
+      <tr><td><code>uts</code></td><td><code>CLONE_NEWUTS</code></td><td>hostname e nome de domínio</td><td>hostname próprio (o ID curto do container)</td></tr>
+      <tr><td><code>ipc</code></td><td><code>CLONE_NEWIPC</code></td><td>memória compartilhada SysV e filas POSIX</td><td>não compartilha IPC com outros containers (salvo <code>--ipc</code>)</td></tr>
+      <tr><td><code>user</code></td><td><code>CLONE_NEWUSER</code></td><td>mapeamento de UIDs e GIDs</td><td><strong>não é usado por padrão no Docker</strong>: UID 0 do container é UID 0 do host. Ativado em rootless e <code>userns-remap</code></td></tr>
+      <tr><td><code>cgroup</code></td><td><code>CLONE_NEWCGROUP</code></td><td>raiz da hierarquia de cgroups visível</td><td>o container enxerga seu próprio cgroup como a raiz (padrão em cgroup v2)</td></tr>
+      <tr><td><code>time</code></td><td><code>CLONE_NEWTIME</code></td><td>offsets de relógio monotônico</td><td>existe a partir do kernel 5.6; o Docker não o usa por padrão</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="figure">
+    <svg viewBox="0 0 640 236" role="img" aria-label="Os mesmos processos vistos pelo host e de dentro do container, com PIDs diferentes">
+      <defs><marker id="ah-pidns" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="160" y="16" text-anchor="middle">Visão do host</text>
+      <text class="ttl" x="480" y="16" text-anchor="middle">Visão de dentro do container</text>
+      <rect class="box" x="20" y="26" width="280" height="160" rx="8"/>
+      <rect class="box" x="340" y="26" width="280" height="160" rx="8"/>
+      <rect class="box-w" x="40" y="40" width="240" height="28" rx="4"/><text x="160" y="58" text-anchor="middle">containerd-shim   PID 2101</text>
+      <rect class="box-a" x="40" y="88" width="240" height="28" rx="4"/><text x="160" y="106" text-anchor="middle">nginx: master   PID 2123</text>
+      <rect class="box-a" x="40" y="136" width="240" height="28" rx="4"/><text x="160" y="154" text-anchor="middle">nginx: worker   PID 2150</text>
+      <line class="ln" x1="160" y1="68" x2="160" y2="88" marker-end="url(#ah-pidns)"/>
+      <line class="ln" x1="160" y1="116" x2="160" y2="136" marker-end="url(#ah-pidns)"/>
+      <text class="lbl" x="480" y="58" text-anchor="middle">(shim e dockerd não aparecem aqui)</text>
+      <rect class="box-a" x="360" y="88" width="240" height="28" rx="4"/><text x="480" y="106" text-anchor="middle">nginx: master   PID 1</text>
+      <rect class="box-a" x="360" y="136" width="240" height="28" rx="4"/><text x="480" y="154" text-anchor="middle">nginx: worker   PID 29</text>
+      <line class="ln-a" x1="282" y1="102" x2="358" y2="102" marker-end="url(#ah-pidns)"/>
+      <line class="ln-a" x1="282" y1="150" x2="358" y2="150" marker-end="url(#ah-pidns)"/>
+      <text class="lbl" x="20" y="206">Os mesmos processos, na mesma tabela do kernel:</text>
+      <text class="lbl" x="20" y="222">o PID namespace só muda o número que cada lado enxerga.</text>
+    </svg>
+    <figcaption>O processo mestre do nginx tem PID 2123 no host e PID 1 dentro do container. Um mesmo processo, duas visões.</figcaption>
+  </figure>
+  <h3>cgroups: o que o processo consome</h3>
+  <p>Os <strong>control groups</strong> organizam processos em hierarquias e aplicam limites e contabilidade de recursos. Quando você roda <code>--memory 512m --cpus 1.5</code>, o Docker cria um cgroup para o container e grava esses números nos arquivos de controle. Se o processo ultrapassa o limite de memória, o kernel aciona o <strong>OOM killer</strong> dentro do cgroup e o processo morre com SIGKILL (código de saída 137, seção do módulo 02).</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>cgroup v1 (legado)</th><th>cgroup v2 (atual)</th></tr></thead>
+    <tbody>
+      <tr><td>Hierarquia</td><td>uma árvore <em>por controlador</em> (memory, cpu, blkio... montadas separadas)</td><td><strong>uma única árvore unificada</strong>, com todos os controladores</td></tr>
+      <tr><td>Limite de memória</td><td><code>memory.limit_in_bytes</code></td><td><code>memory.max</code> (e <code>memory.high</code> como limite "macio")</td></tr>
+      <tr><td>Limite de CPU</td><td><code>cpu.cfs_quota_us</code> e <code>cpu.cfs_period_us</code></td><td><code>cpu.max</code> (<code>"quota período"</code>)</td></tr>
+            <tr><td>I/O</td><td><code>blkio</code>: não contabiliza escritas em cache (buffered)</td><td><code>io</code>: contabiliza escritas bufferizadas corretamente</td></tr>
+      <tr><td>Observabilidade</td><td>limitada</td><td>PSI (pressure stall information), <code>memory.events</code>, <code>memory.oom.group</code></td></tr>
+      <tr><td>Suporte e padrão</td><td>suportado</td><td>suportado no Docker desde a 20.10; padrão em distribuições Linux recentes</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh">stat -fc %T /sys/fs/cgroup/      # cgroup2fs = v2 ; tmpfs = v1
+docker info --format '{{.CgroupVersion}} {{.CgroupDriver}}'</code></pre>
+  <pre><code class="text">cgroup2fs
+2 systemd</code></pre>
+  <p>O <em>cgroup driver</em> diz quem gerencia a hierarquia: <code>systemd</code> (recomendado em distros com systemd; o container vira um <em>scope</em>, como <code>docker-&lt;id&gt;.scope</code>) ou <code>cgroupfs</code> (o Docker escreve direto). O kubelet e o runtime precisam usar o mesmo driver.</p>
+  <h3>Sistema de arquivos em camadas</h3>
+  <p>A imagem é uma pilha de camadas somente leitura. Na hora de executar, o storage driver (normalmente <strong>overlay2</strong>, baseado no OverlayFS do kernel) monta uma visão unificada: as camadas da imagem são os <code>lowerdir</code>, uma pasta vazia por container é o <code>upperdir</code> (a camada gravável) e o resultado é o <code>merged</code>, que vira a raiz <code>/</code> do container via <code>pivot_root</code> dentro do mount namespace. O módulo 02 detalha camadas e copy-on-write; aqui basta saber que <strong>cada container tem um sistema de arquivos próprio, montado a partir da imagem</strong>.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>container = processo + namespaces + cgroups + raiz montada por overlay + restrições de privilégio. Se alguém perguntar "o que roda dentro do container", a resposta é: o processo roda no host, só enxerga menos.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Container é um processo do Linux com namespaces (pid, net, mnt, uts, ipc, user, cgroup) que limitam o que ele enxerga, cgroups que limitam o que ele consome e um sistema de arquivos em camadas. Dá para ver o processo com <code>ps</code> no host e os namespaces em <code>/proc/&lt;pid&gt;/ns</code>."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Entender isso muda decisões: limites de memória e CPU <em>não são opcionais</em> em produção (sem eles, um container ruim derruba o servidor); "container como root" é root do host com restrições; e monitorar container é monitorar processo e cgroup, não "uma máquina". Pergunte ao time quais limites cada serviço tem e por quê.</p></div>
+</section>
+
+<section class="chap" id="laboratorio-kernel">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Laboratório: vendo o container como processo</h2>
+  <p>Todos os comandos abaixo supõem um <strong>host Linux</strong> com Docker Engine (VM, servidor ou WSL 2 com o Engine instalado). No Docker Desktop, o "host" é a VM interna, não o seu Windows ou Mac, e esses comandos de inspeção do host não funcionam diretamente. As saídas são exemplos: PIDs e números de namespace variam.</p>
+  <h3>1. O processo do container aparece no <code>ps</code> do host</h3>
+  <pre><code class="sh">docker run -d --name web nginx:1.27
+docker inspect -f '{{.State.Pid}}' web          # PID do processo principal, visto do host
+ps -o pid,ppid,user,cmd -p 2123 --ppid 2123     # o processo e seus filhos
+ps -o pid,ppid,cmd -p 2101                      # o pai do processo principal</code></pre>
+  <pre><code class="text">2123
+  PID  PPID USER     CMD
+ 2123  2101 root     nginx: master process nginx -g daemon off;
+ 2150  2123 101      nginx: worker process
+  PID  PPID CMD
+ 2101     1 /usr/bin/containerd-shim-runc-v2 -namespace moby -id 9f3c... -address /run/containerd/containerd.sock</code></pre>
+  <p>Observações: o processo mestre é filho do <code>containerd-shim</code>, não do <code>dockerd</code>; o worker aparece com UID numérico (101) porque o host não tem um usuário com esse UID; <code>docker top web</code> mostra a mesma informação sem sair do Docker. Dentro do container, o mesmo processo é o PID 1:</p>
+  <pre><code class="sh">docker exec web cat /proc/1/cmdline | tr '\0' ' '</code></pre>
+  <pre><code class="text">nginx: master process nginx -g daemon off;</code></pre>
+  <h3>2. Namespaces em <code>/proc</code></h3>
+  <pre><code class="sh">sudo ls -l /proc/2123/ns/
+sudo readlink /proc/2123/ns/pid /proc/self/ns/pid      # container x shell do host
+sudo readlink /proc/2123/ns/user /proc/self/ns/user    # user ns: igual!</code></pre>
+  <pre><code class="text">... cgroup -> 'cgroup:[4026532599]'
+... ipc    -> 'ipc:[4026532597]'
+... mnt    -> 'mnt:[4026532595]'
+... net    -> 'net:[4026532600]'
+... pid    -> 'pid:[4026532598]'
+... user   -> 'user:[4026531837]'
+... uts    -> 'uts:[4026532596]'
+pid:[4026532598]
+pid:[4026531836]
+user:[4026531837]
+user:[4026531837]</code></pre>
+  <p>Cada link aponta para um namespace identificado por um inode. Dois processos estão no mesmo namespace quando os números coincidem: o <code>pid</code> do container é diferente do do host, mas o <code>user</code> é o mesmo (container root = root do host, como visto na seção 3). <code>lsns</code> lista todos os namespaces do sistema. Para <em>entrar</em> no namespace de rede do container com as ferramentas do host:</p>
+  <pre><code class="sh">sudo nsenter -t 2123 -n ip -br addr</code></pre>
+  <pre><code class="text">lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0@if12        UP             172.17.0.2/16</code></pre>
+  <p>É o que o <code>docker exec</code> faz por baixo (e como depurar redes em imagens sem ferramentas), usando <code>setns</code> para entrar nos namespaces do processo.</p>
+  <h3>3. Fazendo "à mão" com <code>unshare</code></h3>
+  <p>O <code>unshare</code> (util-linux) cria um processo em novos namespaces, o mesmo que o runc faz, só que sem imagem e sem cgroups:</p>
+  <pre><code class="sh">sudo unshare --pid --fork --mount-proc --uts --net bash
+# agora, dentro do novo shell:
+ps aux                  # só 2 processos: bash (PID 1) e o ps
+hostname teste-ns       # muda o hostname só neste namespace
+ip link                 # só "lo", e desligada
+exit
+hostname                # o hostname do host continua igual</code></pre>
+  <pre><code class="text">USER  PID %CPU %MEM    VSZ   RSS TTY  STAT START TIME COMMAND
+root    1  0.0  0.0  10156  5120 pts/0 S    10:02 0:00 bash
+root    8  0.0  0.0  10584  3328 pts/0 R+   10:02 0:00 ps aux</code></pre>
+  <p><code>--fork</code> é necessário para o PID namespace (o novo PID 1 é o filho), e <code>--mount-proc</code> remonta o <code>/proc</code> para o <code>ps</code> enxergar só o novo namespace. Faltam: um sistema de arquivos próprio (o <code>--root</code> com um rootfs extraído de uma imagem) e limites de cgroup. Juntar os dois é, em essência, o runc.</p>
+  <h3>4. Limites de cgroup</h3>
+  <pre><code class="sh">docker run -d --name lim --memory 256m --cpus 0.5 nginx:1.27
+ID=$(docker inspect -f '{{.Id}}' lim)
+
+# cgroup v2 com driver systemd:
+cat /sys/fs/cgroup/system.slice/docker-$ID.scope/memory.max
+cat /sys/fs/cgroup/system.slice/docker-$ID.scope/cpu.max
+cat /sys/fs/cgroup/system.slice/docker-$ID.scope/pids.max
+
+# e de dentro do container (cgroup namespace: o cgroup dele é a raiz)
+docker exec lim cat /sys/fs/cgroup/memory.max</code></pre>
+  <pre><code class="text">268435456
+50000 100000
+max
+268435456</code></pre>
+  <p>256 MiB = 268435456 bytes. <code>cpu.max</code> é "quota período em microssegundos": 50000 de cada 100000 = meio núcleo. <code>pids.max</code> é <code>max</code> porque não foi definido <code>--pids-limit</code>. No cgroup v1 os caminhos seriam <code>/sys/fs/cgroup/memory/docker/&lt;id&gt;/memory.limit_in_bytes</code> e <code>/sys/fs/cgroup/cpu/docker/&lt;id&gt;/cpu.cfs_quota_us</code>. Com o driver <code>cgroupfs</code> no v2, o caminho é <code>/sys/fs/cgroup/docker/&lt;id&gt;/</code>. <code>docker stats --no-stream</code> mostra o consumo contra o limite.</p>
+  <h3>5. A raiz do container é um mount overlay</h3>
+  <pre><code class="sh">docker inspect -f '{{json .GraphDriver.Data}}' web
+docker exec web touch /criado-dentro
+sudo ls "$(docker inspect -f '{{.GraphDriver.Data.UpperDir}}' web)"</code></pre>
+  <pre><code class="text">{"LowerDir":"/var/lib/docker/overlay2/ab12...-init/diff:/var/lib/docker/overlay2/9c3f.../diff:...",
+ "MergedDir":"/var/lib/docker/overlay2/ab12.../merged",
+ "UpperDir":"/var/lib/docker/overlay2/ab12.../diff",
+ "WorkDir":"/var/lib/docker/overlay2/ab12.../work"}
+criado-dentro  etc  run  var  ...</code></pre>
+  <p>O arquivo criado dentro do container está no <code>UpperDir</code> (a camada gravável do container); as camadas da imagem (<code>LowerDir</code>) não mudaram. Se o Docker usar o <em>containerd image store</em> em vez do graphdriver clássico, os campos e caminhos diferem: confira em <code>docker info</code>.</p>
+  <pre><code class="sh">docker rm -f web lim      # limpar o laboratório</code></pre>
+  <div class="note trap"><b>Armadilha comum: testar no Docker Desktop e achar que o host é o seu PC</b><p>No Windows e no Mac, <code>ps</code>, <code>/proc</code> e <code>/sys/fs/cgroup</code> da sua máquina <em>não</em> mostram os containers. Eles vivem na VM Linux do Docker. Para os laboratórios desta seção, use uma máquina Linux ou o Engine instalado em uma distro WSL 2.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Mostro que é processo: <code>docker inspect -f '{{.State.Pid}}'</code> dá o PID no host, o <code>ps</code> do host o enxerga, <code>/proc/&lt;pid&gt;/ns</code> mostra os namespaces e <code>memory.max</code> no cgroup mostra o limite. Com <code>unshare</code> eu reproduzo o isolamento sem Docker."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Esse conhecimento é o que separa quem <em>usa</em> Docker de quem consegue <strong>diagnosticar</strong> incidentes: "o container foi morto por OOM", "o cgroup limitou a CPU (throttling)", "a porta está presa em outro namespace de rede". Em revisões de incidente, peça evidências nesse nível (exit code, <code>OOMKilled</code>, <code>docker stats</code>), não "reiniciamos e voltou".</p></div>
+</section>
+
+<section class="chap" id="arquitetura">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Arquitetura do Docker e padrões OCI</h2>
+  <p>O comando <code>docker</code> não cria containers. Ele é só um cliente HTTP. O trabalho passa por uma cadeia de componentes, cada um com uma responsabilidade, e essa separação existe para que partes possam ser trocadas (o Kubernetes usa containerd sem o dockerd, por exemplo) e para que reiniciar o daemon não derrube os containers.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 330" role="img" aria-label="Cadeia de componentes: docker CLI, dockerd, containerd, containerd-shim, runc e o processo do container">
+      <defs><marker id="ah-arq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="140" height="48" rx="5"/><text x="90" y="52" text-anchor="middle">docker CLI</text><text class="lbl" x="90" y="68" text-anchor="middle">cliente</text>
+      <rect class="box-a" x="240" y="30" width="140" height="48" rx="5"/><text x="310" y="52" text-anchor="middle">dockerd</text><text class="lbl" x="310" y="68" text-anchor="middle">daemon, API</text>
+      <rect class="box-a" x="460" y="30" width="140" height="48" rx="5"/><text x="530" y="52" text-anchor="middle">containerd</text><text class="lbl" x="530" y="68" text-anchor="middle">ciclo de vida</text>
+      <rect class="box-w" x="460" y="138" width="140" height="48" rx="5"/><text x="530" y="160" text-anchor="middle">containerd-shim</text><text class="lbl" x="530" y="176" text-anchor="middle">pai do processo</text>
+      <rect class="box-w" x="240" y="138" width="140" height="48" rx="5"/><text x="310" y="160" text-anchor="middle">runc</text><text class="lbl" x="310" y="176" text-anchor="middle">cria ns e cgroups</text>
+      <rect class="box-m" x="20" y="138" width="140" height="48" rx="5"/><text x="90" y="160" text-anchor="middle">processo</text><text class="lbl" x="90" y="176" text-anchor="middle">seu app (PID 1)</text>
+      <line class="ln" x1="160" y1="54" x2="238" y2="54" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="380" y1="54" x2="458" y2="54" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="530" y1="78" x2="530" y2="136" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="458" y1="162" x2="382" y2="162" marker-end="url(#ah-arq)"/>
+      <line class="ln-a" x1="238" y1="162" x2="162" y2="162" marker-end="url(#ah-arq)"/>
+      <path class="ln" stroke-dasharray="5 4" d="M530,188 L530,206 L90,206 L90,188" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="200" y="46" text-anchor="middle">1</text>
+      <text class="lbl" x="420" y="46" text-anchor="middle">2</text>
+      <text class="lbl" x="544" y="112">3</text>
+      <text class="lbl" x="420" y="154" text-anchor="middle">4</text>
+      <text class="lbl" x="200" y="154" text-anchor="middle">5</text>
+      <text class="lbl" x="310" y="224" text-anchor="middle">tracejado: o shim continua como processo pai e fica vivo depois que o runc sai</text>
+      <text class="lbl" x="20" y="252">1  API REST sobre /var/run/docker.sock (ou TCP com TLS)</text>
+      <text class="lbl" x="20" y="268">2  gRPC no socket do containerd</text>
+      <text class="lbl" x="20" y="284">3  containerd cria a tarefa e lança um shim por container</text>
+      <text class="lbl" x="20" y="300">4  o shim executa o runc com o bundle OCI (config.json + rootfs)</text>
+      <text class="lbl" x="20" y="316">5  o runc cria namespaces e cgroups, executa o app e termina</text>
+    </svg>
+    <figcaption>Do comando ao processo. O dockerd cuida de imagens, redes, volumes e build; o containerd, do ciclo de vida; o runc, do container em si.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Componente</th><th>Responsabilidade</th><th>Detalhes úteis</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker</code> (CLI)</td><td>interpreta comandos e chama a API do daemon</td><td>pode apontar para outro daemon: <code>DOCKER_HOST</code> ou <code>docker context</code>. Plugins: <code>buildx</code>, <code>compose</code></td></tr>
+      <tr><td><code>dockerd</code></td><td>API REST, imagens, build (BuildKit), redes, volumes, logs, plugins</td><td>escuta no socket Unix <code>/var/run/docker.sock</code>; configuração em <code>/etc/docker/daemon.json</code></td></tr>
+      <tr><td><code>containerd</code></td><td>baixa e armazena imagens (em muitas instalações), gerencia snapshots e o ciclo de vida dos containers</td><td>projeto da CNCF; usado direto pelo Kubernetes; API gRPC</td></tr>
+      <tr><td><code>containerd-shim-runc-v2</code></td><td>fica como processo pai de cada container; mantém stdio, repassa sinais e coleta o código de saída</td><td>permite reiniciar dockerd/containerd sem matar containers (com <code>live-restore</code> no dockerd)</td></tr>
+      <tr><td><code>runc</code></td><td>runtime de baixo nível: cria namespaces e cgroups, configura rootfs, capabilities e seccomp e faz <code>exec</code> do processo</td><td>implementação de referência da runtime-spec da OCI; é um executável que roda e <strong>sai</strong></td></tr>
+      <tr><td>Registry</td><td>armazena e distribui imagens</td><td>Docker Hub, GHCR, ECR, ACR, Harbor, GitLab Registry (módulo 08)</td></tr>
+    </tbody>
+  </table></div>
+  <p>O <code>dockerd</code> usa componentes auxiliares: o <code>docker-proxy</code> (para publicação de portas, em alguns casos), o <code>libnetwork</code> (redes bridge, overlay, macvlan) e regras de <code>iptables</code>/<code>nftables</code> (NAT e filtragem). O runtime pode ser trocado por container com <code>--runtime</code> (por exemplo <code>runsc</code> do gVisor, <code>crun</code> ou os runtimes do Kata), desde que falem a runtime-spec.</p>
+  <h3>Padrões OCI</h3>
+  <p>A <strong>Open Container Initiative</strong> (Linux Foundation) define três especificações. Graças a elas, uma imagem construída com Docker roda no Podman, no containerd e no Kubernetes, e qualquer registry compatível a distribui.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Especificação</th><th>Define</th><th>Na prática</th></tr></thead>
+    <tbody>
+      <tr><td><strong>image-spec</strong></td><td>formato da imagem: <em>manifest</em>, <em>config</em> (JSON) e camadas (tar compactado), todos endereçados por digest; <em>index</em> para várias arquiteturas</td><td>o que <code>docker build</code> produz e <code>docker push</code> envia</td></tr>
+      <tr><td><strong>runtime-spec</strong></td><td>como executar um <em>bundle</em>: um <code>config.json</code> (processo, mounts, namespaces, cgroups, capabilities) e um diretório <code>rootfs</code></td><td>o que o runc consome</td></tr>
+      <tr><td><strong>distribution-spec</strong></td><td>API HTTP de registries para enviar e baixar manifests e blobs</td><td>por que <code>docker pull</code>, <code>skopeo</code> e <code>crane</code> conversam com o mesmo registry</td></tr>
+    </tbody>
+  </table></div>
+  <p>Um trecho (reduzido) de <code>config.json</code> de um bundle, que você mesmo gera com <code>runc spec</code>:</p>
+  <pre data-file="config.json (trecho)"><code class="json">{
+  "ociVersion": "1.0.2",
+  "process": {
+    "terminal": false,
+    "user": { "uid": 0, "gid": 0 },
+    "args": ["nginx", "-g", "daemon off;"],
+    "env": ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
+    "cwd": "/",
+    "capabilities": { "bounding": ["CAP_CHOWN", "CAP_NET_BIND_SERVICE"] }
+  },
+  "root": { "path": "rootfs", "readonly": false },
+  "hostname": "9f3c1a2b4d5e",
+  "linux": {
+    "namespaces": [
+      { "type": "pid" }, { "type": "network" }, { "type": "ipc" },
+      { "type": "uts" }, { "type": "mount" }, { "type": "cgroup" }
+    ],
+    "resources": { "memory": { "limit": 268435456 } }
+  }
+}</code></pre>
+  <p>Repare como cada campo corresponde ao que foi visto na seção 3: lista de namespaces, limites de cgroup, usuário, capabilities e a raiz. Tudo o que o Docker faz em <code>docker run</code> converge para gerar esse arquivo.</p>
+  <div class="note trap"><b>Armadilha comum: expor o daemon sem proteção</b><p>O socket do Docker é uma API de administração do host. Expor o daemon em TCP (<code>-H tcp://0.0.0.0:2375</code>) sem TLS e autenticação equivale a dar root a qualquer um na rede; é uma causa clássica de invasão e mineração de criptomoeda. Para acesso remoto, use <code>docker context</code> com SSH (<code>ssh://usuario@host</code>) ou TLS mútuo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A CLI fala com o dockerd por uma API REST no socket Unix. O dockerd cuida de imagens, rede, volumes e build, e delega o ciclo de vida ao containerd. O containerd sobe um shim por container, e o shim chama o runc, que cria namespaces e cgroups, executa o processo e sai. A OCI padroniza imagem, runtime e distribuição, e por isso as peças são intercambiáveis."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A arquitetura em camadas tem consequências operacionais: o <code>dockerd</code> roda como root e é um ponto único de falha e de ataque; atualizar o Docker em um servidor pode reiniciar containers (a menos que <code>live-restore</code> esteja ativo). Defina quem tem acesso ao socket, como ele é auditado e se rootless faz sentido para o seu ambiente. Padronizar em OCI evita aprisionamento em um fornecedor.</p></div>
+</section>
+
+<section class="chap" id="engine-desktop">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l1">Básico</span></div>
+  <h2>Docker Engine, Docker Desktop, Windows e Mac</h2>
+  <p>"Docker" é um nome para vários produtos. A confusão entre eles gera decisões erradas de instalação e de licença.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Docker Engine</th><th>Docker Desktop</th></tr></thead>
+    <tbody>
+      <tr><td>O que é</td><td>o daemon (dockerd), containerd, runc e a CLI, para Linux</td><td>aplicativo de desktop: VM Linux gerenciada + Engine + CLI + Compose + buildx + interface gráfica e extras</td></tr>
+      <tr><td>Plataformas</td><td>Linux (servidores e desktops); também dentro do WSL 2</td><td>Windows, macOS e Linux</td></tr>
+      <tr><td>Código e licença</td><td>código aberto (Apache 2.0), de uso gratuito</td><td>produto proprietário, com <strong>licença comercial</strong> para empresas maiores (abaixo)</td></tr>
+      <tr><td>Uso típico</td><td>servidores, CI, produção em host único</td><td>estação de trabalho do desenvolvedor</td></tr>
+      <tr><td>Extras</td><td>instalados à parte (plugins)</td><td>Docker Scout, Extensions, Kubernetes local opcional, integração de pastas, painel de containers</td></tr>
+    </tbody>
+  </table></div>
+  <h3>A licença do Docker Desktop</h3>
+  <p>O Docker Desktop é <strong>gratuito</strong> para uso pessoal, educação, projetos de código aberto não comerciais e para <strong>pequenas empresas</strong>, definidas pela documentação do Docker como menos de 250 funcionários <strong>e</strong> menos de US$ 10 milhões de receita anual. Qualquer empresa que passe de um dos dois limites precisa de uma <strong>assinatura paga</strong> (planos Pro, Team ou Business) para uso comercial do Desktop. Como a condição é "e" para a isenção, basta uma empresa ter mais de 250 funcionários <em>ou</em> mais de US$ 10 milhões para exigir licença (subsidiárias contam pela empresa-mãe).</p>
+  <ul>
+    <li>A regra vale para o <strong>Docker Desktop</strong>. O <strong>Docker Engine</strong> (Linux), a CLI e o Compose como software livre não exigem assinatura.</li>
+    <li>O Docker Hub tem termos e limites de uso próprios (por exemplo, limites de pull para usuários anônimos), independentes da licença do Desktop.</li>
+    <li>Os valores e planos mudam com o tempo. Antes de padronizar, <strong>confirme no site oficial</strong> (página de licença do Docker Desktop em docs.docker.com e a FAQ de preços) e envolva o jurídico.</li>
+  </ul>
+  <h3>Docker no Windows: WSL 2</h3>
+  <p>Containers Linux precisam de kernel Linux, e o Windows não tem um. O Docker Desktop resolve criando uma <strong>VM Linux leve</strong>. O backend recomendado é o <strong>WSL 2</strong> (Windows Subsystem for Linux), que roda um kernel Linux real sob um hypervisor leve do Windows, e o Docker Desktop instala nele uma distribuição interna ("docker-desktop") com o Engine. A CLI do Windows fala com esse daemon. Existe ainda o backend Hyper-V (legado) e o modo de <em>Windows containers</em> (outra coisa).</p>
+  <ul>
+    <li><strong>Desempenho</strong>: deixe o código do projeto dentro do sistema de arquivos do WSL (<code>~/projetos</code>), não em <code>/mnt/c/...</code>. Bind mounts do disco do Windows são muito mais lentos.</li>
+    <li><strong>Memória</strong>: a VM do WSL 2 pode consumir muita RAM. Limite no arquivo <code>%UserProfile%\.wslconfig</code>, seção <code>[wsl2]</code>, com chaves como <code>memory</code>, <code>processors</code> e <code>swap</code>, e depois rode <code>wsl --shutdown</code>.</li>
+    <li><strong>Alternativa sem Desktop</strong>: instalar o Docker Engine dentro de uma distro WSL 2 (Ubuntu) com <code>systemd</code> ativado, exatamente como em um servidor Linux, e usar a CLI de lá.</li>
+  </ul>
+  <h3>Docker no macOS</h3>
+  <p>O macOS também não tem kernel Linux: o Desktop executa uma <strong>VM Linux leve</strong> usando a virtualização do próprio sistema, e os containers rodam dentro dela. Pontos de atenção: em Macs com Apple Silicon (arm64) as imagens nativas são <code>linux/arm64</code>; imagens só <code>amd64</code> rodam por emulação (Rosetta ou QEMU, conforme a configuração), mais lentas e às vezes com bugs. O <code>--platform linux/amd64</code> força a arquitetura. O compartilhamento de arquivos entre Mac e VM também tem custo de desempenho.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 262" role="img" aria-label="Onde roda o kernel Linux em Linux, Windows com WSL 2 e macOS">
+      <text class="ttl" x="115" y="16" text-anchor="middle">Linux (Engine)</text>
+      <text class="ttl" x="340" y="16" text-anchor="middle">Windows (WSL 2)</text>
+      <text class="ttl" x="565" y="16" text-anchor="middle">macOS (VM leve)</text>
+      <rect class="box-m" x="20" y="28" width="190" height="32" rx="4"/><text x="115" y="48" text-anchor="middle">containers</text>
+      <rect class="box-a" x="20" y="68" width="190" height="32" rx="4"/><text x="115" y="88" text-anchor="middle">dockerd + containerd</text>
+      <rect class="box-w" x="20" y="108" width="190" height="32" rx="4"/><text x="115" y="128" text-anchor="middle">Kernel Linux</text>
+      <rect class="box" x="20" y="148" width="190" height="32" rx="4"/><text x="115" y="168" text-anchor="middle">Hardware</text>
+      <rect class="box-m" x="245" y="28" width="190" height="32" rx="4"/><text x="340" y="48" text-anchor="middle">containers</text>
+      <rect class="box-a" x="245" y="68" width="190" height="32" rx="4"/><text x="340" y="88" text-anchor="middle">Engine na VM WSL 2</text>
+      <rect class="box-w" x="245" y="108" width="190" height="32" rx="4"/><text x="340" y="128" text-anchor="middle">Kernel Linux do WSL 2</text>
+      <rect class="box" x="245" y="148" width="190" height="32" rx="4"/><text x="340" y="168" text-anchor="middle">Hypervisor + Windows</text>
+      <rect class="box" x="245" y="188" width="190" height="32" rx="4"/><text x="340" y="208" text-anchor="middle">Hardware</text>
+      <rect class="box-m" x="470" y="28" width="190" height="32" rx="4"/><text x="565" y="48" text-anchor="middle">containers</text>
+      <rect class="box-a" x="470" y="68" width="190" height="32" rx="4"/><text x="565" y="88" text-anchor="middle">Engine na VM Linux</text>
+      <rect class="box-w" x="470" y="108" width="190" height="32" rx="4"/><text x="565" y="128" text-anchor="middle">Kernel Linux da VM</text>
+      <rect class="box" x="470" y="148" width="190" height="32" rx="4"/><text x="565" y="168" text-anchor="middle">Virtualização do macOS</text>
+      <rect class="box" x="470" y="188" width="190" height="32" rx="4"/><text x="565" y="208" text-anchor="middle">Hardware</text>
+      <text class="lbl" x="20" y="244">O kernel que executa o container é sempre Linux; no Windows e no Mac, dentro de uma VM.</text>
+    </svg>
+    <figcaption>Sem Linux nativo, sempre há uma VM no meio. Daí vêm as diferenças de desempenho de disco e de rede.</figcaption>
+  </figure>
+  <div class="note trap"><b>Armadilha comum: "funciona no Docker Desktop, falha no servidor" (e vice-versa)</b><p>Diferenças típicas: arquitetura de CPU (arm64 no Mac, amd64 no servidor), permissões de arquivos em bind mounts (no Desktop o compartilhamento mascara UIDs), fim de linha, DNS e proxy corporativo, e o fato de que no Desktop a porta de um container fica acessível em <code>localhost</code> por um encaminhamento próprio. Teste a imagem final no mesmo tipo de ambiente da produção (CI em Linux).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Engine é o daemon e a CLI para Linux, de código aberto. Desktop é o aplicativo para Windows, Mac e Linux que embute uma VM com o Engine e tem licença paga para empresas com mais de 250 funcionários ou mais de US$ 10 milhões de receita. No Windows ele usa WSL 2, no Mac uma VM leve."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p><strong>Licença é risco de conformidade.</strong> Se a empresa passa dos limites, cada desenvolvedor que usa o Docker Desktop comercialmente precisa de assinatura, e as auditorias existem. Opções: assinar (ganha SSO, gestão de configurações e suporte), ou padronizar uma alternativa sem custo de licença (Docker Engine em WSL 2, Rancher Desktop, Podman Desktop, Colima). Decida junto com TI e jurídico, e documente o padrão para o time, em vez de cada um instalar o que quiser.</p></div>
+</section>
+
+<section class="chap" id="alternativas">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Alternativas que falam OCI</h2>
+  <p>Como imagem e runtime são padronizados, o ecossistema tem substitutos para partes do Docker. Conhecê-los ajuda em entrevistas (a pergunta "o Docker é a única opção?" é comum) e em decisões de licença e segurança.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ferramenta</th><th>O que é</th><th>Diferencial</th><th>Observações</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Podman</strong></td><td>engine de containers e pods (Red Hat), CLI quase idêntica à do Docker</td><td><strong>sem daemon</strong> (cada comando é um processo filho do usuário) e <strong>rootless por padrão</strong></td><td><code>alias docker=podman</code> cobre a maior parte do uso; Compose via <code>podman compose</code> ou <code>podman-compose</code>; pods e <code>podman kube play</code>; Quadlet para integrar com systemd; Podman Desktop para Windows/Mac</td></tr>
+      <tr><td><strong>containerd + nerdctl</strong></td><td>containerd é o runtime de alto nível (CNCF); nerdctl é uma CLI compatível com Docker para ele</td><td>mais enxuto; é o que os clusters Kubernetes usam por baixo; lazy pulling de imagens</td><td>suporta Compose e rootless; não tem o build/UX integrados do dockerd (usa BuildKit à parte)</td></tr>
+      <tr><td><strong>CRI-O</strong></td><td>runtime criado para o Kubernetes, implementa só a CRI</td><td>mínimo e focado; usado no OpenShift</td><td>não é ferramenta de uso diário do desenvolvedor (<code>crictl</code> serve para depurar o nó)</td></tr>
+      <tr><td><strong>Buildah e Skopeo</strong></td><td>construir imagens sem daemon (Buildah) e copiar/inspecionar imagens entre registries (Skopeo)</td><td>úteis em CI e pipelines</td><td>fazem parte do mesmo ecossistema do Podman</td></tr>
+      <tr><td><strong>Rancher Desktop, Colima, Lima</strong></td><td>"Desktops" alternativos que provisionam a VM (Linux) com containerd ou dockerd</td><td>sem a licença comercial do Docker Desktop</td><td>comuns como substituto no Mac e no Windows</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh"># a mesma imagem, três ferramentas
+docker  run --rm -p 8080:80 nginx:1.27
+podman  run --rm -p 8080:80 docker.io/library/nginx:1.27
+nerdctl run --rm -p 8080:80 nginx:1.27</code></pre>
+  <div class="note trap"><b>Armadilha comum: compatibilidade nunca é 100%</b><p>Podman e nerdctl cobrem o dia a dia, mas há diferenças de comportamento (redes, rootless e portas abaixo de 1024, socket compatível com Docker, recursos do Compose, BuildKit). O Podman exige nome de registry completo em alguns casos (<code>docker.io/library/nginx</code>, "short names"). Teste os pipelines antes de trocar.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Produção em Kubernetes: o runtime é containerd ou CRI-O e você nem vê. Estação de desenvolvimento: Docker Desktop (se licenciado), ou Docker Engine em WSL 2, Podman ou Rancher Desktop. A imagem é a mesma em todos, porque é OCI.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como imagem e runtime seguem a OCI, dá para trocar: Podman roda sem daemon e rootless por padrão com CLI compatível; nerdctl é uma CLI para o containerd; CRI-O é um runtime só para Kubernetes. O Kubernetes não usa mais o Docker como runtime desde a 1.24, mas as imagens continuam compatíveis."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Rootless e ausência de daemon reduzem o impacto de uma invasão (não há processo root escutando um socket), o que interessa em ambientes regulados. Em contrapartida, trocar a ferramenta tem custo de treinamento, scripts e suporte. Só vale a mudança com um motivo claro (licença, segurança), um piloto e a decisão registrada.</p></div>
+</section>
+
+<section class="chap" id="primeiro-container">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l1">Básico</span></div>
+  <h2>Instalação e primeiros containers</h2>
+  <h3>Instalar</h3>
+  <ul>
+    <li><strong>Windows</strong>: instale o Docker Desktop (com o backend WSL 2 ativado) e confirme o enquadramento da licença (seção 6).</li>
+    <li><strong>macOS</strong>: Docker Desktop (escolha a versão para Apple Silicon ou Intel) ou uma alternativa.</li>
+    <li><strong>Linux</strong>: Docker Engine pelo repositório oficial do Docker. Exemplo no Ubuntu, seguindo a documentação oficial (confira o passo a passo atual para a sua distribuição):</li>
+  </ul>
+  <pre><code class="sh">sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release &amp;&amp; echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin</code></pre>
+  <p>O script de conveniência <code>get.docker.com</code> instala em uma linha, bom para laboratório e ruim para produção (não fixa versão e roda como root o que baixou).</p>
+  <pre><code class="sh">sudo systemctl enable --now docker       # inicia o daemon e liga no boot
+docker version                           # cliente E servidor: se só aparecer o cliente, o daemon não responde
+docker info                              # visão geral do daemon</code></pre>
+  <pre><code class="text">Client:
+ Version:    &lt;versão&gt;
+Server: Docker Engine - Community
+ Engine:
+  Version:   &lt;versão&gt;
+...
+Storage Driver: overlay2
+Cgroup Driver: systemd
+Cgroup Version: 2
+Runtimes: io.containerd.runc.v2 runc
+Default Runtime: runc
+Docker Root Dir: /var/lib/docker</code></pre>
+  <p>Se aparecer "permission denied ... /var/run/docker.sock", seu usuário não tem acesso ao socket. A solução comum é <code>sudo usermod -aG docker $USER</code> e um novo login, lembrando do que a seção 2 disse: <strong>quem está no grupo <code>docker</code> é, na prática, root</strong>. Em máquinas compartilhadas, prefira modo rootless ou <code>sudo</code> controlado.</p>
+  <h3>Primeiro container: <code>hello-world</code></h3>
+  <pre><code class="sh">docker run hello-world</code></pre>
+  <pre><code class="text">Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+c1ec31eb5944: Pull complete
+Digest: sha256:...
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+...</code></pre>
+  <p>A imagem tem um único programa que imprime a mensagem e sai. O container vive o tempo que o processo principal viver. Ele terminou, mas ainda existe (<code>docker ps -a</code> mostra com status <code>Exited (0)</code>); a imagem fica no cache local.</p>
+  <h3>O que acontece em um <code>docker run</code></h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 320" role="img" aria-label="Sequência de chamadas de um docker run entre CLI, dockerd, containerd e o registry">
+      <defs><marker id="ah-seq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="30" y="8" width="120" height="30" rx="4"/><text x="90" y="28" text-anchor="middle">docker CLI</text>
+      <rect class="box-a" x="190" y="8" width="120" height="30" rx="4"/><text x="250" y="28" text-anchor="middle">dockerd</text>
+      <rect class="box-a" x="350" y="8" width="120" height="30" rx="4"/><text x="410" y="28" text-anchor="middle">containerd</text>
+      <rect class="box-w" x="530" y="8" width="120" height="30" rx="4"/><text x="590" y="28" text-anchor="middle">Registry</text>
+      <line class="ln" x1="90" y1="38" x2="90" y2="262"/>
+      <line class="ln" x1="250" y1="38" x2="250" y2="262"/>
+      <line class="ln" x1="410" y1="38" x2="410" y2="262"/>
+      <line class="ln" x1="590" y1="38" x2="590" y2="190"/>
+      <line class="ln-a" x1="92" y1="70" x2="248" y2="70" marker-end="url(#ah-seq)"/><text class="lbl" x="170" y="64" text-anchor="middle">POST /containers/create</text>
+      <line class="ln-b" x1="248" y1="96" x2="92" y2="96" marker-end="url(#ah-seq)"/><text class="lbl" x="170" y="90" text-anchor="middle">404: imagem não existe</text>
+      <line class="ln-a" x1="92" y1="122" x2="248" y2="122" marker-end="url(#ah-seq)"/><text class="lbl" x="170" y="116" text-anchor="middle">POST /images/create</text>
+      <line class="ln-a" x1="252" y1="148" x2="588" y2="148" marker-end="url(#ah-seq)"/><text class="lbl" x="500" y="142" text-anchor="middle">manifest e camadas</text>
+      <line class="ln" x1="588" y1="174" x2="252" y2="174" marker-end="url(#ah-seq)"/><text class="lbl" x="500" y="168" text-anchor="middle">blobs verificados</text>
+      <line class="ln-a" x1="92" y1="200" x2="248" y2="200" marker-end="url(#ah-seq)"/><text class="lbl" x="170" y="194" text-anchor="middle">create (agora existe)</text>
+      <line class="ln-a" x1="92" y1="226" x2="248" y2="226" marker-end="url(#ah-seq)"/><text class="lbl" x="170" y="220" text-anchor="middle">POST .../start</text>
+      <line class="ln-a" x1="252" y1="252" x2="408" y2="252" marker-end="url(#ah-seq)"/><text class="lbl" x="330" y="246" text-anchor="middle">criar e iniciar tarefa</text>
+      <rect class="box-m" x="350" y="276" width="300" height="30" rx="4"/><text x="500" y="296" text-anchor="middle">shim → runc → processo do container</text>
+      <line class="ln-a" x1="410" y1="262" x2="410" y2="274" marker-end="url(#ah-seq)"/>
+    </svg>
+    <figcaption>Se a imagem já existe localmente, o trecho do pull (da seta vermelha até o segundo "create") não acontece. A seta vermelha é o 404 que dispara o pull.</figcaption>
+  </figure>
+  <ol class="seq">
+    <li><div><strong>A CLI monta o pedido.</strong> Lê as flags (<code>-d</code>, <code>-p</code>, <code>-e</code>, <code>-v</code>...), resolve o nome da imagem (<code>hello-world</code> vira <code>docker.io/library/hello-world:latest</code>) e envia a criação ao dockerd.</div></li>
+    <li><div><strong>O daemon procura a imagem localmente.</strong> Se não existe, faz o <em>pull</em>: pergunta ao registry o <em>manifest</em> da tag (se for um index multi-arquitetura, escolhe a variante da sua CPU), baixa o <em>config</em> e as <em>camadas</em> em paralelo, verifica o sha256 de cada uma e as descompacta no storage. É a saída "Pull complete".</div></li>
+    <li><div><strong>Create.</strong> O daemon combina a configuração da imagem (CMD, ENV, portas) com suas flags, cria a camada gravável (<code>upperdir</code>), aloca a rede (namespace de rede, par veth, IP na bridge) e deixa o container no estado <code>created</code>. Nenhum processo roda ainda.</div></li>
+    <li><div><strong>Start.</strong> O dockerd pede ao containerd, que sobe o shim, que chama o runc com o bundle: o runc cria os namespaces e cgroups, monta a raiz, aplica capabilities e seccomp, faz o <code>exec</code> do processo principal e sai. O estado vira <code>running</code>.</div></li>
+    <li><div><strong>Execução e saída.</strong> A CLI anexa stdout/stderr (a menos que seja <code>-d</code>). Quando o processo principal termina, o shim registra o código de saída e o estado vira <code>exited</code>. Com <code>--rm</code>, o container é removido em seguida.</div></li>
+  </ol>
+  <p>Você pode assistir a esses eventos em outro terminal com <code>docker events</code>.</p>
+  <h3>nginx: um servidor que fica no ar</h3>
+  <pre><code class="sh">docker run -d --name web -p 8080:80 nginx:1.27
+docker ps
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080
+docker logs web
+docker stop web &amp;&amp; docker rm web</code></pre>
+  <pre><code class="text">CONTAINER ID   IMAGE        COMMAND                  CREATED         STATUS         PORTS                  NAMES
+3b1c9a7e2f10   nginx:1.27   "/docker-entrypoint.…"   5 seconds ago   Up 4 seconds   0.0.0.0:8080-&gt;80/tcp   web
+200</code></pre>
+  <p>Diferente do hello-world, o processo principal (nginx em primeiro plano) não termina, então o container fica <code>Up</code>. O <code>-p 8080:80</code> publica a porta 80 do container na 8080 do host. Os logs são a saída do processo (stdout/stderr), por isso aplicações em container devem logar na saída padrão.</p>
+  <h3>postgres: configuração por variável e dados em volume</h3>
+  <pre><code class="sh">docker run -d --name pg \
+  -e POSTGRES_PASSWORD=senha_de_laboratorio \
+  -p 127.0.0.1:5432:5432 \
+  -v pgdata:/var/lib/postgresql/data \
+  postgres:17
+
+docker logs pg | tail -3
+docker exec -it pg psql -U postgres -c 'select version();'</code></pre>
+  <pre><code class="text">LOG:  database system is ready to accept connections
+                  version
+------------------------------------------
+ PostgreSQL 17.x on x86_64-pc-linux-gnu, ...</code></pre>
+  <ul>
+    <li>A imagem oficial exige <code>POSTGRES_PASSWORD</code> na primeira inicialização. Sem ela o container <strong>sai na hora</strong>, e o <code>docker logs</code> explica que o banco não foi inicializado por falta de senha de superusuário.</li>
+    <li><code>-v pgdata:/var/lib/postgresql/data</code> usa um <em>volume nomeado</em>: os dados sobrevivem a <code>docker rm pg</code>. Sem volume, a camada gravável é apagada junto com o container e o banco volta vazio. O caminho de montagem depende da versão da imagem (nas versões mais novas da imagem oficial a documentação recomenda montar em <code>/var/lib/postgresql</code>); confira a página da imagem no Docker Hub.</li>
+    <li>A tag <code>postgres:17</code> fixa a versão principal. Nunca use <code>latest</code> em banco de dados: uma atualização de versão principal exige migração de dados.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum: <code>-p 5432:5432</code> expõe o banco na rede inteira</b><p>Sem informar um endereço, <code>-p</code> publica em <code>0.0.0.0</code> (todas as interfaces). O Docker insere suas próprias regras de firewall e pode <strong>contornar o <code>ufw</code>/firewalld</strong> que você configurou. Para desenvolvimento, publique só no loopback (<code>-p 127.0.0.1:5432:5432</code>); entre containers, nem publique: use uma rede (módulo 05).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"No <code>docker run</code>: a CLI chama a API; se a imagem não existe localmente o daemon faz pull (manifest, config e camadas por digest); depois cria o container (camada gravável, rede) e inicia pelo containerd, shim e runc. O container vive enquanto o processo principal viver."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize o ambiente de dev em um comando (<code>docker compose up</code>, módulo 06) em vez de um manual de instalação. Defina regras mínimas já no primeiro dia: versões de imagem fixas (nada de <code>latest</code>), portas só em localhost, senhas fora do repositório e volumes para tudo que precisa persistir. Esses hábitos nascem nos primeiros containers que o time roda.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios para fazer em um host Linux (ou WSL 2 com o Engine), de preferência uma VM descartável. Tente antes de abrir a resolução.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Suba um nginx e mapeie o container no host: PID, processo pai, usuário dos workers e namespaces. Qual namespace é <em>igual</em> ao do host?</span></summary><div class="ans">
+  <pre><code class="sh">docker run -d --name e1 nginx:1.27
+PID=$(docker inspect -f '{{.State.Pid}}' e1)
+ps -o pid,ppid,user,cmd -p $PID --ppid $PID
+ps -o pid,cmd -p $(ps -o ppid= -p $PID)         # o shim
+for ns in pid net mnt uts ipc user cgroup; do
+  printf '%-7s' $ns; sudo readlink /proc/$PID/ns/$ns | tr '\n' ' '
+  sudo readlink /proc/self/ns/$ns
+done</code></pre>
+  <p>O pai do processo mestre é o <code>containerd-shim-runc-v2</code>. Os namespaces <code>pid, net, mnt, uts, ipc, cgroup</code> têm números diferentes dos do host. O <code>user</code> é <strong>igual</strong>, porque o Docker não usa user namespace por padrão: o UID 0 do container é o UID 0 do host. Limpe com <code>docker rm -f e1</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Rode um container com <code>--memory 128m --cpus 0.25 --pids-limit 50</code> e prove os três limites lendo os arquivos do cgroup (host e container).</span></summary><div class="ans">
+  <pre><code class="sh">docker run -d --name e2 --memory 128m --cpus 0.25 --pids-limit 50 nginx:1.27
+ID=$(docker inspect -f '{{.Id}}' e2)
+D=/sys/fs/cgroup/system.slice/docker-$ID.scope
+cat $D/memory.max $D/cpu.max $D/pids.max
+docker exec e2 cat /sys/fs/cgroup/memory.max</code></pre>
+  <p>Esperado (cgroup v2, driver systemd): <code>134217728</code>, <code>25000 100000</code> e <code>50</code>; dentro do container, <code>134217728</code>. Se <code>stat -fc %T /sys/fs/cgroup</code> disser <code>tmpfs</code>, é cgroup v1: os arquivos são <code>memory/docker/&lt;id&gt;/memory.limit_in_bytes</code>, <code>cpu/docker/&lt;id&gt;/cpu.cfs_quota_us</code> (25000) e <code>pids/docker/&lt;id&gt;/pids.max</code>. Se o caminho não existir, o driver é <code>cgroupfs</code> (<code>/sys/fs/cgroup/docker/&lt;id&gt;/</code>). Confira com <code>docker info --format '{{.CgroupDriver}}'</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Crie um "pseudo-container" com <code>unshare</code> (PID, UTS e rede) e verifique o que mudou. O que ainda falta para ser um container de verdade?</span></summary><div class="ans">
+  <pre><code class="sh">sudo unshare --pid --fork --mount-proc --uts --net bash
+ps aux; hostname novo; ip link; exit
+hostname</code></pre>
+  <p>Dentro: o bash é PID 1, só há <code>lo</code> (desligada) e o hostname mudado não vaza para o host. Faltam: (1) um sistema de arquivos raiz próprio (extrair o rootfs de uma imagem e usar <code>--root</code> ou <code>pivot_root</code>), (2) limites de cgroup, (3) redução de capabilities, seccomp e LSM, (4) rede conectada (par veth com o host). Juntar tudo e ler um <code>config.json</code> é o que o runc faz.</p></div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Mostre que o kernel é compartilhado e que o "SO" do container é só a userland: rode <code>alpine</code> e <code>ubuntu</code> e compare <code>uname -r</code> e <code>/etc/os-release</code> com os do host.</span></summary><div class="ans">
+  <pre><code class="sh">uname -r
+for img in alpine:3.20 ubuntu:24.04; do
+  echo "== $img"; docker run --rm $img sh -c 'uname -r; . /etc/os-release; echo $PRETTY_NAME'
+done</code></pre>
+  <p>O <code>uname -r</code> é idêntico ao do host nas duas imagens; o <code>PRETTY_NAME</code> muda (Alpine, Ubuntu), porque o que a imagem traz são binários e bibliotecas, não kernel. Corolário: uma imagem que dependa de um recurso de kernel (módulo, <code>sysctl</code>, eBPF) depende do kernel do <em>host</em>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>(Segurança) Mostre por que o grupo <code>docker</code> equivale a root, usando um usuário comum com acesso ao Docker. Só faça em uma VM de laboratório.</span></summary><div class="ans">
+  <pre><code class="sh">id                                    # usuário comum, no grupo docker
+docker run --rm -v /:/host alpine ls -l /host/etc/shadow
+docker run --rm -v /:/host alpine sh -c 'echo "preso no host" &gt; /host/root/prova.txt'
+sudo cat /root/prova.txt              # confirma a escrita em /root do host
+sudo rm /root/prova.txt</code></pre>
+  <p>O usuário comum leu um arquivo reservado ao root e escreveu em <code>/root</code>, porque dentro do container ele é root (UID 0, sem user namespace) com o disco do host montado. Mitigações: modo rootless, <code>userns-remap</code>, controle estrito de quem está no grupo, e nunca montar <code>/var/run/docker.sock</code> ou <code>/</code> em containers de aplicação.</p></div></details>
+  </section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <div class="note"><b>Cenário 1: "funciona na minha máquina, falha em homologação"</b>
+    <p>O time usa Docker, mas o erro só aparece em homologação: uma biblioteca com comportamento diferente.</p>
+    <p><strong>O que fazer:</strong> verificar se as duas pontas rodam <em>a mesma imagem</em>: comparar o digest (<code>docker image inspect --format '{{.Id}}' api:1.4.2</code> e <code>docker inspect --format '{{.Image}}' &lt;container&gt;</code> em cada ambiente). Provável causa: homologação reconstruiu a imagem a partir do código, ou uma tag mutável (<code>latest</code>, <code>1.4</code>) aponta para versões diferentes. Corrigir o processo: o CI constrói <strong>uma vez</strong>, publica a imagem com tag de versão/SHA e cada ambiente apenas a executa. Se as imagens forem iguais, o problema está na configuração (variáveis, volumes, rede, limites), e a comparação de <code>docker inspect</code> entre os dois mostra a diferença.</p></div>
+  <div class="note"><b>Cenário 2: o notebook do time no Windows está lento e sem memória</b>
+    <p>Devs reclamam que, com Docker Desktop, o notebook trava, o hot reload demora e o consumo de RAM (processo <code>vmmem</code>) passa de 8 GB.</p>
+    <p><strong>O que fazer:</strong> (1) mover os repositórios para dentro do sistema de arquivos do WSL (<code>~/projetos</code>) e abrir o editor com a integração WSL, em vez de usar <code>/mnt/c</code>; (2) limitar a VM em <code>.wslconfig</code> (<code>memory</code>, <code>processors</code>) e executar <code>wsl --shutdown</code>; (3) subir só os serviços necessários e definir limites de memória no Compose; (4) revisar imagens pesadas e processos que ficam rodando. Documente o padrão para o time.</p></div>
+  <div class="note"><b>Cenário 3: pedido de 40 licenças e dúvida sobre o Docker Desktop</b>
+    <p>A empresa de saúde tem mais de 250 funcionários e os devs usam Docker Desktop sem assinatura. O financeiro pergunta se é preciso pagar.</p>
+    <p><strong>O que fazer:</strong> verificar o enquadramento no texto oficial (menos de 250 funcionários e menos de US$ 10 milhões para a isenção; acima de qualquer um dos limites, assinatura para uso comercial) com o jurídico; levantar quem usa de fato o Desktop (Windows/Mac) e quem só usa Engine em Linux; comparar o custo de assinar (SSO, gestão central, suporte, Scout) com o de padronizar uma alternativa (Docker Engine em WSL 2, Rancher Desktop, Podman Desktop) incluindo o custo de suporte interno; decidir, registrar e comunicar um padrão único. Não deixe a decisão implícita.</p></div>
+  <div class="note"><b>Cenário 4: um parceiro quer rodar código dele na nossa plataforma</b>
+    <p>Uma parceira de laboratório pede para executar scripts de análise próprios na infraestrutura, em containers, no mesmo cluster dos serviços com dados de pacientes.</p>
+    <p><strong>O que fazer:</strong> reconhecer que é código <em>não confiável</em> em um kernel compartilhado: um escape de container chegaria aos dados dos pacientes. Opções em ordem crescente de isolamento: pool de nós dedicado e isolado por rede (NetworkPolicy), sandbox de kernel (gVisor), microVM (Kata/Firecracker) ou VMs separadas; usuário não-root, sem <code>--privileged</code>, limites de CPU e memória, sistema de arquivos somente leitura, sem acesso à rede interna. Levar o desenho à segurança e ao encarregado de dados antes de começar.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Container</dt><dd>Processo Linux isolado por namespaces, limitado por cgroups e com raiz própria vinda de uma imagem.</dd></div>
+    <div><dt>Imagem</dt><dd>Pacote imutável em camadas (sistema de arquivos + metadados) usado para criar containers.</dd></div>
+    <div><dt>Namespace</dt><dd>Recurso do kernel que dá ao processo uma visão própria de um recurso global (processos, rede, mounts...).</dd></div>
+    <div><dt>cgroup</dt><dd>Grupo de controle: limita e contabiliza CPU, memória, I/O e processos de um conjunto de processos.</dd></div>
+    <div><dt>overlayfs / overlay2</dt><dd>Sistema de arquivos que empilha diretórios; base do armazenamento em camadas do Docker.</dd></div>
+    <div><dt>dockerd</dt><dd>Daemon do Docker: API, imagens, redes, volumes e build; delega a execução ao containerd.</dd></div>
+    <div><dt>containerd</dt><dd>Runtime de alto nível (CNCF) que gerencia imagens e ciclo de vida de containers; usado também pelo Kubernetes.</dd></div>
+    <div><dt>shim</dt><dd>Processo que fica como pai do container (containerd-shim-runc-v2), mantém stdio e relata o código de saída.</dd></div>
+    <div><dt>runc</dt><dd>Runtime de baixo nível que cria namespaces e cgroups e inicia o processo; implementa a runtime-spec da OCI.</dd></div>
+    <div><dt>OCI</dt><dd>Open Container Initiative: define image-spec, runtime-spec e distribution-spec.</dd></div>
+    <div><dt>Registry</dt><dd>Servidor que armazena e distribui imagens (Docker Hub, GHCR, ECR, Harbor).</dd></div>
+    <div><dt>WSL 2</dt><dd>Subsistema do Windows para Linux com kernel Linux real em VM leve; backend padrão do Docker Desktop no Windows.</dd></div>
+    <div><dt>Rootless</dt><dd>Modo em que o daemon e os containers rodam sem privilégios de root no host, usando user namespaces.</dd></div>
+    <div><dt>Capabilities</dt><dd>Divisão dos poderes do root em permissões individuais (CAP_NET_ADMIN, CAP_SYS_ADMIN...); containers recebem só um subconjunto.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Responda em voz alta antes de abrir. Boa resposta: uma frase de definição, o mecanismo e um exemplo ou consequência prática.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é um container?</span></summary><div class="ans">
+  <p>Um processo do Linux executado de forma isolada: namespaces limitam o que ele enxerga (processos, rede, mounts, hostname, IPC, usuários), cgroups limitam o que consome e uma raiz montada a partir de uma imagem dá o sistema de arquivos. Não há SO próprio; o kernel é o do host.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre container e máquina virtual?</span></summary><div class="ans">
+  <p>A VM virtualiza hardware e roda um SO completo com kernel próprio sobre um hypervisor: isola mais, pesa mais e pode rodar outro SO. O container compartilha o kernel do host: é mais leve, mais denso e inicia em segundos, mas a superfície de ataque é maior (todas as syscalls). Em nuvem, usam-se juntos: containers dentro de VMs.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Qual problema o Docker resolve?</span></summary><div class="ans">
+  <p>A divergência entre ambientes. A imagem empacota aplicação e dependências, então o mesmo artefato roda no notebook, no CI e em produção. Também acelera onboarding, isola versões conflitantes e simplifica deploy e rollback (trocar a tag).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Como provar que um container é só um processo do host?</span></summary><div class="ans">
+  <p><code>docker inspect -f '{{.State.Pid}}'</code> dá o PID no host; <code>ps</code> o mostra (filho do containerd-shim); <code>/proc/&lt;pid&gt;/ns/</code> lista os namespaces; <code>cat /sys/fs/cgroup/.../memory.max</code> mostra o limite. Dentro, o mesmo processo é o PID 1.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Quais namespaces o Docker usa?</span></summary><div class="ans">
+  <p>pid, net, mnt, uts, ipc e cgroup por padrão. O user namespace não é usado por padrão (UID 0 do container é UID 0 do host); só com rootless ou <code>userns-remap</code>. O namespace de tempo existe no kernel desde o 5.6, mas não é usado por padrão.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>O que são cgroups e o que muda entre v1 e v2?</span></summary><div class="ans">
+  <p>Mecanismo do kernel para limitar e contabilizar recursos de grupos de processos. Na v1, cada controlador tem sua própria árvore; na v2 há uma hierarquia unificada, com arquivos como <code>memory.max</code>, <code>cpu.max</code> e <code>pids.max</code>, melhor contabilidade de I/O e PSI. As distribuições recentes usam v2 por padrão, e o Docker a suporta desde a 20.10.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>O que acontece quando o container ultrapassa o limite de memória?</span></summary><div class="ans">
+  <p>O OOM killer do cgroup mata um processo do container (SIGKILL). Se for o principal, o container sai com código 137 e <code>docker inspect</code> mostra <code>OOMKilled: true</code>. Soluções: achar o vazamento ou aumentar o limite. Sem limite, o processo pode esgotar a memória do host.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Descreva a arquitetura do Docker.</span></summary><div class="ans">
+  <p>A CLI envia requisições REST ao dockerd (socket Unix). O dockerd gerencia imagens, redes, volumes e build, e delega ao containerd. O containerd cria um containerd-shim por container, e o shim executa o runc, que cria namespaces e cgroups, inicia o processo e sai. O shim permanece como pai, mantém stdio e coleta o exit code. As imagens vêm de um registry.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que é a OCI e o que ela padroniza?</span></summary><div class="ans">
+  <p>Open Container Initiative, sob a Linux Foundation. Define a image-spec (manifest, config, camadas por digest), a runtime-spec (bundle com config.json e rootfs, que o runc executa) e a distribution-spec (API de registries). Por isso imagens e runtimes de ferramentas diferentes são intercambiáveis.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Docker Engine x Docker Desktop? E a licença?</span></summary><div class="ans">
+  <p>Engine é o daemon e a CLI para Linux, código aberto. Desktop é um aplicativo para Windows, Mac e Linux que embute uma VM com o Engine, mais Compose, interface e extras. O Desktop exige assinatura paga para uso comercial em empresas com 250 ou mais funcionários ou mais de US$ 10 milhões de receita anual; menores, uso pessoal, educação e open source não comercial são gratuitos. Convém confirmar o texto atual no site do Docker.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como o Docker roda no Windows e no Mac, se containers precisam de kernel Linux?</span></summary><div class="ans">
+  <p>Dentro de uma VM Linux leve: no Windows, o backend WSL 2 (kernel Linux real em hypervisor leve); no Mac, uma VM gerenciada pelo Desktop. A CLI no sistema hospedeiro fala com o daemon da VM. Consequências: bind mounts de pastas do host são mais lentos, a VM consome RAM e, no Apple Silicon, imagens amd64 rodam por emulação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Que alternativas ao Docker existem?</span></summary><div class="ans">
+  <p>Podman (sem daemon, rootless por padrão, CLI compatível), containerd com nerdctl, CRI-O (runtime só para Kubernetes), Buildah e Skopeo para build e transferência de imagens, e Desktops alternativos (Rancher Desktop, Colima). Todos executam imagens OCI. O Kubernetes usa containerd ou CRI-O desde a remoção do dockershim na 1.24.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Descreva o que acontece quando você executa <code>docker run nginx</code>.</span></summary><div class="ans">
+  <p>A CLI chama a API; o dockerd verifica a imagem local; se não existe, faz pull (resolve a tag, baixa manifest, config e camadas, valida sha256); cria o container (camada gravável, rede, configuração mesclada); o containerd, via shim e runc, cria namespaces e cgroups e executa o processo do nginx. O container fica <code>running</code> enquanto o processo viver e a CLI anexa a saída.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Por que o grupo <code>docker</code> é considerado equivalente a root?</span></summary><div class="ans">
+  <p>Quem fala com o daemon pode criar um container como root (UID 0, sem user namespace) montando o <code>/</code> do host e ler ou alterar qualquer arquivo, ou usar <code>--privileged</code>. O mesmo vale para montar o <code>docker.sock</code> em um container. Mitigações: rootless, userns-remap, <code>sudo</code> restrito e auditado, e nunca expor o socket.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Containers são seguros o suficiente para isolar clientes diferentes no mesmo host?</span></summary><div class="ans">
+  <p>Não como única barreira. O kernel é compartilhado e uma vulnerabilidade de kernel permite escapar. Para multi-tenant com código não confiável, use VMs, microVMs (Kata/Firecracker) ou sandbox como gVisor, além de nós dedicados, rede segmentada, usuários não-root, capabilities mínimas e limites de recursos. Para carga de confiança igual, containers com as boas práticas bastam.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como você apresentaria ao time e à diretoria a adoção de containers? Quais riscos destacaria?</span></summary><div class="ans">
+  <p>Benefícios: ambientes reprodutíveis, onboarding e deploy mais rápidos, melhor uso da infraestrutura e caminho para orquestração. Riscos e decisões: licença do Docker Desktop, segurança (imagens escaneadas, não-root, acesso ao socket, isolamento de dados sensíveis, LGPD), persistência de dados (volumes, backup), limites de recursos, observabilidade de logs e métricas, governança de imagens (registry, tags fixas, atualizações). Propor um piloto em um serviço de baixo risco, com padrões de Dockerfile e checklist de revisão, antes de generalizar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Um container Linux roda no seu Mac e dá erro "exec format error" no servidor. Por quê?</span></summary><div class="ans">
+  <p>Arquitetura de CPU diferente: a imagem foi construída em <code>arm64</code> (Apple Silicon) e o servidor é <code>amd64</code>, ou o contrário. Solução: construir para a plataforma de destino (<code>docker buildx build --platform linux/amd64</code>) ou publicar uma imagem multi-arquitetura (manifest list/index), e fazer o build final no CI em Linux. Outra causa de erro parecido: script de entrypoint com fim de linha CRLF. Detalhes de multi-arquitetura estão no módulo 02.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

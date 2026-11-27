@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 10: Concorrência, locks e MVCC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 10 de 12 · Concorrência, locks e MVCC</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html" aria-current="page"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li class="sub"><ol>
+      <li><a href="#anomalias"><span class="n">1</span>O problema: o que dá errado quando duas transações se cruzam</a></li>
+      <li><a href="#isolamento"><span class="n">2</span>Níveis de isolamento: o padrão ANSI e o que cada banco realmente faz</a></li>
+      <li><a href="#mvcc"><span class="n">3</span>MVCC por dentro: undo no Oracle, tuplas versionadas no PostgreSQL</a></li>
+      <li><a href="#locks"><span class="n">4</span>Locks de linha e de tabela, FOR UPDATE, filas e deadlocks</a></li>
+      <li><a href="#transacoes-longas"><span class="n">5</span>Transações longas, "idle in transaction" e timeouts</a></li>
+      <li><a href="#investigar"><span class="n">6</span>Investigando bloqueios: quem trava quem</a></li>
+      <li><a href="#otimista"><span class="n">7</span>Concorrência otimista com coluna de versão</a></li>
+      <li><a href="#agendamento"><span class="n">8</span>Agendamento sem reserva dupla</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 10 · <span class="lvl l3">Avançado</span></div>
+  <h1>Concorrência, locks e MVCC</h1>
+  <p class="lede">Um banco serve centenas de usuários ao mesmo tempo, e cada um espera que o sistema se comporte como se estivesse sozinho. Este módulo mostra onde essa ilusão falha (lost update, write skew, deadlock), como o Oracle e o PostgreSQL a sustentam por baixo (undo e MVCC) e como investigar e evitar bloqueios.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Reconhecer as anomalias clássicas de concorrência e qual nível de isolamento (ou técnica) as evita em cada banco</li>
+    <li>Explicar como Oracle (undo) e PostgreSQL (tuplas versionadas, VACUUM) implementam leitura consistente, e os problemas que cada um cria (ORA-01555, bloat, wraparound)</li>
+    <li>Usar <code>SELECT ... FOR UPDATE</code>, <code>NOWAIT</code> e <code>SKIP LOCKED</code>, montar uma fila de processamento e evitar deadlocks</li>
+    <li>Investigar bloqueios com <code>v$session</code>/<code>v$lock</code> e <code>pg_stat_activity</code>/<code>pg_locks</code>/<code>pg_blocking_pids()</code></li>
+    <li>Aplicar concorrência otimista e impedir reserva dupla com constraints (unique, exclusion constraint)</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="anomalias">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O problema: o que dá errado quando duas transações se cruzam</h2>
+  <p>Uma <strong>transação</strong> é um grupo de comandos que deve valer por inteiro ou nada (módulo <a href="06-escrita-modelagem.html">06</a>). O "I" de ACID (<em>isolation</em>) promete que transações simultâneas não se atrapalham. Na prática, isolamento perfeito custa caro (obrigaria a executar uma de cada vez), então os bancos oferecem <strong>níveis</strong> de isolamento que toleram algumas anomalias em troca de desempenho. Para decidir bem, é preciso conhecer as anomalias.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Anomalia</th><th>O que acontece</th><th>Exemplo na clínica</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Dirty read</strong> (leitura suja)</td><td>Lê dado que outra transação gravou e ainda não confirmou (e pode desfazer)</td><td>O faturamento mostra um atendimento que depois foi cancelado por <code>ROLLBACK</code></td></tr>
+      <tr><td><strong>Non-repeatable read</strong> (leitura não repetível)</td><td>Lê a mesma linha duas vezes na mesma transação e vê valores diferentes, porque alguém confirmou uma alteração no meio</td><td>Um relatório soma <code>valor</code> no início e no fim e os totais não batem</td></tr>
+      <tr><td><strong>Phantom read</strong> (leitura fantasma)</td><td>Repete uma consulta com filtro e aparecem (ou somem) <em>linhas</em> novas</td><td><code>COUNT(*)</code> de agendamentos do médico 7 dá 5 e, minutos depois na mesma transação, 6</td></tr>
+      <tr><td><strong>Lost update</strong> (atualização perdida)</td><td>Duas transações leem o mesmo valor, cada uma calcula e grava; a segunda sobrescreve a primeira sem saber</td><td>Dois atendentes somam descontos ao mesmo <code>atendimento.valor</code>; um dos ajustes desaparece</td></tr>
+      <tr><td><strong>Write skew</strong></td><td>Duas transações leem o mesmo conjunto, decidem com base nele e gravam <em>linhas diferentes</em>; cada uma está certa isoladamente, mas juntas violam uma regra</td><td>Regra "pelo menos um médico de plantão": dois médicos leem "há 2 de plantão" e ambos saem</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Lost update, em linha do tempo</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 232" role="img" aria-label="Linha do tempo de lost update: A lê valor 100, B lê valor 100, A grava 120, B grava 130 sobrescrevendo; o ajuste de A é perdido.">
+      <defs><marker id="ah-lu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="lbl" x="660" y="18" text-anchor="end">tempo →</text>
+      <text class="ttl" x="20" y="62">Sessão A</text><text class="ttl" x="20" y="152">Sessão B</text>
+      <line class="ln" x1="90" y1="57" x2="580" y2="57"/><line class="ln" x1="90" y1="147" x2="580" y2="147"/>
+      <rect class="box-a" x="90" y="40" width="115" height="34" rx="5"/><text x="147" y="62" text-anchor="middle">lê valor=100</text>
+      <rect class="box-w" x="215" y="130" width="115" height="34" rx="5"/><text x="272" y="152" text-anchor="middle">lê valor=100</text>
+      <rect class="box-a" x="340" y="40" width="115" height="34" rx="5"/><text x="397" y="62" text-anchor="middle">grava 100+20</text>
+      <rect class="box-w" x="465" y="130" width="115" height="34" rx="5"/><text x="522" y="152" text-anchor="middle">grava 100+30</text>
+      <rect class="box-b" x="595" y="85" width="75" height="34" rx="5"/><text x="632" y="107" text-anchor="middle">valor=130</text>
+      <line class="ln-b" x1="580" y1="140" x2="620" y2="121" marker-end="url(#ah-lu)"/>
+      <text class="lbl" x="147" y="190" text-anchor="middle">t1</text><text class="lbl" x="272" y="190" text-anchor="middle">t2</text><text class="lbl" x="397" y="190" text-anchor="middle">t3</text><text class="lbl" x="522" y="190" text-anchor="middle">t4</text>
+      <text class="lbl" x="20" y="214">Resultado: 130. O correto seria 150; o +20 de A foi sobrescrito sem erro e sem aviso.</text>
+    </svg>
+    <figcaption>Lost update: a leitura em t1 e t2 é a mesma; cada sessão calcula com base num valor que já ficou velho.</figcaption>
+  </figure>
+<pre><code class="sql">-- ERRADO: a aplicação lê, calcula e grava (read-modify-write)
+SELECT valor FROM atendimento WHERE id_atendimento = 1001;        -- app calcula 100 + 20
+UPDATE atendimento SET valor = 120 WHERE id_atendimento = 1001;
+
+-- CERTO 1: atualização atômica, o banco calcula com o valor atual
+UPDATE atendimento SET valor = valor + 20 WHERE id_atendimento = 1001;</code></pre>
+  <p>Outras defesas: bloquear a linha ao ler (<code>SELECT ... FOR UPDATE</code>, seção 4) ou concorrência otimista com coluna de versão (seção 7). A atualização atômica é a mais simples, quando o cálculo cabe numa expressão SQL.</p>
+
+  <h3>Leitura não repetível, em linha do tempo</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Linha do tempo de leitura não repetível: A soma 5000, B altera e confirma, A soma novamente e obtém 5200.">
+      <text class="lbl" x="660" y="18" text-anchor="end">tempo →</text>
+      <text class="ttl" x="20" y="62">Sessão A</text><text class="ttl" x="20" y="152">Sessão B</text>
+      <line class="ln" x1="90" y1="57" x2="660" y2="57"/><line class="ln" x1="90" y1="147" x2="660" y2="147"/>
+      <rect class="box-a" x="90" y="40" width="170" height="34" rx="5"/><text x="175" y="62" text-anchor="middle">SELECT SUM = 5000</text>
+      <rect class="box-w" x="270" y="130" width="140" height="34" rx="5"/><text x="340" y="152" text-anchor="middle">+200 e COMMIT</text>
+      <rect class="box-b" x="420" y="40" width="170" height="34" rx="5"/><text x="505" y="62" text-anchor="middle">SELECT SUM = 5200</text>
+      <text class="lbl" x="175" y="190" text-anchor="middle">t1</text><text class="lbl" x="340" y="190" text-anchor="middle">t2</text><text class="lbl" x="505" y="190" text-anchor="middle">t3</text>
+      <text class="lbl" x="20" y="212">A mesma consulta, dentro da mesma transação de A, devolveu dois resultados.</text>
+    </svg>
+    <figcaption>Non-repeatable read. Se em t2 B inserisse uma linha nova em vez de alterar uma existente, seria um phantom read.</figcaption>
+  </figure>
+  <div class="note trap"><b>"Meu SELECT dentro da transação sempre vê a mesma coisa"</b><p>Só se o nível de isolamento garantir. No padrão dos dois bancos (<code>READ COMMITTED</code>), <strong>cada comando</strong> enxerga os dados confirmados até o seu início, e dois comandos seguidos na mesma transação podem ver mundos diferentes. Relatórios com várias consultas que devem ser coerentes entre si precisam de isolamento de transação (seção 2).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é um lost update e como evitar?" <em>"É quando duas transações leem o mesmo valor e a segunda gravação sobrescreve a primeira. Evito com atualização atômica (<code>SET valor = valor + x</code>), bloqueio da linha ao ler (<code>FOR UPDATE</code>) ou concorrência otimista com coluna de versão e <code>WHERE versao = :lida</code>. No nível padrão READ COMMITTED, ele ocorre se a aplicação faz read-modify-write sem proteção."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Lost update é um <strong>defeito silencioso</strong>: não gera erro, apenas dado errado, e costuma aparecer como "o cliente jura que alterou". Revise com o time os fluxos em que duas pessoas ou serviços editam o mesmo registro (cadastro de paciente, valores de atendimento, agenda) e exija uma estratégia explícita em cada um: atômico, bloqueio ou versão. Essa decisão pertence ao <em>design</em>, não ao "depois a gente vê".</p></div>
+</section>
+
+<section class="chap" id="isolamento">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Níveis de isolamento: o padrão ANSI e o que cada banco realmente faz</h2>
+  <p>O padrão SQL define quatro níveis pelo que <em>permitem</em>. Quanto mais alto, menos anomalias e mais custo (esperas, falhas de serialização):</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Nível ANSI</th><th>Dirty read</th><th>Non-repeatable</th><th>Phantom</th></tr></thead>
+    <tbody>
+      <tr><td><code>READ UNCOMMITTED</code></td><td>permite</td><td>permite</td><td>permite</td></tr>
+      <tr><td><code>READ COMMITTED</code></td><td>impede</td><td>permite</td><td>permite</td></tr>
+      <tr><td><code>REPEATABLE READ</code></td><td>impede</td><td>impede</td><td>permite</td></tr>
+      <tr><td><code>SERIALIZABLE</code></td><td>impede</td><td>impede</td><td>impede</td></tr>
+    </tbody>
+  </table></div>
+  <p>Essa tabela é teoria. Os bancos reais implementam isso com <strong>MVCC</strong> (seção 3) e <em>não seguem a tabela à risca</em>. É aí que as entrevistas e os incidentes acontecem.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Níveis disponíveis</strong></td><td><code>READ COMMITTED</code> (padrão), <code>SERIALIZABLE</code> e <code>READ ONLY</code>. Não existe <code>REPEATABLE READ</code> nem <code>READ UNCOMMITTED</code></td><td><code>READ COMMITTED</code> (padrão), <code>REPEATABLE READ</code>, <code>SERIALIZABLE</code>. <code>READ UNCOMMITTED</code> existe só no nome e se comporta como <code>READ COMMITTED</code></td></tr>
+      <tr><td><strong>Dirty read</strong></td><td>Nunca</td><td>Nunca</td></tr>
+      <tr><td><strong>READ COMMITTED</strong></td><td>Consistência <strong>por comando</strong>: cada <code>SELECT</code> vê os dados confirmados no momento em que começou, lidos do undo se necessário</td><td>Idem: cada comando tem um snapshot novo</td></tr>
+      <tr><td><strong>Consistência de transação</strong></td><td><code>SERIALIZABLE</code> (ou <code>READ ONLY</code>): snapshot fixo no início da transação</td><td><code>REPEATABLE READ</code>: snapshot fixo na primeira consulta (e impede phantoms, mais forte que o ANSI)</td></tr>
+      <tr><td><strong>"SERIALIZABLE"</strong></td><td>É na verdade <strong>snapshot isolation</strong>: impede phantom e non-repeatable, mas <strong>não impede write skew</strong></td><td>Serializável de verdade (<strong>SSI</strong>, Serializable Snapshot Isolation, desde o 9.1): detecta dependências perigosas e aborta uma transação</td></tr>
+      <tr><td><strong>Erro de concorrência</strong></td><td><code>ORA-08177: can't serialize access for this transaction</code></td><td>SQLSTATE <code>40001</code>: <code>could not serialize access due to concurrent update</code> (REPEATABLE READ) ou <code>... due to read/write dependencies among transactions</code> (SERIALIZABLE)</td></tr>
+      <tr><td><strong>Como definir</strong></td><td><code>SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;</code> como primeiro comando, ou <code>ALTER SESSION SET ISOLATION_LEVEL = SERIALIZABLE;</code></td><td><code>BEGIN ISOLATION LEVEL REPEATABLE READ;</code> ou <code>SET TRANSACTION ISOLATION LEVEL ...</code> antes da primeira consulta</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Níveis altos exigem retry</h3>
+  <p>Em <code>REPEATABLE READ</code>/<code>SERIALIZABLE</code>, o banco não bloqueia: ele <strong>deixa a transação ir longe e a rejeita no fim</strong> se detectar conflito. A aplicação <strong>tem de capturar o erro e repetir a transação inteira</strong> (idealmente com recuo e limite de tentativas). Sem esse laço, o nível alto vira erro 500 em produção.</p>
+<pre><code class="text">-- Sessão A                                  -- Sessão B
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT valor FROM atendimento
+ WHERE id_atendimento = 1001;               -- 100
+                                            BEGIN;
+                                            UPDATE atendimento SET valor = 130
+                                             WHERE id_atendimento = 1001;
+                                            COMMIT;
+UPDATE atendimento SET valor = valor + 20
+ WHERE id_atendimento = 1001;
+ERROR:  could not serialize access due to concurrent update
+-- A deve dar ROLLBACK e refazer a transação do início (agora vê 130 e grava 150)</code></pre>
+  <p>No <code>READ COMMITTED</code>, o mesmo UPDATE enxergaria o valor já confirmado por B e gravaria 150, sem erro. Se B ainda não tivesse confirmado, A esperaria por ele e, depois, reavaliaria a condição sobre a linha atualizada (no PostgreSQL, a linha é relida e o <code>WHERE</code> reavaliado; no Oracle, o comando pode ser silenciosamente reiniciado). Por isso o <code>valor = valor + 20</code> é seguro em <code>READ COMMITTED</code>, mas o "lê, calcula na aplicação e grava" não é.</p>
+
+  <h3>Write skew: o que o snapshot não pega</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 240" role="img" aria-label="Write skew: dois médicos contam plantonistas ativos, ambos veem 2, cada um marca a própria linha como fora e confirmam; resultado: zero médicos de plantão.">
+      <defs><marker id="ah-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="lbl" x="660" y="18" text-anchor="end">tempo →</text>
+      <text class="ttl" x="20" y="58">Dr. A</text><text class="ttl" x="20" y="118">Dr. B</text>
+      <line class="ln" x1="90" y1="53" x2="670" y2="53"/><line class="ln" x1="90" y1="113" x2="670" y2="113"/>
+      <rect class="box-a" x="90" y="36" width="140" height="34" rx="5"/><text x="160" y="58" text-anchor="middle">COUNT ativos=2</text>
+      <rect class="box-w" x="240" y="96" width="140" height="34" rx="5"/><text x="310" y="118" text-anchor="middle">COUNT ativos=2</text>
+      <rect class="box-a" x="390" y="36" width="130" height="34" rx="5"/><text x="455" y="58" text-anchor="middle">A sai: ativo=0</text>
+      <rect class="box-w" x="530" y="96" width="140" height="34" rx="5"/><text x="600" y="118" text-anchor="middle">B sai: ativo=0</text>
+      <rect class="box-b" x="400" y="160" width="190" height="34" rx="5"/><text x="495" y="182" text-anchor="middle">0 médicos de plantão</text>
+      <line class="ln-b" x1="600" y1="130" x2="560" y2="158" marker-end="url(#ah-ws)"/>
+      <text class="lbl" x="20" y="216">Cada um vê 2 e altera uma linha diferente; ninguém bloqueia ninguém e a regra "mínimo 1" quebra.</text>
+      <text class="lbl" x="20" y="232">Só SERIALIZABLE de verdade (PostgreSQL) ou travar o conjunto lido evita isso.</text>
+    </svg>
+    <figcaption>Write skew com a tabela auxiliar <code>plantao(id_medico, id_setor, ativo)</code>: as linhas gravadas são diferentes, então nem lock de linha nem snapshot detectam o conflito.</figcaption>
+  </figure>
+<pre><code class="sql">-- Regra de negócio: sempre pelo menos 1 médico ativo por setor
+SELECT COUNT(*) FROM plantao WHERE id_setor = 3 AND ativo = 1;   -- ambos veem 2
+UPDATE plantao SET ativo = 0 WHERE id_medico = :eu AND id_setor = 3;
+COMMIT;</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Como evitar</th><th>PostgreSQL</th><th>Oracle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Isolamento</strong></td><td><code>SERIALIZABLE</code>: a segunda transação é abortada com 40001; retry</td><td><code>SERIALIZABLE</code> <em>não</em> basta (snapshot isolation)</td></tr>
+      <tr><td><strong>Travar o conjunto lido</strong></td><td><code>SELECT ... FOR UPDATE</code> nas linhas do setor antes de contar</td><td>Idem: <code>FOR UPDATE</code> nas linhas relevantes</td></tr>
+      <tr><td><strong>Travar um pai</strong></td><td>Travar a linha do <code>setor</code> (<code>FOR UPDATE</code>) serializa quem mexe nos plantões daquele setor</td><td>Idem</td></tr>
+      <tr><td><strong>Constraint</strong></td><td>Quando a regra for expressável (unique, exclusion constraint), o banco garante sozinho (seção 8)</td><td>Unique/índice funcional; regras gerais exigem trigger ou lock</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Qual nível usar? <strong>READ COMMITTED</strong> para quase tudo, com operações atômicas e <code>FOR UPDATE</code> onde a regra de negócio exige. <strong>REPEATABLE READ/READ ONLY</strong> para relatórios que fazem várias consultas coerentes entre si. <strong>SERIALIZABLE</strong> (PostgreSQL) quando a regra é complexa demais para travar à mão, <em>com</em> retry implementado. Nunca suba o nível "para garantir" sem o laço de retry.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Oracle SERIALIZABLE e PostgreSQL SERIALIZABLE são a mesma coisa?" <em>"Não. O do Oracle é snapshot isolation: não impede write skew. O do PostgreSQL usa SSI e é serializável de verdade, ao custo de abortar transações com erro 40001 que a aplicação deve repetir. Nos dois, o padrão é READ COMMITTED, com consistência por comando."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pergunte ao time: "qual o nível de isolamento deste serviço e onde há retry?". Um serviço migrado de Oracle para PostgreSQL (ou vice-versa) pode mudar de comportamento sem mudar uma linha de SQL. E um nível alto sem tratamento de erro 40001/ORA-08177 gera falhas intermitentes que só aparecem sob carga: coloque esse caso no teste de carga.</p></div>
+</section>
+
+
+<section class="chap" id="mvcc">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>MVCC por dentro: undo no Oracle, tuplas versionadas no PostgreSQL</h2>
+  <p>Os dois bancos usam <strong>MVCC</strong> (controle de concorrência por múltiplas versões): quem lê vê uma "foto" consistente do passado, então <strong>leitura não bloqueia escrita e escrita não bloqueia leitura</strong>. Só duas escritas na mesma linha esperam uma pela outra. O que muda é <em>onde ficam as versões antigas</em>, e isso determina os problemas operacionais de cada banco.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Onde ficam as versões antigas</strong></td><td>No <strong>undo</strong> (tablespace de UNDO). A linha na tabela é <strong>alterada no lugar</strong>; a imagem anterior vai para o undo</td><td><strong>Na própria tabela</strong>. Um <code>UPDATE</code> grava uma <strong>nova versão</strong> (tupla) e marca a antiga como substituída</td></tr>
+      <tr><td><strong>Leitura consistente</strong></td><td>O leitor tem um <strong>SCN</strong> (número de mudança). Se o bloco foi alterado depois dele, o Oracle reconstrói uma cópia do bloco desfazendo as mudanças com o undo</td><td>O leitor tem um <strong>snapshot</strong>. Para cada tupla, compara <code>xmin</code>/<code>xmax</code> com o snapshot e decide se ela é visível</td></tr>
+      <tr><td><strong>COMMIT</strong></td><td>Barato</td><td>Barato</td></tr>
+      <tr><td><strong>ROLLBACK</strong></td><td>Pode ser <strong>lento</strong> em transação grande: aplica o undo de volta</td><td><strong>Instantâneo</strong>: só marca a transação como abortada (as tuplas viram lixo)</td></tr>
+      <tr><td><strong>Limpeza</strong></td><td>O undo é reaproveitado automaticamente, respeitando a retenção (<code>UNDO_RETENTION</code>)</td><td>O <strong>VACUUM</strong> recicla as tuplas mortas; sem ele, a tabela incha (<strong>bloat</strong>)</td></tr>
+      <tr><td><strong>Problema típico</strong></td><td><code>ORA-01555 snapshot too old</code>; falta de espaço de undo</td><td>Bloat, autovacuum que não dá conta, <em>wraparound</em> de IDs de transação</td></tr>
+      <tr><td><strong>Transação longa prejudica</strong></td><td>Consumo de undo; leitores longos podem falhar com ORA-01555</td><td>Impede o VACUUM de limpar tuplas mortas recentes (bloat) em <em>todo</em> o banco</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>PostgreSQL: xmin, xmax e versões de linha</h3>
+  <p>Cada tupla carrega, num cabeçalho, o ID da transação que a criou (<code>xmin</code>) e o da que a removeu ou substituiu (<code>xmax</code>, 0 enquanto viva). Dá para vê-los como colunas de sistema:</p>
+<pre><code class="sql">SELECT xmin, xmax, ctid, id_atendimento, valor
+FROM   atendimento WHERE id_atendimento = 1001;
+--  xmin | xmax | ctid  | id_atendimento | valor
+--   100 |    0 | (1,1) |           1001 |   100
+
+UPDATE atendimento SET valor = 120 WHERE id_atendimento = 1001;  -- transação 205; COMMIT
+
+SELECT xmin, xmax, ctid, id_atendimento, valor
+FROM   atendimento WHERE id_atendimento = 1001;
+--  xmin | xmax | ctid  | id_atendimento | valor
+--   205 |    0 | (1,2) |           1001 |   120</code></pre>
+  <figure class="figure">
+    <svg viewBox="0 0 680 240" role="img" aria-label="Duas versões da mesma linha numa página do PostgreSQL: a versão antiga com xmin 100 e xmax 205 e a nova com xmin 205 e xmax 0. Uma transação 200, com snapshot anterior a 205, enxerga a versão antiga; uma transação 210 enxerga a nova.">
+      <defs><marker id="ah-mv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Página de tabela no PostgreSQL: duas versões da mesma linha</text>
+      <rect class="box-b" x="20" y="36" width="300" height="56" rx="5"/>
+      <text x="32" y="58">(1,1)  valor = 100</text><text x="32" y="78">xmin=100   xmax=205</text>
+      <rect class="box-a" x="360" y="36" width="300" height="56" rx="5"/>
+      <text x="372" y="58">(1,2)  valor = 120</text><text x="372" y="78">xmin=205   xmax=0</text>
+      <line class="ln" x1="322" y1="68" x2="358" y2="68" marker-end="url(#ah-mv)"/>
+      <text class="lbl" x="340" y="60" text-anchor="middle">ctid</text>
+      <rect class="box" x="20" y="136" width="220" height="34" rx="5"/><text x="130" y="158" text-anchor="middle">tx 200 (antes de 205)</text>
+      <rect class="box" x="360" y="136" width="230" height="34" rx="5"/><text x="475" y="158" text-anchor="middle">tx 210 (depois de 205)</text>
+      <line class="ln-a" x1="130" y1="136" x2="130" y2="94" marker-end="url(#ah-mv)"/>
+      <line class="ln-a" x1="475" y1="136" x2="475" y2="94" marker-end="url(#ah-mv)"/>
+      <text class="lbl" x="20" y="190">enxerga v1 (100)</text><text class="lbl" x="360" y="190">enxerga v2 (120)</text>
+      <text class="lbl" x="20" y="222">VACUUM: quando nenhuma transação mais precisa da v1, o espaço dela é reaproveitado.</text>
+    </svg>
+    <figcaption>Um UPDATE no PostgreSQL cria uma nova tupla; as duas coexistem até o VACUUM. Cada leitor escolhe a que seu snapshot permite ver.</figcaption>
+  </figure>
+  <p>Consequências: um <code>UPDATE</code> é, no fundo, "inserir nova versão e invalidar a antiga", e os índices também precisam apontar para a nova (salvo atualizações <em>HOT</em>, que mantêm a nova versão na mesma página quando nenhuma coluna indexada muda e há espaço; o <code>fillfactor</code> da tabela reserva esse espaço). Tabelas com muito <code>UPDATE</code>/<code>DELETE</code> acumulam tuplas mortas rápido.</p>
+
+  <h3>PostgreSQL: VACUUM, autovacuum e bloat</h3>
+  <ul>
+    <li><strong><code>VACUUM</code></strong> marca como reutilizável o espaço das tuplas que nenhuma transação mais enxerga, atualiza o mapa de visibilidade (que viabiliza <code>Index Only Scan</code>) e congela IDs antigos. Roda sem bloquear leituras e escritas, mas <strong>em geral não devolve espaço ao sistema operacional</strong>: o espaço fica reservado para a própria tabela.</li>
+    <li><strong>autovacuum</strong> é um processo de segundo plano que dispara o VACUUM (e o ANALYZE) por tabela quando as tuplas mortas passam de <code>threshold + scale_factor × linhas</code>. Os padrões são 50 e 0,2: numa tabela de 4,8 milhões de linhas, só dispara com cerca de <strong>962 mil</strong> tuplas mortas. Para tabelas grandes e quentes, ajuste por tabela:</li>
+  </ul>
+<pre><code class="sql">ALTER TABLE atendimento SET (autovacuum_vacuum_scale_factor = 0.01,
+                             autovacuum_vacuum_threshold    = 10000);  -- dispara com ~58 mil mortas
+
+-- Monitorar: tuplas mortas e último autovacuum
+SELECT relname, n_live_tup, n_dead_tup,
+       round(100.0 * n_dead_tup / NULLIF(n_live_tup + n_dead_tup, 0), 1) AS pct_mortas,
+       last_autovacuum
+FROM   pg_stat_user_tables
+ORDER  BY n_dead_tup DESC LIMIT 5;
+--  relname      | n_live_tup | n_dead_tup | pct_mortas | last_autovacuum
+--  atendimento  |    4812450 |    1240110 |       20.5 | 2026-11-24 03:12</code></pre>
+  <ul>
+    <li><strong>Bloat</strong> é o inchaço: tabela e índices ocupam mais espaço do que os dados vivos exigem, e cada varredura lê páginas meio vazias. Sintomas: consultas que pioram devagar, disco crescendo sem aumento de dados. Remédio: autovacuum bem ajustado; em casos graves, reescrever a tabela (<code>VACUUM FULL</code>, que exige <strong>lock exclusivo</strong> e para tudo, ou a extensão <code>pg_repack</code>, que faz online). Prevenir é melhor.</li>
+    <li><strong>O que impede o VACUUM de limpar:</strong> qualquer transação que ainda possa enxergar a tupla antiga, isto é, a transação mais antiga aberta (inclusive <code>idle in transaction</code>, seção 5), slots de replicação parados e transações preparadas esquecidas.</li>
+  </ul>
+
+  <h3>PostgreSQL: wraparound de IDs de transação (em alto nível)</h3>
+  <p>O ID de transação (<code>xid</code>) tem 32 bits. Para decidir "essa tupla é do passado ou do futuro?", o banco compara IDs de forma circular, com uma janela de cerca de 2 bilhões. Se uma tupla antiga não for <strong>congelada</strong> (marcada como "visível para todos", processo feito pelo VACUUM) antes de o contador "dar a volta", ela pareceria estar no futuro e <strong>sumiria</strong>. Para evitar isso, o autovacuum faz <em>anti-wraparound vacuums</em> forçados ao chegar em <code>autovacuum_freeze_max_age</code> (padrão 200 milhões) e, se mesmo assim o limite for ameaçado, o banco <strong>recusa novas escritas</strong> até a limpeza. É raro em ambientes bem monitorados, mas catastrófico quando acontece.</p>
+<pre><code class="sql">SELECT datname, age(datfrozenxid) AS idade FROM pg_database ORDER BY 2 DESC;
+-- alerte bem antes de 1 bilhão; o padrão força o vacuum em 200 milhões</code></pre>
+
+  <h3>Oracle: undo, SCN e ORA-01555</h3>
+  <p>Um leitor Oracle tem um SCN de referência. Ao ler um bloco alterado depois dele, o Oracle clona o bloco e usa o <strong>undo</strong> para "voltar no tempo" até aquele SCN. Se o undo necessário já foi <strong>sobrescrito</strong> (porque a consulta durou mais do que a retenção, ou porque o undo é pequeno para a carga de escrita), ocorre:</p>
+<pre><code class="text">ORA-01555: snapshot too old: rollback segment number 12 with name "_SYSSMU12$" too small</code></pre>
+  <ul>
+    <li><strong>Causas clássicas:</strong> relatório longo rodando durante muita escrita; undo pequeno ou <code>UNDO_RETENTION</code> curto (padrão 900 s); <strong>fazer <code>COMMIT</code> dentro de um loop que lê um cursor aberto sobre a mesma tabela</strong> (a própria sessão libera o undo de que o cursor precisa).</li>
+    <li><strong>Remédios:</strong> encurtar a consulta (índices, particionar o trabalho); aumentar o tablespace de undo e <code>UNDO_RETENTION</code> (com o DBA); não fazer commit dentro de cursor sobre a tabela que está sendo alterada; ler em lotes por chave em vez de um cursor único gigante. Existe também a opção <code>RETENTION GUARANTEE</code> no undo, que garante a retenção, mas faz as <em>escritas</em> falharem se o espaço acabar; é decisão do DBA.</li>
+    <li><strong>Monitorar:</strong> <code>V$UNDOSTAT</code> (colunas como <code>MAXQUERYLEN</code>, <code>SSOLDERRCNT</code> e <code>NOSPACEERRCNT</code>) mostra a consulta mais longa e quantos erros 01555 e de falta de espaço ocorreram por intervalo.</li>
+  </ul>
+  <div class="note trap"><b>PostgreSQL não tem ORA-01555, mas tem seu equivalente em réplicas</b><p>Numa réplica de leitura, uma consulta longa pode ser cancelada com <code>canceling statement due to conflict with recovery</code>, porque o primário limpou tuplas de que ela precisava. Mitigações: <code>hot_standby_feedback</code> (a réplica informa o primário, ao custo de bloat nele) e atrasos de aplicação (<code>max_standby_streaming_delay</code>). É a mesma classe de problema, resolvida no outro lado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como o MVCC do Oracle difere do PostgreSQL?" <em>"No Oracle a linha é alterada no lugar e a versão antiga vai para o undo; leitores reconstroem o passado a partir dele, e o risco é ORA-01555. No PostgreSQL a versão nova é uma tupla nova na própria tabela, com xmin e xmax, e as velhas ficam até o VACUUM; o risco é bloat e, em último caso, wraparound. Por isso rollback é instantâneo no PostgreSQL e pode ser lento no Oracle."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em PostgreSQL, <strong>autovacuum é infraestrutura crítica</strong>, não detalhe: pergunte ao DBA quais tabelas têm mais tuplas mortas, qual a idade do <code>datfrozenxid</code> e se há alerta para ambos. Em Oracle, pergunte pelo tamanho e retenção do undo frente ao maior relatório do mês. Em ambos, o inimigo número um é a <strong>transação longa</strong> esquecida.</p></div>
+</section>
+
+<section class="chap" id="locks">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Locks de linha e de tabela, FOR UPDATE, filas e deadlocks</h2>
+  <h3>Locks de linha</h3>
+  <p><code>UPDATE</code>, <code>DELETE</code> e <code>SELECT ... FOR UPDATE</code> <strong>travam as linhas afetadas até o COMMIT ou ROLLBACK</strong>. Quem tenta alterar a mesma linha <strong>espera</strong>; quem só lê, não. Uma transação aberta e esquecida segura linhas para todo mundo.</p>
+  <ul>
+    <li><strong>Oracle</strong>: a informação de lock fica no <strong>cabeçalho do próprio bloco</strong> (lista de transações interessadas, ITL) e no undo. Não há tabela de locks por linha em memória. Por isso, <strong>não existe lock escalation</strong>: travar 1 milhão de linhas custa o mesmo por linha que travar uma. A espera aparece como evento <code>enq: TX - row lock contention</code>.</li>
+    <li><strong>PostgreSQL</strong>: o lock de linha é gravado na própria tupla (<code>xmax</code>) e <strong>também não escala</strong> para a tabela. Quem espera, espera pelo <strong>ID de transação</strong> do dono (<code>transactionid</code> em <code>pg_locks</code>). Os locks de linha em si <em>não</em> aparecem em <code>pg_locks</code>, só a espera.</li>
+    <li>Diferente de alguns bancos (como o SQL Server), nenhum dos dois transforma "muitos locks de linha" em um lock de tabela. Quem trava a tabela inteira é o DDL ou um comando explícito.</li>
+  </ul>
+
+  <h3>Locks de tabela e DDL</h3>
+  <p>Todo comando também pega um lock na <strong>tabela</strong>, mas em modo fraco, que não atrapalha DML concorrente. O problema aparece com DDL (<code>ALTER TABLE</code>, <code>CREATE INDEX</code>, <code>DROP</code>), que precisa de modos fortes:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Operação (PostgreSQL)</th><th>Modo de lock na tabela</th><th>Bloqueia</th></tr></thead>
+    <tbody>
+      <tr><td><code>SELECT</code></td><td><code>ACCESS SHARE</code></td><td>Só <code>ACCESS EXCLUSIVE</code></td></tr>
+      <tr><td><code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code></td><td><code>ROW EXCLUSIVE</code></td><td>DDL e comandos pesados (<code>SHARE</code> e acima), mas não outro DML</td></tr>
+      <tr><td><code>SELECT ... FOR UPDATE</code></td><td><code>ROW SHARE</code></td><td>Só <code>EXCLUSIVE</code> e <code>ACCESS EXCLUSIVE</code></td></tr>
+      <tr><td><code>CREATE INDEX</code> (comum)</td><td><code>SHARE</code></td><td><strong>Todo DML</strong> na tabela durante a criação</td></tr>
+      <tr><td><code>CREATE INDEX CONCURRENTLY</code>, <code>VACUUM</code></td><td><code>SHARE UPDATE EXCLUSIVE</code></td><td>Só DDL e outro vacuum; DML segue normal</td></tr>
+      <tr><td><code>ALTER TABLE</code> (muitas formas), <code>DROP</code>, <code>TRUNCATE</code>, <code>VACUUM FULL</code></td><td><code>ACCESS EXCLUSIVE</code></td><td><strong>Tudo, inclusive <code>SELECT</code></strong></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>A fila do ALTER TABLE: como um DDL de 1 ms derruba o sistema (PostgreSQL)</b><p>O <code>ALTER TABLE</code> pede <code>ACCESS EXCLUSIVE</code>. Se existe uma transação antiga tocando a tabela (até um <code>SELECT</code> longo), o <code>ALTER</code> <strong>entra na fila esperando</strong>. E <em>todo comando que chegar depois dele</em>, até simples <code>SELECT</code>s, entra na fila <strong>atrás do ALTER</strong>. Em segundos o sistema inteiro está parado, esperando por uma transação antiga e por um DDL que ainda nem rodou. Defesa: <code>SET lock_timeout = '3s';</code> antes do DDL, com tentativa repetida; e transações curtas. (No Oracle o DDL não enfileira: falha de imediato com <code>ORA-00054: resource busy and acquire with NOWAIT specified</code>, a menos que <code>DDL_LOCK_TIMEOUT</code> seja definido na sessão.)</p></div>
+  <p>No Oracle, um detalhe famoso: <strong>chave estrangeira sem índice na coluna filha</strong>. Apagar ou atualizar a chave do pai obriga o Oracle a varrer a tabela filha e pode travá-la durante a operação, causando esperas e deadlocks. Indexe sempre as colunas de FK (por exemplo <code>atendimento(id_paciente)</code>). No PostgreSQL não há esse lock, mas o <code>DELETE</code> no pai também faria varredura da filha, então vale o mesmo conselho por desempenho.</p>
+
+  <h3>SELECT ... FOR UPDATE, NOWAIT e SKIP LOCKED</h3>
+  <p><code>SELECT ... FOR UPDATE</code> trava as linhas lidas, como se fossem alteradas, para você decidir com segurança antes de gravar ("lê, trava, decide, grava"). O que fazer se a linha já está travada por outro:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Comportamento</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>(nada)</td><td>Espera indefinidamente</td><td>sim</td><td>sim (limite via <code>lock_timeout</code>)</td></tr>
+      <tr><td><code>NOWAIT</code></td><td>Falha na hora</td><td><code>ORA-00054</code></td><td>SQLSTATE <code>55P03</code> (<code>could not obtain lock on row</code>)</td></tr>
+      <tr><td><code>WAIT n</code></td><td>Espera até n segundos</td><td>sim (<code>FOR UPDATE WAIT 5</code>; erro <code>ORA-30006</code> ao estourar)</td><td>não existe; use <code>lock_timeout</code></td></tr>
+      <tr><td><code>SKIP LOCKED</code></td><td>Ignora as linhas travadas e devolve as demais</td><td>sim</td><td>sim</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sql">-- Reservar o atendimento para editar: falha rápido se outro estiver editando
+SELECT * FROM atendimento WHERE id_atendimento = 1001 FOR UPDATE NOWAIT;
+
+-- PostgreSQL permite escolher a força do lock de linha:
+-- FOR UPDATE, FOR NO KEY UPDATE (não bloqueia inserts de FK filhos), FOR SHARE, FOR KEY SHARE</code></pre>
+
+  <h3>Fila de processamento no banco com SKIP LOCKED</h3>
+  <p>Vários workers consumindo a mesma tabela de tarefas (por exemplo, <code>fila_notificacao(id, payload, status, dt_inicio)</code>) sem pegar o mesmo item e sem esperar uns pelos outros:</p>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">WITH proximos AS (
+  SELECT id
+  FROM   fila_notificacao
+  WHERE  status = 'PENDENTE'
+  ORDER  BY id
+  LIMIT  10
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE fila_notificacao f
+SET    status = 'PROCESSANDO', dt_inicio = now()
+FROM   proximos p
+WHERE  f.id = p.id
+RETURNING f.id, f.payload;
+-- o worker processa e depois: UPDATE ... SET status = 'ENVIADO' WHERE id = ...;</code></pre>
+    <pre data-label="Oracle"><code class="sql">DECLARE
+  CURSOR c IS
+    SELECT id, payload FROM fila_notificacao
+    WHERE  status = 'PENDENTE'
+    ORDER  BY id
+    FOR UPDATE SKIP LOCKED;
+  r c%ROWTYPE;
+BEGIN
+  OPEN c;
+  FOR i IN 1 .. 10 LOOP
+    FETCH c INTO r;
+    EXIT WHEN c%NOTFOUND;
+    UPDATE fila_notificacao SET status = 'PROCESSANDO', dt_inicio = SYSTIMESTAMP
+    WHERE  CURRENT OF c;
+  END LOOP;
+  COMMIT;   -- libera os locks; não faça COMMIT dentro do loop (ORA-01002)
+END;
+/</code></pre>
+  </div>
+  <p>No Oracle, combinar <code>FETCH FIRST</code> ou <code>ROWNUM</code> com <code>FOR UPDATE SKIP LOCKED</code> tem restrições e armadilhas (pode devolver menos linhas do que o pedido); o padrão robusto é o cursor acima com <code>FETCH</code> controlado, ou usar o <strong>Advanced Queuing</strong> do próprio banco. No PostgreSQL, a consulta acima funciona direto.</p>
+  <div class="note trap"><b>Fila no banco: o worker que morreu</b><p>Se um worker pega itens e morre após o <code>COMMIT</code> do status <code>PROCESSANDO</code>, os itens ficam presos. Planeje: um <em>lease</em> (<code>dt_inicio</code> + prazo) e um processo que devolve a <code>PENDENTE</code> o que passou do prazo; consumidores <strong>idempotentes</strong> (o mesmo item pode ser entregue duas vezes: veja idempotência em <a href="../apis/06-confiabilidade.html#idempotencia">APIs 06</a> e filas em <a href="../apis/04-assincrono.html">APIs 04</a>); e um limite de tentativas com fila de falhas. <code>SKIP LOCKED</code> também entrega uma visão <em>inconsistente</em> por definição: use-o para filas, nunca em relatórios.</p></div>
+
+  <h3>Deadlocks</h3>
+  <p>Um <strong>deadlock</strong> é um ciclo de espera: A tem a linha 1 e quer a 2; B tem a 2 e quer a 1. Nenhum pode avançar. Esperar mais não resolve: o banco precisa intervir.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Deadlock: a Sessão A tem o lock da linha 1 e espera a linha 2; a Sessão B tem o lock da linha 2 e espera a linha 1; as setas vermelhas cruzadas formam o ciclo.">
+      <defs>
+        <marker id="ah-dl1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ah-dl2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box-a" x="20" y="20" width="150" height="34" rx="5"/><text x="95" y="42" text-anchor="middle">Sessão A</text>
+      <rect class="box-w" x="510" y="20" width="150" height="34" rx="5"/><text x="585" y="42" text-anchor="middle">Sessão B</text>
+      <rect class="box" x="20" y="150" width="190" height="34" rx="5"/><text x="115" y="172" text-anchor="middle">linha 1: atendimento 1</text>
+      <rect class="box" x="470" y="150" width="190" height="34" rx="5"/><text x="565" y="172" text-anchor="middle">linha 2: atendimento 2</text>
+      <line class="ln-a" x1="95" y1="54" x2="95" y2="148" marker-end="url(#ah-dl1)"/>
+      <line class="ln-a" x1="585" y1="54" x2="585" y2="148" marker-end="url(#ah-dl1)"/>
+      <line class="ln-b" x1="175" y1="48" x2="510" y2="148" marker-end="url(#ah-dl2)"/>
+      <line class="ln-b" x1="505" y1="48" x2="170" y2="148" marker-end="url(#ah-dl2)"/>
+      <text class="lbl" x="104" y="104">tem o lock</text><text class="lbl" x="594" y="104">tem o lock</text>
+      <text class="lbl" x="180" y="30">espera a linha 2</text><text class="lbl" x="500" y="30" text-anchor="end">espera a linha 1</text>
+      <text class="lbl" x="20" y="208">Setas azuis: lock obtido. Setas vermelhas: espera. O ciclo nunca se desfaz sozinho.</text>
+    </svg>
+    <figcaption>Deadlock clássico: o ciclo de espera entre duas sessões que travam as mesmas linhas em ordens opostas.</figcaption>
+  </figure>
+<pre><code class="sql">-- Sessão A                                   -- Sessão B
+UPDATE atendimento SET valor = valor + 1      UPDATE atendimento SET valor = valor + 1
+ WHERE id_atendimento = 1;   -- ok             WHERE id_atendimento = 2;   -- ok
+UPDATE atendimento SET valor = valor + 1      UPDATE atendimento SET valor = valor + 1
+ WHERE id_atendimento = 2;   -- espera B        WHERE id_atendimento = 1;   -- espera A: deadlock</code></pre>
+<pre><code class="text">-- PostgreSQL
+ERROR:  deadlock detected
+DETAIL:  Process 8812 waits for ShareLock on transaction 904412; blocked by process 8790.
+         Process 8790 waits for ShareLock on transaction 904415; blocked by process 8812.
+HINT:  See server log for query details.
+
+-- Oracle
+ORA-00060: deadlock detected while waiting for resource</code></pre>
+  <h3>Como o banco resolve</h3>
+  <ul>
+    <li><strong>PostgreSQL</strong>: só começa a procurar ciclos depois que uma espera passa de <code>deadlock_timeout</code> (padrão 1 s). Ao achar, <strong>aborta uma das transações</strong> (a que detectou), com SQLSTATE <code>40P01</code>. O erro descreve os dois lados no log.</li>
+    <li><strong>Oracle</strong>: detecta e dá <code>ORA-00060</code> a uma sessão, escrevendo um <strong>trace com o "deadlock graph"</strong> (as sessões, as linhas e os comandos envolvidos). Atenção: só o <strong>comando</strong> que falhou é desfeito, <em>não a transação inteira</em>; a sessão continua segurando os locks anteriores até que a aplicação dê <code>ROLLBACK</code>.</li>
+  </ul>
+  <h3>Como evitar</h3>
+  <ol class="seq">
+    <li><div><strong>Ordem consistente.</strong> Toda parte do sistema que trava várias linhas/tabelas faz isso na mesma ordem (por exemplo, por <code>id</code> crescente). Para lotes: <code>SELECT ... WHERE id IN (...) ORDER BY id FOR UPDATE</code> antes de atualizar.</div></li>
+    <li><div><strong>Transações curtas</strong> e que travam pouco: quanto menos tempo com locks, menor a janela do ciclo.</div></li>
+    <li><div><strong>Índice nas FKs</strong> (no Oracle, evita locks na tabela filha) e comandos que usam índice (um <code>UPDATE</code> sem índice trava mais linhas do que o necessário).</div></li>
+    <li><div><strong>Atualizar tudo num comando só</strong> (<code>UPDATE ... WHERE id IN (...)</code>) em vez de laços linha a linha.</div></li>
+    <li><div><strong>Retry:</strong> deadlock é "normal" em sistemas concorrentes; a aplicação deve capturar 40P01/ORA-00060, desfazer a transação e repetir, com limite.</div></li>
+  </ol>
+  <div class="note iv"><b>Na entrevista</b><p>"Como evitar deadlocks?" <em>"Ordem consistente de acesso aos recursos, transações curtas, índices nas chaves estrangeiras, e retry no erro (40P01 no PostgreSQL, ORA-00060 no Oracle). Para investigar, o log do PostgreSQL ou o trace do Oracle mostram o ciclo."</em> E lembre: no Oracle só o comando é desfeito.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Deadlock é <strong>sintoma de design</strong>: se aparece diariamente, algum fluxo trava recursos em ordem diferente de outro. Exija que o time publique a "ordem canônica de locks" dos módulos que atualizam várias linhas (fechamento de lote, rateio, estoque) e que o log de deadlocks seja monitorado. Também defina onde o retry acontece (na aplicação, com limite), para não transformar um erro recuperável em falha ao usuário.</p></div>
+</section>
+
+
+<section class="chap" id="transacoes-longas">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Transações longas, "idle in transaction" e timeouts</h2>
+  <p>Uma transação é longa quando fica aberta por muito mais tempo do que o trabalho que faz. O custo não está no tempo em si, e sim no que ela <strong>segura</strong> enquanto isso:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>O que a transação longa segura</th><th>Efeito</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Locks de linha</strong></td><td>Todo mundo que quer alterar essas linhas espera. Filas de bloqueados se formam em cascata</td></tr>
+      <tr><td><strong>Versões antigas (PostgreSQL)</strong></td><td>O VACUUM não limpa nada que ela ainda possa enxergar: bloat em todo o banco, índices que pioram, risco de wraparound</td></tr>
+      <tr><td><strong>Undo (Oracle)</strong></td><td>O undo gerado desde o início não pode ser reaproveitado; undo cresce, e leitores concorrentes podem tomar ORA-01555</td></tr>
+      <tr><td><strong>Conexão do pool</strong></td><td>Uma conexão ocupada sem trabalhar; com o pool pequeno, a aplicação inteira para de atender</td></tr>
+      <tr><td><strong>Réplicas</strong></td><td>No PostgreSQL com <code>hot_standby_feedback</code>, retém limpeza no primário; sem ele, cancela consultas na réplica</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>"idle in transaction"</h3>
+  <p>No PostgreSQL, <code>pg_stat_activity.state</code> vale <code>idle in transaction</code> quando a sessão abriu uma transação (<code>BEGIN</code> explícito ou implícito do driver) e <strong>não está executando nada</strong>, apenas esperando o próximo comando. É a pior forma de transação longa: não consome CPU, e por isso passa despercebida, mas segura locks e impede o VACUUM. Causas típicas:</p>
+  <ul>
+    <li>A aplicação abre a transação, <strong>chama uma API externa ou espera o usuário</strong> e só depois faz o <code>COMMIT</code>.</li>
+    <li>Falha de tratamento: exceção que não dá <code>ROLLBACK</code>, conexão devolvida ao pool "suja".</li>
+    <li>ORM ou framework com <em>autocommit desligado</em> e transação aberta por requisição inteira, inclusive para um simples <code>SELECT</code>.</li>
+    <li>Ferramenta de administração (DBeaver, SQL Developer) com sessão aberta, um <code>UPDATE</code> sem <code>COMMIT</code> e o analista foi almoçar. No Oracle o equivalente é uma sessão <code>INACTIVE</code> com transação aberta em <code>v$transaction</code>.</li>
+  </ul>
+<pre><code class="sql">-- PostgreSQL: quem está parado com transação aberta e há quanto tempo
+SELECT pid, usename, application_name, state,
+       now() - xact_start    AS tx_aberta_ha,
+       now() - state_change  AS parada_ha,
+       left(query, 60)       AS ultimo_comando
+FROM   pg_stat_activity
+WHERE  state IN ('idle in transaction', 'idle in transaction (aborted)')
+ORDER  BY xact_start;
+
+-- Oracle: transações abertas há mais tempo e quanto undo usam
+SELECT s.sid, s.serial#, s.username, s.status, t.start_time,
+       t.used_ublk AS blocos_undo, t.used_urec AS registros_undo
+FROM   v$transaction t JOIN v$session s ON s.taddr = t.addr
+ORDER  BY t.start_time;</code></pre>
+
+  <h3>Timeouts: o cinto de segurança</h3>
+  <p>Não confie que a aplicação sempre fecha a transação. Configure limites no banco para que o erro seja barulhento e curto em vez de silencioso e longo:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>O que limitar</th><th>PostgreSQL</th><th>Oracle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Espera por lock</strong></td><td><code>lock_timeout</code> (por sessão, transação ou usuário)</td><td><code>FOR UPDATE WAIT n</code> por comando; <code>DDL_LOCK_TIMEOUT</code> para DDL. Não há parâmetro geral para DML</td></tr>
+      <tr><td><strong>Duração de um comando</strong></td><td><code>statement_timeout</code></td><td>Timeout de consulta no driver (por exemplo <code>setQueryTimeout</code> do JDBC) ou Resource Manager (diretivas que cancelam SQL acima de um tempo)</td></tr>
+      <tr><td><strong>Transação parada</strong></td><td><code>idle_in_transaction_session_timeout</code> encerra a sessão que ficou ociosa com transação aberta</td><td>Resource Manager (em versões recentes, diretivas para encerrar bloqueadores ociosos) ou <code>IDLE_TIME</code> em profile (sessão ociosa)</td></tr>
+      <tr><td><strong>Duração total da transação</strong></td><td><code>transaction_timeout</code> (PostgreSQL 17 e posteriores)</td><td>Resource Manager; ou tratar na aplicação</td></tr>
+      <tr><td><strong>Deadlock</strong></td><td><code>deadlock_timeout</code> (quando começa a procurar ciclo; padrão 1 s)</td><td>Automático</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sql">-- PostgreSQL: padrões por papel (aplicação), sem mudar o servidor inteiro
+ALTER ROLE app_atendimento SET idle_in_transaction_session_timeout = '30s';
+ALTER ROLE app_atendimento SET statement_timeout = '30s';
+ALTER ROLE app_atendimento SET lock_timeout = '5s';
+
+-- Em uma migração: falhe rápido em vez de formar a fila do ALTER TABLE
+SET lock_timeout = '3s';
+ALTER TABLE atendimento ADD COLUMN versao INTEGER NOT NULL DEFAULT 0;</code></pre>
+  <p>Escolha valores a partir do que a aplicação realmente precisa (um relatório pode ter outro papel e outro limite). E lembre que o timeout só transforma o problema em erro: a aplicação precisa tratá-lo.</p>
+  <div class="note trap"><b>Pool de conexões e a transação "suja"</b><p>Se o pool devolve a conexão sem <code>ROLLBACK</code> quando a requisição falha, a transação continua aberta, e a próxima requisição que pegar essa conexão herda locks e snapshot antigos. Configure o pool para dar <code>ROLLBACK</code> ao devolver (e confira se o driver o faz) e coloque <code>idle_in_transaction_session_timeout</code> como segunda barreira.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é 'idle in transaction' e por que é perigoso?" <em>"É uma sessão com transação aberta e sem executar nada. Ela mantém locks e, no PostgreSQL, impede o VACUUM de limpar tuplas mortas, gerando bloat; também ocupa conexão do pool. Detecto em pg_stat_activity, limito com idle_in_transaction_session_timeout e corrijo a causa na aplicação: transação curta, sem chamar serviços externos dentro dela."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Regra de ouro para o time: <strong>nunca faça I/O externo (HTTP, e-mail, fila) com transação de banco aberta</strong>. Faça o trabalho externo antes ou depois e use o banco só para gravar. Padronize timeouts por papel de banco e acompanhe a métrica "idade da transação mais antiga" como alerta, porque ela antecipa quase todos os problemas deste módulo.</p></div>
+</section>
+
+<section class="chap" id="investigar">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Investigando bloqueios: quem trava quem</h2>
+  <p>O roteiro é sempre o mesmo: (1) quem está <strong>esperando</strong>; (2) quem <strong>bloqueia</strong>; (3) <strong>o bloqueador raiz</strong>, que não espera ninguém; (4) o que ele fez e há quanto tempo; (5) decidir: esperar, pedir ao dono para dar <code>COMMIT</code>/<code>ROLLBACK</code>, ou encerrar a sessão.</p>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">-- Sessões esperando e quem as bloqueia (precisa de acesso às views V$)
+SELECT w.sid, w.serial#, w.username, w.event, w.seconds_in_wait,
+       w.blocking_session, w.final_blocking_session, w.sql_id
+FROM   v$session w
+WHERE  w.blocking_session IS NOT NULL;
+
+-- Detalhe do bloqueador raiz (normalmente INACTIVE: seu último SQL está em prev_sql_id)
+SELECT b.sid, b.serial#, b.username, b.program, b.machine, b.status,
+       b.last_call_et AS segundos_desde_ultima_acao, b.prev_sql_id
+FROM   v$session b
+WHERE  b.sid = :final_blocking_session;
+
+-- Locks: quem bloqueia (block = 1) e quem espera (request &gt; 0), TX = linha, TM = tabela
+SELECT l.sid, l.type, l.lmode, l.request, l.block, l.id1, l.id2
+FROM   v$lock l
+WHERE  l.type IN ('TX', 'TM') AND (l.block = 1 OR l.request &gt; 0);
+
+-- Texto do SQL
+SELECT sql_text FROM v$sql WHERE sql_id = :sql_id;</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">-- Quem está bloqueado e por quais pids
+SELECT pid, pg_blocking_pids(pid) AS bloqueado_por,
+       state, wait_event_type, wait_event,
+       now() - xact_start AS tx_idade, left(query, 70) AS query
+FROM   pg_stat_activity
+WHERE  cardinality(pg_blocking_pids(pid)) &gt; 0;
+
+-- Bloqueadores raiz: bloqueiam alguém e não estão bloqueados
+SELECT b.pid, b.usename, b.application_name, b.state,
+       now() - b.xact_start AS tx_idade, left(b.query, 70) AS ultimo_comando
+FROM   pg_stat_activity b
+WHERE  b.pid IN (SELECT unnest(pg_blocking_pids(w.pid)) FROM pg_stat_activity w)
+AND    cardinality(pg_blocking_pids(b.pid)) = 0;
+
+-- Locks não concedidos (esperas)
+SELECT l.pid, l.locktype, l.mode, l.relation::regclass, l.transactionid
+FROM   pg_locks l WHERE NOT l.granted;</code></pre>
+  </div>
+  <p>Exemplo de saída do PostgreSQL numa cadeia de bloqueios:</p>
+<pre><code class="text"> pid  | bloqueado_por | state               | wait_event_type | tx_idade | query
+------+---------------+---------------------+-----------------+----------+---------------------------
+ 4455 | {4410}        | active              | Lock            | 00:41:12 | UPDATE atendimento SET ...
+ 4461 | {4455}        | active              | Lock            | 00:40:58 | UPDATE atendimento SET ...
+ 4470 | {4410}        | active              | Lock            | 00:39:20 | DELETE FROM atendimento ...
+-- raiz: 4410 (idle in transaction há 41 min); os demais apenas esperam</code></pre>
+  <ul>
+    <li><strong>Leia a cadeia até a raiz.</strong> Encerrar um bloqueado não ajuda: encerre (ou peça o commit de) o bloqueador raiz. No Oracle, <code>final_blocking_session</code> já aponta a raiz.</li>
+    <li><strong>O que o bloqueador está fazendo?</strong> Se estiver <code>idle in transaction</code>/<code>INACTIVE</code>, o problema é na aplicação (transação esquecida). Se estiver <code>active</code>, é uma operação lenta: investigue o plano (módulo <a href="09-planos.html">09</a>).</li>
+    <li><strong>Encerrar:</strong> PostgreSQL: <code>SELECT pg_cancel_backend(pid)</code> cancela o comando; <code>pg_terminate_backend(pid)</code> encerra a sessão (e desfaz a transação). Oracle: <code>ALTER SYSTEM KILL SESSION 'sid,serial#' IMMEDIATE</code>, que o DBA normalmente executa. O desfazer de uma transação grande <strong>também leva tempo</strong>, principalmente no Oracle.</li>
+    <li><strong>Registro histórico:</strong> no PostgreSQL, <code>log_lock_waits = on</code> grava no log toda espera de lock acima de <code>deadlock_timeout</code>, com quem esperava e quem bloqueava. Sem isso, o incidente passou e você não sabe o que foi.</li>
+    <li>No Oracle em RAC, use as views <code>GV$</code> (com <code>inst_id</code>).</li>
+  </ul>
+  <div class="note trap"><b>Matar o bloqueado em vez do bloqueador</b><p>No calor do incidente, é comum matar as sessões que "estão penduradas" (as esperas). Elas voltam, porque a causa (o bloqueador raiz) continua lá. Sempre identifique a raiz. E antes de encerrar uma sessão em produção, confirme com o dono: pode ser um fechamento de lote que, desfeito, precisa ser repetido.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O sistema travou. Como você descobre quem está bloqueando?" <em>"No PostgreSQL, pg_stat_activity com pg_blocking_pids() para achar o bloqueador raiz (que não está bloqueado). No Oracle, v$session com blocking_session e final_blocking_session, mais v$lock. Vejo o estado do bloqueador (ocioso na transação ou executando), há quanto tempo e o último SQL, e só então decido entre pedir commit ou encerrar a sessão."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Tenha um <strong>runbook de bloqueio</strong> com essas consultas prontas, permissões já concedidas ao plantão (leitura em <code>pg_stat_activity</code>/<code>V$SESSION</code>) e uma regra clara de quem autoriza encerrar sessão em produção. Em incidente, ninguém quer descobrir permissões. Peça também pós-mortem com a causa na aplicação, não só "matamos a sessão".</p></div>
+</section>
+
+<section class="chap" id="otimista">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Concorrência otimista com coluna de versão</h2>
+  <p>Até aqui, a defesa foi <strong>pessimista</strong>: travar a linha na leitura (<code>FOR UPDATE</code>) para ninguém mexer. Funciona, mas segura lock durante o "pensar" do usuário, o que é inaceitável numa tela web. A alternativa é <strong>otimista</strong>: não trava; no momento de gravar, verifica se a linha continua como foi lida. Se mudou, a gravação falha e o usuário decide.</p>
+<pre><code class="sql">ALTER TABLE atendimento ADD versao INTEGER DEFAULT 0 NOT NULL;   -- Oracle
+-- PostgreSQL: ALTER TABLE atendimento ADD COLUMN versao INTEGER NOT NULL DEFAULT 0;
+
+-- 1. A tela lê o registro e guarda a versão (por exemplo 7)
+SELECT id_atendimento, status, valor, versao FROM atendimento WHERE id_atendimento = 1001;
+
+-- 2. Ao salvar: só grava se a versão ainda for a lida; e incrementa
+UPDATE atendimento
+SET    valor = :novo_valor, versao = versao + 1
+WHERE  id_atendimento = 1001 AND versao = :versao_lida;
+-- linhas afetadas = 1: sucesso
+-- linhas afetadas = 0: alguém alterou (ou apagou) antes; avisar o usuário e recarregar</code></pre>
+  <p>É atômico: o <code>WHERE versao = ...</code> e o <code>SET</code> acontecem no mesmo comando, sob o lock da linha. Em <code>READ COMMITTED</code>, se outra transação está atualizando a linha, a segunda espera e, ao reavaliar o <code>WHERE</code>, vê a versão nova e afeta 0 linhas. Ninguém sobrescreve ninguém.</p>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Pessimista (<code>FOR UPDATE</code>)</th><th>Otimista (versão)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Quando trava</strong></td><td>Na leitura, até o fim da transação</td><td>Só no instante do <code>UPDATE</code></td></tr>
+      <tr><td><strong>Conflito</strong></td><td>O segundo espera (ou falha com <code>NOWAIT</code>)</td><td>O segundo falha na gravação e deve rever</td></tr>
+      <tr><td><strong>Bom para</strong></td><td>Alta contenção e operações curtas dentro do banco (filas, saldo)</td><td>Baixa contenção, edição por humanos (telas), APIs sem estado</td></tr>
+      <tr><td><strong>Risco</strong></td><td>Locks longos, deadlocks, fila de espera</td><td>Retrabalho do usuário em registros muito disputados</td></tr>
+      <tr><td><strong>Atravessa requisições HTTP?</strong></td><td>Não (a transação não vive entre dois pedidos)</td><td>Sim: a versão viaja com o cliente</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Ligação com a API: ETag e If-Match</h3>
+  <p>A coluna de versão é exatamente o que sustenta o <strong>ETag</strong> de HTTP. A API devolve a versão no <code>ETag</code> (<code>"v7"</code>) do <code>GET</code>; o cliente manda <code>If-Match: "v7"</code> no <code>PUT</code>/<code>PATCH</code>; o servidor traduz para <code>WHERE versao = 7</code>. Se afetou 0 linhas, responde <code>412 Precondition Failed</code> (ou <code>428</code> se o cabeçalho estava ausente e é obrigatório). Veja o protocolo em <a href="../apis/01-design-rest.html">APIs 01</a> e a visão de confiabilidade em <a href="../apis/06-confiabilidade.html#cache-concorrencia">APIs 06</a>.</p>
+<pre><code class="http">PUT /atendimentos/1001
+If-Match: "v7"
+
+HTTP/1.1 412 Precondition Failed      -- alguém salvou a versão 8 antes</code></pre>
+  <div class="note trap"><b>Detalhes que quebram a versão</b><ul>
+    <li><strong>Esquecer a coluna em algum caminho de escrita</strong> (um job, um script, um trigger que altera a linha sem incrementar). Centralize o incremento (em trigger, ou em camada única de acesso).</li>
+    <li><strong>Usar timestamp como versão</strong>: dois updates no mesmo instante, ou resolução baixa, geram falso "sem conflito". Prefira inteiro incremental.</li>
+    <li><strong>Atalhos do banco:</strong> o PostgreSQL tem <code>xmin</code> e o Oracle <code>ORA_ROWSCN</code> (confiável por linha só se a tabela foi criada com <code>ROWDEPENDENCIES</code>). Servem em casos específicos, mas dependem de detalhes de implementação; para um contrato de API, use coluna própria.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Dois atendentes editam o mesmo cadastro; como evitar que um sobrescreva o outro?" <em>"Concorrência otimista: coluna de versão, UPDATE com WHERE versao = lida e incremento; se afetou 0 linhas, há conflito e o usuário recarrega. Na API, a versão vira ETag e o cliente envia If-Match; o servidor devolve 412 em caso de conflito."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina como <strong>padrão de arquitetura</strong> que toda entidade editável por humanos tenha versão e que a API exija <code>If-Match</code>. É barato de implantar no início e caríssimo de acrescentar depois de o primeiro caso de "dado sumiu" chegar ao suporte. Combine com a UX: a mensagem de conflito deve mostrar o que mudou e permitir mesclar.</p></div>
+</section>
+
+<section class="chap" id="agendamento">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Agendamento sem reserva dupla</h2>
+  <p>O problema clássico da saúde: duas atendentes marcam o mesmo médico no mesmo horário. A causa é sempre o padrão <strong>"verifica e depois insere"</strong>:</p>
+<pre><code class="sql">-- Race condition: nada impede dois processos de passar pelo SELECT ao mesmo tempo
+SELECT COUNT(*) FROM atendimento
+WHERE  id_medico = 7 AND dt_atendimento = TIMESTAMP '2026-12-01 09:00:00' AND status = 'AGENDADO';
+-- 0 para os dois? então os dois fazem:
+INSERT INTO atendimento (...) VALUES (...);</code></pre>
+  <p>Entre o <code>SELECT</code> e o <code>INSERT</code> há uma janela. Mesmo em <code>SERIALIZABLE</code> do Oracle (que não pega write skew), o problema passaria. A regra de ouro: <strong>quem garante a regra é o banco, por constraint, não a aplicação por verificação</strong>.</p>
+
+  <h3>1. Horário exato: unique constraint</h3>
+  <p>Se o agendamento é em slots fixos, uma restrição de unicidade resolve; o segundo <code>INSERT</code> falha com erro (<code>ORA-00001</code> no Oracle, SQLSTATE <code>23505</code> no PostgreSQL) e a aplicação responde "horário indisponível". Como só valem os agendamentos ativos (cancelados liberam o horário), a unicidade é <strong>condicional</strong>:</p>
+  <div class="tabs">
+    <pre data-label="PostgreSQL"><code class="sql">CREATE UNIQUE INDEX ux_medico_horario
+  ON atendimento (id_medico, dt_atendimento)
+  WHERE status = 'AGENDADO';        -- índice único parcial</code></pre>
+    <pre data-label="Oracle"><code class="sql">-- Índice único funcional: linhas fora de 'AGENDADO' viram chave toda NULL e não entram
+CREATE UNIQUE INDEX ux_medico_horario ON atendimento (
+  CASE WHEN status = 'AGENDADO' THEN id_medico END,
+  CASE WHEN status = 'AGENDADO' THEN dt_atendimento END);</code></pre>
+  </div>
+  <p>Em ambos, o segundo <code>INSERT</code> concorrente <strong>espera</strong> o primeiro terminar: se o primeiro der <code>COMMIT</code>, o segundo falha; se der <code>ROLLBACK</code>, o segundo passa. Sem janela de corrida. Uma variante comum é uma tabela de <strong>slots pré-gerados</strong> (<code>agenda_slot(id_medico, dt_inicio, id_paciente)</code>) e a reserva ser um <code>UPDATE ... SET id_paciente = :p WHERE id_medico = :m AND dt_inicio = :h AND id_paciente IS NULL</code>: se afetou 1 linha, reservou; se 0, alguém foi mais rápido. Atômico e simples, em ambos os bancos.</p>
+
+  <h3>2. Intervalos que se sobrepõem: exclusion constraint (PostgreSQL)</h3>
+  <p>Consultas de 30 min, exames de 90 min e salas ocupadas por períodos: a regra é "dois intervalos do mesmo recurso não podem se sobrepor", e igualdade não captura isso. O PostgreSQL tem a <strong>exclusion constraint</strong> com tipos de intervalo:</p>
+<pre><code class="sql">CREATE EXTENSION IF NOT EXISTS btree_gist;   -- permite usar "=" em inteiros dentro de índice GiST
+
+CREATE TABLE reserva_sala (
+  id_reserva  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_sala     INTEGER NOT NULL,
+  id_medico   INTEGER NOT NULL REFERENCES medico,
+  periodo     TSTZRANGE NOT NULL,                 -- [início, fim)
+  EXCLUDE USING gist (id_sala WITH =, periodo WITH &amp;&amp;)   -- mesma sala E períodos que se sobrepõem
+);
+
+INSERT INTO reserva_sala (id_sala, id_medico, periodo)
+VALUES (2, 7, tstzrange('2026-12-01 09:00-03', '2026-12-01 09:30-03'));   -- ok
+
+INSERT INTO reserva_sala (id_sala, id_medico, periodo)
+VALUES (2, 9, tstzrange('2026-12-01 09:15-03', '2026-12-01 09:45-03'));
+-- ERROR:  conflicting key value violates exclusion constraint "reserva_sala_id_sala_periodo_excl"   (SQLSTATE 23P01)</code></pre>
+  <p>O intervalo <code>[início, fim)</code> é fechado à esquerda e aberto à direita: uma reserva que termina às 9h30 não conflita com outra que começa às 9h30. A garantia vale mesmo com concorrência: o índice GiST impede a gravação conflitante.</p>
+  <div class="note"><b>E no Oracle?</b><p>Não existe exclusion constraint. As opções: (a) <strong>slots pré-gerados</strong> com chave única (resolve a maioria dos casos de agenda); (b) <strong>serializar por um recurso pai</strong>: dentro da transação, <code>SELECT ... FROM medico WHERE id_medico = :m FOR UPDATE</code>, depois verificar sobreposição e inserir; quem chega depois espera no lock do médico; (c) trigger com lock, mais frágil; (d) serialização via <code>DBMS_LOCK</code> (exige permissão). A opção (b) funciona igualmente no PostgreSQL, caso não se queira a extensão.</p></div>
+
+  <h3>3. Locks de aplicação no PostgreSQL: advisory locks</h3>
+  <p>Para serializar um fluxo sem uma linha pai, o PostgreSQL oferece <strong>advisory locks</strong>: locks sobre um número que você define. <code>SELECT pg_advisory_xact_lock(:id_medico);</code> no início da transação faz todas as outras transações que pedem o mesmo número esperarem até o commit. Útil, mas fácil de esquecer em algum caminho de código; a constraint continua sendo a rede de segurança.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Técnica</th><th>Garante</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td>Unique (parcial/funcional)</td><td>Mesmo horário exato, só para agendamentos ativos</td><td>Slots fixos; ambos os bancos</td></tr>
+      <tr><td>Slot pré-gerado + <code>UPDATE ... WHERE livre</code></td><td>Reserva atômica, sem verificação prévia</td><td>Agenda tradicional; ambos</td></tr>
+      <tr><td>Exclusion constraint</td><td>Sem sobreposição de intervalos</td><td>Durações variáveis; só PostgreSQL</td></tr>
+      <tr><td><code>FOR UPDATE</code> no pai</td><td>Serializa o trabalho por médico/sala</td><td>Regras que um constraint não expressa; ambos</td></tr>
+      <tr><td>Advisory lock</td><td>Serializa por chave arbitrária</td><td>Regras globais, jobs únicos; PostgreSQL</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Constraint violada é um resultado esperado, não um bug</b><p>A aplicação deve tratar <code>ORA-00001</code>/<code>23505</code>/<code>23P01</code> como "horário indisponível" e devolver uma resposta clara (por exemplo, HTTP 409 Conflict com alternativas). Se ela estourar como erro 500, a constraint cumpriu seu papel, mas o usuário vê uma falha.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como impedir dois agendamentos no mesmo horário?" <em>"Com constraint no banco, não com verificação na aplicação. Para slots fixos, índice único parcial (PostgreSQL) ou funcional (Oracle) só sobre agendamentos ativos; para intervalos, exclusion constraint com tstzrange no PostgreSQL. No Oracle, slots pré-gerados ou serializar por um lock no médico. A aplicação trata a violação como conflito."</em></p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Exija que regras de integridade críticas (reserva dupla, saldo negativo, duplicidade de cadastro) estejam <strong>no banco</strong>, com constraints, e não só no código: o código tem várias portas (telas, APIs, jobs, scripts de suporte) e o banco é a única porta comum. Para a saúde, uma reserva dupla é um problema real de atendimento ao paciente.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Exercícios</h2>
+  <p>Resolva antes de abrir a resposta. Para os exercícios com duas sessões, abra dois terminais.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Um serviço aplica desconto: lê <code>valor</code>, calcula na aplicação e grava. Dois descontos simultâneos de 10 sobre 100 resultam em 90. Dê três correções.</span></summary><div class="ans">
+    <p><strong>Resposta.</strong> Foi um lost update (cada um leu 100 e gravou 90; o correto seria 80).</p>
+<pre><code class="sql">-- 1. Atômico (melhor, se o cálculo cabe no SQL)
+UPDATE atendimento SET valor = valor - 10 WHERE id_atendimento = 1001;
+
+-- 2. Pessimista: trava a linha ao ler
+BEGIN;
+SELECT valor FROM atendimento WHERE id_atendimento = 1001 FOR UPDATE;
+-- a aplicação calcula
+UPDATE atendimento SET valor = :novo WHERE id_atendimento = 1001;
+COMMIT;
+
+-- 3. Otimista: coluna de versão
+UPDATE atendimento SET valor = :novo, versao = versao + 1
+WHERE  id_atendimento = 1001 AND versao = :versao_lida;   -- 0 linhas: reler e tentar de novo</code></pre>
+    <p>A opção 1 não exige retry nem lock explícito. A 2 serve para lógica complexa dentro do banco/transação curta. A 3 serve quando o intervalo entre ler e gravar atravessa requisições (telas, APIs).</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Dois terminais. O médico 7 tem 5 agendamentos. A abre transação e conta; B insere o 6º e confirma; A conta de novo. O que A vê em cada nível?</span></summary><div class="ans">
+<pre><code class="sql">-- A
+BEGIN;  -- (nível a testar)
+SELECT COUNT(*) FROM atendimento WHERE id_medico = 7 AND status = 'AGENDADO';   -- 5
+-- B: INSERT ...(id_medico 7, 'AGENDADO'); COMMIT;
+SELECT COUNT(*) FROM atendimento WHERE id_medico = 7 AND status = 'AGENDADO';   -- ?</code></pre>
+    <div class="tbl"><table>
+      <thead><tr><th>Banco / nível</th><th>Segunda contagem</th><th>Por quê</th></tr></thead>
+      <tbody>
+        <tr><td>PostgreSQL <code>READ COMMITTED</code></td><td>6</td><td>Cada comando tem snapshot novo (phantom read)</td></tr>
+        <tr><td>PostgreSQL <code>REPEATABLE READ</code></td><td>5</td><td>Snapshot fixo na primeira consulta; PostgreSQL também evita phantom neste nível</td></tr>
+        <tr><td>PostgreSQL <code>SERIALIZABLE</code></td><td>5</td><td>Idem, e ainda detecta dependências perigosas na hora do commit</td></tr>
+        <tr><td>Oracle <code>READ COMMITTED</code></td><td>6</td><td>Consistência por comando</td></tr>
+        <tr><td>Oracle <code>SERIALIZABLE</code> ou <code>READ ONLY</code></td><td>5</td><td>Consistência por transação (snapshot fixo no início)</td></tr>
+      </tbody>
+    </table></div>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Duas rotinas transferem itens entre atendimentos. A atualiza o 10 e depois o 20; B atualiza o 20 e depois o 10. Dê a correção para as duas.</span></summary><div class="ans">
+    <p><strong>Resposta.</strong> É deadlock por ordem inversa. Em ambas as rotinas, travar na <strong>mesma ordem</strong> (id crescente) antes de qualquer alteração:</p>
+<pre><code class="sql">BEGIN;
+SELECT id_atendimento FROM atendimento
+WHERE  id_atendimento IN (10, 20)
+ORDER  BY id_atendimento
+FOR UPDATE;                    -- trava 10 e depois 20, nas duas rotinas
+UPDATE atendimento SET ... WHERE id_atendimento = 10;
+UPDATE atendimento SET ... WHERE id_atendimento = 20;
+COMMIT;</code></pre>
+    <p>Quem chegar depois espera no primeiro lock e não forma ciclo. Mantenha ainda o retry para 40P01/ORA-00060 (lembrando que no Oracle é preciso dar <code>ROLLBACK</code> explícito, pois só o comando foi desfeito). Nota: no PostgreSQL a ordem em que <code>FOR UPDATE</code> trava as linhas segue a ordem do plano; <code>ORDER BY</code> a torna previsível.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Escreva o consumo de 10 itens de <code>fila_notificacao</code> por vários workers e diga o que fazer se um worker morrer no meio.</span></summary><div class="ans">
+    <p><strong>Resposta.</strong> PostgreSQL:</p>
+<pre><code class="sql">WITH proximos AS (
+  SELECT id FROM fila_notificacao
+  WHERE  status = 'PENDENTE'
+  ORDER  BY id LIMIT 10
+  FOR UPDATE SKIP LOCKED)
+UPDATE fila_notificacao f SET status = 'PROCESSANDO', dt_inicio = now()
+FROM proximos p WHERE f.id = p.id
+RETURNING f.id, f.payload;</code></pre>
+    <p>Cada worker pega itens distintos sem esperar os outros. Se o worker morre depois do commit, os itens ficam em <code>PROCESSANDO</code>: um job periódico faz <code>UPDATE ... SET status = 'PENDENTE' WHERE status = 'PROCESSANDO' AND dt_inicio &lt; now() - interval '10 minutes'</code>. Isso significa entrega <strong>pelo menos uma vez</strong>, então o consumidor deve ser idempotente; limite as tentativas e mande para uma fila de falhas. No Oracle, use o cursor <code>FOR UPDATE SKIP LOCKED</code> com <code>FETCH</code> controlado ou Advanced Queuing.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Qual sessão você investiga primeiro e o que faz?</span></summary><div class="ans">
+<pre><code class="text"> pid  | bloqueado_por | state               | tx_idade | ultimo_comando
+------+---------------+---------------------+----------+-------------------------------
+ 5120 | {}            | idle in transaction | 02:14:09 | UPDATE atendimento SET valor...
+ 5188 | {5120}        | active              | 00:52:31 | UPDATE atendimento SET valor...
+ 5190 | {5188}        | active              | 00:52:10 | SELECT ... FOR UPDATE
+ 5207 | {5120}        | active              | 00:31:44 | DELETE FROM atendimento ...</code></pre>
+    <p><strong>Resposta.</strong> A raiz é a <strong>5120</strong>: bloqueia 5188 e 5207 e não está bloqueada (a 5190 espera pela 5188, em cadeia). Está <code>idle in transaction</code> há mais de 2 horas: um <code>UPDATE</code> sem <code>COMMIT</code> ou uma aplicação que esqueceu a transação. Passos: identificar o dono (<code>usename</code>, <code>application_name</code>, <code>client_addr</code>), pedir o <code>COMMIT</code>/<code>ROLLBACK</code>; se não der, autorizar e executar <code>pg_terminate_backend(5120)</code>. Depois, as outras andam sozinhas. Matar 5188 não adiantaria (5207 continua bloqueada). Prevenção: <code>idle_in_transaction_session_timeout</code> e correção da aplicação. Nota: essa transação de 2 horas também impediu o VACUUM; confira o bloat depois.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>Impeça que a sala 2 seja reservada em períodos sobrepostos (PostgreSQL) e dê uma alternativa para Oracle.</span></summary><div class="ans">
+<pre><code class="sql">-- PostgreSQL
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+ALTER TABLE reserva_sala
+  ADD CONSTRAINT ex_sala_periodo EXCLUDE USING gist (id_sala WITH =, periodo WITH &amp;&amp;);</code></pre>
+    <p><strong>Resposta.</strong> A constraint rejeita (SQLSTATE 23P01) qualquer reserva da mesma sala cujo período se sobreponha a outro; <code>[09:00, 09:30)</code> e <code>[09:30, 10:00)</code> convivem. Para Oracle: gerar <strong>slots</strong> fixos de, por exemplo, 30 min com chave única <code>(id_sala, dt_inicio)</code> e reservar vários slots consecutivos para durações maiores (todos num único comando, com rollback se algum falhar); ou, na transação, <code>SELECT ... FROM sala WHERE id_sala = 2 FOR UPDATE</code>, verificar sobreposição com <code>EXISTS</code> e só então inserir (serializa por sala). Em ambos, trate o erro como "horário indisponível".</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>Cenário 1: "O sistema congelou às 9h"</h3>
+  <p>A tela de atendimento não salva; dezenas de usuários reclamam. O banco está com CPU baixa.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>CPU baixa e usuários esperando indica <strong>bloqueio</strong>, não lentidão de consulta. Rode a consulta de bloqueadores (seção 6).</li>
+    <li>Ache o bloqueador raiz, veja estado, idade e último comando. Provavelmente é transação esquecida (<code>idle in transaction</code>/<code>INACTIVE</code>).</li>
+    <li>Contate o dono; se não for possível, encerre a sessão raiz com autorização (<code>pg_terminate_backend</code> / <code>KILL SESSION</code>) e acompanhe o rollback.</li>
+    <li>Pós-incidente: timeouts por papel e correção da aplicação (transação curta, sem I/O externo dentro dela).</li>
+  </ol></div>
+
+  <h3>Cenário 2: ORA-01555 no relatório noturno</h3>
+  <p>O fechamento mensal, que lê <code>atendimento</code> em um cursor longo e grava resultados com <code>COMMIT</code> a cada lote, falha com ORA-01555 às 3h.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Cheque <code>V$UNDOSTAT</code> (<code>MAXQUERYLEN</code> contra <code>UNDO_RETENTION</code>) e o volume de escrita concorrente.</li>
+    <li>Corrija o padrão: o <code>COMMIT</code> dentro do loop do cursor que lê a mesma tabela é uma causa clássica. Processe em lotes por chave (<code>WHERE id &gt; :ultimo ... FETCH FIRST n</code>), cada lote com sua própria consulta curta.</li>
+    <li>Se necessário, com o DBA, aumente o undo/retenção para cobrir a maior consulta e reveja a janela do job.</li>
+  </ol></div>
+
+  <h3>Cenário 3: a migração do PostgreSQL derrubou o sistema por 4 minutos</h3>
+  <p>Um <code>ALTER TABLE atendimento ADD COLUMN ...</code> numa terça à tarde fez todas as consultas pararem, apesar de "rápido".</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Explique a fila de <code>ACCESS EXCLUSIVE</code>: havia uma transação longa na tabela; o <code>ALTER</code> esperou por ela e todo o tráfego formou fila atrás do <code>ALTER</code>.</li>
+    <li>Padrão para a próxima vez: <code>SET lock_timeout = '3s'</code> antes do DDL, repetir em caso de falha, executar fora do horário de pico e conferir antes se existem transações longas.</li>
+    <li>Prefira operações de baixo impacto: <code>CREATE INDEX CONCURRENTLY</code>; adicionar constraints como <code>NOT VALID</code> e validar depois; em versões recentes, coluna com <code>DEFAULT</code> constante não reescreve a tabela (confirme na versão em uso).</li>
+    <li>Registre o procedimento no runbook de migrações.</li>
+  </ol></div>
+
+  <h3>Cenário 4: notificações duplicadas</h3>
+  <p>Dois workers da fila de notificações enviaram o mesmo SMS de confirmação a pacientes.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Veja como os itens são pegos. Provavelmente um <code>SELECT</code> sem lock seguido de <code>UPDATE</code> (race condition entre workers).</li>
+    <li>Troque por <code>FOR UPDATE SKIP LOCKED</code> (seção 4) com marcação de <code>PROCESSANDO</code> no mesmo comando.</li>
+    <li>Mesmo assim, torne o envio <strong>idempotente</strong> (chave de idempotência por notificação junto ao provedor): a entrega "pelo menos uma vez" ainda pode duplicar após uma falha.</li>
+  </ol></div>
+
+  <h3>Cenário 5: deadlock intermitente no fechamento de lote</h3>
+  <p>De vez em quando, o fechamento do faturamento falha com <code>deadlock detected</code> (ou ORA-00060), e a próxima tentativa passa.</p>
+  <div class="note rule"><b>O que fazer</b><ol>
+    <li>Pegue o detalhe no log do PostgreSQL ou no trace do Oracle (deadlock graph): quais comandos e linhas.</li>
+    <li>Normalmente, dois fluxos atualizam as mesmas linhas em ordens diferentes (por exemplo, um por paciente e outro por convênio). Defina uma ordem canônica e use <code>ORDER BY id FOR UPDATE</code> antes de atualizar.</li>
+    <li>Cheque índices nas FKs (no Oracle) e reduza o tamanho da transação do lote (commits por lote menor).</li>
+    <li>Implemente retry com limite e log; mas trate o retry como paliativo até a ordem ser corrigida.</li>
+  </ol></div>
+  <div class="note iv"><b>Na entrevista</b><p>Para cenários de concorrência, comece sempre por <em>"é bloqueio, deadlock ou lentidão?"</em>. Mostre as consultas de diagnóstico, diferencie bloqueador raiz de bloqueados e feche com a prevenção (timeouts, transação curta, ordem de locks, constraints).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Monte um <strong>painel e alertas</strong> mínimos: idade da transação mais antiga, número de sessões bloqueadas, deadlocks por hora e tuplas mortas (PostgreSQL) ou uso de undo (Oracle). Os cinco cenários acima são detectáveis antes de o usuário ligar para o suporte.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>MVCC</dt><dd>Controle de concorrência por múltiplas versões: leitores veem um snapshot, sem bloquear escritores.</dd></div>
+    <div><dt>Snapshot</dt><dd>A "foto" dos dados confirmados que um comando ou transação enxerga.</dd></div>
+    <div><dt>Isolamento</dt><dd>O "I" do ACID: o quanto transações simultâneas se enxergam.</dd></div>
+    <div><dt>Lost update</dt><dd>Atualização perdida: a segunda gravação sobrescreve a primeira sem conhecê-la.</dd></div>
+    <div><dt>Write skew</dt><dd>Duas transações leem o mesmo conjunto e gravam linhas diferentes, violando uma regra conjunta.</dd></div>
+    <div><dt>Undo</dt><dd>No Oracle, área onde ficam as imagens anteriores das linhas, usada para rollback e leitura consistente.</dd></div>
+    <div><dt>ORA-01555</dt><dd>Erro "snapshot too old": o undo necessário para uma leitura já foi reaproveitado.</dd></div>
+    <div><dt>xmin / xmax</dt><dd>No PostgreSQL, IDs das transações que criaram e removeram uma versão de linha.</dd></div>
+    <div><dt>VACUUM / autovacuum</dt><dd>Limpeza de tuplas mortas e congelamento de IDs no PostgreSQL; o autovacuum a dispara automaticamente.</dd></div>
+    <div><dt>Bloat</dt><dd>Inchaço de tabelas e índices causado por tuplas mortas não recicladas.</dd></div>
+    <div><dt>Wraparound</dt><dd>Esgotamento circular dos IDs de transação de 32 bits; evitado por congelamento.</dd></div>
+    <div><dt>Deadlock</dt><dd>Ciclo de espera entre transações; o banco aborta uma delas.</dd></div>
+    <div><dt>SKIP LOCKED</dt><dd>Opção do <code>FOR UPDATE</code> que ignora linhas já travadas; base de filas no banco.</dd></div>
+    <div><dt>Concorrência otimista</dt><dd>Gravar só se a versão lida ainda for a atual (coluna de versão, ETag/If-Match).</dd></div>
+    <div><dt>Exclusion constraint</dt><dd>Constraint do PostgreSQL que impede linhas "em conflito" segundo um operador, como sobreposição de intervalos.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que é MVCC e qual a vantagem?</span></summary><div class="ans"><p>Manter várias versões de cada linha para que leitores vejam um snapshot consistente sem bloquear escritores e vice-versa. Só duas escritas na mesma linha esperam uma pela outra. Oracle e PostgreSQL usam MVCC, com implementações diferentes (undo e tuplas versionadas).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Quais são as anomalias de concorrência clássicas?</span></summary><div class="ans"><p>Dirty read, non-repeatable read, phantom read, lost update e write skew. As três primeiras definem os níveis ANSI; lost update e write skew exigem atenção extra (atomicidade, locks, versão ou isolamento serializável).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Qual o nível de isolamento padrão em Oracle e PostgreSQL e o que ele garante?</span></summary><div class="ans"><p>Os dois usam <code>READ COMMITTED</code>: sem dirty read, com consistência por comando (cada comando vê os dados confirmados até seu início). Leituras repetidas na mesma transação podem divergir e lost update é possível se a aplicação faz read-modify-write.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>O que é um lost update e como evitá-lo?</span></summary><div class="ans"><p>Duas transações leem o mesmo valor e a segunda gravação sobrescreve a primeira. Evita-se com atualização atômica (<code>SET x = x + n</code>), <code>SELECT ... FOR UPDATE</code>, ou concorrência otimista com coluna de versão. Na API, ETag e <code>If-Match</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Como o SERIALIZABLE do Oracle difere do do PostgreSQL?</span></summary><div class="ans"><p>O do Oracle é snapshot isolation: impede phantom e non-repeatable read, mas não write skew, e falha com ORA-08177 em conflitos de escrita. O do PostgreSQL usa SSI e é serializável de verdade, abortando transações com SQLSTATE 40001 que a aplicação deve repetir.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>O que é write skew? Dê um exemplo.</span></summary><div class="ans"><p>Duas transações leem o mesmo conjunto, decidem e gravam linhas diferentes, quebrando uma regra conjunta. Exemplo: "sempre ao menos um médico de plantão": dois médicos veem 2 de plantão e ambos saem. Evita-se com <code>SERIALIZABLE</code> do PostgreSQL, travando o conjunto lido, travando um registro pai ou, quando possível, com constraint.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Como o PostgreSQL implementa MVCC e qual o custo?</span></summary><div class="ans"><p>Cada <code>UPDATE</code> cria uma nova tupla; a antiga permanece com <code>xmax</code> preenchido até o VACUUM reciclá-la. O custo é bloat quando o autovacuum não acompanha ou há transações longas, mais a necessidade de congelar IDs para evitar wraparound. A vantagem: rollback instantâneo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>O que causa ORA-01555 e como evitar?</span></summary><div class="ans"><p>Uma leitura precisa de undo que já foi sobrescrito (consulta mais longa que a retenção, undo pequeno, ou commit dentro do loop de um cursor sobre a tabela alterada). Evita-se encurtando consultas, lendo em lotes, não fazendo commit dentro do cursor e ajustando undo e <code>UNDO_RETENTION</code> com o DBA.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>O que são bloat, VACUUM e autovacuum?</span></summary><div class="ans"><p>Bloat é espaço ocupado por tuplas mortas. O VACUUM as recicla para reuso (sem, em geral, devolver espaço ao SO), atualiza o mapa de visibilidade e congela IDs. O autovacuum o roda automaticamente por limiares; em tabelas grandes e quentes, ajusto <code>autovacuum_vacuum_scale_factor</code> por tabela. Transação longa impede a limpeza.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>O que é e como funciona o lock de linha? Existe lock escalation?</span></summary><div class="ans"><p>UPDATE/DELETE/FOR UPDATE travam as linhas até o fim da transação; só quem altera as mesmas linhas espera. No Oracle o lock fica no bloco e no PostgreSQL na tupla (<code>xmax</code>); nenhum dos dois escala locks de linha para a tabela, diferente de alguns outros bancos.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Para que servem NOWAIT e SKIP LOCKED?</span></summary><div class="ans"><p><code>NOWAIT</code> falha na hora se a linha está travada, em vez de esperar. <code>SKIP LOCKED</code> pula as linhas travadas, permitindo que vários workers consumam uma fila sem esperar nem pegar o mesmo item. É inadequado para relatórios, pois entrega uma visão parcial.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O que é um deadlock, como o banco resolve e como evitar?</span></summary><div class="ans"><p>Ciclo de espera entre transações. O banco detecta e aborta uma (40P01 no PostgreSQL; ORA-00060 no Oracle, em que só o comando é desfeito). Evita-se com ordem consistente de locks, transações curtas, índices nas FKs e retry.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>O sistema travou. Como acha o culpado?</span></summary><div class="ans"><p>Procuro sessões esperando e o bloqueador raiz: <code>pg_blocking_pids()</code> em <code>pg_stat_activity</code> no PostgreSQL; <code>blocking_session</code>/<code>final_blocking_session</code> em <code>v$session</code> e <code>v$lock</code> no Oracle. Vejo estado, idade e último comando. Se está ocioso em transação, é bug de aplicação; peço commit ou encerro com autorização.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Por que "idle in transaction" é perigoso e como mitigar?</span></summary><div class="ans"><p>Segura locks, ocupa conexão e impede o VACUUM, causando bloat. Mitigo com <code>idle_in_transaction_session_timeout</code>, <code>statement_timeout</code> e <code>lock_timeout</code> por papel, pool que dá rollback ao devolver, e a regra de nunca fazer I/O externo dentro de transação.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Concorrência otimista versus pessimista: quando cada uma?</span></summary><div class="ans"><p>Pessimista (<code>FOR UPDATE</code>) em alta contenção e operações curtas dentro do banco. Otimista (coluna de versão, ETag/If-Match) para edição humana e APIs, quando o ciclo ler-editar-gravar atravessa requisições e a contenção é baixa. O conflito vira 412 ou erro tratado, em vez de lock longo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Como impedir reserva dupla de um horário médico?</span></summary><div class="ans"><p>Com constraint: índice único parcial (PostgreSQL) ou funcional (Oracle) sobre agendamentos ativos para slots fixos; exclusion constraint com <code>tstzrange</code> e <code>btree_gist</code> para intervalos no PostgreSQL; no Oracle, slots pré-gerados ou lock no registro do médico. A violação vira "horário indisponível". Verificação prévia na aplicação não basta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>(Gestão) Quais regras você estabeleceria para o time sobre transações e concorrência?</span></summary><div class="ans"><p>Transações curtas e sem I/O externo; atualizações atômicas ou versão em toda entidade editável; ordem canônica de locks; retry com limite para 40001/40P01/ORA-00060/ORA-08177; integridade crítica em constraints; timeouts por papel; e testes de carga com concorrência. Acompanho a idade da transação mais antiga, bloqueios e deadlocks como indicadores.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>(Sênior) Uma migração com ALTER TABLE em PostgreSQL derrubou a aplicação. Por quê e como prevenir?</span></summary><div class="ans"><p>O ALTER pede <code>ACCESS EXCLUSIVE</code>; esperando por uma transação antiga, ele enfileira, e todos os comandos subsequentes ficam atrás dele. Previno com <code>lock_timeout</code> curto e repetição, checagem de transações longas antes, horário de menor pico e técnicas de baixo impacto (<code>CREATE INDEX CONCURRENTLY</code>, constraints <code>NOT VALID</code> com validação posterior). No Oracle o DDL falha de imediato com ORA-00054.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

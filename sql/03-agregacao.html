@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 03: Agregação e agrupamento</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 03 de 12 · Agregação e agrupamento</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html" aria-current="page"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li class="sub"><ol>
+      <li><a href="#funcoes-nulls"><span class="n">1</span>Funções de agregação e o efeito dos NULLs</a></li>
+      <li><a href="#group-by-having"><span class="n">2</span>GROUP BY, HAVING e WHERE</a></li>
+      <li><a href="#condicional"><span class="n">3</span>Agregação condicional e taxas</a></li>
+      <li><a href="#subtotais"><span class="n">4</span>Subtotais: ROLLUP, CUBE, GROUPING SETS e GROUPING()</a></li>
+      <li><a href="#pivot-listagg"><span class="n">5</span>Pivot e concatenação de valores</a></li>
+      <li><a href="#estatistica-fanout"><span class="n">6</span>Erros estatísticos e fan-out: por que o número sai errado</a></li>
+      <li><a href="#relatorios"><span class="n">7</span>Relatórios típicos de clínica e datas truncadas</a></li>
+      <li><a href="#como-agrega"><span class="n">8</span>Como o banco agrega: hash e sort, em alto nível</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 03 · <span class="lvl l1">Básico</span> → <span class="lvl l2">Intermediário</span></div>
+  <h1>Agregação e agrupamento</h1>
+  <p class="lede">Quase todo relatório de gestão é uma agregação: faturamento por convênio, taxa de cancelamento, produção por médico. É também onde nascem os números errados que ninguém percebe. Este módulo ensina a agregar certo, a pivotar, a totalizar e a entender o que o banco faz por baixo.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Distinguir <code>COUNT(*)</code>, <code>COUNT(col)</code> e <code>COUNT(DISTINCT col)</code> e prever o efeito dos NULLs em cada função de agregação.</li>
+    <li>Aplicar a regra das colunas não agregadas, escolher entre WHERE e HAVING e explicar o impacto no desempenho.</li>
+    <li>Escrever agregação condicional (<code>SUM(CASE ...)</code>, <code>FILTER</code>), subtotais (<code>ROLLUP</code>, <code>CUBE</code>, <code>GROUPING SETS</code>) e pivots nos dois bancos.</li>
+    <li>Concatenar valores com <code>LISTAGG</code> e <code>STRING_AGG</code>, inclusive tratando estouro de tamanho no Oracle.</li>
+    <li>Identificar e corrigir média de médias, <code>COUNT DISTINCT</code> não aditivo e o fan-out de joins ("agregar antes de juntar").</li>
+    <li>Montar os relatórios típicos de uma clínica e explicar a diferença entre hash aggregate e sort/group aggregate.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="funcoes-nulls">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Funções de agregação e o efeito dos NULLs</h2>
+  <p>Uma função de agregação recebe vários valores (um por linha do grupo) e devolve um só. A regra que explica quase tudo: <strong>as funções de agregação ignoram NULL</strong>, com uma única exceção, <code>COUNT(*)</code>, que conta linhas e não olha valor nenhum. Quem não internaliza isso produz relatórios que "quase batem".</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Função</th><th>O que faz</th><th>NULLs</th><th>Conjunto vazio</th></tr></thead>
+    <tbody>
+      <tr><td><code>COUNT(*)</code></td><td>Conta linhas do grupo.</td><td>Conta todas, mesmo com tudo NULL.</td><td>0</td></tr>
+      <tr><td><code>COUNT(col)</code></td><td>Conta linhas em que <code>col</code> não é NULL.</td><td>Ignora.</td><td>0</td></tr>
+      <tr><td><code>COUNT(DISTINCT col)</code></td><td>Conta valores distintos não nulos.</td><td>Ignora.</td><td>0</td></tr>
+      <tr><td><code>SUM(col)</code></td><td>Soma.</td><td>Ignora. Se todos forem NULL, o resultado é NULL.</td><td>NULL</td></tr>
+      <tr><td><code>AVG(col)</code></td><td>Soma dos não nulos dividida pela <em>quantidade de não nulos</em>.</td><td>Ignora (e some do denominador).</td><td>NULL</td></tr>
+      <tr><td><code>MIN / MAX</code></td><td>Menor e maior valor (números, datas, texto).</td><td>Ignora.</td><td>NULL</td></tr>
+    </tbody></table></div>
+
+  <h3>Um exemplo pequeno, com a saída</h3>
+  <p>Cinco atendimentos fictícios. Dois são particulares (<code>id_convenio</code> NULL) e um não tem valor lançado:</p>
+  <pre><code class="text">id_atendimento | id_convenio | valor
+             1 |           1 | 100.00
+             2 |           1 | 150.00
+             3 |        NULL | 200.00
+             4 |           2 |   NULL
+             5 |        NULL |  80.00</code></pre>
+  <pre><code class="sql">SELECT COUNT(*)                    AS linhas,
+       COUNT(id_convenio)          AS com_convenio,
+       COUNT(DISTINCT id_convenio) AS convenios_distintos,
+       COUNT(valor)                AS com_valor,
+       SUM(valor)                  AS soma,
+       AVG(valor)                  AS media
+FROM atendimento;</code></pre>
+  <pre><code class="text">linhas | com_convenio | convenios_distintos | com_valor | soma   | media
+     5 |            3 |                   2 |         4 | 530.00 | 132.50</code></pre>
+  <p>A média é 530 / 4, não 530 / 5. Se o valor ausente significa "zero" para o negócio, a conta é outra, e quem decide é a regra de negócio, não o banco:</p>
+<pre><code class="sql">SELECT AVG(COALESCE(valor, 0)) AS media_tratando_nulo_como_zero   -- 530 / 5 = 106.00
+FROM atendimento;</code></pre>
+
+  <h3>Conjunto vazio: com e sem GROUP BY</h3>
+  <p>Sem <code>GROUP BY</code>, o resultado é <strong>sempre uma linha</strong>, mesmo que nenhuma linha passe pelo WHERE. Com <code>GROUP BY</code>, sem linhas de entrada não há grupos e o resultado é <strong>zero linhas</strong>.</p>
+<pre><code class="sql">SELECT COUNT(*) AS qtd, SUM(valor) AS total
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2099-01-01';
+-- qtd = 0, total = NULL (uma linha)
+
+SELECT id_medico, COUNT(*)
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2099-01-01'
+GROUP BY id_medico;
+-- zero linhas</code></pre>
+  <p>Por isso relatórios usam <code>COALESCE(SUM(valor), 0)</code> quando o consumidor (tela, planilha, API) não sabe lidar com NULL.</p>
+
+  <div class="note trap"><b>Armadilha comum: COUNT(*) depois de um LEFT JOIN</b><p>Para listar médicos com a quantidade de atendimentos, incluindo quem tem zero, o <code>LEFT JOIN</code> devolve <em>uma linha com NULLs</em> para o médico sem atendimento. <code>COUNT(*)</code> conta essa linha e devolve 1. O correto é <code>COUNT(a.id_atendimento)</code>: conta só quando existe atendimento de verdade.</p></div>
+<pre><code class="sql">SELECT m.nome, COUNT(a.id_atendimento) AS qtd   -- e não COUNT(*)
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+GROUP BY m.id_medico, m.nome;</code></pre>
+
+  <h3>Detalhes que mudam de banco para banco</h3>
+  <ul>
+    <li><strong>String vazia.</strong> No Oracle, <code>''</code> é NULL; logo <code>COUNT(col)</code> não conta colunas texto "vazias". No PostgreSQL, <code>''</code> é um valor e é contado.</li>
+    <li><strong>Divisão inteira.</strong> No PostgreSQL, <code>integer / integer</code> trunca: <code>COUNT(*) / COUNT(*)</code> entre contagens dá 0 ou 1. Use <code>::numeric</code> ou multiplique por <code>100.0</code>. No Oracle, <code>NUMBER</code> divide em decimal.</li>
+    <li><strong>Tipo do resultado.</strong> No PostgreSQL, <code>SUM(integer)</code> devolve <code>bigint</code>, <code>SUM(bigint)</code> e <code>AVG</code> de inteiros devolvem <code>numeric</code>. Para dinheiro use <code>NUMERIC</code>, nunca <code>float</code>.</li>
+    <li><strong>COUNT(DISTINCT a, b).</strong> Não funciona em nenhum dos dois. Faça <code>SELECT COUNT(*) FROM (SELECT DISTINCT a, b FROM t) x</code>.</li>
+    <li><strong>COUNT(1) e COUNT(*).</strong> Equivalentes em ambos. Não existe diferença de desempenho; use <code>COUNT(*)</code>.</li>
+  </ul>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Pergunte sempre "o que quero contar: linhas, linhas com valor ou valores distintos?" e escreva a função que responde exatamente isso. Se a coluna pode ser NULL, decida e documente o que NULL significa no relatório.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre <code>COUNT(*)</code>, <code>COUNT(col)</code> e <code>COUNT(DISTINCT col)</code>?" Linhas do grupo; linhas em que a coluna não é nula; valores distintos não nulos. Acrescente o caso do LEFT JOIN e a média que ignora NULL: é o que mostra que você já errou isso na prática.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando dois relatórios "do mesmo número" divergem em poucas unidades, o suspeito número 1 é tratamento de NULL (média, contagem de coluna opcional). Peça ao time que cada métrica tenha definição escrita: o que entra, o que sai, o que significa vazio.</p></div>
+</section>
+
+<section class="chap" id="group-by-having">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>GROUP BY, HAVING e WHERE</h2>
+  <p>O <code>GROUP BY</code> divide as linhas em grupos pelo valor das colunas (ou expressões) indicadas e aplica a agregação em cada grupo. Para entender o que vale em cada cláusula, é preciso lembrar <strong>a ordem lógica de execução</strong>: o WHERE roda antes de existir grupo; o HAVING roda depois.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 190" role="img" aria-label="Pipeline lógico: FROM e JOIN, WHERE, GROUP BY, HAVING, SELECT, com a quantidade de linhas diminuindo a cada etapa">
+      <defs><marker id="ah-gb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">Ordem lógica de uma consulta com agregação</text>
+      <text class="lbl" x="76" y="62" text-anchor="middle">5.000.000 linhas</text>
+      <text class="lbl" x="208" y="62" text-anchor="middle">120.000 linhas</text>
+      <text class="lbl" x="340" y="62" text-anchor="middle">300 grupos</text>
+      <text class="lbl" x="472" y="62" text-anchor="middle">12 grupos</text>
+      <text class="lbl" x="604" y="62" text-anchor="middle">12 linhas</text>
+      <rect class="box" x="20" y="72" width="112" height="40" rx="5"/><text x="76" y="96" text-anchor="middle">FROM + JOIN</text>
+      <rect class="box-a" x="152" y="72" width="112" height="40" rx="5"/><text x="208" y="96" text-anchor="middle">WHERE</text>
+      <rect class="box-a" x="284" y="72" width="112" height="40" rx="5"/><text x="340" y="96" text-anchor="middle">GROUP BY</text>
+      <rect class="box-w" x="416" y="72" width="112" height="40" rx="5"/><text x="472" y="96" text-anchor="middle">HAVING</text>
+      <rect class="box" x="548" y="72" width="112" height="40" rx="5"/><text x="604" y="96" text-anchor="middle">SELECT</text>
+      <line class="ln" x1="132" y1="92" x2="150" y2="92" marker-end="url(#ah-gb)"/>
+      <line class="ln" x1="264" y1="92" x2="282" y2="92" marker-end="url(#ah-gb)"/>
+      <line class="ln" x1="396" y1="92" x2="414" y2="92" marker-end="url(#ah-gb)"/>
+      <line class="ln" x1="528" y1="92" x2="546" y2="92" marker-end="url(#ah-gb)"/>
+      <text class="lbl" x="208" y="132" text-anchor="middle">filtra linhas</text>
+      <text class="lbl" x="340" y="132" text-anchor="middle">forma e agrega</text>
+      <text class="lbl" x="472" y="132" text-anchor="middle">filtra grupos</text>
+      <text class="lbl" x="604" y="132" text-anchor="middle">DISTINCT, ORDER BY</text>
+      <text class="lbl" x="20" y="166">Quanto mais cedo uma linha é descartada, menos trabalho as etapas seguintes têm.</text>
+      <text class="lbl" x="20" y="182">Os números são ilustrativos.</text>
+    </svg>
+    <figcaption>O WHERE reduz o volume antes do agrupamento; o HAVING só enxerga grupos já formados. Depois do SELECT vêm DISTINCT, ORDER BY e a paginação.</figcaption>
+  </figure>
+
+  <h3>A regra das colunas não agregadas</h3>
+  <p>Depois de agrupar, cada grupo vira <em>uma</em> linha. Toda coluna do SELECT precisa, então, ter um único valor por grupo: ou está no <code>GROUP BY</code>, ou está dentro de uma função de agregação. Caso contrário o banco não sabe qual dos valores do grupo mostrar.</p>
+<pre><code class="sql">SELECT m.nome, COUNT(*) AS qtd
+FROM atendimento a
+JOIN medico m ON m.id_medico = a.id_medico
+GROUP BY m.id_medico;          -- m.nome fora do GROUP BY</code></pre>
+  <pre><code class="text">Oracle:     ORA-00979: not a GROUP BY expression
+PostgreSQL: column "m.nome" must appear in the GROUP BY clause or be used in an aggregate function
+            (só dá erro se id_medico não for chave primária; veja abaixo)</code></pre>
+  <p>No <strong>PostgreSQL</strong>, se o <code>GROUP BY</code> contém a chave primária da tabela, as demais colunas dela são aceitas (dependência funcional, desde a 9.1). O <strong>Oracle</strong> não faz essa dedução: liste todas as colunas.</p>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">SELECT m.id_medico, m.nome, COUNT(*) AS qtd
+FROM atendimento a
+JOIN medico m ON m.id_medico = a.id_medico
+GROUP BY m.id_medico, m.nome;</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">-- id_medico é PK de medico: m.nome é aceito sem constar no GROUP BY
+SELECT m.id_medico, m.nome, COUNT(*) AS qtd
+FROM atendimento a
+JOIN medico m ON m.id_medico = a.id_medico
+GROUP BY m.id_medico;</code></pre>
+  </div>
+  <p>Há ainda o estilo "agregar primeiro, juntar depois", que evita agrupar por colunas de descrição e deixa o GROUP BY enxuto (voltaremos a ele na seção de fan-out):</p>
+<pre><code class="sql">SELECT m.nome, x.qtd
+FROM (SELECT id_medico, COUNT(*) AS qtd FROM atendimento GROUP BY id_medico) x
+JOIN medico m ON m.id_medico = x.id_medico;</code></pre>
+
+  <h3>Agrupar por expressão, alias e posição</h3>
+  <p>Pode-se agrupar por expressão (<code>GROUP BY TRUNC(dt_atendimento, 'MM')</code>); o SELECT precisa repetir a expressão idêntica. O PostgreSQL aceita o <em>alias</em> da coluna (e a posição, <code>GROUP BY 1</code>) no GROUP BY. O Oracle, até a 21c, não aceita alias no GROUP BY (a 23ai passou a aceitar; confirme na sua versão): repita a expressão ou use uma subconsulta. O alias <strong>não</strong> vale no HAVING em nenhum dos dois.</p>
+
+  <h3>NULL forma um grupo próprio</h3>
+  <p>No agrupamento, NULLs são tratados como iguais entre si (diferente da comparação com <code>=</code>). Agrupar por <code>id_convenio</code> devolve um grupo com <code>id_convenio</code> NULL: os atendimentos particulares.</p>
+<pre><code class="sql">SELECT id_convenio, COUNT(*) AS qtd
+FROM atendimento
+GROUP BY id_convenio;</code></pre>
+  <pre><code class="text">id_convenio | qtd
+          1 |   2
+          2 |   1
+       NULL |   2      -- particulares</code></pre>
+  <p><code>GROUP BY</code> sem nenhuma agregação equivale a <code>SELECT DISTINCT</code>. Os planos costumam ser os mesmos; escolha o que comunica melhor a intenção.</p>
+
+  <h3>WHERE ou HAVING?</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>WHERE</th><th>HAVING</th></tr></thead>
+    <tbody>
+      <tr><td>Filtra</td><td>Linhas, antes do agrupamento</td><td>Grupos, depois do agrupamento</td></tr>
+      <tr><td>Pode usar agregação?</td><td>Não (<code>WHERE COUNT(*) &gt; 1</code> é erro)</td><td>Sim, é o seu propósito</td></tr>
+      <tr><td>Pode usar índices?</td><td>Sim, é o que permite ler menos dados</td><td>Não: o filtro age sobre o resultado já calculado</td></tr>
+      <tr><td>Alias do SELECT</td><td>Não</td><td>Não (repita a expressão)</td></tr>
+    </tbody></table></div>
+<pre><code class="sql">-- Errado em desempenho: lê e agrupa tudo, descarta depois
+SELECT id_medico, COUNT(*) AS qtd
+FROM atendimento
+GROUP BY id_medico
+HAVING status = 'REALIZADO'          -- erro: status não está no GROUP BY
+                                     -- (e mesmo que estivesse, o filtro certo seria no WHERE)
+
+-- Certo: o que depende só da linha vai no WHERE; o que depende do grupo, no HAVING
+SELECT id_medico, COUNT(*) AS qtd, SUM(valor) AS faturado
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND dt_atendimento &gt;= DATE '2026-01-01'
+  AND dt_atendimento &lt;  DATE '2027-01-01'
+GROUP BY id_medico
+HAVING COUNT(*) &gt; 100;</code></pre>
+  <p>Regra de desempenho: <strong>qualquer condição que não usa agregação vai no WHERE</strong>. Os otimizadores costumam mover condições sem agregação do HAVING para o WHERE sozinhos, mas não conte com isso: escrever no lugar certo evita surpresa e mantém a intenção legível. O HAVING com agregação não pode ser "empurrado", e a tabela precisa ser lida e agrupada antes de decidir quais grupos ficam. A forma de reduzir esse custo é reduzir o que entra (WHERE e índice) ou pré-agregar (seção "Como o banco agrega").</p>
+  <p>O HAVING também existe sem GROUP BY: a tabela inteira vira um único grupo. <code>SELECT COUNT(*) FROM t HAVING COUNT(*) &gt; 0</code> devolve uma linha ou nenhuma.</p>
+
+  <div class="note trap"><b>Armadilha comum: BETWEEN em timestamp</b><p>Para "todo o mês de novembro", prefira o intervalo semiaberto <code>&gt;= DATE '2026-11-01' AND &lt; DATE '2026-12-01'</code>. Com <code>BETWEEN ... AND '2026-11-30 23:59:59'</code> você perde frações de segundo e atendimentos às 23:59:59,5. O intervalo semiaberto também é sargável (usa índice) e encaixa meses de tamanhos diferentes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre WHERE e HAVING?" WHERE filtra linhas antes de agrupar; HAVING filtra grupos depois, e só ele pode usar funções de agregação. Complete com desempenho: tudo que não depende de agregação deve ir no WHERE para reduzir o volume e permitir índice.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em revisão de código, procure <code>HAVING</code> sem função de agregação e <code>GROUP BY</code> com muitas colunas de descrição. São sinais de consulta escrita "até funcionar". Peça também que toda consulta de relatório tenha filtro de período explícito: é o que separa uma consulta de 2 segundos de uma que lê a tabela inteira.</p></div>
+</section>
+
+<section class="chap" id="condicional">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Agregação condicional e taxas</h2>
+  <p>Três perguntas ("quantos realizados?", "quantos cancelados?", "quanto faturou?") não precisam de três consultas, e sim de <strong>uma única leitura da tabela</strong> com a condição dentro da agregação. Em tabela de milhões de linhas, ler uma vez em vez de três é a diferença entre segundos e minutos, e a técnica é a base de pivots e de quase todo relatório de indicadores.</p>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">SELECT id_medico,
+       COUNT(*)                                              AS total,
+       SUM(CASE WHEN status = 'REALIZADO' THEN 1 ELSE 0 END) AS realizados,
+       SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END) AS cancelados,
+       SUM(CASE WHEN status = 'REALIZADO' THEN valor END)    AS faturado
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2026-11-01'
+  AND dt_atendimento &lt;  DATE '2026-12-01'
+GROUP BY id_medico;</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">-- FILTER existe desde o PostgreSQL 9.4; CASE também funciona
+SELECT id_medico,
+       COUNT(*)                                       AS total,
+       COUNT(*)   FILTER (WHERE status = 'REALIZADO') AS realizados,
+       COUNT(*)   FILTER (WHERE status = 'CANCELADO') AS cancelados,
+       SUM(valor) FILTER (WHERE status = 'REALIZADO') AS faturado
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2026-11-01'
+  AND dt_atendimento &lt;  DATE '2026-12-01'
+GROUP BY id_medico;</code></pre>
+  </div>
+  <pre><code class="text">id_medico | total | realizados | cancelados | faturado
+       10 |    40 |         30 |          8 |  4500.00
+       11 |    25 |         22 |          2 |  3300.00</code></pre>
+  <p>Observe que o <code>CASE</code> sem <code>ELSE</code> devolve NULL, e o NULL é ignorado pelo <code>SUM</code>: é isso que faz a condição funcionar. Até onde sei, o Oracle não tem a cláusula <code>FILTER</code> (confirme na sua versão); use <code>CASE</code>, que também funciona no PostgreSQL e portanto é a forma portável.</p>
+
+  <div class="note trap"><b>Armadilha comum: COUNT(CASE ... ELSE 0 END)</b><p><code>COUNT(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END)</code> conta <em>todas</em> as linhas, porque 0 não é NULL. Com <code>COUNT</code>, deixe o <code>ELSE</code> de fora (<code>COUNT(CASE WHEN ... THEN 1 END)</code>); com <code>SUM</code>, use <code>THEN 1 ELSE 0</code>. Os dois estilos funcionam, desde que você não misture.</p></div>
+
+  <h3>Taxas: numerador e denominador na mesma passada</h3>
+  <p>Taxa de cancelamento é <code>cancelados / total</code>. Há três cuidados: divisão por zero, divisão inteira no PostgreSQL e a <em>definição</em> do denominador.</p>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">SELECT id_medico,
+       ROUND(100 * SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END)
+                 / NULLIF(COUNT(*), 0), 1) AS pct_cancelamento
+FROM atendimento
+GROUP BY id_medico;
+-- sem NULLIF, grupo com total 0 dá ORA-01476 (divisor é igual a zero)</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">SELECT id_medico,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'CANCELADO')
+                   / NULLIF(COUNT(*), 0), 1) AS pct_cancelamento
+FROM atendimento
+GROUP BY id_medico;
+-- 100.0 força numeric; sem ele, bigint / bigint trunca para 0 ou 1
+-- sem NULLIF: ERROR: division by zero</code></pre>
+  </div>
+  <p>Com os números da tabela acima, o médico 10 tem 8/40 = 20,0% e o médico 11 tem 2/25 = 8,0%. Agora, o que é "total"? Agendamentos futuros (<code>AGENDADO</code>) ainda não tiveram chance de cancelar nem de acontecer. Duas definições razoáveis:</p>
+  <ul>
+    <li><strong>Sobre o total agendado:</strong> <code>cancelados / (realizados + cancelados + agendados)</code>.</li>
+    <li><strong>Sobre o desfecho conhecido:</strong> <code>cancelados / (realizados + cancelados)</code>, excluindo o futuro. Costuma ser a mais honesta para o mês corrente.</li>
+  </ul>
+  <p>Qualquer das duas serve, desde que seja <em>a mesma</em> em todos os relatórios.</p>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Uma só condição para o relatório inteiro: WHERE. Várias condições diferentes sobre as mesmas linhas, cada uma numa coluna: agregação condicional. Nunca <code>UNION ALL</code> de N consultas iguais mudando só o filtro, que lê a tabela N vezes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como calcular, em uma consulta, o total, os realizados e os cancelados por médico?" <code>SUM(CASE ...)</code> (ou <code>COUNT(*) FILTER</code> no PostgreSQL). Mencione que o CASE sem ELSE vira NULL e é ignorado, e que a taxa precisa de <code>NULLIF</code> e de cuidado com divisão inteira.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Uma métrica como "taxa de cancelamento" deve ter <strong>um dono e uma definição única</strong> (numerador, denominador, período, status excluídos). Sem isso, cada dashboard calcula de um jeito e a reunião de resultados vira discussão sobre qual número está certo.</p></div>
+</section>
+
+<section class="chap" id="subtotais">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Subtotais: ROLLUP, CUBE, GROUPING SETS e GROUPING()</h2>
+  <p>Relatórios gerenciais têm linhas de subtotal e total geral. A forma ingênua é um <code>UNION ALL</code> de várias consultas com níveis de agrupamento diferentes, lendo a tabela várias vezes. <code>GROUP BY ROLLUP</code>, <code>CUBE</code> e <code>GROUPING SETS</code> fazem isso em uma só consulta. Ambos os bancos suportam as três (no PostgreSQL, desde a 9.5), com a mesma sintaxe.</p>
+
+  <h3>ROLLUP: do detalhe ao total geral</h3>
+  <p>Dado o faturamento realizado por convênio e tipo (valores fictícios):</p>
+<pre><code class="sql">SELECT c.nome AS convenio, a.tipo, SUM(a.valor) AS total
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY ROLLUP (c.nome, a.tipo);</code></pre>
+  <pre><code class="text">convenio   | tipo     | total
+Bradesco   | CONSULTA |  2000.00
+Bradesco   | EXAME    |  1000.00
+Bradesco   | NULL     |  3000.00    -- subtotal de Bradesco
+NULL       | CONSULTA |  1000.00    -- particular (c.nome é NULL de verdade)
+NULL       | NULL     |  1000.00    -- subtotal do particular
+Unimed     | CONSULTA |  3000.00
+Unimed     | EXAME    |  5000.00
+Unimed     | NULL     |  8000.00
+NULL       | NULL     | 12000.00    -- total geral</code></pre>
+  <p><code>ROLLUP (a, b)</code> gera os agrupamentos <code>(a, b)</code>, <code>(a)</code> e <code>()</code>: n colunas produzem n+1 níveis, "descartando" a coluna mais à direita a cada passo. Repare no problema: a linha do particular (NULL "de verdade", vindo do LEFT JOIN) é indistinguível das linhas de subtotal (NULL "de agrupamento").</p>
+
+  <h3>GROUPING(): quem é NULL de dado e quem é NULL de subtotal</h3>
+  <p><code>GROUPING(coluna)</code> devolve 1 quando a coluna foi "agregada" naquela linha (ou seja, é linha de subtotal) e 0 caso contrário. É a forma correta de rotular e de ordenar:</p>
+<pre><code class="sql">SELECT CASE WHEN GROUPING(c.nome) = 1 THEN 'TOTAL GERAL'
+            ELSE COALESCE(c.nome, 'Particular') END AS convenio,
+       CASE WHEN GROUPING(a.tipo) = 1 THEN 'Subtotal' ELSE a.tipo END AS tipo,
+       SUM(a.valor) AS total
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY ROLLUP (c.nome, a.tipo)
+ORDER BY GROUPING(c.nome), c.nome, GROUPING(a.tipo), a.tipo;</code></pre>
+  <p>Com mais de uma coluna, <code>GROUPING(a, b)</code> no PostgreSQL devolve uma máscara de bits (a é o bit mais significativo). No Oracle, o equivalente é <code>GROUPING_ID(a, b)</code>. Isso permite filtrar níveis: <code>HAVING GROUPING(a, b) = 0</code> mantém só o detalhe.</p>
+
+  <h3>CUBE e GROUPING SETS</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 640 244" role="img" aria-label="Reticulado de agrupamentos para duas colunas: CUBE gera quatro, ROLLUP gera três">
+      <defs><marker id="ah-cube" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="220" y="16" width="200" height="34" rx="5"/><text x="320" y="38" text-anchor="middle">(convenio, tipo)</text>
+      <rect class="box-a" x="70" y="90" width="180" height="34" rx="5"/><text x="160" y="112" text-anchor="middle">(convenio)</text>
+      <rect class="box" x="390" y="90" width="180" height="34" rx="5"/><text x="480" y="112" text-anchor="middle">(tipo)</text>
+      <rect class="box-a" x="240" y="160" width="160" height="34" rx="5"/><text x="320" y="182" text-anchor="middle">() total geral</text>
+      <line class="ln-a" x1="290" y1="50" x2="190" y2="88" marker-end="url(#ah-cube)"/>
+      <line class="ln" x1="350" y1="50" x2="450" y2="88" marker-end="url(#ah-cube)"/>
+      <line class="ln-a" x1="190" y1="124" x2="290" y2="158" marker-end="url(#ah-cube)"/>
+      <line class="ln" x1="450" y1="124" x2="350" y2="158" marker-end="url(#ah-cube)"/>
+      <text class="lbl" x="20" y="216">Destacados: gerados por ROLLUP (convenio, tipo). CUBE gera os quatro.</text>
+      <text class="lbl" x="20" y="234">GROUPING SETS gera só os níveis que você listar.</text>
+    </svg>
+    <figcaption>Cada caixa é um nível de agrupamento calculado na mesma consulta. Com n colunas, ROLLUP gera n+1 níveis e CUBE gera 2^n.</figcaption>
+  </figure>
+  <ul>
+    <li><strong><code>CUBE (a, b)</code></strong> gera todas as combinações: <code>(a,b)</code>, <code>(a)</code>, <code>(b)</code>, <code>()</code>. Útil para tabelas cruzadas (totais por linha e por coluna). Cresce exponencialmente: CUBE com 6 colunas gera 64 níveis.</li>
+    <li><strong><code>GROUPING SETS</code></strong> lista exatamente os níveis desejados: <code>GROUP BY GROUPING SETS ((convenio), (tipo), ())</code> gera totais por convênio, por tipo e geral, sem o detalhe cruzado.</li>
+    <li><strong>Rollup parcial:</strong> <code>GROUP BY convenio, ROLLUP (tipo)</code> mantém convênio sempre agrupado e gera subtotal só do tipo.</li>
+    <li><strong>Colunas compostas:</strong> <code>ROLLUP ((a, b), c)</code> trata <code>(a, b)</code> como uma unidade.</li>
+  </ul>
+<pre><code class="sql">-- Totais por convênio, por tipo e geral, sem o cruzamento
+SELECT c.nome, a.tipo, SUM(a.valor) AS total,
+       GROUPING(c.nome) AS g_conv, GROUPING(a.tipo) AS g_tipo
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY GROUPING SETS ((c.nome), (a.tipo), ());</code></pre>
+  <p>Todas essas formas calculam os níveis em um passe lógico sobre a tabela, em vez de N leituras. Nos planos você verá operadores específicos (no PostgreSQL, <code>MixedAggregate</code> ou uma cadeia de <code>GroupAggregate</code> com <code>Sort</code>; no Oracle, variações de <code>SORT GROUP BY ROLLUP</code> e <code>GENERATE CUBE</code>). O Oracle também tem <code>GROUP_ID()</code> para distinguir agrupamentos duplicados.</p>
+
+  <div class="note trap"><b>Armadilha comum: usar IS NULL para achar o subtotal</b><p><code>WHERE convenio IS NULL</code> mistura subtotais com atendimentos particulares. Use sempre <code>GROUPING()</code>. Outro erro: somar uma coluna que já tem subtotais (o total sai em dobro). Se o resultado alimenta outra soma, filtre pelo nível com <code>HAVING GROUPING(...) = 0</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como gerar subtotais por convênio e um total geral sem UNION?" <code>GROUP BY ROLLUP (convenio, tipo)</code>, e <code>GROUPING()</code> para distinguir NULL de subtotal de NULL de dado. Cite a diferença para CUBE (todas as combinações) e GROUPING SETS (só os níveis escolhidos).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Totais calculados no SQL e totais calculados na ferramenta de BI nem sempre coincidem (arredondamento, contagens distintas, médias). Decida onde mora a regra de totalização e não a duplique. Veja também "Erros estatísticos" mais adiante: subtotal de média e de contagem distinta não é soma.</p></div>
+</section>
+
+
+<section class="chap" id="pivot-listagg">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Pivot e concatenação de valores</h2>
+  <p>Duas transformações de "forma" que aparecem o tempo todo: virar linhas em colunas (um mês por coluna) e juntar vários valores de um grupo numa só célula (os médicos de uma especialidade em uma lista).</p>
+
+  <h3>Pivot: três caminhos</h3>
+  <p>O objetivo é transformar este resultado "longo" em uma tabela "larga":</p>
+  <pre><code class="text">convenio | mes | total                 convenio | jan    | fev    | mar
+Unimed   | 01  | 4000.00      --&gt;      Unimed   | 4000.00| 3500.00| 5000.00
+Unimed   | 02  | 3500.00               Bradesco | 1200.00| 1500.00| 1100.00
+Unimed   | 03  | 5000.00
+Bradesco | 01  | 1200.00 ...</code></pre>
+  <p><strong>Limite fundamental:</strong> em SQL, o número e os nomes das colunas do resultado são fixos na hora de escrever a consulta. Um pivot "dinâmico" (colunas que dependem dos dados) exige gerar o SQL por código, ou devolver o formato longo e pivotar na aplicação ou na ferramenta de BI.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Técnica</th><th>Onde funciona</th><th>Prós</th><th>Contras</th></tr></thead>
+    <tbody>
+      <tr><td><code>SUM(CASE ...)</code> / <code>FILTER</code></td><td>Oracle e PostgreSQL</td><td>Portável, sem extensão, explícita, combina qualquer agregação por coluna.</td><td>Verbosa: repete a expressão para cada coluna.</td></tr>
+      <tr><td><code>PIVOT</code></td><td>Oracle (11g+)</td><td>Compacta; o Oracle ainda tem <code>UNPIVOT</code> e <code>PIVOT XML</code> (lista dinâmica, resultado em XML).</td><td>Lista <code>IN (...)</code> fixa; agrupa implicitamente por todas as colunas não pivotadas.</td></tr>
+      <tr><td><code>crosstab()</code></td><td>PostgreSQL, extensão <code>tablefunc</code></td><td>Funciona com a consulta de origem em formato longo.</td><td>Exige <code>CREATE EXTENSION</code>, lista de colunas na chamada, entrada ordenada, e sem a forma de duas consultas desalinha categorias faltantes.</td></tr>
+    </tbody></table></div>
+  <div class="tabs">
+    <pre data-label="CASE (portável)"><code class="sql">SELECT COALESCE(c.nome, 'Particular') AS convenio,
+       SUM(CASE WHEN EXTRACT(MONTH FROM a.dt_atendimento) = 1 THEN a.valor END) AS jan,
+       SUM(CASE WHEN EXTRACT(MONTH FROM a.dt_atendimento) = 2 THEN a.valor END) AS fev,
+       SUM(CASE WHEN EXTRACT(MONTH FROM a.dt_atendimento) = 3 THEN a.valor END) AS mar
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+  AND a.dt_atendimento &gt;= DATE '2026-01-01'
+  AND a.dt_atendimento &lt;  DATE '2026-04-01'
+GROUP BY COALESCE(c.nome, 'Particular');</code></pre>
+    <pre data-label="Oracle PIVOT"><code class="sql">-- A subconsulta deve trazer SÓ as colunas necessárias: tudo que não é
+-- o valor agregado nem a coluna pivotada vira chave de agrupamento
+SELECT *
+FROM (
+  SELECT COALESCE(c.nome, 'Particular') AS convenio,
+         TO_CHAR(a.dt_atendimento, 'MM') AS mes,
+         a.valor
+  FROM atendimento a
+  LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+  WHERE a.status = 'REALIZADO'
+    AND a.dt_atendimento &gt;= DATE '2026-01-01'
+    AND a.dt_atendimento &lt;  DATE '2026-04-01'
+)
+PIVOT (SUM(valor) FOR mes IN ('01' AS jan, '02' AS fev, '03' AS mar));</code></pre>
+    <pre data-label="PostgreSQL crosstab"><code class="sql">CREATE EXTENSION IF NOT EXISTS tablefunc;      -- uma vez por banco
+
+SELECT *
+FROM crosstab(
+  $$ SELECT COALESCE(c.nome, 'Particular')::text, to_char(a.dt_atendimento, 'MM'), SUM(a.valor)
+     FROM atendimento a LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+     WHERE a.status = 'REALIZADO'
+       AND a.dt_atendimento &gt;= DATE '2026-01-01' AND a.dt_atendimento &lt; DATE '2026-04-01'
+     GROUP BY 1, 2 ORDER BY 1, 2 $$,
+  $$ VALUES ('01'), ('02'), ('03') $$          -- categorias, na ordem das colunas
+) AS ct(convenio text, jan numeric, fev numeric, mar numeric);</code></pre>
+  </div>
+  <p>A forma de duas consultas do <code>crosstab</code> (segunda consulta devolvendo as categorias) preenche NULL onde uma categoria não existe para a linha. A forma de uma consulta só tem esse defeito: ela alinha valores pela ordem, não pelo nome.</p>
+
+  <h3>Concatenação: LISTAGG e STRING_AGG</h3>
+  <p>Junta o texto de várias linhas em uma. É o "um paciente, todos os convênios" ou "uma especialidade, todos os médicos". Deve ter <strong>ordem explícita</strong>, porque sem ela o resultado depende da ordem física e muda de execução para execução.</p>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">SELECT especialidade,
+       LISTAGG(nome, ', ') WITHIN GROUP (ORDER BY nome) AS medicos
+FROM medico
+GROUP BY especialidade;</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">SELECT especialidade,
+       STRING_AGG(nome, ', ' ORDER BY nome) AS medicos
+FROM medico
+GROUP BY especialidade;</code></pre>
+  </div>
+  <pre><code class="text">especialidade | medicos
+Cardiologia   | Ana Souza, Bruno Lima
+Pediatria     | Carla Dias</code></pre>
+  <ul>
+    <li><strong>NULLs</strong> são ignorados nos dois. Se todos forem NULL (ou o grupo for vazio), o resultado é NULL.</li>
+    <li><strong>DISTINCT:</strong> <code>STRING_AGG(DISTINCT x, ', ' ORDER BY x)</code> no PostgreSQL (a expressão do ORDER BY deve ser a mesma do DISTINCT). No Oracle, <code>LISTAGG(DISTINCT ...)</code> existe a partir da 19c; antes, desduplique em uma subconsulta.</li>
+    <li><strong>Outras formas de empacotar:</strong> <code>ARRAY_AGG</code> e <code>JSON_AGG</code>/<code>JSONB_AGG</code> no PostgreSQL; <code>JSON_ARRAYAGG</code> no Oracle (12.2+). Melhor do que texto separado por vírgula quando a aplicação vai ler o resultado.</li>
+  </ul>
+
+  <h3>O limite do Oracle e ON OVERFLOW</h3>
+  <p>O resultado de <code>LISTAGG</code> é um <code>VARCHAR2</code> e fica sujeito ao limite do tipo (4000 bytes, ou 32767 se <code>MAX_STRING_SIZE=EXTENDED</code>). Em um grupo grande, a consulta que rodava bem em teste estoura em produção com <code>ORA-01489: result of string concatenation is too long</code>. A partir da 12.2 há tratamento declarativo:</p>
+<pre><code class="sql">SELECT id_paciente,
+       LISTAGG(cod_procedimento, ', ' ON OVERFLOW TRUNCATE '...' WITH COUNT)
+         WITHIN GROUP (ORDER BY cod_procedimento) AS procedimentos
+FROM atendimento_item i
+JOIN atendimento a ON a.id_atendimento = i.id_atendimento
+GROUP BY id_paciente;
+-- trunca sem quebrar um elemento ao meio e acrescenta '...(37)', a quantidade omitida</code></pre>
+  <p>Sem <code>ON OVERFLOW</code>, o padrão é <code>ON OVERFLOW ERROR</code>. O PostgreSQL não tem esse limite prático (o <code>text</code> vai até cerca de 1 GB), o que traz o risco oposto: células gigantes que travam a tela do relatório.</p>
+
+  <div class="note trap"><b>Armadilha comum: usar a lista como chave</b><p>Texto concatenado serve para <em>exibir</em>. Nunca junte valores numa string para depois quebrá-la com <code>LIKE</code> ou <code>INSTR</code> numa outra consulta: você perde índice, tipo e integridade. Se precisa filtrar por "algum dos convênios", use <code>EXISTS</code> sobre a tabela original.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como listar, numa coluna, todos os médicos de cada especialidade?" <code>LISTAGG ... WITHIN GROUP (ORDER BY ...)</code> no Oracle, <code>STRING_AGG(x, ', ' ORDER BY x)</code> no PostgreSQL. Fale do limite de 4000 bytes e do <code>ON OVERFLOW TRUNCATE</code> (12.2+): é o detalhe que mostra experiência em produção.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pivots "dinâmicos" escritos concatenando strings de SQL são fonte clássica de injeção e de relatórios que quebram quando surge um convênio novo. Prefira devolver dados em formato longo para a ferramenta de BI pivotar, e use pivot em SQL só para conjuntos de colunas estáveis (meses, status, tipos).</p></div>
+</section>
+
+<section class="chap" id="estatistica-fanout">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Erros estatísticos e fan-out: por que o número sai errado</h2>
+  <p>Os erros mais perigosos de agregação não geram erro de SQL: geram um número plausível e errado. Esta seção reúne os quatro que mais aparecem em relatórios de saúde e financeiro.</p>
+
+  <h3>1. Média de médias</h3>
+  <p>O ticket médio de cada convênio foi calculado e alguém tirou a média dos resultados. Imagine: Unimed, 100 consultas, ticket médio R$ 200; Bradesco, 10 consultas, ticket médio R$ 400.</p>
+  <ul>
+    <li>Média das médias: (200 + 400) / 2 = <strong>300</strong>. Errado: trata convênios de tamanhos muito diferentes como iguais.</li>
+    <li>Média ponderada: (100 × 200 + 10 × 400) / 110 = 24.000 / 110 = <strong>218,18</strong>. É o valor de <code>AVG(valor)</code> sobre as 110 linhas originais.</li>
+  </ul>
+  <p>A regra vale para qualquer razão (taxa de cancelamento, ocupação, margem): <strong>some numeradores e denominadores separadamente e divida no fim</strong>. A "taxa média por médico" não é a taxa da clínica.</p>
+<pre><code class="sql">-- Taxa da clínica no mês, a partir de contagens, nunca de taxas
+SELECT 100.0 * SUM(cancelados) / NULLIF(SUM(total), 0) AS pct
+FROM resumo_medico_mes
+WHERE mes = DATE '2026-11-01';</code></pre>
+  <p>Há um efeito parente, o <strong>paradoxo de Simpson</strong>: uma taxa pode piorar no total e melhorar em cada subgrupo, apenas porque a composição do volume mudou (por exemplo, mais exames, que cancelam mais, entraram no mix). Ao comparar períodos, comente a composição.</p>
+
+  <h3>2. COUNT DISTINCT não é aditivo</h3>
+  <p>Pacientes distintos atendidos em novembro: 800. Em dezembro: 850. Quantos no bimestre? <strong>Não é 1650</strong>, porque o mesmo paciente aparece nos dois meses. Somar contagens distintas de grupos que se sobrepõem superestima. O mesmo vale para subtotais de <code>COUNT(DISTINCT)</code> em planilhas e em tabelas pré-agregadas.</p>
+  <ul>
+    <li>Pré-agregações só devem armazenar o que é aditivo: somas e contagens simples (soma de valor, contagem de linhas).</li>
+    <li>Para distintos, guarde as chaves (uma linha por paciente e mês) e conte de novo, ou use um sketch aproximado (<code>APPROX_COUNT_DISTINCT</code> no Oracle 12c+; no PostgreSQL, uma extensão como HyperLogLog, que não vem no núcleo).</li>
+  </ul>
+
+  <h3>3. Mediana, percentis e a média que mente</h3>
+  <p>Valores de procedimentos têm cauda longa: poucos casos caros puxam a média. A mediana (percentil 50) descreve o caso típico. Os dois bancos têm a função de percentil como agregado de conjunto ordenado:</p>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">SELECT id_convenio,
+       AVG(valor)                                          AS media,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY valor)  AS mediana,
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY valor)  AS p90
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY id_convenio;   -- o Oracle também tem MEDIAN(valor)</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">-- Agregados de conjunto ordenado: PostgreSQL 9.4+
+SELECT id_convenio,
+       AVG(valor)                                          AS media,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY valor)  AS mediana,
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY valor)  AS p90
+FROM atendimento WHERE status = 'REALIZADO'
+GROUP BY id_convenio;</code></pre>
+  </div>
+  <p>Percentil exige ordenar o grupo inteiro: é mais caro que <code>AVG</code> e não é aditivo (não dá para "somar medianas"). <code>PERCENTILE_CONT</code> interpola; <code>PERCENTILE_DISC</code> devolve um valor que existe no conjunto.</p>
+
+  <h3>5. Fan-out: o JOIN que multiplica linhas</h3>
+  <p><code>atendimento</code> tem uma linha por atendimento e <code>atendimento_item</code> tem várias por atendimento. Ao juntar as duas, o <code>valor</code> do atendimento (que mora na linha do cabeçalho) é <strong>repetido em cada item</strong>. Somá-lo depois do JOIN conta o mesmo valor várias vezes. Dados mínimos:</p>
+  <pre><code class="text">atendimento:  501 | valor 300.00        itens de 501: A, B, C (3 linhas)
+              502 | valor 200.00        itens de 502: D       (1 linha)
+Total correto de valor: 500.00</code></pre>
+<pre><code class="sql">-- ERRADO: o valor do cabeçalho é somado uma vez por item
+SELECT SUM(a.valor) AS faturado, COUNT(*) AS atendimentos
+FROM atendimento a
+JOIN atendimento_item i ON i.id_atendimento = a.id_atendimento
+WHERE a.id_atendimento IN (501, 502);</code></pre>
+  <pre><code class="text">faturado | atendimentos
+ 1100.00 |            4        -- 300*3 + 200*1; e 4 linhas, não 2 atendimentos</code></pre>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Fan-out: juntar antes de somar repete o valor do atendimento por item; agregar os itens antes do join mantém uma linha por atendimento">
+      <defs><marker id="ah-fan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="22">JOIN direto, depois SUM</text>
+      <rect class="box-b" x="20" y="34" width="210" height="26" rx="4"/><text x="125" y="52" text-anchor="middle">501 | 300,00 | item A</text>
+      <rect class="box-b" x="20" y="64" width="210" height="26" rx="4"/><text x="125" y="82" text-anchor="middle">501 | 300,00 | item B</text>
+      <rect class="box-b" x="20" y="94" width="210" height="26" rx="4"/><text x="125" y="112" text-anchor="middle">501 | 300,00 | item C</text>
+      <rect class="box" x="20" y="124" width="210" height="26" rx="4"/><text x="125" y="142" text-anchor="middle">502 | 200,00 | item D</text>
+      <text class="lbl" x="240" y="82">300 contado 3x</text>
+      <line class="ln-b" x1="125" y1="150" x2="125" y2="172" marker-end="url(#ah-fan)"/>
+      <rect class="box-b" x="20" y="176" width="210" height="30" rx="4"/><text x="125" y="196" text-anchor="middle">SUM(valor) = 1.100,00</text>
+
+      <text class="ttl" x="400" y="22">Agrega os itens, depois JOIN</text>
+      <rect class="box-a" x="400" y="34" width="210" height="26" rx="4"/><text x="505" y="52" text-anchor="middle">501 | 3 itens</text>
+      <rect class="box-a" x="400" y="64" width="210" height="26" rx="4"/><text x="505" y="82" text-anchor="middle">502 | 1 item</text>
+      <text class="lbl" x="400" y="108">1 linha por atendimento</text>
+      <rect class="box-a" x="400" y="118" width="210" height="26" rx="4"/><text x="505" y="136" text-anchor="middle">501 | 300,00 | 3 itens</text>
+      <rect class="box-a" x="400" y="148" width="210" height="26" rx="4"/><text x="505" y="166" text-anchor="middle">502 | 200,00 | 1 item</text>
+      <line class="ln-a" x1="505" y1="174" x2="505" y2="184" marker-end="url(#ah-fan)"/>
+      <rect class="box-a" x="400" y="188" width="210" height="30" rx="4"/><text x="505" y="208" text-anchor="middle">SUM(valor) = 500,00</text>
+    </svg>
+    <figcaption>O JOIN 1:N repete a coluna do lado "um" em cada linha do lado "N". A soma só é segura depois de reduzir o lado N a uma linha por chave.</figcaption>
+  </figure>
+
+  <h3>Como corrigir</h3>
+  <ol>
+    <li><strong>Agregar antes de juntar.</strong> Reduza o lado N ao nível do lado "um" e só então junte. É a correção mais segura e a que escala:
+<pre><code class="sql">SELECT SUM(a.valor)  AS faturado,
+       COUNT(*)      AS atendimentos,
+       SUM(i.qtd_it) AS itens
+FROM atendimento a
+JOIN (SELECT id_atendimento, COUNT(*) AS qtd_it
+      FROM atendimento_item
+      GROUP BY id_atendimento) i ON i.id_atendimento = a.id_atendimento
+WHERE a.id_atendimento IN (501, 502);
+-- faturado 500.00 | atendimentos 2 | itens 4</code></pre></li>
+    <li><strong>Somar no grão certo.</strong> Se a pergunta é "faturamento por procedimento", use o valor do item: <code>SUM(i.qtd * i.valor_unit)</code>, sem tocar em <code>a.valor</code>.</li>
+    <li><strong>Contar com DISTINCT</strong> serve para contagem (<code>COUNT(DISTINCT a.id_atendimento)</code>), mas é caro e mascara o problema.</li>
+  </ol>
+  <div class="note trap"><b>Armadilha comum: SUM(DISTINCT valor)</b><p>"Corrigir" o fan-out com <code>SUM(DISTINCT a.valor)</code> está errado: ele remove <em>valores</em> repetidos, não <em>linhas</em>. Dois atendimentos diferentes de R$ 300 viram um só, e a soma sai menor sem erro algum. <code>DISTINCT</code> dentro de agregação só serve para contar chaves.</p></div>
+  <p>O fan-out também acontece com duas relações 1:N ao mesmo tempo (por exemplo, itens e pagamentos do mesmo atendimento): o resultado é o produto cartesiano das duas por atendimento. Agregue cada ramo separadamente, cada um com uma linha por atendimento, e junte os resultados.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Antes de somar depois de um JOIN, pergunte: "o lado que estou somando é 1:1 com as linhas que sobraram?". Se não, agregue antes. Um teste rápido: compare <code>COUNT(*)</code> antes e depois do JOIN; se aumentou, há fan-out.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O faturamento total subiu quando adicionamos o join com itens. Por quê?" Fan-out: o valor do cabeçalho se repete por item. A correção é agregar os itens por atendimento antes de juntar (ou somar no grão do item), e não <code>SUM(DISTINCT)</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Estabeleça duas verificações automáticas em relatórios financeiros: reconciliação com a fonte (a soma do relatório bate com a soma da tabela base?) e contagem de linhas antes/depois de cada join. Erros de fan-out e média de médias passam pelo teste de unidade e só aparecem na conferência contábil.</p></div>
+</section>
+
+<section class="chap" id="relatorios">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Relatórios típicos de clínica e datas truncadas</h2>
+  <p>Agora, juntando as peças. Todo relatório por período precisa agrupar por mês, semana ou dia, e para isso se "trunca" a data: <code>2026-11-17 14:32</code> vira <code>2026-11-01</code>.</p>
+
+  <h3>Truncando datas: TRUNC e DATE_TRUNC</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Granularidade</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>Dia</td><td><code>TRUNC(dt)</code></td><td><code>DATE_TRUNC('day', dt)</code> ou <code>dt::date</code></td></tr>
+      <tr><td>Mês</td><td><code>TRUNC(dt, 'MM')</code></td><td><code>DATE_TRUNC('month', dt)</code></td></tr>
+      <tr><td>Trimestre</td><td><code>TRUNC(dt, 'Q')</code></td><td><code>DATE_TRUNC('quarter', dt)</code></td></tr>
+      <tr><td>Ano</td><td><code>TRUNC(dt, 'YYYY')</code></td><td><code>DATE_TRUNC('year', dt)</code></td></tr>
+      <tr><td>Semana (ISO, segunda)</td><td><code>TRUNC(dt, 'IW')</code></td><td><code>DATE_TRUNC('week', dt)</code></td></tr>
+      <tr><td>Tipo devolvido</td><td><code>DATE</code> (com hora 00:00:00)</td><td><code>timestamp</code> (ou <code>timestamptz</code>, se a entrada for)</td></tr>
+    </tbody></table></div>
+  <ul>
+    <li>No Oracle, <code>TRUNC(dt, 'D')</code> e <code>'WW'</code> dependem de <code>NLS_TERRITORY</code>; <code>'IW'</code> é a semana ISO, estável. No PostgreSQL, <code>'week'</code> também é a semana ISO (começa na segunda).</li>
+    <li>No PostgreSQL, <code>DATE_TRUNC</code> sobre <code>timestamptz</code> usa o fuso da sessão (ou o terceiro argumento, no PostgreSQL 12+); duas sessões com fusos diferentes agrupam "dias" diferentes. Como <code>atendimento.dt_atendimento</code> é <code>TIMESTAMP</code>, esse problema não ocorre aqui, mas ocorre em tabelas de auditoria e de integração.</li>
+    <li><code>TO_CHAR(dt, 'YYYY-MM')</code> também agrupa por mês e dá um rótulo pronto, mas é texto: ordena bem (ISO), mas perde o tipo data e custa mais.</li>
+    <li><strong>Filtro e agrupamento são coisas separadas.</strong> Filtre o período com intervalo semiaberto sobre a coluna crua (sargável). Trunque só no SELECT e no GROUP BY. Aplicar <code>TRUNC(dt_atendimento, 'MM') = DATE '2026-11-01'</code> no WHERE impede o uso do índice (veja o módulo 08).</li>
+  </ul>
+
+  <h3>Relatório 1: faturamento por convênio e mês</h3>
+  <div class="tabs">
+    <pre data-label="Oracle"><code class="sql">SELECT TRUNC(a.dt_atendimento, 'MM')  AS mes,
+       COALESCE(c.nome, 'Particular') AS convenio,
+       COUNT(*)                       AS atendimentos,
+       SUM(a.valor)                   AS faturado
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+  AND a.dt_atendimento &gt;= DATE '2026-01-01'
+  AND a.dt_atendimento &lt;  DATE '2027-01-01'
+GROUP BY TRUNC(a.dt_atendimento, 'MM'), COALESCE(c.nome, 'Particular')
+ORDER BY mes, convenio;</code></pre>
+    <pre data-label="PostgreSQL"><code class="sql">SELECT DATE_TRUNC('month', a.dt_atendimento)::date AS mes,
+       COALESCE(c.nome, 'Particular')              AS convenio,
+       COUNT(*)                                    AS atendimentos,
+       SUM(a.valor)                                AS faturado
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+  AND a.dt_atendimento &gt;= DATE '2026-01-01'
+  AND a.dt_atendimento &lt;  DATE '2027-01-01'
+GROUP BY 1, 2
+ORDER BY 1, 2;</code></pre>
+  </div>
+  <pre><code class="text">mes        | convenio   | atendimentos | faturado
+2026-01-01 | Bradesco   |          310 | 62000.00
+2026-01-01 | Particular |          120 | 24000.00
+2026-01-01 | Unimed     |          890 | 178000.00
+2026-02-01 | Bradesco   |          ...</code></pre>
+  <p>O <code>LEFT JOIN</code> com <code>COALESCE</code> garante que o particular (<code>id_convenio</code> NULL) apareça. Com <code>INNER JOIN</code>, essas linhas somem e o total não bate com o faturamento da clínica: o erro clássico de "faltam R$ X no relatório". Meses sem nenhum atendimento não aparecem; para preenchê-los, use um calendário (módulo 04).</p>
+
+  <h3>Relatório 2: taxa de cancelamento por mês e tipo</h3>
+<pre><code class="sql">-- Portável: CASE funciona nos dois bancos; 100.0 evita divisão inteira no PostgreSQL
+SELECT TRUNC(dt_atendimento, 'MM')       AS mes,      -- PostgreSQL: DATE_TRUNC('month', dt_atendimento)::date
+       tipo,
+       SUM(CASE WHEN status IN ('REALIZADO','CANCELADO') THEN 1 ELSE 0 END) AS desfecho_conhecido,
+       SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END)                AS cancelados,
+       ROUND(100.0 * SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END)
+             / NULLIF(SUM(CASE WHEN status IN ('REALIZADO','CANCELADO') THEN 1 ELSE 0 END), 0), 1) AS pct
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2027-01-01'
+GROUP BY TRUNC(dt_atendimento, 'MM'), tipo
+ORDER BY 1, 2;</code></pre>
+  <p>Aqui o denominador exclui <code>AGENDADO</code>, a segunda definição da seção 3. Para o relatório "por convênio", junte <code>convenio</code> e some numeradores e denominadores; <strong>nunca</strong> tire a média das taxas mensais para obter a taxa do ano.</p>
+
+  <h3>Relatório 3: produção por médico, incluindo quem não produziu</h3>
+<pre><code class="sql">SELECT m.nome,
+       m.especialidade,
+       COUNT(a.id_atendimento)             AS realizados,
+       COUNT(DISTINCT a.id_paciente)       AS pacientes_distintos,
+       COALESCE(SUM(a.valor), 0)           AS faturado,
+       ROUND(SUM(a.valor) / NULLIF(COUNT(a.id_atendimento), 0), 2) AS ticket_medio
+FROM medico m
+LEFT JOIN atendimento a
+       ON a.id_medico = m.id_medico
+      AND a.status = 'REALIZADO'                         -- no ON, para não anular o LEFT JOIN
+      AND a.dt_atendimento &gt;= DATE '2026-11-01'
+      AND a.dt_atendimento &lt;  DATE '2026-12-01'
+GROUP BY m.id_medico, m.nome, m.especialidade             -- (no PostgreSQL basta m.id_medico)
+ORDER BY faturado DESC;</code></pre>
+  <p>Condições sobre a tabela do lado direito de um LEFT JOIN vão no <code>ON</code>; no <code>WHERE</code>, elas descartam as linhas com NULL e o JOIN vira, na prática, um INNER JOIN (veja o módulo 02). Note o <code>COUNT(a.id_atendimento)</code> e o <code>NULLIF</code> no ticket médio, para o médico sem produção.</p>
+
+  <div class="note trap"><b>Armadilha comum: "mês fechado" que muda</b><p>Um relatório de faturamento por <code>dt_atendimento</code> não é o mesmo que um por data de cobrança ou de pagamento. Atendimentos remarcados ou cancelados depois mudam números de meses já "fechados". Defina qual data representa o fato e se o fechamento é um congelamento (tabela de snapshot) ou um recálculo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como agrupar atendimentos por mês?" <code>TRUNC(dt, 'MM')</code> no Oracle, <code>DATE_TRUNC('month', dt)</code> no PostgreSQL, no SELECT e no GROUP BY, com o filtro de período como intervalo semiaberto na coluna crua. Cite o LEFT JOIN para incluir o particular.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Relatórios mensais pesados devem rodar sobre tabelas resumidas (um resumo por mês, convênio e médico), atualizadas por processo noturno, e não sobre a tabela transacional em horário de pico. Pergunte: "quando este relatório roda e quanto custa para o banco de produção?".</p></div>
+</section>
+
+<section class="chap" id="como-agrega">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Como o banco agrega: hash e sort, em alto nível</h2>
+  <p>Agrupar é, no fundo, achar todas as linhas com a mesma chave. Há duas formas clássicas, e o otimizador escolhe pela estimativa de quantos grupos existem, pela memória disponível e pela ordem dos dados.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Hash aggregate mantém uma tabela hash com um acumulador por grupo; sort aggregate ordena as linhas e agrega sequências consecutivas">
+      <defs>
+        <marker id="ah-hash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="22">Hash aggregate</text>
+      <rect class="box" x="20" y="34" width="120" height="28" rx="4"/><text x="80" y="52" text-anchor="middle">Unimed 100</text>
+      <rect class="box" x="20" y="66" width="120" height="28" rx="4"/><text x="80" y="84" text-anchor="middle">Bradesco 50</text>
+      <rect class="box" x="20" y="98" width="120" height="28" rx="4"/><text x="80" y="116" text-anchor="middle">Unimed 70</text>
+      <rect class="box" x="20" y="130" width="120" height="28" rx="4"/><text x="80" y="148" text-anchor="middle">Bradesco 30</text>
+      <line class="ln-a" x1="140" y1="96" x2="196" y2="96" marker-end="url(#ah-hash)"/>
+      <rect class="box-a" x="200" y="60" width="130" height="68" rx="5"/>
+      <text x="265" y="82" text-anchor="middle">Unimed: 170</text>
+      <text x="265" y="106" text-anchor="middle">Bradesco: 80</text>
+      <text class="lbl" x="265" y="146" text-anchor="middle">tabela hash em memória</text>
+      <text class="lbl" x="20" y="182">Uma passada, sem ordenar. Memória ~ nº de grupos.</text>
+      <text class="lbl" x="20" y="198">Saída sem ordem garantida.</text>
+
+      <text class="ttl" x="370" y="22">Sort / group aggregate</text>
+      <rect class="box-w" x="370" y="34" width="110" height="28" rx="4"/><text x="425" y="52" text-anchor="middle">Bradesco 50</text>
+      <rect class="box-w" x="370" y="66" width="110" height="28" rx="4"/><text x="425" y="84" text-anchor="middle">Bradesco 30</text>
+      <rect class="box-a" x="370" y="98" width="110" height="28" rx="4"/><text x="425" y="116" text-anchor="middle">Unimed 100</text>
+      <rect class="box-a" x="370" y="130" width="110" height="28" rx="4"/><text x="425" y="148" text-anchor="middle">Unimed 70</text>
+      <line class="ln-a" x1="480" y1="96" x2="520" y2="96" marker-end="url(#ah-hash)"/>
+      <rect class="box" x="524" y="50" width="136" height="28" rx="4"/><text x="592" y="68" text-anchor="middle">Bradesco: 80</text>
+      <rect class="box" x="524" y="114" width="136" height="28" rx="4"/><text x="592" y="132" text-anchor="middle">Unimed: 170</text>
+      <text class="lbl" x="370" y="182">Ordena por chave, agrega grupos consecutivos.</text>
+      <text class="lbl" x="370" y="198">Streaming; sai ordenado pela chave.</text>
+      <text class="lbl" x="20" y="232">Se um índice já entrega as linhas na ordem da chave, o sort é dispensado.</text>
+    </svg>
+    <figcaption>Hash: acumulador por chave em memória. Sort: linhas ordenadas e agregadas em sequência.</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Hash aggregate</th><th>Sort / group aggregate</th></tr></thead>
+    <tbody>
+      <tr><td>Como</td><td>Uma tabela hash chave → acumulador.</td><td>Ordena (ou lê em ordem) e fecha o grupo quando a chave muda.</td></tr>
+      <tr><td>Bom quando</td><td>Poucos grupos; entrada desordenada.</td><td>Muitos grupos; entrada já ordenada (índice); o resultado precisa sair ordenado pela chave.</td></tr>
+      <tr><td>Memória</td><td>Cresce com o número de grupos.</td><td>Pode ordenar em disco (<em>external sort</em>) sem estourar memória.</td></tr>
+      <tr><td>PostgreSQL</td><td><code>HashAggregate</code></td><td><code>GroupAggregate</code> (com <code>Sort</code> ou <code>Index Scan</code> embaixo)</td></tr>
+      <tr><td>Oracle</td><td><code>HASH GROUP BY</code></td><td><code>SORT GROUP BY</code>; <code>SORT GROUP BY NOSORT</code> quando o índice já dá a ordem</td></tr>
+    </tbody></table></div>
+  <p>Sem <code>GROUP BY</code> (agregação sobre tudo) o operador é <code>Aggregate</code> no PostgreSQL e <code>SORT AGGREGATE</code> no Oracle; o nome engana, pois não ordena nada.</p>
+<pre><code class="text">-- PostgreSQL (esquema simplificado)
+HashAggregate
+  Group Key: id_convenio
+  -&gt;  Seq Scan on atendimento
+        Filter: ((status)::text = 'REALIZADO'::text)
+
+-- Oracle
+| Id | Operation          | Name        |
+|  1 |  HASH GROUP BY     |             |
+|* 2 |   TABLE ACCESS FULL| ATENDIMENTO |</code></pre>
+
+  <h3>O que influencia a escolha e o custo</h3>
+  <ul>
+    <li><strong>Número de grupos.</strong> A estimativa vem das estatísticas (módulos 07 e 09). Se o otimizador subestima os grupos, escolhe hash e a tabela não cabe na memória. No PostgreSQL 13+, o hash aggregate pode <em>derramar para disco</em> (antes, ignorava o limite de memória); o limite é <code>work_mem</code> multiplicado por <code>hash_mem_multiplier</code>. No Oracle, o derramamento usa a área temporária.</li>
+    <li><strong>Ordem pronta.</strong> Um índice em <code>(id_medico)</code> ou <code>(id_medico, dt_atendimento)</code> pode entregar as linhas já na ordem do <code>GROUP BY id_medico</code>, e o agregado por ordenação vira streaming, sem memória extra. É um bom motivo para indexar colunas de agrupamento <em>quando o volume justifica</em>.</li>
+    <li><strong>Ordem de saída.</strong> Em ambos os bancos, só <code>ORDER BY</code> garante ordem. O Oracle, desde a 10g R2, usa <code>HASH GROUP BY</code> sem ordenar, e consultas que "sempre vinham ordenadas" deixaram de vir. Nunca dependa disso.</li>
+    <li><strong>Paralelismo.</strong> O trabalho é dividido: cada processo agrega uma parte (parcial) e um passo final combina (no PostgreSQL, <code>Partial</code> e <code>Finalize</code> aggregate). Funciona bem com <code>SUM</code>, <code>COUNT</code>, <code>MIN</code> e <code>MAX</code>; agregados que exigem ordenar o grupo inteiro (percentil) são menos paralelizáveis.</li>
+    <li><strong>DISTINCT dentro da agregação.</strong> <code>COUNT(DISTINCT x)</code> precisa ordenar ou usar hash por grupo: é bem mais caro que <code>COUNT(x)</code>. Se há vários <code>COUNT(DISTINCT)</code> na mesma consulta, o custo se multiplica.</li>
+  </ul>
+
+  <h3>COUNT(*) em tabela grande</h3>
+  <p>Contar linhas de uma tabela de milhões é mais lento do que parece. No <strong>PostgreSQL</strong> (MVCC), o banco precisa verificar a visibilidade de cada linha: ele varre a tabela, ou faz <em>index-only scan</em> se o mapa de visibilidade estiver em dia (depende do <code>VACUUM</code>). No <strong>Oracle</strong>, <code>COUNT(*)</code> pode usar o menor índice que contém uma coluna <code>NOT NULL</code> (<em>index fast full scan</em>). Para painéis que aceitam aproximação, use estatísticas (<code>pg_class.reltuples</code> no PostgreSQL; <code>NUM_ROWS</code> em <code>USER_TABLES</code> no Oracle) em vez de contar.</p>
+
+  <h3>Quando o custo é do volume: pré-agregar</h3>
+  <p>Se um relatório agrega milhões de linhas todo dia para produzir 300 linhas, o caminho é <strong>pré-agregar</strong>: uma tabela resumo (mês × convênio × médico) alimentada por carga incremental, ou uma <em>materialized view</em> (<code>REFRESH MATERIALIZED VIEW [CONCURRENTLY]</code> no PostgreSQL; no Oracle, com refresh incremental e <em>query rewrite</em>). Isso é assunto do módulo 11. A regra da seção anterior vale aqui: armazene somas e contagens, e calcule razões e médias no fim.</p>
+
+  <div class="note trap"><b>Armadilha comum: índice "para o GROUP BY" em coluna de baixa cardinalidade</b><p>Indexar <code>status</code> (3 valores) para acelerar uma agregação raramente ajuda: ler 40% da tabela via índice é pior que varrer tudo. O ganho vem de índices que cobrem a consulta inteira, ou de reduzir o volume com um filtro de período seletivo.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como o banco executa um GROUP BY?" Por hash (um acumulador por chave, ótimo com poucos grupos, pode derramar em disco) ou por ordenação (agrega sequências consecutivas, aproveita índice, sai ordenado). O plano mostra <code>HashAggregate</code>/<code>GroupAggregate</code> no PostgreSQL e <code>HASH GROUP BY</code>/<code>SORT GROUP BY</code> no Oracle. Só <code>ORDER BY</code> garante ordem.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Relatório lento raramente se resolve com mais hardware: costuma ser volume lido (filtro ruim) ou agregação repetida sobre os mesmos dados. Cobre do time as duas perguntas: "quantas linhas esta consulta lê?" e "este resultado poderia estar pré-calculado?". O módulo 09 ensina a olhar o plano para responder à primeira.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Use o esquema do módulo (<code>paciente</code>, <code>medico</code>, <code>convenio</code>, <code>atendimento</code>, <code>atendimento_item</code>). Tente escrever antes de abrir a resposta. Onde a sintaxe difere, as duas versões estão na resposta.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Para cada convênio, mostre o total de atendimentos, quantos foram cancelados e quantos pacientes distintos foram atendidos, incluindo os particulares (sem convênio).</span></summary>
+    <div class="ans">
+<pre><code class="sql">SELECT COALESCE(c.nome, 'Particular')                              AS convenio,
+       COUNT(*)                                                    AS total,
+       SUM(CASE WHEN a.status = 'CANCELADO' THEN 1 ELSE 0 END)     AS cancelados,
+       COUNT(DISTINCT a.id_paciente)                               AS pacientes
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+GROUP BY COALESCE(c.nome, 'Particular');</code></pre>
+      <p>O <code>LEFT JOIN</code> mantém o particular (NULL vira "Particular" pelo <code>COALESCE</code>). No PostgreSQL, <code>COUNT(*) FILTER (WHERE a.status = 'CANCELADO')</code> é a alternativa ao CASE. Dois convênios com o mesmo nome seriam fundidos: se isso for possível, agrupe também por <code>c.id_convenio</code>.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Liste os médicos com mais de 100 atendimentos realizados em 2026, com total faturado e ticket médio. Explique o que fica no WHERE e o que fica no HAVING.</span></summary>
+    <div class="ans">
+<pre><code class="sql">SELECT m.nome,
+       COUNT(*)                   AS qtd,
+       SUM(a.valor)               AS faturado,
+       ROUND(AVG(a.valor), 2)     AS ticket_medio
+FROM atendimento a
+JOIN medico m ON m.id_medico = a.id_medico
+WHERE a.status = 'REALIZADO'
+  AND a.dt_atendimento &gt;= DATE '2026-01-01'
+  AND a.dt_atendimento &lt;  DATE '2027-01-01'
+GROUP BY m.id_medico, m.nome
+HAVING COUNT(*) &gt; 100;</code></pre>
+      <p>WHERE: <code>status</code> e o período, condições sobre a linha, que reduzem o volume e usam índice. HAVING: <code>COUNT(*) &gt; 100</code>, condição sobre o grupo. Observação: <code>AVG(valor)</code> ignora atendimentos sem valor; se "sem valor" significar zero, use <code>AVG(COALESCE(valor, 0))</code>.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Faturamento realizado por convênio e tipo, com subtotal por convênio e total geral, rotulando as linhas de subtotal (sem confundir com o particular).</span></summary>
+    <div class="ans">
+<pre><code class="sql">SELECT CASE WHEN GROUPING(c.nome) = 1 THEN 'TOTAL GERAL'
+            ELSE COALESCE(c.nome, 'Particular') END AS convenio,
+       CASE WHEN GROUPING(a.tipo) = 1 THEN 'Subtotal' ELSE a.tipo END AS tipo,
+       SUM(a.valor) AS total
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY ROLLUP (c.nome, a.tipo)
+ORDER BY GROUPING(c.nome), c.nome, GROUPING(a.tipo), a.tipo;</code></pre>
+      <p>Funciona igual nos dois bancos. <code>GROUPING(c.nome) = 1</code> só nas linhas de subtotal; o NULL do particular tem <code>GROUPING = 0</code>. A ordenação pelos <code>GROUPING()</code> põe os subtotais depois do detalhe e o total geral por último.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Faturamento realizado do 1º trimestre de 2026 por tipo de atendimento, com uma coluna por mês (jan, fev, mar). Escreva uma versão portável e uma com o recurso próprio de cada banco.</span></summary>
+    <div class="ans">
+<pre><code class="sql">-- Portável (Oracle e PostgreSQL)
+SELECT tipo,
+       SUM(CASE WHEN EXTRACT(MONTH FROM dt_atendimento) = 1 THEN valor END) AS jan,
+       SUM(CASE WHEN EXTRACT(MONTH FROM dt_atendimento) = 2 THEN valor END) AS fev,
+       SUM(CASE WHEN EXTRACT(MONTH FROM dt_atendimento) = 3 THEN valor END) AS mar
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2026-04-01'
+GROUP BY tipo;</code></pre>
+<pre><code class="sql">-- Oracle: PIVOT (a subconsulta traz só tipo, mes e valor)
+SELECT *
+FROM (SELECT tipo, TO_CHAR(dt_atendimento, 'MM') AS mes, valor
+      FROM atendimento
+      WHERE status = 'REALIZADO'
+        AND dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2026-04-01')
+PIVOT (SUM(valor) FOR mes IN ('01' AS jan, '02' AS fev, '03' AS mar));
+
+-- PostgreSQL: FILTER
+SELECT tipo,
+       SUM(valor) FILTER (WHERE EXTRACT(MONTH FROM dt_atendimento) = 1) AS jan,
+       SUM(valor) FILTER (WHERE EXTRACT(MONTH FROM dt_atendimento) = 2) AS fev,
+       SUM(valor) FILTER (WHERE EXTRACT(MONTH FROM dt_atendimento) = 3) AS mar
+FROM atendimento
+WHERE status = 'REALIZADO'
+  AND dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2026-04-01'
+GROUP BY tipo;</code></pre>
+      <p>Meses sem atendimento para um tipo aparecem como NULL; envolva em <code>COALESCE(..., 0)</code> se necessário. A condição de período no WHERE é o que mantém o índice utilizável.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>A consulta abaixo mostra um "faturado" três vezes maior que o real. Explique o erro e reescreva. Depois, acrescente a lista de códigos de procedimento por atendimento em uma coluna.</span></summary>
+    <div class="ans">
+<pre><code class="sql">SELECT c.nome, SUM(a.valor) AS faturado
+FROM atendimento a
+JOIN convenio c ON c.id_convenio = a.id_convenio
+JOIN atendimento_item i ON i.id_atendimento = a.id_atendimento
+GROUP BY c.nome;</code></pre>
+      <p>Fan-out: o valor do cabeçalho se repete por item. A correção é não juntar os itens para somar o valor do atendimento:</p>
+<pre><code class="sql">-- Se a pergunta é só o faturamento por convênio, os itens nem entram:
+SELECT c.nome, SUM(a.valor) AS faturado
+FROM atendimento a
+JOIN convenio c ON c.id_convenio = a.id_convenio
+GROUP BY c.nome;
+
+-- Se os itens são necessários (lista de procedimentos), agregue-os antes:
+SELECT c.nome, SUM(a.valor) AS faturado, SUM(x.qtd_procs) AS procedimentos
+FROM atendimento a
+JOIN convenio c ON c.id_convenio = a.id_convenio
+JOIN (SELECT id_atendimento, COUNT(*) AS qtd_procs
+      FROM atendimento_item GROUP BY id_atendimento) x
+  ON x.id_atendimento = a.id_atendimento
+GROUP BY c.nome;</code></pre>
+<pre><code class="sql">-- Códigos por atendimento (um atendimento por linha, sem fan-out)
+-- Oracle:
+SELECT id_atendimento,
+       LISTAGG(cod_procedimento, ', ' ON OVERFLOW TRUNCATE '...' WITH COUNT)
+         WITHIN GROUP (ORDER BY cod_procedimento) AS procedimentos
+FROM atendimento_item GROUP BY id_atendimento;
+-- PostgreSQL:
+SELECT id_atendimento, STRING_AGG(cod_procedimento, ', ' ORDER BY cod_procedimento) AS procedimentos
+FROM atendimento_item GROUP BY id_atendimento;</code></pre>
+      <p>Observe que o primeiro <code>JOIN atendimento_item</code> na consulta original também descarta atendimentos sem itens. Esse JOIN altera a população, além do valor.</p>
+    </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>Mostre, por mês de 2026, a taxa de cancelamento da clínica com uma casa decimal, sem erro de divisão por zero. Por que não se deve tirar a média das taxas por médico para obter a taxa da clínica?</span></summary>
+    <div class="ans">
+<pre><code class="sql">-- Oracle
+SELECT TRUNC(dt_atendimento, 'MM') AS mes,
+       ROUND(100 * SUM(CASE WHEN status = 'CANCELADO' THEN 1 ELSE 0 END)
+                 / NULLIF(SUM(CASE WHEN status IN ('REALIZADO','CANCELADO') THEN 1 ELSE 0 END), 0), 1) AS pct
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2027-01-01'
+GROUP BY TRUNC(dt_atendimento, 'MM')
+ORDER BY mes;
+
+-- PostgreSQL
+SELECT DATE_TRUNC('month', dt_atendimento)::date AS mes,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'CANCELADO')
+                   / NULLIF(COUNT(*) FILTER (WHERE status IN ('REALIZADO','CANCELADO')), 0), 1) AS pct
+FROM atendimento
+WHERE dt_atendimento &gt;= DATE '2026-01-01' AND dt_atendimento &lt; DATE '2027-01-01'
+GROUP BY 1
+ORDER BY 1;</code></pre>
+      <p>A média das taxas por médico dá o mesmo peso a um médico com 5 atendimentos e a outro com 500. A taxa correta soma os numeradores e os denominadores e divide no final, como acima. Sem <code>NULLIF</code>, um mês sem desfecho conhecido derruba a consulta; sem <code>100.0</code>, o PostgreSQL faria divisão inteira.</p>
+    </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>1. O faturamento do dashboard triplicou depois de uma "melhoria"</h3>
+  <p>Alguém acrescentou ao relatório um <code>JOIN atendimento_item</code> para mostrar a quantidade de procedimentos. O faturamento ficou muito maior. <strong>O que fazer:</strong></p>
+  <ul>
+    <li>Reconhecer o fan-out: <code>COUNT(*)</code> antes e depois do JOIN mostra a multiplicação.</li>
+    <li>Reescrever para agregar <code>atendimento_item</code> por <code>id_atendimento</code> numa subconsulta e juntar essa subconsulta (uma linha por atendimento).</li>
+    <li>Criar uma verificação de reconciliação (soma do relatório = soma da tabela base) e rodá-la no pipeline de testes.</li>
+    <li>Corrigir a comunicação: se o número errado já foi enviado a diretoria ou a operadora, informar, com a causa e o período afetado.</li>
+  </ul>
+  <div class="note mgr"><b>Para gestores</b><p>O aprendizado é de processo: relatório financeiro sem reconciliação automática vai errar de novo. Inclua "total bate com a origem" na definição de pronto.</p></div>
+
+  <h3>2. O relatório mensal de faturamento leva 40 minutos e derruba o ambiente de produção</h3>
+  <p>A consulta agrega o ano inteiro da tabela de atendimentos, sem filtro seletivo, no horário comercial. <strong>O que fazer:</strong></p>
+  <ol class="seq">
+    <li><div><strong>Medir.</strong> Veja o plano e o número de linhas lidas. Aplique o roteiro dos módulos 07 e 09 (<code>EXPLAIN ANALYZE</code> no PostgreSQL; plano com estatísticas reais no Oracle).</div></li>
+    <li><div><strong>Reduzir o que entra.</strong> Filtre o período com intervalo semiaberto, verifique índice por data e se a tabela está particionada por data.</div></li>
+    <li><div><strong>Parar de recalcular.</strong> Meses fechados não mudam: crie uma tabela resumo (mês, convênio, médico) com somas e contagens, e recalcule só o mês corrente.</div></li>
+    <li><div><strong>Tirar do banco principal.</strong> Se há réplica de leitura (PostgreSQL) ou standby de consulta (Oracle, o que exige licença própria no Active Data Guard), rode os relatórios nela. Reveja o horário.</div></li>
+  </ol>
+
+  <h3>3. A diretoria e o financeiro apresentam taxas de cancelamento diferentes</h3>
+  <p>Um dashboard mostra 14,2%; a planilha do financeiro, 11,8%. <strong>O que fazer:</strong> não procure o erro primeiro, procure a <em>definição</em>. Os suspeitos usuais: denominador diferente (inclui ou não os agendados futuros), média das taxas por médico em vez de razão das somas, cancelamentos contados por data do cancelamento em vez de data do atendimento, e fuso horário/corte de mês. Escreva a definição única (numerador, denominador, data de referência), publique-a ao lado do indicador e faça os dois consumidores usarem a mesma consulta ou a mesma view.</p>
+
+  <h3>4. Em produção (Oracle), o relatório de procedimentos por paciente falha com ORA-01489</h3>
+  <p>O <code>LISTAGG</code> funcionou em homologação; em produção, um paciente crônico tem centenas de procedimentos e a string passa de 4000 bytes. <strong>O que fazer:</strong></p>
+  <ul>
+    <li>Correção imediata: <code>LISTAGG(... ON OVERFLOW TRUNCATE '...' WITH COUNT)</code> (12.2+), que devolve o texto truncado e a quantidade omitida.</li>
+    <li>Pergunte se a tela precisa mesmo da lista inteira. Se alguém vai ler, mostre os N mais recentes (ou um resumo); se uma aplicação vai processar, devolva linhas ou <code>JSON_ARRAYAGG</code>.</li>
+    <li>Acrescente um teste com dados de "pior caso" (paciente com muitos itens) à suíte.</li>
+  </ul>
+
+  <h3>5. "Os totais por convênio não somam o total da clínica"</h3>
+  <p>A soma das linhas do relatório por convênio é R$ 40 mil menor que o faturamento total. <strong>O que fazer:</strong> procure o <code>INNER JOIN convenio</code> que elimina os atendimentos particulares (<code>id_convenio</code> NULL). Troque por <code>LEFT JOIN</code> com <code>COALESCE(c.nome, 'Particular')</code>. Em seguida confira se há convênios inativos ou excluídos do cadastro e se o relatório precisa mostrá-los. Por fim, adicione ao relatório uma linha de total geral (<code>ROLLUP</code>) calculada independentemente do detalhe, o que expõe a diferença imediatamente.</p>
+  <div class="note iv"><b>Na entrevista</b><p>Cenários como este são perguntas de "conte uma vez em que um número estava errado". Estruture a resposta: sintoma, como você isolou (contagem antes/depois, reconciliação), causa (fan-out, join interno, média de médias), correção e a salvaguarda que você criou para não repetir.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Agregação</dt><dd>Reduzir várias linhas a um valor (soma, contagem, média, mínimo, máximo).</dd></div>
+    <div><dt>Grão (granularidade)</dt><dd>O que uma linha representa (um atendimento, um item). Somar no grão errado causa erro.</dd></div>
+    <div><dt>GROUP BY</dt><dd>Divide as linhas em grupos pelas colunas indicadas e agrega cada grupo.</dd></div>
+    <div><dt>HAVING</dt><dd>Filtro aplicado aos grupos, depois da agregação.</dd></div>
+    <div><dt>Agregação condicional</dt><dd>Condição dentro da função: <code>SUM(CASE ...)</code> ou <code>FILTER</code>.</dd></div>
+    <div><dt>FILTER</dt><dd>Cláusula do PostgreSQL (9.4+) que restringe as linhas de uma agregação.</dd></div>
+    <div><dt>ROLLUP</dt><dd>Gera subtotais hierárquicos, do detalhe ao total geral.</dd></div>
+    <div><dt>CUBE</dt><dd>Gera todas as combinações de agrupamento das colunas.</dd></div>
+    <div><dt>GROUPING SETS</dt><dd>Lista explícita de agrupamentos a calcular na mesma consulta.</dd></div>
+    <div><dt>GROUPING()</dt><dd>Devolve 1 quando a coluna é "agregada" na linha de subtotal; distingue de NULL real.</dd></div>
+    <div><dt>Pivot</dt><dd>Transformar valores de linhas em colunas (um mês por coluna).</dd></div>
+    <div><dt>LISTAGG / STRING_AGG</dt><dd>Agregados que concatenam textos de um grupo, com ordem explícita.</dd></div>
+    <div><dt>Fan-out</dt><dd>Multiplicação de linhas por um JOIN 1:N, que duplica valores a somar.</dd></div>
+    <div><dt>Hash aggregate</dt><dd>Agregação com tabela hash, sem ordenação prévia.</dd></div>
+    <div><dt>Sort / group aggregate</dt><dd>Agregação sobre linhas ordenadas pela chave, em sequência.</dd></div>
+    <div><dt>Pré-agregação</dt><dd>Tabela ou view materializada com somas e contagens já calculadas.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre <code>COUNT(*)</code>, <code>COUNT(col)</code> e <code>COUNT(DISTINCT col)</code>?</span></summary><div class="ans"><p>Linhas do grupo; linhas em que <code>col</code> não é nula; valores distintos não nulos de <code>col</code>. Só <code>COUNT(*)</code> conta linhas com tudo NULL. Depois de um LEFT JOIN, <code>COUNT(*)</code> conta a linha vazia do lado sem correspondência; use <code>COUNT(a.chave)</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>Como as funções de agregação tratam NULL? O que <code>SUM</code> devolve para um conjunto vazio?</span></summary><div class="ans"><p>Ignoram NULL (exceto <code>COUNT(*)</code>). <code>AVG</code> divide pela quantidade de não nulos. <code>SUM</code>, <code>AVG</code>, <code>MIN</code> e <code>MAX</code> de um conjunto vazio, ou só de NULLs, devolvem NULL; <code>COUNT</code> devolve 0. Por isso <code>COALESCE(SUM(x), 0)</code> em relatórios.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Por que dá erro ao selecionar uma coluna que não está no GROUP BY?</span></summary><div class="ans"><p>Cada grupo vira uma linha, e a coluna teria vários valores possíveis. Ela precisa estar no <code>GROUP BY</code> ou dentro de uma agregação. Oracle: ORA-00979. O PostgreSQL aceita colunas dependentes funcionalmente da chave primária agrupada; o Oracle não.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Qual a diferença entre WHERE e HAVING? Impacta desempenho?</span></summary><div class="ans"><p>WHERE filtra linhas antes de agrupar; HAVING filtra grupos depois, e só ele aceita agregação. Sim: condições sem agregação devem ficar no WHERE porque reduzem o volume lido e agrupado, e permitem uso de índice. O HAVING força calcular todos os grupos antes de descartar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Como contar, numa só consulta, os atendimentos realizados e cancelados por médico?</span></summary><div class="ans"><p><code>SUM(CASE WHEN status = 'REALIZADO' THEN 1 ELSE 0 END)</code> e o equivalente para cancelados, ou <code>COUNT(*) FILTER (WHERE ...)</code> no PostgreSQL. Uma leitura da tabela em vez de duas. Cuidado com <code>COUNT(CASE ... ELSE 0 END)</code>, que conta tudo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Como calcular uma taxa (cancelamento) sem erro?</span></summary><div class="ans"><p>Numerador e denominador na mesma passada, <code>NULLIF</code> no denominador para evitar divisão por zero e cuidado com divisão inteira no PostgreSQL (<code>100.0 *</code> ou <code>::numeric</code>). Defina o denominador (inclui agendados futuros?) e use a mesma definição em todo lugar.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Para que servem ROLLUP, CUBE e GROUPING SETS? Como distinguir subtotal de NULL real?</span></summary><div class="ans"><p>Calculam vários níveis de agrupamento numa consulta: ROLLUP gera subtotais hierárquicos e total geral; CUBE todas as combinações; GROUPING SETS só os escolhidos. <code>GROUPING(coluna)</code> vale 1 nas linhas em que a coluna foi agregada (subtotal) e 0 caso contrário, o que separa o NULL de subtotal do NULL de dado (por exemplo, o particular).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Como fazer um pivot em Oracle e em PostgreSQL? Qual o limite?</span></summary><div class="ans"><p>Portável: <code>SUM(CASE ...)</code> (ou <code>FILTER</code> no PostgreSQL). Oracle: <code>PIVOT (agregação FOR coluna IN (...))</code>. PostgreSQL: <code>crosstab()</code> da extensão <code>tablefunc</code>. O limite: as colunas do resultado são fixas ao escrever a consulta; pivot dinâmico exige SQL gerado por código ou pivotar na aplicação/BI.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Como concatenar os valores de um grupo? O que acontece no Oracle se a string for grande?</span></summary><div class="ans"><p><code>LISTAGG(x, ', ') WITHIN GROUP (ORDER BY x)</code> no Oracle; <code>STRING_AGG(x, ', ' ORDER BY x)</code> no PostgreSQL. No Oracle, passar do limite do <code>VARCHAR2</code> (4000 bytes por padrão) dá ORA-01489. Desde a 12.2, <code>ON OVERFLOW TRUNCATE '...' WITH COUNT</code> trunca e informa a quantidade omitida. <code>LISTAGG(DISTINCT)</code> existe a partir da 19c.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>O que é média de médias e por que é um erro?</span></summary><div class="ans"><p>Calcular a média dos resultados de médias de grupos com tamanhos diferentes, o que dá o mesmo peso a grupos pequenos e grandes. O correto é a média ponderada: soma total dividida pela contagem total. Para qualquer razão, some numeradores e denominadores e divida no fim. Exemplo: grupos de 100 (média 200) e 10 (média 400) dão 218,18, não 300.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Por que <code>COUNT(DISTINCT)</code> não pode ser somado entre períodos?</span></summary><div class="ans"><p>O mesmo item pode aparecer em vários períodos. 800 pacientes em novembro e 850 em dezembro não são 1650 no bimestre. Pré-agregações devem guardar apenas medidas aditivas; para distintos, guarde as chaves e conte de novo, ou use aproximação (<code>APPROX_COUNT_DISTINCT</code> no Oracle 12c+).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O total subiu ao acrescentar um JOIN com <code>atendimento_item</code>. O que aconteceu e como corrigir?</span></summary><div class="ans"><p>Fan-out: o JOIN 1:N repetiu o valor do cabeçalho em cada item, e o <code>SUM</code> contou várias vezes. Correção: agregar os itens por atendimento numa subconsulta antes de juntar, ou somar no grão do item. <code>SUM(DISTINCT)</code> não corrige: remove valores iguais de atendimentos diferentes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Como agrupar atendimentos por mês e por semana nos dois bancos? Que cuidados no filtro?</span></summary><div class="ans"><p>Oracle: <code>TRUNC(dt, 'MM')</code> e <code>TRUNC(dt, 'IW')</code>. PostgreSQL: <code>DATE_TRUNC('month', dt)</code> e <code>DATE_TRUNC('week', dt)</code>. A função só entra no SELECT e no GROUP BY. O filtro de período usa intervalo semiaberto na coluna crua (<code>&gt;= início AND &lt; fim</code>), para não perder o índice nem as frações do último dia.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Como o banco executa um GROUP BY? Quando prefere hash e quando ordenação?</span></summary><div class="ans"><p>Hash aggregate: um acumulador por chave em memória; ótimo com poucos grupos e entrada desordenada; pode derramar em disco (PostgreSQL 13+). Sort/group aggregate: ordena (ou lê em ordem de um índice) e agrega sequências consecutivas; bom com muitos grupos ou ordem já disponível. Só <code>ORDER BY</code> garante ordem de saída.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Um <code>COUNT(*)</code> numa tabela de 200 milhões de linhas está lento. O que você faz?</span></summary><div class="ans"><p>Primeiro pergunto se precisa ser exato. Se não, uso estatísticas (<code>reltuples</code>, <code>NUM_ROWS</code>) ou contador mantido. Se sim: no PostgreSQL, o MVCC obriga a verificar visibilidade; um index-only scan com <code>VACUUM</code> em dia ajuda. No Oracle, um índice com coluna <code>NOT NULL</code> permite index fast full scan. Para painéis recorrentes, mantenho a contagem em tabela resumo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Um relatório que agrega milhões de linhas todo dia está lento. Qual o seu raciocínio?</span></summary><div class="ans"><p>Medir o plano e as linhas lidas. Reduzir o que entra (filtro de período sargável, índice, partição). Se o relatório consome dados históricos imutáveis, pré-agregar (tabela resumo ou view materializada) guardando somas e contagens. Considerar rodar em réplica de leitura. Só depois pensar em hardware.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>(Gestão) Como evitar que números diferentes circulem pela empresa?</span></summary><div class="ans"><p>Uma definição escrita por métrica (numerador, denominador, data de referência, exclusões), com dono, implementada em um único lugar (view ou camada semântica) e reutilizada por dashboards e planilhas. Reconciliação automática com a fonte e testes com casos de borda (NULL, fan-out, meses sem dados). Ao encontrar divergência, comece comparando definições antes de caçar bugs.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>(Gestão) Que práticas você exigiria do time para consultas de relatório?</span></summary><div class="ans"><p>Filtro de período explícito; revisão de qualquer JOIN antes de SUM; verificação de contagem antes/depois de joins; teste de reconciliação; relatórios pesados em horário e réplica adequados, sobre tabelas resumidas; e plano de execução anexado em revisões de consultas críticas.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

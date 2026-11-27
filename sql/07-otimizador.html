@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 07: Como o banco executa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 07 de 12 · Como o banco executa</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li class="sub"><ol>
+      <li><a href="#ciclo-consulta"><span class="n">1</span>O ciclo de vida de uma consulta: parse, otimização, execução, fetch</a></li>
+      <li><a href="#custo-cardinalidade"><span class="n">2</span>O otimizador baseado em custo: custo, cardinalidade e seletividade</a></li>
+      <li><a href="#estatisticas"><span class="n">3</span>Estatísticas: o mapa do otimizador</a></li>
+      <li><a href="#estimativas-erradas"><span class="n">4</span>Estimativas erradas: causas, detecção e correção</a></li>
+      <li><a href="#acesso-join"><span class="n">5</span>Métodos de acesso e de join: o que o plano realmente faz</a></li>
+      <li><a href="#binds"><span class="n">6</span>Bind variables, bind peeking e planos genéricos</a></li>
+      <li><a href="#buffer-cache"><span class="n">7</span>Buffer cache: leituras lógicas e físicas</a></li>
+      <li><a href="#plano-muda"><span class="n">8</span>Por que a "mesma consulta" fica lenta de repente</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html" aria-current="page"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 07 · <span class="lvl l3">Avançado</span></div>
+  <h1>Como o banco executa</h1>
+  <p class="lede">SQL diz o que você quer; o otimizador decide como buscar, e decide com base em estimativas. Entender o ciclo da consulta, o custo, as estatísticas, os métodos de acesso e de join, os binds e o cache explica por que uma consulta é rápida, por que a mesma consulta fica lenta "do nada" e o que cobrar de um time para que isso não vire incidente.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Descrever o ciclo parse, otimização, execução e fetch, e a diferença entre hard parse e soft parse (shared pool e library cache no Oracle; planejamento por conexão no PostgreSQL).</li>
+    <li>Explicar custo, cardinalidade e seletividade, e calcular à mão uma estimativa simples.</li>
+    <li>Diagnosticar estimativas erradas (correlação, função na coluna, dados enviesados, estatística velha) e corrigi-las com histogramas e estatísticas estendidas.</li>
+    <li>Escolher entre full scan, index range scan e index-only, e entre nested loop, hash join e merge join, sabendo quando cada um vence.</li>
+    <li>Usar bind variables com consciência: bind peeking, adaptive cursor sharing, CURSOR_SHARING, prepared statements, plano genérico vs custom e <code>plan_cache_mode</code>.</li>
+    <li>Distinguir leitura lógica de física e investigar por que um plano mudou e a consulta degradou.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="ciclo-consulta">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O ciclo de vida de uma consulta: parse, otimização, execução, fetch</h2>
+  <p>SQL é declarativo: você descreve o resultado, não o caminho. Entre o texto que sua aplicação envia e as linhas que voltam existe um pipeline de quatro fases. Saber em qual delas o tempo está sendo gasto é o primeiro passo de qualquer diagnóstico: uma consulta pode ser lenta porque o <em>plano</em> é ruim, porque ela é <em>reotimizada a cada chamada</em>, ou porque o <em>cliente</em> busca as linhas uma a uma.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 240" role="img" aria-label="Quatro fases da consulta: parse, otimização, execução e fetch, com o cache de planos permitindo pular a otimização no soft parse">
+      <defs><marker id="ah-ciclo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="20" width="130" height="76" rx="6"/><text class="ttl" x="85" y="40" text-anchor="middle">1. Parse</text>
+      <text class="lbl" x="85" y="60" text-anchor="middle">sintaxe, nomes e</text><text class="lbl" x="85" y="76" text-anchor="middle">permissões</text>
+      <rect class="box-a" x="190" y="20" width="130" height="76" rx="6"/><text class="ttl" x="255" y="40" text-anchor="middle">2. Otimização</text>
+      <text class="lbl" x="255" y="60" text-anchor="middle">estatísticas e custo</text><text class="lbl" x="255" y="76" text-anchor="middle">escolhem o plano</text>
+      <rect class="box" x="360" y="20" width="130" height="76" rx="6"/><text class="ttl" x="425" y="40" text-anchor="middle">3. Execução</text>
+      <text class="lbl" x="425" y="60" text-anchor="middle">roda o plano: lê</text><text class="lbl" x="425" y="76" text-anchor="middle">blocos, junta, ordena</text>
+      <rect class="box" x="530" y="20" width="130" height="76" rx="6"/><text class="ttl" x="595" y="40" text-anchor="middle">4. Fetch</text>
+      <text class="lbl" x="595" y="60" text-anchor="middle">entrega as linhas</text><text class="lbl" x="595" y="76" text-anchor="middle">ao cliente, em lotes</text>
+      <line class="ln" x1="150" y1="58" x2="188" y2="58" marker-end="url(#ah-ciclo)"/>
+      <line class="ln" x1="320" y1="58" x2="358" y2="58" marker-end="url(#ah-ciclo)"/>
+      <line class="ln" x1="490" y1="58" x2="528" y2="58" marker-end="url(#ah-ciclo)"/>
+      <rect class="box-w" x="20" y="136" width="400" height="36" rx="6"/><text x="220" y="159" text-anchor="middle">library cache: texto do SQL → plano pronto</text>
+      <line class="ln" x1="85" y1="96" x2="85" y2="134" marker-end="url(#ah-ciclo)"/>
+      <text class="lbl" x="93" y="120">procura pelo texto</text>
+      <line class="ln-b" x1="255" y1="96" x2="255" y2="134" marker-end="url(#ah-ciclo)"/>
+      <text class="lbl" x="263" y="120">hard parse: grava</text>
+      <path class="ln-a" d="M420,154 H425 V98" marker-end="url(#ah-ciclo)"/>
+      <text class="lbl" x="437" y="132">soft parse: reaproveita o plano</text>
+      <text class="lbl" x="20" y="200">Parse e otimização são o custo de CPU que o cache de planos evita. Execução e fetch acontecem sempre.</text>
+      <text class="lbl" x="20" y="218">No PostgreSQL o plano só é reaproveitado em statements preparados, dentro da conexão.</text>
+    </svg>
+    <figcaption>Se o texto do SQL já está no cache e é compatível, a otimização é pulada (soft parse). Se não está, o otimizador trabalha de novo (hard parse).</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Fase</th><th>O que acontece</th><th>Onde o tempo se perde</th></tr></thead>
+    <tbody>
+      <tr><td>Parse</td><td>Valida a sintaxe, resolve tabelas, colunas e sinônimos/schemas, verifica permissões, gera a árvore interna.</td><td>Milhares de SQLs diferentes (literais), contenção no cache compartilhado.</td></tr>
+      <tr><td>Otimização</td><td>Gera planos candidatos (caminho de acesso, ordem e método de join), estima o custo de cada um com as estatísticas e escolhe o mais barato.</td><td>Muitas tabelas no join, muitas partições, estatística ruim (plano ruim, não demora em si).</td></tr>
+      <tr><td>Execução</td><td>Roda o plano: lê blocos/páginas, filtra, junta, agrega, ordena. Para <code>INSERT/UPDATE/DELETE</code>, modifica dados, gera undo/redo (Oracle) ou WAL (PostgreSQL).</td><td>E/S, CPU, locks, memória insuficiente para sort/hash (vai para disco).</td></tr>
+      <tr><td>Fetch</td><td>Devolve linhas ao cliente. Algumas consultas começam a devolver cedo; outras (com <code>ORDER BY</code> sem índice, agregação) só devolvem depois de processar tudo.</td><td>Idas e voltas à rede, tamanho de lote pequeno, aplicação que lê linha a linha.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Hard parse, soft parse e o cache compartilhado (Oracle)</h3>
+  <p>No Oracle, a <strong>shared pool</strong> é uma área da SGA que guarda, entre outras coisas, a <strong>library cache</strong>: o texto de cada SQL e PL/SQL já visto, junto com o plano de execução. Ao receber um SQL, o banco calcula um hash do texto (é o <code>SQL_ID</code>) e procura na library cache.</p>
+  <ul>
+    <li><strong>Soft parse</strong>: o texto idêntico já está lá e é compatível com a sessão (mesmo schema, mesmas configurações do otimizador). O plano é reaproveitado. Custa pouco.</li>
+    <li><strong>Hard parse</strong>: não achou. Faz a análise completa, otimiza, aloca memória e grava na library cache. Custa muita CPU e exige <em>latches/mutexes</em> que serializam as sessões: com milhares de hard parses por segundo, a contenção derruba a vazão do banco inteiro, e a shared pool pode esgotar (<code>ORA-04031</code>).</li>
+    <li><strong>"Soft soft parse"</strong>: se a sessão mantém o cursor aberto (cache de statements do driver) ou usa o <code>SESSION_CACHED_CURSORS</code>, nem a busca na library cache é repetida. É o caminho mais barato.</li>
+  </ul>
+  <p>O que torna dois SQLs "o mesmo" é o texto: maiúsculas, espaços e, principalmente, <strong>literais</strong> diferentes geram <code>SQL_ID</code>s diferentes. É por isso que <code>WHERE id_paciente = 1001</code> e <code>WHERE id_paciente = 1002</code> são duas consultas para o cache (seção 6).</p>
+<pre><code class="sql">-- Quanto do trabalho de parse é "duro"? (v$sysstat é dinâmica; exige permissão de leitura nas views v$)
+SELECT name, value
+FROM   v$sysstat
+WHERE  name IN ('parse count (total)', 'parse count (hard)', 'execute count');</code></pre>
+<pre><code class="text">NAME                    VALUE
+---------------------- ----------
+parse count (total)     48210334
+parse count (hard)         61207
+execute count          51873310</code></pre>
+  <p>Neste exemplo fictício, hard parse é cerca de 0,13% do total de parses: saudável. Um sistema OLTP onde hard parse passa de poucos por cento dos parses, ou onde <code>parse count (total)</code> chega perto de <code>execute count</code>, está reotimizando demais ou nem reaproveitando cursores.</p>
+<pre><code class="sql">-- Achar SQL "inundando" a library cache com literais: muitas versões da mesma estrutura
+SELECT force_matching_signature,
+       COUNT(*)           AS versoes,
+       MIN(sql_text)      AS exemplo
+FROM   v$sql
+WHERE  force_matching_signature &lt;&gt; 0
+GROUP  BY force_matching_signature
+HAVING COUNT(*) &gt; 50
+ORDER  BY versoes DESC;</code></pre>
+
+  <h3>PostgreSQL: sem cache de planos compartilhado</h3>
+  <p>No PostgreSQL cada conexão é um processo (backend) com seu próprio estado. <strong>Não existe uma library cache global</strong>: uma consulta executada de forma "simples" passa por parse, análise, reescrita e <em>planejamento</em> toda vez. O planejamento costuma ser rápido (frações de milissegundo a poucos ms), mas cresce com o número de tabelas no join e de partições. Para evitar o replanejamento, a aplicação usa <strong>statements preparados</strong> (<code>PREPARE</code>/<code>EXECUTE</code>, ou o protocolo estendido dos drivers), cujo plano fica guardado <em>na sessão</em> (seção 6). Com <code>pg_stat_statements</code> e a opção <code>pg_stat_statements.track_planning</code> (PostgreSQL 13+) é possível medir o tempo de planejamento.</p>
+
+  <h3>Fetch: o cliente também faz parte do tempo</h3>
+  <ul>
+    <li><strong>Oracle</strong>: o driver busca em lotes (<em>array fetch</em>). No JDBC da Oracle, o <code>fetchSize</code> padrão é 10 linhas por ida e volta, pouco para retornar milhares de linhas; no SQL*Plus é o <code>ARRAYSIZE</code>. Aumentar o lote reduz drasticamente as viagens de rede.</li>
+    <li><strong>PostgreSQL</strong>: por padrão, o driver (libpq e o JDBC) traz o resultado inteiro para a memória do cliente. Para resultados grandes, use cursor/streaming (<code>setFetchSize</code> com autocommit desligado no JDBC) e evite estourar a memória da aplicação.</li>
+    <li>Linha a linha dentro de um laço na aplicação (o "N+1" do módulo de índices e do módulo de APIs) é fetch ruim disfarçado: o banco responde rápido e o sistema é lento pela latência acumulada.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"O que acontece quando você executa um SELECT?" Responda em quatro tempos: <em>parse</em> (sintaxe, nomes, permissões), <em>otimização</em> (gera planos, estima custo com estatísticas, escolhe um), <em>execução</em> (roda o plano) e <em>fetch</em> (devolve as linhas em lotes). Complete com: "no Oracle o plano fica na library cache e SQL idêntico faz soft parse; no PostgreSQL só statements preparados reaproveitam o plano, e só dentro da conexão". Isso mostra que você sabe por que binds importam.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Três perguntas de revisão que pegam muita coisa: "o SQL desta tela usa binds?", "qual é o fetch size / como o resultado é lido?" e "quantas idas ao banco esta tela faz?". Cobre-as em code review e em testes de carga com o volume e as conexões reais de produção. Uma tela que faz 300 consultas rápidas é mais lenta que uma que faz uma consulta média.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Medir só o tempo "no banco" e esquecer o fetch. Uma consulta que o DBA vê levar 40 ms pode levar 8 s na tela porque a aplicação traz 200 mil linhas, 10 por vez, e só mostra as 20 primeiras. Peça sempre o tempo fim a fim e o número de linhas devolvidas.</p></div>
+</section>
+
+<section class="chap" id="custo-cardinalidade">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O otimizador baseado em custo: custo, cardinalidade e seletividade</h2>
+  <p>Os dois bancos usam um otimizador <strong>baseado em custo</strong> (<em>cost-based optimizer</em>, CBO). O antigo otimizador por regras do Oracle foi aposentado (desupported desde o 10g). O CBO funciona assim: enumera planos candidatos, <em>estima</em> quantas linhas cada operação produz, converte isso em custo e escolhe o plano de menor custo total. Ele não executa nada para decidir: tudo é estimativa a partir de <strong>estatísticas</strong>.</p>
+  <h3>Três palavras para dominar</h3>
+  <dl class="gloss">
+    <div><dt>Seletividade</dt><dd>Fração das linhas que um filtro deixa passar, de 0 a 1. <code>id_atendimento = 123</code> é muito seletivo (1 em 5 milhões). <code>status = 'REALIZADO'</code> deixa passar 78%: pouco seletivo.</dd></div>
+    <div><dt>Cardinalidade</dt><dd>Número de linhas que uma operação do plano produz. Cardinalidade = linhas da tabela × seletividade. É a estimativa que alimenta a operação seguinte.</dd></div>
+    <div><dt>Custo</dt><dd>Número abstrato que resume o esforço estimado (E/S e CPU). Serve para <em>comparar planos da mesma consulta</em>, não é segundos nem é comparável entre consultas diferentes.</dd></div>
+  </dl>
+  <div class="note rule"><b>A ideia central do módulo</b><p>Quase todo plano ruim nasce de uma <strong>cardinalidade mal estimada</strong>. Se o banco acha que o filtro devolve 500 linhas e devolve 25.000, ele escolhe índice e nested loop quando o certo era hash join. Ao investigar uma consulta lenta, pergunte primeiro: "onde o banco achou que viriam N linhas e vieram 50×N?".</p></div>
+
+  <h3>Como as estimativas são calculadas</h3>
+  <p>Com estatísticas básicas, o otimizador faz aritmética simples. Usaremos a tabela <code>atendimento</code> com 5.000.000 de linhas e a distribuição de <code>status</code>: REALIZADO 78%, CANCELADO 20%, AGENDADO 2%.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Predicado</th><th>Seletividade estimada</th><th>Cardinalidade (de 5 M)</th></tr></thead>
+    <tbody>
+      <tr><td><code>status = 'AGENDADO'</code> com histograma/MCV</td><td>frequência medida: 0,02</td><td>100.000</td></tr>
+      <tr><td><code>status = 'AGENDADO'</code> sem histograma (3 valores distintos)</td><td>1 / n.º de distintos = 0,333</td><td>1.666.667 (errado em 16×)</td></tr>
+      <tr><td><code>id_medico = 77</code> (200 médicos, distribuição uniforme)</td><td>1/200 = 0,005</td><td>25.000</td></tr>
+      <tr><td>Faixa: <code>dt_atendimento &gt;= :d</code></td><td>posição de <code>:d</code> entre mínimo e máximo (ou histograma)</td><td>depende da data</td></tr>
+      <tr><td><code>A AND B</code></td><td>sel(A) × sel(B) (supõe independência)</td><td>multiplica</td></tr>
+      <tr><td><code>A OR B</code></td><td>sel(A) + sel(B) − sel(A) × sel(B)</td><td>soma menos a interseção</td></tr>
+      <tr><td><code>NOT A</code></td><td>1 − sel(A)</td><td>complemento</td></tr>
+      <tr><td><code>UPPER(nome) = :n</code>, <code>LIKE '%x%'</code></td><td>sem estatística sobre a expressão: "chute" fixo do otimizador</td><td>pouco confiável</td></tr>
+      <tr><td>Join <code>A.x = B.y</code></td><td>≈ 1 / máx(distintos(x), distintos(y))</td><td>|A| × |B| × sel</td></tr>
+    </tbody>
+  </table></div>
+  <p>Exemplo de join: 40.000 pacientes (PK distinta) e 5 M atendimentos com <code>id_paciente</code> (40.000 distintos). Seletividade do join = 1/40.000. Cardinalidade = 40.000 × 5.000.000 / 40.000 = <strong>5.000.000</strong>: cada atendimento acha seu paciente. Estatística certa, estimativa certa.</p>
+
+  <h3>De onde vem o custo (PostgreSQL, com números)</h3>
+  <p>O PostgreSQL deixa o modelo à mostra. O custo de um <em>sequential scan</em> é: páginas × <code>seq_page_cost</code> (padrão 1,0) + linhas × <code>cpu_tuple_cost</code> (0,01) + linhas × <code>cpu_operator_cost</code> (0,0025) por filtro avaliado. Se <code>atendimento</code> ocupa 62.500 páginas de 8 kB (cerca de 500 MB):</p>
+<pre><code class="text">custo = 62.500 × 1,0     (ler as páginas em sequência)
+      + 5.000.000 × 0,01   (processar cada linha)
+      + 5.000.000 × 0,0025 (avaliar o filtro status = 'AGENDADO' em cada linha)
+      = 62.500 + 50.000 + 12.500 = 125.000
+
+EXPLAIN SELECT * FROM atendimento WHERE status = 'AGENDADO';
+ Seq Scan on atendimento  (cost=0.00..125000.00 rows=100000 width=64)
+   Filter: ((status)::text = 'AGENDADO'::text)</code></pre>
+  <p>Um índice em <code>status</code> devolveria 100.000 linhas. Se elas estivessem espalhadas (sem correlação com a ordem física), cada uma custaria uma leitura aleatória: na ordem de 100.000 × <code>random_page_cost</code> (padrão 4,0) = <strong>400.000</strong>, bem mais que 125.000. O full scan vence, e fazer isso de propósito é inteligência do otimizador, não falha. Em SSD, valores menores de <code>random_page_cost</code> (por exemplo 1,1 a 2) refletem melhor o hardware e deslocam o ponto de virada a favor dos índices.</p>
+  <p>No Oracle, o custo é expresso aproximadamente em "equivalentes de leituras de bloco único" e depende também das <em>estatísticas de sistema</em> (velocidade de E/S e CPU, <code>DBMS_STATS.GATHER_SYSTEM_STATS</code>; sem elas, usa valores padrão). O modo padrão do otimizador é <code>ALL_ROWS</code> (minimiza o custo para devolver <em>todas</em> as linhas); <code>FIRST_ROWS_n</code> favorece devolver as primeiras n rápido, útil em telas paginadas.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Aspecto</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>Unidade do custo</td><td>≈ leituras de bloco único (E/S + CPU convertida)</td><td>unidades arbitrárias (1,0 = página lida em sequência)</td></tr>
+      <tr><td>Parâmetros do modelo</td><td>estatísticas de sistema, <code>OPTIMIZER_MODE</code>, parâmetros de cálculo</td><td><code>seq_page_cost</code>, <code>random_page_cost</code>, <code>cpu_tuple_cost</code>, <code>cpu_index_tuple_cost</code>, <code>cpu_operator_cost</code>, <code>effective_cache_size</code></td></tr>
+      <tr><td>Fonte da cardinalidade</td><td><code>USER_TAB_COL_STATISTICS</code>, histogramas, estatísticas estendidas, <em>dynamic sampling</em></td><td><code>pg_class.reltuples</code>, <code>pg_stats</code>, <code>pg_statistic_ext</code></td></tr>
+      <tr><td>Ver a estimativa no plano</td><td><code>E-Rows</code>/<code>Rows</code> em <code>DBMS_XPLAN</code></td><td><code>rows=</code> em <code>EXPLAIN</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Comparar o custo entre duas consultas, ou reduzir o custo como se fosse meta. Custo menor <em>no mesmo plano reescrito</em> não garante tempo menor, e custo alto não é "lento". O custo só decide entre alternativas da mesma consulta. Compare tempos, leituras (buffers) e linhas reais.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é cardinalidade e por que importa?" É o número de linhas que cada operação produz, estimado a partir de estatísticas. Importa porque o otimizador escolhe método de acesso e de join pela cardinalidade: com poucas linhas usa índice e nested loop; com muitas, full scan e hash join. Se a estimativa está errada por ordens de grandeza, o plano está errado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando o time disser "o banco está lento", pergunte se é <em>plano</em> (estimativa errada), <em>recurso</em> (CPU/E/S saturada) ou <em>espera</em> (locks). As correções são diferentes e a primeira costuma ser barata: estatística, índice, reescrita. Comprar hardware para um problema de cardinalidade só adia o incidente.</p></div>
+</section>
+
+
+<section class="chap" id="estatisticas">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Estatísticas: o mapa do otimizador</h2>
+  <p>Estatísticas são resumos sobre os dados: quantas linhas e blocos tem a tabela, quantos valores distintos e quantos nulos tem cada coluna, qual a distribuição dos valores. O otimizador nunca olha os dados de verdade durante o planejamento; ele consulta o mapa. <strong>Mapa desatualizado gera plano ruim com a mesma certeza que um mapa correto gera plano bom.</strong></p>
+
+  <h3>O que é guardado e onde ver</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Tabela: linhas, blocos, quando foi coletada
+SELECT table_name, num_rows, blocks, last_analyzed, stale_stats
+FROM   user_tab_statistics
+WHERE  table_name = 'ATENDIMENTO';
+
+-- Colunas: distintos, nulos, histograma
+SELECT column_name, num_distinct, num_nulls, histogram, num_buckets,
+       low_value, high_value
+FROM   user_tab_col_statistics
+WHERE  table_name = 'ATENDIMENTO';
+
+-- Mudanças desde a última coleta (base do critério de "stale", 10% por padrão)
+SELECT table_name, inserts, updates, deletes
+FROM   user_tab_modifications
+WHERE  table_name = 'ATENDIMENTO';</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Tabela: o planejador usa reltuples e relpages
+SELECT relname, reltuples::bigint AS linhas, relpages
+FROM   pg_class
+WHERE  relname = 'atendimento';
+
+-- Colunas
+SELECT attname, null_frac, n_distinct, correlation,
+       most_common_vals, most_common_freqs, histogram_bounds
+FROM   pg_stats
+WHERE  tablename = 'atendimento' AND attname IN ('status', 'id_medico');
+
+-- Última coleta e quantas linhas mudaram desde então
+SELECT relname, last_analyze, last_autoanalyze, n_mod_since_analyze
+FROM   pg_stat_user_tables
+WHERE  relname = 'atendimento';</code></pre>
+  </div>
+<pre><code class="text"> attname |  null_frac | n_distinct | most_common_vals                 | most_common_freqs
+---------+------------+------------+----------------------------------+-------------------
+ status  |          0 |          3 | {REALIZADO,CANCELADO,AGENDADO}   | {0.78,0.2,0.02}
+ id_medico |        0 |        200 | {77,12,45,...}                   | {0.0061,0.0058,...}
+
+-- n_distinct negativo significa fração das linhas: -1 = todos distintos (coluna tipo PK);
+-- -0,5 = cada valor aparece em média 2 vezes.
+-- correlation (-1 a 1) mede o quanto a ordem física segue a ordem da coluna (módulo 08).</code></pre>
+
+  <h3>Como e quando as estatísticas são coletadas</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>Automático</td><td>Tarefa de coleta automática nas janelas de manutenção (noturnas): coleta tabelas sem estatística ou "stale" (mudança maior que 10% das linhas, ajustável com a preferência <code>STALE_PERCENT</code>).</td><td><em>autovacuum</em> executa <code>ANALYZE</code> quando as linhas alteradas passam de <code>autovacuum_analyze_threshold</code> (50) + <code>autovacuum_analyze_scale_factor</code> (0,1) × linhas da tabela.</td></tr>
+      <tr><td>Manual</td><td><code>DBMS_STATS.GATHER_TABLE_STATS</code>, <code>GATHER_SCHEMA_STATS</code></td><td><code>ANALYZE tabela;</code> (<code>VACUUM ANALYZE</code> também vacuum)</td></tr>
+      <tr><td>Amostragem</td><td><code>ESTIMATE_PERCENT =&gt; DBMS_STATS.AUTO_SAMPLE_SIZE</code> (recomendado: precisão de leitura total com custo menor)</td><td>Amostra de cerca de 300 × <code>default_statistics_target</code> linhas (padrão 100, logo ~30.000 linhas), por tabela, não por percentual</td></tr>
+      <tr><td>Granularidade</td><td>Por tabela, partição, coluna; histogramas controlados por <code>METHOD_OPT</code></td><td>Por tabela e coluna; ajuste por coluna com <code>ALTER TABLE ... ALTER COLUMN ... SET STATISTICS n</code></td></tr>
+      <tr><td>Proteção</td><td><code>DBMS_STATS.LOCK_TABLE_STATS</code>, <em>pending statistics</em>, <code>RESTORE_TABLE_STATS</code> (histórico guardado, por padrão 31 dias)</td><td>Não há histórico nativo de estatísticas; guarde a saída de <code>pg_stats</code> se precisar comparar</td></tr>
+    </tbody>
+  </table></div>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Coleta manual após uma carga grande (exemplo)
+BEGIN
+  DBMS_STATS.GATHER_TABLE_STATS(
+    ownname          =&gt; USER,
+    tabname          =&gt; 'ATENDIMENTO',
+    estimate_percent =&gt; DBMS_STATS.AUTO_SAMPLE_SIZE,
+    method_opt       =&gt; 'FOR ALL COLUMNS SIZE AUTO',
+    cascade          =&gt; TRUE);   -- inclui os índices
+END;
+/</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Coleta manual após uma carga grande (exemplo)
+ANALYZE atendimento;
+
+-- Colunas muito enviesadas ou com muitos valores distintos: mais detalhe
+ALTER TABLE atendimento ALTER COLUMN id_medico SET STATISTICS 500;
+ANALYZE atendimento (id_medico);</code></pre>
+  </div>
+  <p>Cargas em massa merecem atenção especial. Uma tabela que acabou de receber milhões de linhas por ETL e ainda tem estatística de "10 mil linhas" gera planos de tabela pequena. No Oracle (12c+), cargas diretas em tabela vazia e <code>CREATE TABLE AS SELECT</code> coletam estatísticas básicas online; mesmo assim, termine pipelines de carga com uma coleta explícita. No PostgreSQL, rode <code>ANALYZE</code> logo após a carga, sem esperar o autovacuum.</p>
+
+  <h3>Histogramas: quando a distribuição não é uniforme</h3>
+  <p>Sem histograma, o otimizador supõe que cada valor distinto aparece com a mesma frequência: com 3 status, cada um seria 33%. Para um status que é 2% da tabela, o erro é de 16×. O <strong>histograma</strong> registra a frequência real dos valores mais comuns e a forma da distribuição dos demais.</p>
+  <ul>
+    <li><strong>Oracle</strong>: <em>frequency</em> (poucos valores distintos: um balde por valor), <em>top-frequency</em> e <em>hybrid</em> (12c+; muitos valores distintos) e o antigo <em>height-balanced</em> (11g e anteriores). Com <code>METHOD_OPT =&gt; 'FOR ALL COLUMNS SIZE AUTO'</code> o Oracle decide quais colunas merecem histograma, com base no uso da coluna em predicados e na assimetria dos dados. O máximo é 254 baldes (2.048 a partir do 12c).</li>
+    <li><strong>PostgreSQL</strong>: <code>most_common_vals/freqs</code> (lista dos valores mais frequentes, até <code>default_statistics_target</code> itens) mais <code>histogram_bounds</code> (limites de baldes de mesma população para o restante). Existe sempre que a coluna é analisada; basta aumentar o alvo de estatística quando há muitos valores distintos e cauda importante.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Histograma em coluna enviesada "resolve" o plano para literais mas pode instabilizar consultas com bind (o plano depende do valor visto na primeira execução; seção 6). Também não ajuda se a coluna é correlacionada com outra: histogramas são por coluna.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Estatística boa é <em>recente</em> (reflete o volume atual), <em>representativa</em> (amostra suficiente, histograma onde há enviesamento) e <em>estável</em> (mudanças de estatística são mudanças de plano: trate como mudança de produção). Duas perguntas rápidas: "quando foi a última coleta?" e "a tabela mudou mais de 10% desde então?".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que o plano mudou depois de um ANALYZE/coleta?" Porque as estimativas de cardinalidade mudaram e o otimizador reavaliou o custo dos caminhos. Se a estatística nova é mais fiel, o plano tende a melhorar; se a amostra foi ruim ou o histograma instabilizou binds, pode piorar. Por isso em produção se agenda, se testa e (no Oracle) se pode travar ou restaurar estatísticas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Estatística é ativo operacional: alguém precisa ser dono. Defina quem acompanha cargas em massa (ETL termina com coleta), quem aprova alteração de política de coleta e como se reverte. Coleta manual em produção, em horário de pico, muda planos de <em>todas</em> as consultas da tabela: combine com o DBA, como qualquer mudança.</p></div>
+</section>
+
+<section class="chap" id="estimativas-erradas">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Estimativas erradas: causas, detecção e correção</h2>
+  <p>Se o tempo vai para um plano ruim, a causa quase sempre é <strong>estimado ≠ real</strong>. O erro nasce numa operação e se propaga para cima: cada operação seguinte parte de uma entrada errada e erra ainda mais. Por isso o diagnóstico procura a <em>primeira</em> operação do plano em que estimado e real divergem muito.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Plano com nested loops no qual a estimativa de 500 linhas na leitura do índice, contra 25.000 reais, se propaga para o join">
+      <defs><marker id="ah-est" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-b" x="220" y="16" width="240" height="52" rx="6"/>
+      <text class="ttl" x="340" y="36" text-anchor="middle">NESTED LOOPS</text>
+      <text x="340" y="56" text-anchor="middle">est: 500 | real: 25.000</text>
+      <rect class="box-b" x="30" y="120" width="260" height="62" rx="6"/>
+      <text class="ttl" x="160" y="140" text-anchor="middle">INDEX RANGE SCAN</text>
+      <text x="160" y="157" text-anchor="middle">atendimento (índice por médico)</text>
+      <text x="160" y="174" text-anchor="middle">est: 500 | real: 25.000</text>
+      <rect class="box" x="390" y="120" width="260" height="62" rx="6"/>
+      <text class="ttl" x="520" y="140" text-anchor="middle">INDEX UNIQUE SCAN</text>
+      <text x="520" y="157" text-anchor="middle">paciente (PK)</text>
+      <text class="lbl" x="520" y="174" text-anchor="middle">planejado: 500 buscas | real: 25.000</text>
+      <line class="ln" x1="290" y1="68" x2="160" y2="118" marker-end="url(#ah-est)"/>
+      <line class="ln" x1="390" y1="68" x2="520" y2="118" marker-end="url(#ah-est)"/>
+      <text class="lbl" x="30" y="212">estimativa: 0,02 (setor) × 0,005 (médico) × 5.000.000 = 500, se as colunas fossem independentes</text>
+      <text class="lbl" x="30" y="230">realidade: o médico 77 só atende no setor 12, então o filtro extra não elimina nada: 25.000</text>
+      <text class="lbl" x="30" y="252">O erro nasce na primeira operação e contamina o join e tudo o que está acima.</text>
+    </svg>
+    <figcaption>Erro de 50× na leitura do índice: o plano "barato" de 500 buscas vira 25.000 buscas.</figcaption>
+  </figure>
+
+  <h3>As causas mais comuns</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Causa</th><th>O que acontece</th><th>Correção típica</th></tr></thead>
+    <tbody>
+      <tr><td>Estatística velha</td><td>Tabela cresceu, planos de "tabela pequena".</td><td>Coletar (e agendar após cargas). Verificar <code>stale_stats</code> / <code>n_mod_since_analyze</code>.</td></tr>
+      <tr><td>Colunas correlacionadas</td><td>Seletividades multiplicadas como se fossem independentes: subestima (como acima) ou superestima.</td><td>Estatísticas estendidas (abaixo).</td></tr>
+      <tr><td>Dados enviesados</td><td>Poucos valores concentram quase tudo; sem histograma, todo valor tem frequência igual.</td><td>Histograma / aumentar o alvo de estatística; cuidar com binds (seção 6).</td></tr>
+      <tr><td>Função ou expressão na coluna</td><td><code>UPPER(nome) = ...</code>, <code>TRUNC(dt) = ...</code>, <code>coluna + 1</code>: sem estatística da expressão, entra um "chute" fixo.</td><td>Reescrever para a forma sargável; índice por expressão (PostgreSQL coleta estatística da expressão do índice) ou estatística estendida de expressão (Oracle).</td></tr>
+      <tr><td>Valor fora do intervalo conhecido</td><td>A estatística diz que a data máxima é ontem; o filtro pede "hoje" e o otimizador estima quase zero.</td><td>Coletar mais seguido em tabelas que crescem pelo fim (datas de inserção); a coleta mais frequente é o remédio.</td></tr>
+      <tr><td>Tipos diferentes na comparação</td><td>Conversão implícita impede usar a estatística e o índice (módulo 08).</td><td>Mesmo tipo dos dois lados.</td></tr>
+      <tr><td>Muitos joins e subconsultas</td><td>Os erros pequenos de cada etapa se multiplicam.</td><td>Simplificar a consulta; quebrar em etapas; materializar resultados intermediários.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Como detectar: comparar estimado e real</h3>
+  <p>Você precisa dos dois números ao mesmo tempo. Só <code>EXPLAIN</code> (sem executar) mostra o estimado; é preciso <em>executar</em> para ver o real. Em ambiente de produção, execute consultas de leitura com cuidado: <code>EXPLAIN ANALYZE</code> roda a consulta de verdade (e uma <code>UPDATE</code> modifica dados; envolva em transação e faça <code>ROLLBACK</code>).</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">SELECT /*+ GATHER_PLAN_STATISTICS */ COUNT(*)
+FROM   atendimento a JOIN paciente p ON p.id_paciente = a.id_paciente
+WHERE  a.id_setor = 12 AND a.id_medico = 77;
+
+-- Plano do último cursor executado na sessão, com estimado (E-Rows) e real (A-Rows)
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(NULL, NULL, 'ALLSTATS LAST'));
+
+-----------------------------------------------------------------------------------
+| Id | Operation                     | Name          | Starts | E-Rows | A-Rows |
+-----------------------------------------------------------------------------------
+|  1 |  SORT AGGREGATE              |               |      1 |      1 |      1 |
+|  2 |   NESTED LOOPS               |               |      1 |    500 |  25000 |
+|* 3 |    INDEX RANGE SCAN          | IX_ATEND_MED  |      1 |    500 |  25000 |
+|* 4 |    INDEX UNIQUE SCAN         | PK_PACIENTE   |  25000 |      1 |  25000 |
+-----------------------------------------------------------------------------------</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">EXPLAIN (ANALYZE, BUFFERS)
+SELECT count(*)
+FROM   atendimento a JOIN paciente p ON p.id_paciente = a.id_paciente
+WHERE  a.id_setor = 12 AND a.id_medico = 77;
+
+ Aggregate  (cost=2315.12..2315.13 rows=1 width=8) (actual time=181.4..181.4 rows=1 loops=1)
+   -&gt;  Nested Loop  (cost=0.99..2313.87 rows=500 width=0) (actual time=0.1..175.9 rows=25000 loops=1)
+         -&gt;  Index Scan using ix_atend_med on atendimento a
+               (cost=0.56..580.12 rows=500 width=4) (actual time=0.05..22.3 rows=25000 loops=1)
+               Index Cond: (id_medico = 77)
+               Filter: (id_setor = 12)
+         -&gt;  Index Only Scan using paciente_pkey on paciente p
+               (cost=0.42..3.45 rows=1 width=4) (actual time=0.005..0.006 rows=1 loops=25000)</code></pre>
+  </div>
+  <p>Leia assim: <code>rows=500</code> (estimado) contra <code>rows=25000</code> (real) no scan de <code>atendimento</code>. Os números do exemplo são fictícios, mas o padrão é o do mundo real. No PostgreSQL, em operações com <code>loops=N</code>, o <em>real</em> é por loop: multiplique por <code>loops</code> para o total. No Oracle, <code>Starts</code> tem o mesmo papel.</p>
+
+  <h3>Estatísticas estendidas: ensinar ao otimizador que colunas andam juntas</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Grupo de colunas (column group): estatística conjunta de (id_setor, id_medico)
+SELECT DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'ATENDIMENTO', '(ID_SETOR, ID_MEDICO)')
+FROM   dual;
+-- A coleta seguinte cria a estatística (e histograma, se a coluna virtual for enviesada)
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'ATENDIMENTO');
+
+-- Também existe estatística de expressão
+SELECT DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'PACIENTE', '(UPPER(NOME))') FROM dual;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- dependencies: "id_setor é determinado por id_medico" (PostgreSQL 10+)
+-- ndistinct:    número de combinações distintas (agrupamentos) (10+)
+-- mcv:          valores combinados mais comuns (12+)
+CREATE STATISTICS st_atend_setor_medico (dependencies, ndistinct, mcv)
+  ON id_setor, id_medico FROM atendimento;
+ANALYZE atendimento;
+
+-- Estatística de expressão (PostgreSQL 14+)
+CREATE STATISTICS st_pac_nome_up ON (upper(nome)) FROM paciente;
+ANALYZE paciente;</code></pre>
+  </div>
+  <p>No PostgreSQL, as estatísticas multicoluna ajudam principalmente em predicados de <em>igualdade</em> sobre as colunas listadas e em agrupamentos (<code>GROUP BY</code> com várias colunas). Elas não substituem índice nem resolvem estimativas de faixa. No Oracle, o <em>column group</em> também é usado para igualdades entre as colunas do grupo, e é preciso que o predicado use exatamente o conjunto de colunas.</p>
+
+  <h3>Escada de correções, da mais barata à mais invasiva</h3>
+  <ol class="seq">
+    <li><div><strong>Atualizar estatísticas</strong> e verificar se o plano mudou. Se o erro sumiu, a causa era estatística velha.</div></li>
+    <li><div><strong>Histograma / alvo de estatística maior</strong> para colunas enviesadas.</div></li>
+    <li><div><strong>Estatísticas estendidas</strong> para colunas correlacionadas e expressões.</div></li>
+    <li><div><strong>Reescrever a consulta</strong> (forma sargável, tipos iguais, evitar função na coluna, quebrar em etapas).</div></li>
+    <li><div><strong>Dar informação ao otimizador</strong> sem travar o plano: Oracle <em>dynamic sampling</em> (<code>DYNAMIC_SAMPLING</code>), SQL Plan Directives/reotimização adaptativa (comportamento varia por versão); PostgreSQL: aumentar <code>default_statistics_target</code> da coluna.</div></li>
+    <li><div><strong>Forçar o plano</strong> (hints, SQL profile/baseline, <code>pg_hint_plan</code>) é último recurso: resolve o sintoma, esconde o dado errado e precisa de manutenção.</div></li>
+  </ol>
+  <div class="note trap"><b>Armadilha comum</b><p>Começar pelo passo 6: colocar um <code>/*+ INDEX(...) */</code> na consulta. O hint congela uma decisão que era certa hoje; quando o volume ou a distribuição mudar, a consulta fica presa a um plano ruim e ninguém lembra por quê. Hints exigem revisão periódica e comentário com a causa.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você acha uma estimativa errada?" Rodo a consulta com estatísticas de execução (<code>GATHER_PLAN_STATISTICS</code> + <code>ALLSTATS LAST</code>, ou <code>EXPLAIN (ANALYZE, BUFFERS)</code>), comparo estimado e real linha a linha e procuro a primeira operação em que a diferença passa de uma ordem de grandeza. Depois pergunto por quê: estatística velha, correlação, função na coluna ou dado enviesado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça que o relato de uma consulta lenta traga o plano <em>com real e estimado</em>, não só o texto SQL e "está lento". Sem isso o diagnóstico vira palpite. Ensine o time a ler <code>E-Rows</code> vs <code>A-Rows</code>: essa habilidade resolve a maioria dos chamados de performance de dados.</p></div>
+</section>
+
+
+<section class="chap" id="acesso-join">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Métodos de acesso e de join: o que o plano realmente faz</h2>
+  <p>Um plano é uma árvore de operações. As folhas <em>acessam</em> tabelas e índices; os nós internos <em>combinam</em> resultados (join, agregação, ordenação). Há poucos métodos de cada tipo, e saber quando cada um vence é o que permite ler um plano e dizer "isto está certo" ou "isto é suspeito".</p>
+
+  <h3>Métodos de acesso a uma tabela</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Método</th><th>Oracle</th><th>PostgreSQL</th><th>Vence quando</th></tr></thead>
+    <tbody>
+      <tr><td>Varredura completa</td><td><code>TABLE ACCESS FULL</code></td><td><code>Seq Scan</code></td><td>Filtro devolve fração grande da tabela, tabela pequena, ou não há índice útil. Lê em sequência, com leituras grandes.</td></tr>
+      <tr><td>Busca por chave única</td><td><code>INDEX UNIQUE SCAN</code> + <code>TABLE ACCESS BY INDEX ROWID</code></td><td><code>Index Scan</code> em PK/unique</td><td>Igualdade em coluna única: uma linha, 3 ou 4 leituras.</td></tr>
+      <tr><td>Faixa no índice</td><td><code>INDEX RANGE SCAN</code> (+ acesso por ROWID)</td><td><code>Index Scan</code></td><td>Poucas linhas ou faixa estreita; <code>ORDER BY</code> na ordem do índice dispensa o sort.</td></tr>
+      <tr><td>Só o índice</td><td><code>INDEX RANGE SCAN</code> sem <code>TABLE ACCESS</code>; <code>INDEX FAST FULL SCAN</code> lê o índice inteiro como mini-tabela</td><td><code>Index Only Scan</code> (depende do <em>visibility map</em>)</td><td>Todas as colunas usadas estão no índice: não visita a tabela (módulo 08).</td></tr>
+      <tr><td>Bitmap</td><td><code>BITMAP CONVERSION</code> sobre índices (também B-tree, via conversão)</td><td><code>Bitmap Index Scan</code> + <code>Bitmap Heap Scan</code></td><td>Quantidade intermediária de linhas, ou combinar vários índices com AND/OR. Lê as páginas da tabela em ordem física, uma vez cada.</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="figure">
+    <svg viewBox="0 0 680 240" role="img" aria-label="Gráfico esquemático do custo do full scan, quase constante, contra o índice, que cresce com a fração de linhas lidas, mais rápido quando as linhas estão espalhadas">
+      <defs><marker id="ah-brk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <line class="ln" x1="60" y1="20" x2="60" y2="190" marker-end="url(#ah-brk)"/>
+      <line class="ln" x1="60" y1="190" x2="650" y2="190" marker-end="url(#ah-brk)"/>
+      <text class="lbl" x="68" y="16">custo / tempo</text>
+      <line class="ln" x1="60" y1="100" x2="640" y2="100"/>
+      <text class="lbl" x="640" y="118" text-anchor="end">full scan: custo quase fixo</text>
+      <line class="ln-a" x1="60" y1="185" x2="640" y2="60"/>
+      <text class="lbl" x="640" y="50" text-anchor="end">índice, linhas agrupadas</text>
+      <line class="ln-b" x1="60" y1="185" x2="300" y2="22"/>
+      <text class="lbl" x="308" y="30">índice, linhas espalhadas</text>
+      <circle class="box-b" cx="184" cy="100" r="5"/>
+      <circle class="box-a" cx="454" cy="100" r="5"/>
+      <text class="lbl" x="184" y="136" text-anchor="middle">virada: poucos %</text>
+      <text class="lbl" x="454" y="136" text-anchor="middle">virada: dezenas de %</text>
+      <text class="lbl" x="60" y="210">poucas linhas</text>
+      <text class="lbl" x="640" y="210" text-anchor="end">muitas linhas (% da tabela devolvido pelo filtro)</text>
+      <text class="lbl" x="60" y="230">A virada depende da distribuição física das linhas casadas (correlação, módulo 08).</text>
+    </svg>
+    <figcaption>Esquema, sem escala: cada linha obtida por índice pode custar uma leitura aleatória de página; a varredura completa lê tudo uma vez, em sequência.</figcaption>
+  </figure>
+  <p>Não existe um percentual mágico. Se as linhas procuradas estão agrupadas (a tabela é gravada em ordem de data e a consulta pede um mês), o índice continua compensando com uma fração grande. Se estão espalhadas (os atendimentos de um médico estão misturados com todos os outros), o índice perde a vantagem com bem pouco, na ordem de poucos por cento. Por isso um índice em <code>status</code> quase nunca é usado para <code>'REALIZADO'</code> (78%), mas pode ser ótimo para <code>'AGENDADO'</code> (2%) se um índice parcial ou composto for bem escolhido.</p>
+
+  <h3>Métodos de join</h3>
+  <p>Juntar duas tabelas é, no fundo, "para cada linha de A, achar as linhas de B que casam". Há três estratégias.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 244" role="img" aria-label="Três métodos de join: nested loops, hash join e merge join, com quando cada um vence">
+      <defs><marker id="ah-jn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="8" width="200" height="228" rx="8"/>
+      <text class="ttl" x="120" y="28" text-anchor="middle">Nested loops</text>
+      <rect class="box-a" x="40" y="42" width="160" height="30" rx="5"/><text x="120" y="62" text-anchor="middle">A: poucas linhas</text>
+      <line class="ln" x1="120" y1="72" x2="120" y2="100" marker-end="url(#ah-jn)"/>
+      <rect class="box-w" x="40" y="102" width="160" height="30" rx="5"/><text x="120" y="122" text-anchor="middle">B: busca no índice</text>
+      <text class="lbl" x="120" y="152" text-anchor="middle">para cada linha de A,</text><text class="lbl" x="120" y="168" text-anchor="middle">uma busca em B</text>
+      <text class="ttl" x="120" y="192" text-anchor="middle">Vence quando</text>
+      <text class="lbl" x="120" y="210" text-anchor="middle">A é pequena e B tem índice</text><text class="lbl" x="120" y="226" text-anchor="middle">(OLTP, poucas linhas)</text>
+      <rect class="box" x="240" y="8" width="200" height="228" rx="8"/>
+      <text class="ttl" x="340" y="28" text-anchor="middle">Hash join</text>
+      <rect class="box-a" x="260" y="42" width="160" height="30" rx="5"/><text x="340" y="62" text-anchor="middle">A: monta a hash</text>
+      <line class="ln" x1="340" y1="72" x2="340" y2="100" marker-end="url(#ah-jn)"/>
+      <rect class="box-w" x="260" y="102" width="160" height="30" rx="5"/><text x="340" y="122" text-anchor="middle">B: lê e procura</text>
+      <text class="lbl" x="340" y="152" text-anchor="middle">um passe em cada lado;</text><text class="lbl" x="340" y="168" text-anchor="middle">só igualdade; usa memória</text>
+      <text class="ttl" x="340" y="192" text-anchor="middle">Vence quando</text>
+      <text class="lbl" x="340" y="210" text-anchor="middle">volumes grandes e sem índice</text><text class="lbl" x="340" y="226" text-anchor="middle">útil (relatórios, DW)</text>
+      <rect class="box" x="460" y="8" width="200" height="228" rx="8"/>
+      <text class="ttl" x="560" y="28" text-anchor="middle">Merge join</text>
+      <rect class="box-a" x="480" y="42" width="160" height="30" rx="5"/><text x="560" y="62" text-anchor="middle">A: ordenada</text>
+      <line class="ln" x1="560" y1="72" x2="560" y2="100" marker-end="url(#ah-jn)"/>
+      <rect class="box-w" x="480" y="102" width="160" height="30" rx="5"/><text x="560" y="122" text-anchor="middle">B: ordenada</text>
+      <text class="lbl" x="560" y="152" text-anchor="middle">dois ponteiros andam</text><text class="lbl" x="560" y="168" text-anchor="middle">juntos; o sort é o custo</text>
+      <text class="ttl" x="560" y="192" text-anchor="middle">Vence quando</text>
+      <text class="lbl" x="560" y="210" text-anchor="middle">entradas já ordenadas</text><text class="lbl" x="560" y="226" text-anchor="middle">ou o resultado já ordenado</text>
+    </svg>
+    <figcaption>Os três métodos de join. O otimizador escolhe pelo tamanho estimado das entradas, índices disponíveis e memória.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Método</th><th>Oracle / PostgreSQL</th><th>Custo cresce com</th><th>Pontos de atenção</th></tr></thead>
+    <tbody>
+      <tr><td>Nested loops</td><td><code>NESTED LOOPS</code> / <code>Nested Loop</code></td><td>linhas de A × custo de cada busca em B</td><td>Aceita qualquer condição. Ótimo com A pequena e índice em B (FK indexada). Péssimo se A tiver milhões de linhas: milhões de buscas.</td></tr>
+      <tr><td>Hash join</td><td><code>HASH JOIN</code> / <code>Hash Join</code> (+ <code>Hash</code>)</td><td>soma das duas entradas</td><td>Só igualdade. Constrói a tabela hash na menor entrada; se não couber na memória (<code>work_mem</code> no PostgreSQL, PGA no Oracle), derrama em disco (no PostgreSQL aparece <code>Batches: N</code>, com N &gt; 1, no <code>EXPLAIN ANALYZE</code>).</td></tr>
+      <tr><td>Merge join</td><td><code>MERGE JOIN</code> (+ <code>SORT JOIN</code>) / <code>Merge Join</code></td><td>sort das entradas (se não vierem ordenadas)</td><td>Bom quando ambas vêm ordenadas por índice ou quando o resultado também precisa dessa ordem. Em PostgreSQL exige condição de igualdade.</td></tr>
+    </tbody>
+  </table></div>
+  <p>O otimizador também escolhe a <strong>ordem dos joins</strong>: normalmente começa pelo conjunto mais filtrado, para carregar poucas linhas adiante. Semi-joins (<code>EXISTS</code>, <code>IN</code>) e anti-joins (<code>NOT EXISTS</code>) aparecem como <code>HASH JOIN SEMI/ANTI</code> (Oracle) e <code>Hash Semi Join</code>/<code>Hash Anti Join</code> (PostgreSQL), com a vantagem de parar no primeiro casamento. Dois exemplos do mesmo esquema:</p>
+<pre><code class="sql">-- OLTP: histórico de UM paciente (dezenas de linhas) com o nome do médico
+SELECT a.dt_atendimento, a.tipo, m.nome
+FROM   atendimento a JOIN medico m ON m.id_medico = a.id_medico
+WHERE  a.id_paciente = :id;
+-- Esperado: Index Range Scan em atendimento(id_paciente) -&gt; Nested Loop -&gt; busca na PK de medico.
+
+-- Relatório: faturamento do mês por convênio (milhões de linhas de entrada)
+SELECT c.nome, SUM(a.valor)
+FROM   atendimento a JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE  a.dt_atendimento &gt;= DATE '2026-10-01' AND a.dt_atendimento &lt; DATE '2026-11-01'
+GROUP  BY c.nome;
+-- Esperado: varredura (ou range scan muito amplo) em atendimento, Hash Join com convenio
+-- (convenio é pequena: vira a tabela hash), depois HashAggregate/HASH GROUP BY.</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Poucas linhas + índice = <em>nested loops</em>. Muitas linhas = <em>hash join</em> com <em>full scan</em>. Se o plano mostra nested loops com milhões de iterações (<code>Starts</code> ou <code>loops</code> enormes), a cardinalidade foi subestimada: volte à seção 4.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Desligar métodos (<code>SET enable_nestloop = off</code> no PostgreSQL, hints <code>USE_HASH</code>/<code>USE_NL</code> no Oracle) em produção para "consertar" uma consulta. Em teste, é ótima ferramenta de diagnóstico ("o plano alternativo seria mais rápido?"). Como solução permanente, esconde a causa e quebra quando o dado muda.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Quando nested loops é melhor que hash join?" Quando a entrada externa é pequena e a interna tem índice na coluna de junção: o custo é poucas buscas baratas, e a primeira linha sai logo. Hash join paga um passe em cada lado e memória, mas não cresce com o número de buscas: vence com muitos dados. Merge join vence com entradas já ordenadas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando uma consulta que levava 50 ms passa a levar 40 s depois de a tabela crescer, o motivo mais comum é um plano de nested loops que continuou "barato" na estimativa. Peça testes de desempenho com volume de produção (ou o mais próximo possível) antes de liberar relatórios novos, e inclua o plano no material do pull request das consultas críticas.</p></div>
+</section>
+
+<section class="chap" id="binds">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Bind variables, bind peeking e planos genéricos</h2>
+  <p>Otimizar custa CPU, e os bancos guardam planos para reaproveitar, mas só reaproveitam quando o texto do SQL é o mesmo. A maneira de manter o texto constante enquanto os valores variam é a <strong>bind variable</strong> (parâmetro): o SQL leva um marcador (<code>:id</code> no Oracle, <code>$1</code> no PostgreSQL) e o valor viaja à parte.</p>
+<pre><code class="sql">-- Literal: cada paciente gera um SQL diferente, e cada um passa pelo otimizador
+SELECT * FROM atendimento WHERE id_paciente = 1001;
+SELECT * FROM atendimento WHERE id_paciente = 1002;
+
+-- Bind: um texto só, otimizado uma vez e reaproveitado
+SELECT * FROM atendimento WHERE id_paciente = :id;    -- Oracle
+SELECT * FROM atendimento WHERE id_paciente = $1;     -- PostgreSQL (statement preparado)</code></pre>
+
+  <h3>Por que usar: parse, memória e segurança</h3>
+  <ul>
+    <li><strong>Menos parse</strong> (Oracle): com literais, cada valor é um hard parse. Em OLTP com muitos usuários, a contenção na library cache trava o banco. Binds são obrigatórios em sistemas transacionais Oracle.</li>
+    <li><strong>Menos memória</strong>: milhares de variantes do mesmo SQL ocupam a shared pool e expulsam os planos úteis.</li>
+    <li><strong>Segurança</strong>: binds são a defesa principal contra <em>SQL injection</em>. O valor nunca é interpretado como SQL. É por isso que também são obrigatórios em PostgreSQL, onde o ganho de performance é menor.</li>
+  </ul>
+  <div class="tabs">
+<pre data-label="Oracle (node-oracledb)"><code class="js">// ERRADO: concatenação. Se cpf = "' OR '1'='1", devolve todos os pacientes.
+const sqlRuim = "SELECT nome FROM paciente WHERE cpf = '" + cpf + "'";
+
+// CERTO: bind nomeado, valor separado do texto
+const r = await conn.execute(
+  "SELECT nome FROM paciente WHERE cpf = :cpf",
+  { cpf: cpf });</code></pre>
+<pre data-label="PostgreSQL (node-postgres)"><code class="js">// ERRADO: concatenação. Se cpf = "' OR '1'='1", devolve todos os pacientes.
+const sqlRuim = "SELECT nome FROM paciente WHERE cpf = '" + cpf + "'";
+
+// CERTO: parâmetro posicional, valor separado do texto
+const r = await client.query(
+  "SELECT nome FROM paciente WHERE cpf = $1",
+  [cpf]);</code></pre>
+  </div>
+  <p>Detalhes de uso: no PL/SQL, variáveis PL/SQL usadas em SQL estático já viram binds automaticamente; em SQL dinâmico use <code>EXECUTE IMMEDIATE ... USING</code>. No PL/pgSQL, o SQL estático também usa statements preparados por baixo. Nomes de tabelas e colunas <em>não</em> podem ser bind: se precisar deles dinâmicos, valide contra uma lista fixa (lista de permissão) ou use <code>DBMS_ASSERT</code> (Oracle) / <code>format('%I')</code> (PostgreSQL). Para a visão de segurança de API, veja o módulo de segurança da trilha de APIs.</p>
+
+  <h3>O lado ruim: um plano só para valores muito diferentes</h3>
+  <p>Com <code>status</code> distribuído em REALIZADO 78%, CANCELADO 20% e AGENDADO 2%, o plano ideal para <code>'AGENDADO'</code> é índice e para <code>'REALIZADO'</code> é full scan. Com um bind, <strong>um plano precisa servir aos dois</strong>.</p>
+  <h3>Oracle: bind peeking e adaptive cursor sharing</h3>
+  <ul>
+    <li><strong>Bind peeking</strong> (desde o 9i): no hard parse, o otimizador <em>espia</em> o valor do bind e planeja para ele. Se a primeira execução usou <code>'AGENDADO'</code>, o plano é de índice e fica no cache; depois, <code>'REALIZADO'</code> reutiliza esse plano e faz milhões de leituras aleatórias. É o clássico "ontem estava rápido": o plano depende de quem executou primeiro depois de um hard parse (restart, invalidação por coleta de estatísticas, expulsão da shared pool).</li>
+    <li><strong>Adaptive cursor sharing</strong> (11g+): quando a coluna tem histograma e o predicado é sensível ao valor, o cursor é marcado como <em>bind-sensitive</em>. O banco monitora; se a mesma consulta com valores diferentes produz volumes muito diferentes, o cursor vira <em>bind-aware</em> e passam a existir vários cursores-filho (planos) por faixa de seletividade. Não funciona sem histograma e tem um período de "aprendizado" em que a primeira má execução acontece.</li>
+  </ul>
+<pre><code class="sql">SELECT sql_id, child_number, plan_hash_value, executions,
+       is_bind_sensitive, is_bind_aware, is_shareable
+FROM   v$sql
+WHERE  sql_text LIKE 'SELECT * FROM atendimento WHERE status = :%';</code></pre>
+  <h3>CURSOR_SHARING: remendo para aplicação que usa literais</h3>
+  <p>O parâmetro <code>CURSOR_SHARING</code> (padrão <code>EXACT</code>) pode ser colocado em <code>FORCE</code> para o Oracle trocar literais por binds do sistema (<code>:SYS_B_0</code>). É um <em>paliativo</em> para sistemas legados que não dá para alterar na hora: reduz hard parse, mas não corrige segurança (o código continua concatenando), pode misturar planos de valores muito diferentes e dá surpresas com histogramas. A opção <code>SIMILAR</code> é obsoleta (deprecated). O conserto real é a aplicação usar binds.</p>
+
+  <h3>PostgreSQL: statements preparados, plano custom e genérico</h3>
+  <p>Um statement preparado faz parse uma vez; o <em>plano</em> pode ser de dois tipos. O <strong>plano custom</strong> é gerado para os valores concretos de cada execução (replaneja sempre, mas usa as estatísticas do valor). O <strong>plano genérico</strong> é gerado sem olhar os valores (trata o parâmetro como "um valor qualquer") e é reaproveitado. A regra do PostgreSQL: as <strong>5 primeiras execuções</strong> usam planos custom; a partir daí, ele compara o custo estimado do plano genérico com a média dos custos dos planos custom e passa a usar o genérico se ele não for mais caro.</p>
+<pre><code class="sql">PREPARE atend_por_status (text) AS
+  SELECT * FROM atendimento WHERE status = $1;
+
+EXPLAIN EXECUTE atend_por_status('AGENDADO');
+-- custom: usa a frequência real de 'AGENDADO' (2%) -&gt; Index Scan / Bitmap Heap Scan
+
+-- Controle por sessão (PostgreSQL 12+): auto (padrão), force_custom_plan, force_generic_plan
+SET plan_cache_mode = force_custom_plan;
+
+-- Ver o plano genérico sem executar (PostgreSQL 16+)
+EXPLAIN (GENERIC_PLAN) SELECT * FROM atendimento WHERE status = $1;
+-- o genérico estima a frequência "média" de um valor (cerca de 1/3 aqui):
+-- Seq Scan on atendimento  (cost=0.00..125000.00 rows=1666667 ...)</code></pre>
+  <p>O perigo é o espelho do Oracle: se as cinco primeiras execuções de uma sessão usam <code>'REALIZADO'</code> (full scan), o genérico é parecido com elas e é adotado; as execuções seguintes com <code>'AGENDADO'</code> herdam o full scan. Para colunas muito enviesadas, a saída é <code>plan_cache_mode = force_custom_plan</code> (no papel ou na sessão que precisa) ou manter o valor enviesado como literal. Observações de ecossistema: o driver JDBC do PostgreSQL só passa a usar statement preparado no servidor depois de um número de execuções (<code>prepareThreshold</code>, padrão 5); e conexões atrás de um pooler em modo <em>transaction</em> podem não reaproveitar statements preparados, dependendo da versão e da configuração do pooler (verifique a do PgBouncer em uso).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Aspecto</th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td>Onde o plano fica</td><td>library cache, compartilhado por todas as sessões</td><td>memória da conexão (backend), por sessão</td></tr>
+      <tr><td>Quem decide o plano com bind</td><td>valor espiado no hard parse; ACS pode criar vários filhos</td><td>5 custom primeiro, depois compara custo do genérico</td></tr>
+      <tr><td>Controle</td><td>histogramas, <code>CURSOR_SHARING</code>, SQL plan baselines, hints</td><td><code>plan_cache_mode</code> (12+), <code>PREPARE</code>/<code>DEALLOCATE</code>, <code>prepareThreshold</code></td></tr>
+      <tr><td>Risco clássico</td><td>"plano do primeiro que chegou" após hard parse</td><td>genérico adotado para valores muito diferentes</td></tr>
+      <tr><td>Ver</td><td><code>v$sql</code> (<code>IS_BIND_*</code>), <code>v$sql_bind_capture</code></td><td><code>pg_prepared_statements</code>, <code>EXPLAIN (GENERIC_PLAN)</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Bind para tudo que varia por usuário/requisição (ids, datas, nomes). Literal apenas para valores fixos e muito enviesados que definem o <em>tipo</em> da consulta (por exemplo, a "fila de trabalho" <code>status = 'AGENDADO'</code>), e mesmo assim de forma consciente e documentada.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Concluir "o banco está lento hoje" quando, na verdade, o plano ruim foi o escolhido para o primeiro valor que chegou depois de um restart ou coleta de estatísticas. Teste a consulta lenta com <em>vários valores</em> do bind (um raro, um comum). Se o plano muda com o valor, o problema é enviesamento + bind.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que usar bind variables?" Três razões: desempenho (um parse, um plano reaproveitado; o hard parse é caro no Oracle), memória (menos cursores na shared pool) e segurança (anula injeção de SQL). "E qual o lado ruim?" Um plano para valores de seletividades muito diferentes: no Oracle mitigado por bind peeking e ACS; no PostgreSQL, por <code>plan_cache_mode</code> e pela regra custom/genérico.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Torne "sem concatenação de SQL" regra de code review e de análise estática. Em ORMs, revise queries dinâmicas montadas por texto. Em incidentes, pergunte: "o SQL lento usa bind?" e "o plano muda conforme o valor?". Cursor_sharing=FORCE em produção deve ter dono e prazo para sair.</p></div>
+</section>
+
+<section class="chap" id="buffer-cache">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Buffer cache: leituras lógicas e físicas</h2>
+  <p>Ler da memória custa microssegundos; ler do disco ou de armazenamento em rede custa de dezenas de microssegundos (SSD local) a milissegundos (rede, disco). Os bancos mantêm um <strong>cache de blocos/páginas</strong> em memória: o <em>buffer cache</em> (Oracle) e os <em>shared buffers</em> (PostgreSQL). Quando o plano precisa de uma página, ele a pede ao cache; se está lá, é um <em>hit</em>; se não, é preciso trazê-la.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Plano de execução pedindo páginas ao buffer cache, que lê do disco apenas quando não encontra: leitura lógica e leitura física">
+      <defs><marker id="ah-buf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="50" width="150" height="56" rx="6"/><text class="ttl" x="95" y="74" text-anchor="middle">Plano em execução</text><text class="lbl" x="95" y="93" text-anchor="middle">pede páginas</text>
+      <rect class="box-a" x="250" y="50" width="170" height="56" rx="6"/><text class="ttl" x="335" y="74" text-anchor="middle">Buffer cache</text><text class="lbl" x="335" y="93" text-anchor="middle">SGA / shared_buffers</text>
+      <rect class="box-w" x="500" y="50" width="160" height="56" rx="6"/><text class="ttl" x="580" y="74" text-anchor="middle">Disco / storage</text><text class="lbl" x="580" y="93" text-anchor="middle">(PG: via cache do SO)</text>
+      <line class="ln-a" x1="170" y1="70" x2="248" y2="70" marker-end="url(#ah-buf)"/>
+      <line class="ln-a" x1="248" y1="90" x2="172" y2="90" marker-end="url(#ah-buf)"/>
+      <line class="ln-b" x1="420" y1="70" x2="498" y2="70" marker-end="url(#ah-buf)"/>
+      <line class="ln-b" x1="498" y1="90" x2="422" y2="90" marker-end="url(#ah-buf)"/>
+      <text class="lbl" x="210" y="40" text-anchor="middle">leitura lógica</text>
+      <text class="lbl" x="460" y="40" text-anchor="middle">leitura física</text>
+      <text class="lbl" x="20" y="140">Leitura lógica = qualquer pedido de página ao cache. Leitura física = página buscada fora dele.</text>
+      <text class="lbl" x="20" y="164">Oracle: db block gets + consistent gets (lógicas); physical reads (físicas).</text>
+      <text class="lbl" x="20" y="184">PostgreSQL: shared hit (no cache) e read (pedida ao SO, que pode ter a página em memória).</text>
+      <text class="lbl" x="20" y="208">Toda leitura física é também lógica, mas nem toda leitura lógica é física.</text>
+    </svg>
+    <figcaption>O cache transforma leituras físicas em lógicas. A leitura lógica também custa CPU e contenção (latches, pins).</figcaption>
+  </figure>
+
+  <h3>Como medir</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- SQL*Plus (exige o papel PLUSTRACE ou equivalente): só estatísticas
+SET AUTOTRACE TRACEONLY STATISTICS
+SELECT COUNT(*) FROM atendimento WHERE id_medico = 77;
+
+Statistics
+----------------------------------------------------------
+          0  recursive calls
+          0  db block gets
+       4021  consistent gets      -- leituras lógicas
+        312  physical reads       -- leituras físicas
+          1  rows processed
+
+-- Por SQL, na memória: os que mais leem do cache
+SELECT sql_id, executions, buffer_gets, disk_reads,
+       ROUND(buffer_gets / NULLIF(executions, 0)) AS gets_por_exec
+FROM   v$sql
+ORDER  BY buffer_gets DESC FETCH FIRST 10 ROWS ONLY;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">EXPLAIN (ANALYZE, BUFFERS)
+SELECT count(*) FROM atendimento WHERE id_medico = 77;
+
+ Aggregate  (cost=... rows=1 ...) (actual time=14.8..14.8 rows=1 loops=1)
+   -&gt;  Index Only Scan using ix_atend_med_cob on atendimento
+         (actual time=0.05..10.1 rows=25000 loops=1)
+         Index Cond: (id_medico = 77)
+         Heap Fetches: 0
+         Buffers: shared hit=3980 read=41     -- 41 páginas vieram de fora do cache
+ Execution Time: 14.9 ms
+
+-- Por SQL (extensão pg_stat_statements): quem mais lê fora do cache
+SELECT queryid, calls, shared_blks_hit, shared_blks_read
+FROM   pg_stat_statements
+ORDER  BY shared_blks_read DESC LIMIT 10;</code></pre>
+  </div>
+  <p>Rodando a mesma consulta uma segunda vez, as leituras físicas caem a zero e o tempo cai, sem que o plano tenha mudado. Por isso <strong>comparar tempos de duas execuções frias e quentes engana</strong>. A medida estável de "quanto trabalho a consulta faz" é a leitura <em>lógica</em> (<code>consistent gets</code> / <code>shared hit + read</code>), que não depende do que já estava na memória.</p>
+
+  <h3>Entendendo o comportamento do cache</h3>
+  <ul>
+    <li><strong>Páginas recentes e frequentes ficam</strong> (LRU/clock-sweep). Um relatório que varre a tabela inteira poderia expulsar tudo o que o OLTP usa; por isso os bancos limitam esse efeito: o PostgreSQL usa um pequeno <em>anel de buffers</em> para varreduras sequenciais grandes, e o Oracle pode usar <em>direct path reads</em> (lê para a memória do processo, sem passar pelo buffer cache) em full scans grandes.</li>
+    <li><strong>PostgreSQL usa dois caches</strong>: <code>shared_buffers</code> e o cache de páginas do sistema operacional. Uma leitura "física" do ponto de vista do banco pode ser servida pela memória do SO. O parâmetro <code>effective_cache_size</code> não aloca nada: só informa ao planejador quanto cache existe, e influencia a escolha de índices. A extensão <code>pg_prewarm</code> pré-carrega relações no cache.</li>
+    <li><strong>Hit ratio alto não é prova de saúde</strong>. Um laço que lê as mesmas poucas páginas milhões de vezes tem hit ratio de 99,9% e é lento. A pergunta útil é <em>quantas leituras lógicas cada execução faz</em>. Um hit ratio baixo, por outro lado, indica memória insuficiente para o conjunto de trabalho ou varreduras que não deveriam existir.</li>
+  </ul>
+
+  <div class="note rule"><b>Regra de bolso</b><p>Para comparar duas versões de uma consulta, compare <strong>leituras lógicas</strong> e linhas processadas, e repita a execução pelo menos duas vezes. Tempo isolado, em cache frio, mede o disco; em cache quente, mede a CPU. Os dois importam, mas não se misturam.</p></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Testar no ambiente de homologação, com a tabela inteira em memória, e liberar para produção, onde o conjunto de trabalho não cabe no cache. Ou o contrário: ficar assustado com a primeira execução (fria) de uma consulta que, em produção, roda sempre quente. Reproduza o estado de cache que a produção tem.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Diferença entre leitura lógica e física?" Lógica é qualquer pedido de bloco ao buffer cache (<code>consistent gets</code>); física é quando o bloco não estava em memória e foi lido do armazenamento (<code>physical reads</code>). Otimizar costuma ser reduzir leituras lógicas (melhor plano, índice de cobertura), o que reduz as físicas por consequência.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Memória é a alavanca de custo/benefício mais visível: dobrar o cache pode zerar leituras físicas se o conjunto de trabalho cabe. Mas antes de pedir mais RAM, peça os números: leituras lógicas por execução das 10 consultas mais caras. Muitas vezes uma consulta mal escrita é responsável por boa parte das leituras.</p></div>
+</section>
+
+<section class="chap" id="plano-muda">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Por que a "mesma consulta" fica lenta de repente</h2>
+  <p>"Ontem rodava em 80 ms, hoje leva 40 s, e ninguém mudou nada." Quase sempre houve mudança, só que fora do código: o plano, os dados, as estatísticas, a configuração, o cache. O texto do SQL é o mesmo; a <em>decisão</em> do otimizador não.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Causa</th><th>Como acontece</th><th>Como confirmar</th></tr></thead>
+    <tbody>
+      <tr><td>Estatísticas novas (ou velhas)</td><td>A coleta noturna/autoanalyze mudou o histograma ou a contagem; o plano troca. Ou a tabela cresceu e a estatística não acompanhou.</td><td>Data da última coleta × data da piora; plano antes e depois.</td></tr>
+      <tr><td>Bind peeking / plano genérico</td><td>Hard parse (restart, invalidação) escolheu o plano para um valor atípico; genérico adotado no PostgreSQL.</td><td>Testar com valores raros e comuns; <code>v$sql</code> com várias versões de plano; <code>plan_cache_mode</code>.</td></tr>
+      <tr><td>Crescimento dos dados</td><td>A tabela passou o ponto de virada em que o índice deixa de compensar, ou a hash deixa de caber na memória e derrama em disco.</td><td>Plano com <code>Batches</code> &gt; 1; leituras lógicas por execução crescendo.</td></tr>
+      <tr><td>Alteração de estrutura</td><td>Índice removido, tornado invisível ou ainda sem estatística; coluna alterada; partição nova.</td><td>Histórico de DDL; <code>INVISIBLE</code>, <code>indisvalid</code>.</td></tr>
+      <tr><td>Parâmetros e versão</td><td>Mudança em <code>OPTIMIZER_*</code>, <code>work_mem</code>, <code>random_page_cost</code>; atualização de versão com otimizador diferente.</td><td>Diff de parâmetros; testar o plano na versão anterior.</td></tr>
+      <tr><td>Estado do banco (não é plano)</td><td>Visibility map desatualizado (Index Only Scan faz heap fetches), inchaço da tabela, cache frio após restart, E/S compartilhada, locks.</td><td><code>Heap Fetches</code> alto; <code>n_dead_tup</code>; esperas; leituras físicas.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Roteiro de investigação</h3>
+  <ol class="seq">
+    <li><div><strong>Confirme que o plano mudou</strong> (ou que não mudou). Se o <code>plan_hash_value</code> é o mesmo e o tempo piorou, o problema é dados, cache, locks ou recurso: não é otimizador.</div></li>
+    <li><div><strong>Recupere o plano bom e o ruim</strong> e compare onde estimado e real divergem (seção 4).</div></li>
+    <li><div><strong>Procure o evento</strong>: última coleta de estatísticas, deploy, DDL, restart, mudança de parâmetro, crescimento por carga.</div></li>
+    <li><div><strong>Estabilize</strong> (restaurar estatísticas, fixar o plano, hint temporário) e <strong>só depois corrija a causa</strong> (estatística estendida, reescrita, índice).</div></li>
+    <li><div><strong>Previna</strong>: monitorar mudança de plano e tempo por consulta; transformar o incidente em teste de regressão.</div></li>
+  </ol>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Planos distintos do mesmo SQL_ID que ainda estão na memória
+SELECT sql_id, child_number, plan_hash_value, executions,
+       ROUND(elapsed_time / 1e6 / NULLIF(executions, 0), 3) AS seg_por_exec,
+       ROUND(buffer_gets / NULLIF(executions, 0))           AS gets_por_exec,
+       last_active_time
+FROM   v$sql
+WHERE  sql_id = :sql_id
+ORDER  BY last_active_time;
+
+-- Histórico em dias: EXIGE Diagnostics Pack (licença), via AWR
+SELECT snap_id, sn.begin_interval_time, s.plan_hash_value, s.executions_delta,
+       ROUND(s.elapsed_time_delta / 1e6 / NULLIF(s.executions_delta, 0), 3) AS seg_por_exec
+FROM   dba_hist_sqlstat s
+JOIN   dba_hist_snapshot sn USING (snap_id, dbid, instance_number)
+WHERE  s.sql_id = :sql_id
+ORDER  BY snap_id;
+
+-- Estabilizar: voltar as estatísticas da tabela a um instante anterior e travá-las
+EXEC DBMS_STATS.RESTORE_TABLE_STATS(USER, 'ATENDIMENTO', SYSTIMESTAMP - INTERVAL '1' DAY);
+EXEC DBMS_STATS.LOCK_TABLE_STATS(USER, 'ATENDIMENTO');
+
+-- Fixar o plano bom (SQL Plan Management; recurso da Enterprise Edition)
+DECLARE n PLS_INTEGER;
+BEGIN
+  n := DBMS_SPM.LOAD_PLANS_FROM_CURSOR_CACHE(sql_id =&gt; :sql_id, plan_hash_value =&gt; :phv_bom);
+END;
+/</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Não há histórico de planos nativo. pg_stat_statements (extensão) dá tempo por consulta;
+-- stddev alto sugere "às vezes rápida, às vezes lenta" (planos diferentes ou cache)
+SELECT queryid, calls,
+       round(mean_exec_time::numeric, 2)   AS ms_medio,
+       round(stddev_exec_time::numeric, 2) AS ms_desvio,
+       round(max_exec_time::numeric, 2)    AS ms_max,
+       left(query, 60)                     AS consulta
+FROM   pg_stat_statements
+ORDER  BY total_exec_time DESC LIMIT 10;
+
+-- Para capturar o plano das lentas no log: extensão auto_explain
+-- (em postgresql.conf, requer carregar o módulo)
+--   shared_preload_libraries = 'auto_explain'
+--   auto_explain.log_min_duration = '500ms'
+--   auto_explain.log_analyze = on
+
+-- Estabilizar: sessões/consultas com plano genérico ruim
+ALTER ROLE app_atendimento SET plan_cache_mode = force_custom_plan;
+-- Reanalisar com mais detalhe e criar estatística estendida (seção 4)
+ANALYZE atendimento;</code></pre>
+  </div>
+  <p>No Oracle, <strong>SQL plan baselines</strong> (SPM) fixam o conjunto de planos aceitos de um SQL: um plano novo só entra depois de ser verificado como melhor. <strong>SQL profiles</strong> corrigem estimativas sem mudar o texto. Atenção a licenças: SPM é recurso da Enterprise Edition; AWR/ASH exigem o Diagnostics Pack; SQL Tuning Advisor e SQL profiles, o Tuning Pack. O <code>v$sql</code> e o Statspack não exigem esses pacotes (confirme com o seu contrato). No PostgreSQL não existe fixação de plano nativa; o caminho é estatística correta, <code>plan_cache_mode</code>, reescrita e, quando inevitável, a extensão de terceiros <code>pg_hint_plan</code>.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Em incidente de "lentidão repentina", responda em ordem: (1) o plano mudou? (2) quando e por quê (estatística, bind, deploy, parâmetro)? (3) como volto ao plano bom <em>agora</em>? (4) como evito de novo? Estabilizar antes de investigar a fundo reduz o tempo de impacto.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Uma consulta ficou lenta sem mudança de código, o que você faz?" Comparo o plano atual com um anterior (<code>plan_hash_value</code>, <code>pg_stat_statements</code>/AWR), vejo se estimado e real divergem, e procuro o evento: coleta de estatísticas, restart/hard parse com bind peeking, crescimento de dados, DDL ou parâmetro. Estabilizo com restauração de estatísticas ou baseline e depois corrijo a causa.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Mudança de plano é uma classe de incidente previsível: monte um painel das 10 consultas mais custosas com tempo médio e desvio, alerta de plano novo para consultas críticas e um runbook com os 4 passos acima. Trate mudanças de estatística, parâmetro e versão do banco como mudanças com janela, teste em ambiente com dados representativos e plano de reversão.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Avançado</span></div>
+  <h2>Exercícios</h2>
+  <p>Todos usam o esquema da trilha (<code>atendimento</code> com 5 milhões de linhas; <code>paciente</code>, <code>medico</code>, <code>convenio</code> e <code>setor</code> pequenas). Tente antes de abrir a resposta. Onde faltam dados, os números são fictícios.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Estimativa à mão. Em <code>atendimento</code> (5.000.000 linhas), <code>tipo = 'EXAME'</code> tem 25% das linhas e <code>status = 'REALIZADO'</code> tem 78%. Qual a cardinalidade estimada de <code>WHERE tipo = 'EXAME' AND status = 'REALIZADO'</code> e que método de acesso você espera?</span></summary><div class="ans">
+    <p>Com independência: 0,25 × 0,78 = 0,195, e 0,195 × 5.000.000 = <strong>975.000 linhas</strong>. Com cerca de 20% da tabela, o esperado é <em>full scan</em> (e hash join, se houver join), pois um índice custaria quase um milhão de leituras aleatórias. Mesmo que as colunas fossem correlacionadas e o real fosse, digamos, 1,2 milhão, o plano seria o mesmo: o erro de correlação só é grave quando <em>cruza a fronteira</em> entre dois métodos. No exemplo do módulo (setor × médico), a diferença de 50× cruza a fronteira entre índice e hash.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Leia o plano e aponte onde está o problema e qual a primeira medida.
+<br><code>Hash Join (cost=... rows=3000) (actual rows=1850000 loops=1)</code>
+<br><code>&nbsp;-&gt; Seq Scan on atendimento (rows=3000) (actual rows=1850000) Filter: (id_convenio = 5 AND tipo = 'EXAME')</code>
+<br><code>&nbsp;&nbsp;&nbsp;Batches: 8 Memory Usage: 4096kB</code></span></summary><div class="ans">
+    <p>O <code>Seq Scan</code> estimou 3.000 linhas e devolveu 1.850.000, erro de cerca de 600×, nascido no filtro de duas colunas. A tabela hash foi dimensionada para poucas linhas, mas recebeu muitas: derramou em disco (<code>Batches: 8</code>, com 8 &gt; 1, e <code>Memory Usage</code> no teto de <code>work_mem</code>). Primeira medida: verificar se as estatísticas estão recentes (<code>last_autoanalyze</code>) e, se estiverem, criar estatísticas multicoluna <code>CREATE STATISTICS ... (dependencies, mcv) ON id_convenio, tipo</code> e rodar <code>ANALYZE</code>. Só depois pensar em aumentar <code>work_mem</code> para essa consulta (<code>SET LOCAL work_mem</code> dentro da transação).</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>No Oracle, <code>v$sysstat</code> mostra: <code>parse count (total)</code> = 9.800.000; <code>parse count (hard)</code> = 4.100.000; <code>execute count</code> = 10.000.000. O que isso indica e o que você faz?</span></summary><div class="ans">
+    <p>Hard parse = 4,1 / 9,8 ≈ <strong>42%</strong> dos parses, e parse total é 98% das execuções: quase toda execução faz parse, e boa parte é hard. Indica SQL com literais (e, possivelmente, cursores não reaproveitados pelo driver). Passos: (1) achar os culpados com <code>v$sql</code> agrupado por <code>force_matching_signature</code>; (2) corrigir a aplicação para usar binds e manter o cursor aberto/cachear statements; (3) como paliativo de curtíssimo prazo, avaliar <code>CURSOR_SHARING = FORCE</code> com dono e prazo; (4) observar <code>ORA-04031</code>, esperas de <code>library cache</code>/<code>cursor: pin S wait on X</code> e a CPU. Medir de novo depois: a meta é hard parse na casa de décimos de por cento.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>PostgreSQL: monte um teste que mostre o plano genérico sendo adotado para <code>status = $1</code> e a lentidão de <code>'AGENDADO'</code> depois de cinco execuções com <code>'REALIZADO'</code>. Como corrigir?</span></summary><div class="ans">
+<pre><code class="sql">PREPARE q (text) AS SELECT count(*) FROM atendimento WHERE status = $1;
+
+-- cinco execuções "comuns"
+EXECUTE q('REALIZADO'); EXECUTE q('REALIZADO'); EXECUTE q('REALIZADO');
+EXECUTE q('REALIZADO'); EXECUTE q('REALIZADO');
+
+-- a sexta decide custom x genérico. Para ver qual plano está em uso:
+EXPLAIN (ANALYZE, BUFFERS) EXECUTE q('AGENDADO');
+-- Sinal do plano genérico: o filtro aparece com "$1" em vez do literal
+--   Filter: ((status)::text = $1)
+-- e o plano (Seq Scan/Parallel Seq Scan) não aproveita um índice parcial ou composto
+-- que serviria bem para 'AGENDADO' (2%).
+
+-- Correção para este caso:
+SET plan_cache_mode = force_custom_plan;
+EXPLAIN (ANALYZE, BUFFERS) EXECUTE q('AGENDADO');   -- agora planeja com a frequência de 2%</code></pre>
+    <p>Corrija no ponto certo: <code>ALTER ROLE ... SET plan_cache_mode = force_custom_plan</code> para o papel da aplicação, ou <code>force_custom_plan</code> só nas consultas sensíveis; outra saída é tratar o valor raro com literal. Para que o plano custom use índice, é preciso ter o índice (módulo 08). Os números exatos dependem da versão e do volume; o ponto é reconhecer <code>$1</code> no <code>Filter</code> do plano.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Escreva o necessário (Oracle e PostgreSQL) para ensinar o otimizador que <code>id_setor</code> e <code>id_medico</code> são dependentes, e diga como verificar que funcionou.</span></summary><div class="ans">
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">SELECT DBMS_STATS.CREATE_EXTENDED_STATS(USER, 'ATENDIMENTO', '(ID_SETOR, ID_MEDICO)') FROM dual;
+EXEC DBMS_STATS.GATHER_TABLE_STATS(USER, 'ATENDIMENTO');
+
+-- verificar: existe a coluna virtual do grupo
+SELECT extension_name, extension FROM user_stat_extensions WHERE table_name = 'ATENDIMENTO';</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">CREATE STATISTICS st_atend_setor_medico (dependencies, mcv) ON id_setor, id_medico FROM atendimento;
+ANALYZE atendimento;
+
+-- verificar: PostgreSQL 12+
+SELECT statistics_name, attnames, dependencies FROM pg_stats_ext
+WHERE  statistics_name = 'st_atend_setor_medico';</code></pre>
+</div>
+    <p>A verificação final é no plano: rode <code>EXPLAIN</code> (PostgreSQL) ou <code>ALLSTATS LAST</code> (Oracle) de <code>WHERE id_setor = 12 AND id_medico = 77</code> e confirme que o <code>rows</code> estimado se aproximou do real (25.000, não 500). Se não mudou, confira se o predicado usa exatamente as colunas do grupo, com igualdade.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span>Uma consulta ficou 20× mais lenta depois do fim de semana. Escreva o plano de investigação em 5 passos e diga qual evidência decide cada um.</span></summary><div class="ans">
+    <ol>
+      <li><strong>Mudou o plano?</strong> Compare <code>plan_hash_value</code> (<code>v$sql</code>/AWR) ou o plano do <code>auto_explain</code> com um anterior. Mesmo plano e mais lento: dados, cache ou locks.</li>
+      <li><strong>Onde estimado ≠ real?</strong> <code>ALLSTATS LAST</code> / <code>EXPLAIN (ANALYZE, BUFFERS)</code> e procurar a primeira operação com erro de uma ordem de grandeza.</li>
+      <li><strong>Qual o evento?</strong> Data da coleta de estatísticas (<code>last_analyzed</code>/<code>last_autoanalyze</code>), deploy, DDL, restart do banco (hard parse com peeking), carga em massa no fim de semana.</li>
+      <li><strong>A hipótese se confirma?</strong> Teste o plano alternativo em transação (<code>SET LOCAL enable_nestloop = off</code> no PostgreSQL; hint num ambiente de teste no Oracle) e compare leituras lógicas.</li>
+      <li><strong>Estabilize e corrija.</strong> Restaurar/travar estatísticas ou carregar baseline; depois, estatística estendida, reescrita, índice. Documente e crie alerta para o plano novo.</li>
+    </ol>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>Cenário 1: a agenda trava toda segunda às 8h</h3>
+  <p>A tela de agenda do pronto-atendimento responde bem durante o dia, mas às 8h da segunda, quando o pico de usuários chega, a CPU do Oracle vai a 100% e as consultas simples demoram segundos. O DBA vê muita espera em <code>library cache</code> e alguns <code>ORA-04031</code>.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Confirmar com <code>v$sysstat</code> (<code>parse count (hard)</code> em alta) e <code>v$sql</code> agrupado por <code>force_matching_signature</code> que há milhares de versões do mesmo SQL com literais.</li>
+    <li>Ir à aplicação: identificar a tela/serviço que concatena o id na consulta; trocar por bind e confirmar no driver o cache de statements.</li>
+    <li>Paliativo para o dia seguinte, se o deploy demorar: <code>CURSOR_SHARING = FORCE</code> aprovado pelo DBA, com ticket para reverter.</li>
+    <li>Prevenir: regra de revisão ("SQL sem binds não entra") e teste de carga com a concorrência real do pico.</li>
+  </ul></div>
+
+  <h3>Cenário 2: o relatório mensal foi de 3 minutos para 3 horas</h3>
+  <p>O relatório de faturamento lê <code>atendimento</code> e <code>atendimento_item</code>. Depois de uma carga de ETL que reconstruiu a tabela de itens (dezenas de milhões de linhas), ele ficou praticamente inviável. O plano mostra <code>Nested Loops</code> com <code>Starts</code>/<code>loops</code> na casa das dezenas de milhões.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Ver <code>last_analyzed</code>/<code>last_autoanalyze</code> da tabela de itens: se a estatística é anterior à carga, o otimizador acredita que a tabela é pequena.</li>
+    <li>Coletar estatísticas e comparar o plano: tendência é voltar a hash join com full scan.</li>
+    <li>Corrigir a causa do processo: <strong>o ETL passa a terminar com coleta de estatísticas</strong> (<code>DBMS_STATS</code>/<code>ANALYZE</code>) e isso entra como critério de pronto do pipeline.</li>
+    <li>Se o problema persistir, comparar estimado e real e considerar estatística estendida nas colunas filtradas em conjunto.</li>
+  </ul></div>
+
+  <h3>Cenário 3: rápida para alguns médicos, lenta para outros</h3>
+  <p>Uma API de agenda devolve os atendimentos de um médico: instantânea para a maioria, mas para dois médicos muito movimentados passa de 10 s. Aconteceu depois de um restart do serviço. No ambiente de teste, nunca reproduzia.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Reproduzir com <em>dois</em> valores: um médico raro e um muito frequente, e comparar os planos. No Oracle, consultar <code>v$sql</code> (<code>IS_BIND_SENSITIVE</code>, vários filhos) e verificar se há histograma em <code>id_medico</code>; no PostgreSQL, ver se a sessão adotou o plano genérico (filtro com <code>$1</code>).</li>
+    <li>Oracle: garantir histograma e deixar o ACS agir, ou fixar o bom plano por baseline. PostgreSQL: <code>plan_cache_mode = force_custom_plan</code> para o papel da aplicação.</li>
+    <li>No teste, usar dados com a mesma distribuição da produção; dados "uniformes" escondem o problema.</li>
+    <li>Registrar a decisão e a causa para quem mexer na consulta depois.</li>
+  </ul></div>
+
+  <h3>Cenário 4: "precisamos de um servidor maior"</h3>
+  <p>O time pediu dobrar a memória do banco porque "as consultas estão lentas e o disco está a 90%". O custo mensal é alto.</p>
+  <div class="note"><b>O que fazer</b><ul>
+    <li>Pedir os dados antes da compra: top 10 consultas por leituras lógicas (<code>v$sql.buffer_gets</code> / <code>pg_stat_statements</code>), leituras físicas e hit ratio, <em>por execução</em>.</li>
+    <li>Verificar se poucas consultas respondem por boa parte das leituras (full scans acidentais, N+1, índice ausente) e corrigir primeiro: costuma custar uma tarde e libera mais capacidade que o hardware.</li>
+    <li>Se após isso o conjunto de trabalho ainda não cabe na memória, o aumento passa a se justificar com números: dimensione pelo conjunto de trabalho, não pelo tamanho total do banco.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Otimizador (CBO)</dt><dd>Componente que escolhe o plano de execução estimando o custo de alternativas.</dd></div>
+    <div><dt>Plano de execução</dt><dd>Árvore de operações (acessos, joins, agregações) que o banco vai executar.</dd></div>
+    <div><dt>Cardinalidade</dt><dd>Número de linhas produzidas por uma operação (estimado ou real).</dd></div>
+    <div><dt>Seletividade</dt><dd>Fração das linhas que passa por um filtro, de 0 a 1.</dd></div>
+    <div><dt>Custo</dt><dd>Unidade abstrata de esforço estimado, usada para comparar planos da mesma consulta.</dd></div>
+    <div><dt>Hard parse</dt><dd>Análise e otimização completas de um SQL novo para o cache (Oracle). Caro.</dd></div>
+    <div><dt>Soft parse</dt><dd>Reaproveitamento de um plano já guardado para um SQL idêntico.</dd></div>
+    <div><dt>Library cache / shared pool</dt><dd>Áreas da SGA do Oracle que guardam SQL, PL/SQL e planos compartilhados entre sessões.</dd></div>
+    <div><dt>Bind variable</dt><dd>Parâmetro do SQL (<code>:id</code>, <code>$1</code>) cujo valor viaja separado do texto.</dd></div>
+    <div><dt>Bind peeking</dt><dd>O Oracle espia o valor do bind no hard parse e planeja para ele.</dd></div>
+    <div><dt>Adaptive cursor sharing</dt><dd>Oracle 11g+: mantém planos diferentes para faixas de valores de bind quando a seletividade varia.</dd></div>
+    <div><dt>Plano custom / genérico</dt><dd>PostgreSQL: plano gerado para os valores de cada execução vs plano reaproveitado, independente dos valores.</dd></div>
+    <div><dt>Histograma</dt><dd>Resumo da distribuição dos valores de uma coluna, para estimar frequências desiguais.</dd></div>
+    <div><dt>Estatísticas estendidas</dt><dd>Estatísticas sobre grupos de colunas ou expressões (<code>CREATE STATISTICS</code>, column groups).</dd></div>
+    <div><dt>Leitura lógica / física</dt><dd>Pedido de bloco ao cache vs bloco efetivamente lido do armazenamento.</dd></div>
+    <div><dt>Plan baseline (SPM)</dt><dd>Oracle: conjunto de planos aceitos para um SQL, que impede que um plano novo entre sem verificação.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>O que acontece quando você executa um SELECT?</span></summary><div class="ans"><p>Parse (sintaxe, nomes, permissões), otimização (planos candidatos, custo a partir de estatísticas, escolha), execução do plano e fetch (entrega das linhas em lotes). No Oracle, se o texto idêntico já está na library cache, a otimização é pulada (soft parse).</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Diferença entre hard parse e soft parse?</span></summary><div class="ans"><p>Hard parse analisa e otimiza um SQL que não está no cache e grava o plano: muita CPU e latches. Soft parse acha o SQL na library cache e reaproveita o plano. Em OLTP queremos quase só soft parse, o que exige texto idêntico: binds em vez de literais.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>O que é cardinalidade e como o otimizador a estima?</span></summary><div class="ans"><p>É o número de linhas que cada operação produz. O otimizador a estima como linhas da tabela × seletividade, usando estatísticas: número de linhas, valores distintos, nulos, histogramas. Para <code>A AND B</code> multiplica as seletividades, supondo independência.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Por que o otimizador às vezes ignora um índice?</span></summary><div class="ans"><p>Porque o custo estimado do índice (leituras aleatórias por linha) é maior que o do full scan para a fração de linhas estimada; ou porque o predicado não é sargável (função na coluna, tipo diferente); ou porque a estimativa está errada. Ignorar um índice nem sempre é erro: para filtros pouco seletivos, o full scan é mesmo mais barato.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Quando nested loops é melhor que hash join, e o contrário?</span></summary><div class="ans"><p>Nested loops vence com poucas linhas na entrada externa e índice na interna: poucas buscas baratas. Hash join vence com muitos dados, sem índice útil, em relatórios: lê cada lado uma vez. Merge join vence com entradas já ordenadas. Hash exige memória e só serve a igualdade.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>O que são estatísticas e o que acontece se estão desatualizadas?</span></summary><div class="ans"><p>Resumos dos dados (linhas, distintos, nulos, distribuição) que o otimizador usa para estimar. Desatualizadas, levam a estimativas erradas e planos ruins, por exemplo estimar 10 mil linhas numa tabela de 10 milhões e escolher nested loops. Coleta automática cobre boa parte; cargas em massa pedem coleta explícita.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Para que servem histogramas?</span></summary><div class="ans"><p>Para estimar bem colunas com distribuição desigual. Sem histograma o otimizador supõe frequência uniforme entre os valores distintos. Com ele conhece, por exemplo, que <code>'AGENDADO'</code> é 2% e <code>'REALIZADO'</code> é 78%, e escolhe índice ou full scan conforme o valor.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>O que são estatísticas estendidas e quando usar?</span></summary><div class="ans"><p>Estatísticas sobre várias colunas (Oracle column groups, PostgreSQL <code>CREATE STATISTICS</code>) ou expressões. Quando colunas são correlacionadas (setor e médico), porque o otimizador multiplica seletividades como se fossem independentes e subestima. Ajudam em igualdades e agrupamentos.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Por que usar bind variables? Há um lado ruim?</span></summary><div class="ans"><p>Reduzem parse (um texto, um plano), economizam memória do cache e protegem contra injeção de SQL. O lado ruim: um plano para valores de seletividades muito diferentes. Oracle mitiga com bind peeking e adaptive cursor sharing; PostgreSQL, com a regra custom/genérico e <code>plan_cache_mode</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>O que é bind peeking e qual o risco?</span></summary><div class="ans"><p>No hard parse o Oracle olha o valor do bind e otimiza para ele. O risco: o plano ficou ajustado para o primeiro valor que chegou, que pode ser atípico, e é reaproveitado para todos. Por isso a performance varia após restart ou invalidações. O adaptive cursor sharing (11g+, com histograma) reduz o problema.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Como o PostgreSQL decide entre plano custom e genérico?</span></summary><div class="ans"><p>As cinco primeiras execuções de um statement preparado usam plano custom. Depois, o PostgreSQL compara o custo estimado do plano genérico com a média dos custos dos custom e adota o genérico se não for mais caro. <code>plan_cache_mode</code> (12+) permite forçar um ou outro.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>CURSOR_SHARING = FORCE resolve o problema dos literais?</span></summary><div class="ans"><p>Mitiga o hard parse, trocando literais por binds do sistema, mas é paliativo: não corrige a injeção de SQL, pode misturar planos de valores diferentes e tem efeitos com histogramas. O correto é a aplicação usar binds. <code>SIMILAR</code> é obsoleto.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Diferença entre leitura lógica e física?</span></summary><div class="ans"><p>Lógica é qualquer pedido de bloco ao buffer cache, achado ou não; física é a busca no armazenamento quando o bloco não estava em memória. Para comparar consultas, as lógicas por execução são mais estáveis que o tempo, que depende do cache.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como você descobre que uma estimativa está errada?</span></summary><div class="ans"><p>Executo com estatísticas de execução (<code>GATHER_PLAN_STATISTICS</code> e <code>ALLSTATS LAST</code>, ou <code>EXPLAIN (ANALYZE, BUFFERS)</code>) e comparo linhas estimadas e reais em cada operação, buscando a primeira com diferença de ordem de grandeza. Depois investigo a causa: estatística velha, correlação, expressão na coluna, dado enviesado.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Uma consulta ficou lenta de repente sem mudança de código. Como investiga?</span></summary><div class="ans"><p>Verifico se o plano mudou (<code>plan_hash_value</code>, <code>pg_stat_statements</code>, <code>auto_explain</code>). Se mudou, procuro o evento: coleta de estatísticas, restart com bind peeking, crescimento de dados, DDL, parâmetro ou versão. Se não mudou, olho dados, cache, locks e recursos. Estabilizo (restaurar estatísticas, baseline) e depois corrijo a causa.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>O que você faz primeiro: hint ou corrigir estatística? Por quê?</span></summary><div class="ans"><p>Corrigir a causa do erro de estimativa (estatística, estendida, reescrita), porque o plano acompanha o dado. Hint congela uma decisão e quebra quando o dado muda; é último recurso, com comentário explicando o porquê e revisão periódica.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Como você gerenciaria o risco de mudanças de plano em uma equipe de desenvolvimento?</span></summary><div class="ans"><p>Processo e visibilidade: regra de binds em revisão; planos e leituras lógicas no material de PR das consultas críticas; teste de desempenho com volume e distribuição reais; dono da política de estatísticas; painel de top consultas com tempo médio e desvio e alerta de plano novo; runbook de lentidão repentina (plano mudou? evento? como volto? como previno?); mudanças de estatística, parâmetro e versão tratadas como mudanças de produção.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Um colega pede mais memória para o banco porque está lento. O que você responde?</span></summary><div class="ans"><p>Peço os números antes: top consultas por leituras lógicas e físicas por execução, hit ratio e esperas. Muitas vezes poucas consultas (full scans, N+1, índice faltando) causam a maior parte das leituras, e corrigi-las é mais barato. Se o conjunto de trabalho realmente não cabe na memória, o aumento se justifica com dados.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

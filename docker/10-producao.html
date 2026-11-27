@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 10: Produção, orquestração e entrevista</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 10 de 10 · Produção, orquestração e entrevista</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html" aria-current="page"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+    <li class="sub"><ol>
+      <li><a href="#producao-muda"><span class="n">1</span>O que muda em produção</a></li>
+      <li><a href="#orquestracao"><span class="n">2</span>Quando um host só não basta: orquestração</a></li>
+      <li><a href="#kubernetes"><span class="n">3</span>Kubernetes para quem sabe Docker</a></li>
+      <li><a href="#dockershim"><span class="n">4</span>dockershim removido: o que mudou e o que não mudou</a></li>
+      <li><a href="#alternativas"><span class="n">5</span>Swarm, Nomad, serviços gerenciados, Podman e como escolher</a></li>
+      <li><a href="#custos-operacao"><span class="n">6</span>Custos, plataforma interna e responsabilidades</a></li>
+      <li><a href="#preparacao"><span class="n">7</span>Roteiro de preparação para entrevista</a></li>
+      <li><a href="#folha-comandos"><span class="n">8</span>Folha de comandos</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas frequentes de entrevista</a></li>
+    </ol></li>
+  </ol>
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 10 · <span class="lvl l3">Avançado</span></div>
+
+  <h1>Produção, orquestração e entrevista</h1>
+  <p class="lede">Rodar no notebook é fácil; rodar com usuários, dados de pacientes e plantão é outro jogo. Este módulo mostra o que muda em produção, quando um servidor só deixa de bastar, como o Kubernetes e as alternativas se relacionam com o que você já sabe de Docker, e fecha com a preparação para entrevistas.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Preparar um serviço para produção: config por ambiente, logs em stdout, health/readiness, encerramento limpo e limites</li>
+    <li>Explicar o que um orquestrador faz e traduzir Compose para os objetos do Kubernetes</li>
+    <li>Explicar a remoção do dockershim e por que suas imagens continuam funcionando</li>
+    <li>Comparar Kubernetes, Swarm, Nomad, ECS/Fargate, Cloud Run, Azure Container Apps e Podman e escolher com critério</li>
+    <li>Discutir custo, responsabilidades e padrões de plataforma como gestor, e contar uma boa história de projeto na entrevista</li>
+  </ul></div>
+
+
+<section class="chap" id="producao-muda">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O que muda em produção</h2>
+  <p>Em desenvolvimento você reinicia à vontade e olha o terminal. Em produção o container vai ser <strong>morto, recriado e movido</strong> sem aviso (deploy, falha de máquina, reagendamento), e ninguém está olhando a tela. O serviço precisa se comportar bem nisso. O conjunto de práticas conhecido como <strong>12-factor app</strong> resume esse comportamento; estes são os fatores que mais pesam com containers:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Princípio</th><th>Na prática com Docker</th></tr></thead>
+    <tbody>
+      <tr><td>Config no ambiente</td><td>a <strong>mesma imagem</strong> roda em dev, homologação e produção; o que muda é a configuração injetada (variáveis, arquivos, secrets). Nunca construir uma imagem por ambiente</td></tr>
+      <tr><td>Processos sem estado</td><td>nada importante no disco do container (sessão, upload, cache insubstituível). Estado vai para banco, fila, armazenamento de objetos ou volume</td></tr>
+      <tr><td>Descartabilidade</td><td>inicialização rápida e encerramento limpo: o container pode morrer a qualquer momento</td></tr>
+      <tr><td>Logs como fluxo</td><td>escreva em <code>stdout</code>/<code>stderr</code>; quem coleta e guarda é a plataforma, não a aplicação</td></tr>
+      <tr><td>Serviços de apoio como recurso</td><td>banco, fila e cache são endereços configuráveis; trocar um por outro não exige rebuild</td></tr>
+      <tr><td>Vínculo por porta</td><td>a aplicação escuta numa porta definida por variável (<code>PORT</code>), em <code>0.0.0.0</code></td></tr>
+      <tr><td>Paridade dev/prod</td><td>mesmo tipo de banco e mesmas versões que produção (Compose para isso); mesmo Dockerfile</td></tr>
+      <tr><td>Tarefas administrativas</td><td>migrações e scripts pontuais rodam como containers/Jobs descartáveis da mesma imagem</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Config por ambiente</h3>
+  <p>Em Compose: arquivo base mais sobreposição por ambiente (<code>docker compose -f compose.yaml -f compose.prod.yaml up -d</code>, módulo 07). Em Kubernetes: <code>ConfigMap</code> e <code>Secret</code>. Regra: valores não sensíveis em variável ou arquivo de config; segredos em arquivo montado ou cofre (módulo 09). Valide a configuração na inicialização e <strong>falhe cedo</strong> com mensagem clara quando faltar variável obrigatória.</p>
+  <h3>Logs em stdout e coleta centralizada</h3>
+  <p>O Docker captura stdout/stderr e entrega ao <strong>logging driver</strong>. O padrão é <code>json-file</code> (sem rotação, módulo 09). Na prática, escolha entre:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Como funciona</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>json-file</code> com <code>max-size</code>/<code>max-file</code></td><td>arquivo no host, com rotação configurada</td><td>host único, com um agente que lê os arquivos</td></tr>
+      <tr><td><code>local</code></td><td>formato otimizado do Docker, com rotação por padrão</td><td>alternativa mais segura ao json-file em host único</td></tr>
+      <tr><td><code>journald</code>, <code>syslog</code></td><td>entrega ao sistema de logs do host</td><td>quando o SO já centraliza logs</td></tr>
+      <tr><td><code>fluentd</code>, <code>gelf</code>, <code>awslogs</code>, <code>gcplogs</code>, <code>splunk</code></td><td>envia direto ao destino</td><td>destino único e disponível; atenção: se o destino cair, o container pode ser afetado conforme o modo de entrega, e <code>docker logs</code> pode se comportar de forma diferente conforme o driver</td></tr>
+      <tr><td>Agente coletor (Fluent Bit, Vector, Grafana Alloy/Promtail, Filebeat, OpenTelemetry Collector)</td><td>lê os arquivos de log do host (no Kubernetes, um DaemonSet por nó), enriquece com metadados e envia ao armazenamento (Loki, Elasticsearch/OpenSearch, serviço de nuvem)</td><td>padrão em ambientes com vários hosts</td></tr>
+    </tbody>
+  </table></div>
+  <p>Escreva <strong>logs estruturados</strong> (JSON, uma linha por evento) com nível, serviço, versão e um <code>request_id</code> de correlação (veja observabilidade na trilha de APIs, módulo 08). E lembre-se do módulo 09: <strong>nenhum dado pessoal de paciente</strong> nos logs.</p>
+  <h3>Health e readiness</h3>
+  <p><code>HEALTHCHECK</code> do Docker marca o container como <code>healthy</code>/<code>unhealthy</code>, mas o Engine sozinho <strong>não reinicia</strong> um container só por estar <code>unhealthy</code> (ele serve a <code>depends_on: service_healthy</code>, a painéis e a alertas; orquestradores agem sobre isso). No Kubernetes são três sondas distintas:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Sonda</th><th>Pergunta</th><th>Se falhar</th></tr></thead>
+    <tbody>
+      <tr><td><strong>liveness</strong></td><td>o processo está travado e precisa reiniciar?</td><td>o container é reiniciado</td></tr>
+      <tr><td><strong>readiness</strong></td><td>pode receber tráfego agora?</td><td>sai do balanceamento (não reinicia)</td></tr>
+      <tr><td><strong>startup</strong></td><td>já terminou de iniciar?</td><td>aguarda; liveness e readiness só começam depois</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Colocar a checagem do banco de dados na <em>liveness</em>. Se o banco cair, todos os pods são reiniciados em cascata e pioram a situação. Liveness verifica só o processo; dependências entram na <em>readiness</em> (e com cuidado: dependência compartilhada fora do ar tira todos do balanceamento).</p></div>
+<pre data-file="Dockerfile"><code class="dockerfile">HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health || exit 1</code></pre>
+  <h3>Encerramento limpo (graceful shutdown)</h3>
+  <p>Num deploy, o orquestrador envia <strong>SIGTERM</strong> e espera um prazo antes do SIGKILL. A aplicação deve parar de aceitar trabalho novo, concluir o que está em curso, fechar conexões e sair com 0. Sem isso, requisições em andamento falham (erros 502/504 a cada deploy) e mensagens de fila ficam pela metade.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Linha do tempo do encerramento limpo: SIGTERM, parar de aceitar, concluir requisições, fechar e sair; SIGKILL se o prazo acabar">
+      <defs>
+        <marker id="ah-grace1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box-a" x="20" y="30" width="135" height="50" rx="5"/><text x="87" y="60" text-anchor="middle">SIGTERM</text>
+      <rect class="box" x="185" y="30" width="135" height="50" rx="5"/><text x="252" y="52" text-anchor="middle">para de aceitar</text><text x="252" y="69" text-anchor="middle">novas conexões</text>
+      <rect class="box" x="350" y="30" width="135" height="50" rx="5"/><text x="417" y="52" text-anchor="middle">conclui o que</text><text x="417" y="69" text-anchor="middle">está em curso</text>
+      <rect class="box-a" x="515" y="30" width="135" height="50" rx="5"/><text x="582" y="52" text-anchor="middle">fecha pools e</text><text x="582" y="69" text-anchor="middle">sai com exit 0</text>
+      <line class="ln" x1="155" y1="55" x2="183" y2="55" marker-end="url(#ah-grace1)"/>
+      <line class="ln" x1="320" y1="55" x2="348" y2="55" marker-end="url(#ah-grace1)"/>
+      <line class="ln" x1="485" y1="55" x2="513" y2="55" marker-end="url(#ah-grace1)"/>
+      <text class="lbl" x="20" y="130">janela de encerramento (grace period)</text>
+      <line class="ln-a" x1="20" y1="142" x2="498" y2="142" marker-end="url(#ah-grace1)"/>
+      <rect class="box-b" x="500" y="122" width="150" height="44" rx="5"/><text x="575" y="148" text-anchor="middle">SIGKILL</text>
+      <text class="lbl" x="20" y="186">Prazo padrão: 10 s no docker stop, 30 s no Kubernetes; depois vem o SIGKILL.</text>
+    </svg>
+    <figcaption>Encerramento limpo: o que a aplicação faz entre o SIGTERM e o prazo. Ajuste o prazo ao tempo da sua requisição mais longa.</figcaption>
+  </figure>
+<pre><code class="js">// Node: tratar SIGTERM como parte do contrato com a plataforma
+const server = app.listen(process.env.PORT || 8080);
+process.on('SIGTERM', () => {
+  console.log(JSON.stringify({ level: 'info', msg: 'SIGTERM recebido, encerrando' }));
+  server.close(async () => { await db.end(); process.exit(0); });   // para de aceitar e espera as conexões
+  setTimeout(() => process.exit(1), 25000).unref();                  // rede de segurança antes do SIGKILL
+});</code></pre>
+  <p>Ajuste o prazo quando necessário: <code>docker stop -t 30</code>, <code>stop_grace_period: 30s</code> no Compose, <code>terminationGracePeriodSeconds</code> no Kubernetes; e a forma exec do CMD, <code>--init</code> ou <code>tini</code> para o sinal chegar ao processo certo (módulo 09). No Kubernetes, um <code>preStop</code> curto dá tempo de o balanceador tirar o pod antes do SIGTERM.</p>
+  <h3>Limites, política de reinício e imagens fixas</h3>
+  <ul>
+    <li><strong>Limites de memória e CPU</strong> em todo serviço (módulo 09); em Kubernetes, <code>requests</code> e <code>limits</code> (seção 3).</li>
+    <li><strong>Reinício:</strong> <code>restart: unless-stopped</code> em Compose de produção, como rede de proteção, nunca para esconder crash em loop. O Kubernetes reinicia pelo controlador.</li>
+    <li><strong>Imagem imutável:</strong> tag de versão ou digest, nunca <code>latest</code> (módulo 08); deploy e rollback são "trocar a versão".</li>
+    <li><strong>Um processo principal por container</strong>, com <code>--init</code> quando necessário.</li>
+  </ul>
+  <div class="note iv"><b>Na entrevista</b><p>"O que você muda ao levar um serviço para produção?" Config por ambiente com a mesma imagem, logs em stdout com coleta central, health/readiness, SIGTERM tratado, limites de recursos, usuário não-root, tag imutável e segredos fora da imagem. Mencione também observabilidade (métricas e traces).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Crie um <strong>checklist de prontidão para produção</strong> (production readiness) que o time preenche antes do primeiro deploy: health, shutdown limpo, limites, logs sem dado pessoal, backup/restauração testados, alertas, dono de plantão. É barato e evita a maior parte dos incidentes de estreia.</p></div>
+</section>
+
+<section class="chap" id="orquestracao">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Quando um host só não basta: orquestração</h2>
+  <p>Docker e Compose gerenciam containers <strong>numa máquina</strong>. Isso tem limites reais: se a máquina cai, o serviço cai; deploy sem interrupção exige scripts; escalar para mais máquinas é manual; descobrir onde cada container está é trabalho seu. Um <strong>orquestrador</strong> resolve isso com um princípio: você declara o <strong>estado desejado</strong> ("3 réplicas desta imagem, 512 MB cada") e um laço de controle compara continuamente o desejado com o real e corrige a diferença.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 290" role="img" aria-label="Manifesto enviado ao control plane, que agenda pods em nós; quando um nó falha, os pods são reagendados">
+      <defs>
+        <marker id="ah-orq1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box" x="20" y="118" width="130" height="44" rx="5"/><text x="85" y="145" text-anchor="middle">Manifesto</text>
+      <text class="lbl" x="20" y="184">kubectl apply</text>
+      <line class="ln" x1="150" y1="140" x2="188" y2="140" marker-end="url(#ah-orq1)"/>
+      <rect class="box-a" x="190" y="30" width="170" height="232" rx="5"/>
+      <text class="ttl" x="275" y="56" text-anchor="middle">Control plane</text>
+      <text x="275" y="92" text-anchor="middle">API server</text>
+      <text x="275" y="116" text-anchor="middle">scheduler</text>
+      <text x="275" y="140" text-anchor="middle">controllers</text>
+      <text x="275" y="164" text-anchor="middle">etcd (estado)</text>
+      <text class="lbl" x="275" y="204" text-anchor="middle">laço: compara o estado</text>
+      <text class="lbl" x="275" y="220" text-anchor="middle">desejado com o real</text>
+      <line class="ln" x1="360" y1="62" x2="428" y2="62" marker-end="url(#ah-orq1)"/>
+      <line class="ln" x1="360" y1="146" x2="428" y2="146" marker-end="url(#ah-orq1)"/>
+      <line class="ln-b" x1="360" y1="230" x2="428" y2="230" marker-end="url(#ah-orq1)"/>
+      <rect class="box" x="430" y="30" width="230" height="64" rx="5"/>
+      <text class="ttl" x="545" y="54" text-anchor="middle">Nó 1</text>
+      <text x="545" y="78" text-anchor="middle">api-1   worker-1</text>
+      <rect class="box" x="430" y="114" width="230" height="64" rx="5"/>
+      <text class="ttl" x="545" y="138" text-anchor="middle">Nó 2</text>
+      <text x="545" y="162" text-anchor="middle">api-2   proxy</text>
+      <rect class="box-b" x="430" y="198" width="230" height="64" rx="5"/>
+      <text class="ttl" x="545" y="222" text-anchor="middle">Nó 3 (falhou)</text>
+      <text class="lbl" x="545" y="244" text-anchor="middle">pods reagendados nos nós 1 e 2</text>
+    </svg>
+    <figcaption>O orquestrador mantém o estado desejado: se o nó 3 cai, o control plane percebe a diferença e recria os pods onde há capacidade.</figcaption>
+  </figure>
+  <h3>O que um orquestrador entrega</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Capacidade</th><th>O que significa</th><th>Com Compose num host</th></tr></thead>
+    <tbody>
+      <tr><td>Agendamento</td><td>decide em qual máquina cada container roda, segundo recursos e regras</td><td>só existe uma máquina</td></tr>
+      <tr><td>Autorrecuperação</td><td>recria o que morreu, inclusive em outra máquina</td><td>só <code>restart</code> local; host morto = serviço morto</td></tr>
+      <tr><td>Atualização gradual</td><td>troca réplicas aos poucos, sem derrubar o serviço, com rollback</td><td>manual (scripts, dois stacks)</td></tr>
+      <tr><td>Escalonamento</td><td>mais réplicas por demanda (manual ou automática)</td><td><code>--scale</code> no mesmo host, sem automação</td></tr>
+      <tr><td>Descoberta e balanceamento</td><td>nome estável e distribuição de tráfego entre réplicas</td><td>DNS interno do Compose; balanceador à parte</td></tr>
+      <tr><td>Config e segredos centralizados</td><td>objetos gerenciados, distribuídos aos nós</td><td>arquivos no host</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Compose num host serve bem para desenvolvimento, CI, ferramentas internas e aplicações pequenas com janela de manutenção aceitável. Procure orquestração quando surgirem: necessidade de alta disponibilidade, mais de um host, deploy sem downtime como exigência, ou muitos serviços e equipes.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Compose em produção, pode?" Pode, para aplicação pequena num servidor, com <code>restart</code>, healthchecks, limites e rotação de logs. A limitação é ser um host só: sem alta disponibilidade entre máquinas, sem auto-scaling, sem rolling update nativo. Acima disso, orquestrador ou serviço gerenciado.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Não adote orquestração por moda. O custo não é a ferramenta, é a <strong>complexidade operacional</strong>: gente que saiba operar, upgrades, observabilidade, rede e segurança do cluster. Pergunte: qual requisito de negócio (disponibilidade, escala, número de times) o host único não atende hoje? Se não houver resposta, o ganho não paga o custo.</p></div>
+</section>
+
+<section class="chap" id="kubernetes">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Kubernetes para quem sabe Docker</h2>
+  <p>O Kubernetes é o orquestrador padrão do mercado (EKS, AKS e GKE são versões gerenciadas na AWS, Azure e Google Cloud). Ele usa <strong>as mesmas imagens</strong> que você já constrói; o que muda é o vocabulário e a unidade de implantação.</p>
+  <ul>
+    <li><strong>Pod:</strong> a menor unidade; um ou mais containers que compartilham rede (mesmo IP/localhost) e volumes. Efêmero: pode ser destruído e recriado a qualquer momento. Raramente se cria Pod direto.</li>
+    <li><strong>Deployment:</strong> declara quantas réplicas de um Pod e como atualizá-las (<em>rolling update</em>, rollback). Cria um ReplicaSet por versão.</li>
+    <li><strong>Service:</strong> nome DNS e IP estáveis na frente de um conjunto de Pods, com balanceamento. Só envia tráfego a Pods <em>ready</em>.</li>
+    <li><strong>Ingress</strong> (e a sucessora <strong>Gateway API</strong>): roteamento HTTP(S) de fora do cluster por host e caminho. Precisa de um <em>controller</em> instalado (nginx, Traefik, do provedor...).</li>
+    <li><strong>ConfigMap e Secret:</strong> configuração e dados sensíveis, injetados como variáveis ou arquivos.</li>
+    <li><strong>PersistentVolumeClaim:</strong> pedido de armazenamento persistente; equivale a volume nomeado.</li>
+    <li><strong>Job e CronJob:</strong> tarefas que terminam (migração, relatório) e agendadas.</li>
+    <li><strong>Namespace:</strong> separação lógica (por time, ambiente) para cotas e permissões.</li>
+  </ul>
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Tráfego do cliente passando por Ingress e Service até três pods, dos quais um não está pronto e fica fora do balanceamento">
+      <defs>
+        <marker id="ah-k8s1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box" x="20" y="88" width="90" height="44" rx="5"/><text x="65" y="115" text-anchor="middle">Cliente</text>
+      <rect class="box-a" x="150" y="88" width="100" height="44" rx="5"/><text x="200" y="115" text-anchor="middle">Ingress</text>
+      <rect class="box-a" x="290" y="88" width="110" height="44" rx="5"/><text x="345" y="115" text-anchor="middle">Service api</text>
+      <line class="ln" x1="110" y1="110" x2="148" y2="110" marker-end="url(#ah-k8s1)"/>
+      <line class="ln" x1="250" y1="110" x2="288" y2="110" marker-end="url(#ah-k8s1)"/>
+      <line class="ln-a" x1="400" y1="104" x2="458" y2="52" marker-end="url(#ah-k8s1)"/>
+      <line class="ln-a" x1="400" y1="110" x2="458" y2="110" marker-end="url(#ah-k8s1)"/>
+      <line class="ln-b" x1="400" y1="116" x2="458" y2="168" marker-end="url(#ah-k8s1)"/>
+      <rect class="box" x="460" y="30" width="190" height="44" rx="5"/><text x="555" y="57" text-anchor="middle">Pod api-7d9f (ready)</text>
+      <rect class="box" x="460" y="88" width="190" height="44" rx="5"/><text x="555" y="115" text-anchor="middle">Pod api-k2xq (ready)</text>
+      <rect class="box-b" x="460" y="146" width="190" height="44" rx="5"/><text x="555" y="173" text-anchor="middle">Pod api-m8vz (falhou)</text>
+      <text class="lbl" x="200" y="152" text-anchor="middle">host + caminho</text>
+      <text class="lbl" x="345" y="152" text-anchor="middle">IP e DNS estáveis</text>
+      <text class="lbl" x="540" y="208" text-anchor="middle">readiness falhou: fora do balanceamento</text>
+    </svg>
+    <figcaption>O Service balanceia só entre Pods prontos. A readiness é o que impede tráfego para réplicas que ainda não podem atender.</figcaption>
+  </figure>
+  <h3>Equivalências Compose → Kubernetes</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Compose</th><th>Kubernetes</th></tr></thead>
+    <tbody>
+      <tr><td><code>services:</code> (um serviço)</td><td>Deployment (que gera os Pods) + Service (DNS e balanceamento)</td></tr>
+      <tr><td><code>image</code>, <code>command</code>, <code>entrypoint</code></td><td><code>image</code>, <code>args</code>, <code>command</code> do container no Pod (<code>command</code> do K8s = ENTRYPOINT; <code>args</code> = CMD)</td></tr>
+      <tr><td><code>ports</code> do proxy de entrada</td><td>Ingress / Gateway, ou Service do tipo LoadBalancer</td></tr>
+      <tr><td><code>environment</code>, <code>env_file</code></td><td>ConfigMap (<code>envFrom</code> ou <code>env</code>)</td></tr>
+      <tr><td><code>secrets</code></td><td>Secret (variável ou arquivo montado)</td></tr>
+      <tr><td>volume nomeado</td><td>PersistentVolumeClaim (+ StorageClass)</td></tr>
+      <tr><td>bind mount</td><td>quase sem equivalente em produção (<code>hostPath</code> é desencorajado); ConfigMap/Secret como arquivo para config</td></tr>
+      <tr><td><code>healthcheck</code></td><td><code>livenessProbe</code>, <code>readinessProbe</code> e <code>startupProbe</code> (separadas)</td></tr>
+      <tr><td><code>deploy.resources</code></td><td><code>resources.requests</code> e <code>resources.limits</code></td></tr>
+      <tr><td><code>--scale</code>, <code>replicas</code></td><td><code>replicas</code> no Deployment e HorizontalPodAutoscaler</td></tr>
+      <tr><td>serviço <code>migrate</code> (<code>service_completed_successfully</code>)</td><td>Job, ou <code>initContainer</code> no Pod</td></tr>
+      <tr><td><code>depends_on</code></td><td>sem equivalente direto: use readiness, retry com backoff na aplicação e initContainers</td></tr>
+      <tr><td><code>restart</code></td><td><code>restartPolicy</code> do Pod e o controlador (Deployment recria)</td></tr>
+      <tr><td>redes do Compose</td><td>rede plana do cluster + DNS de Service; isolamento com NetworkPolicy e Namespaces</td></tr>
+      <tr><td><code>profiles</code>, arquivos de override</td><td>Kustomize (overlays) ou Helm (values por ambiente)</td></tr>
+      <tr><td><code>docker compose up</code></td><td><code>kubectl apply -f</code> (ou Helm/Kustomize/GitOps)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Um Deployment completo, linha a linha</h3>
+<pre data-file="api.yaml"><code class="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: api }
+  strategy:
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }   # nunca abaixo de 3 prontos durante o deploy
+  template:
+    metadata:
+      labels: { app: api }
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext: { runAsNonRoot: true }
+      containers:
+        - name: api
+          image: reg.exemplo.com/clinica/api:1.4.2       # versão imutável
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: api-config }
+          env:
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: api-secret, key: db-password } }
+          readinessProbe:
+            httpGet: { path: /ready, port: 8080 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits:   { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector: { app: api }
+  ports:
+    - port: 80
+      targetPort: 8080</code></pre>
+  <p>Repare como os controles do módulo 09 reaparecem: <code>runAsNonRoot</code>, <code>drop: ALL</code>, <code>readOnlyRootFilesystem</code>, limites. <strong>requests</strong> é o que o agendador <em>reserva</em> ao escolher o nó; <strong>limits</strong> é o teto aplicado em execução (estouro de memória = OOMKilled; de CPU = throttling). Requests altos demais desperdiçam dinheiro; baixos demais causam disputa e despejo de pods.</p>
+  <h3>Comandos: Docker e kubectl lado a lado</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Docker</th><th>kubectl</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker ps</code></td><td><code>kubectl get pods</code></td></tr>
+      <tr><td><code>docker logs -f x</code></td><td><code>kubectl logs -f pod/x</code> (ou <code>deploy/api</code>)</td></tr>
+      <tr><td><code>docker exec -it x sh</code></td><td><code>kubectl exec -it pod/x -- sh</code></td></tr>
+      <tr><td><code>docker inspect x</code></td><td><code>kubectl describe pod x</code> (inclui eventos e motivo de OOM)</td></tr>
+      <tr><td><code>docker stats</code></td><td><code>kubectl top pod</code> (exige metrics-server)</td></tr>
+      <tr><td><code>docker compose up -d</code></td><td><code>kubectl apply -f api.yaml</code></td></tr>
+      <tr><td><code>docker compose up --scale api=5</code></td><td><code>kubectl scale deploy/api --replicas=5</code></td></tr>
+      <tr><td>(sem equivalente simples)</td><td><code>kubectl rollout status|undo deploy/api</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>Esquecer a <strong>readiness</strong>: o Service envia tráfego a um Pod assim que ele sobe, mesmo que a aplicação ainda esteja carregando. Resultado: erros a cada deploy. Outra: usar a tag <code>latest</code> e achar que o <code>kubectl apply</code> vai baixar a nova imagem: o manifesto não mudou, nada acontece.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Explique Pod, Deployment, Service e Ingress." Pod: container(s) com rede em comum, efêmero. Deployment: mantém N réplicas e faz rolling update. Service: nome/IP estável com balanceamento entre pods prontos. Ingress: entrada HTTP por host/caminho. Ligue ao que você já usa: Deployment+Service é o <code>service</code> do Compose.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Prefira <strong>Kubernetes gerenciado</strong> (EKS/AKS/GKE) a operar o control plane por conta própria. Mesmo assim, sobram upgrades de versão (o projeto lança poucas versões por ano e cada uma tem suporte limitado), add-ons, redes, observabilidade e segurança. Planeje essa rotina e a pessoa responsável antes de começar.</p></div>
+</section>
+
+
+<section class="chap" id="dockershim">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>dockershim removido: o que mudou e o que não mudou</h2>
+  <p>Quando o Kubernetes nasceu, o Docker era o único runtime relevante, e o <em>kubelet</em> (agente de cada nó) falava direto com o Docker Engine por um código embutido chamado <strong>dockershim</strong>. Depois surgiu a <strong>CRI</strong> (Container Runtime Interface), uma API padrão entre o kubelet e qualquer runtime. O Docker Engine nunca implementou a CRI; o dockershim fazia a tradução, e manter essa ponte dentro do projeto passou a ser um custo. A depreciação foi anunciada na versão 1.20 e o dockershim foi <strong>removido na versão 1.24</strong> (2022).</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Pilha antes da versão 1.24: kubelet, dockershim, dockerd, containerd, runc; e depois: kubelet, CRI, containerd ou CRI-O, runc">
+      <defs>
+        <marker id="ah-shim1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="160" y="20" text-anchor="middle">Até a versão 1.23</text>
+      <text class="ttl" x="520" y="20" text-anchor="middle">Versão 1.24 em diante</text>
+      <rect class="box-b" x="40" y="34" width="240" height="36" rx="5"/><text x="160" y="57" text-anchor="middle">kubelet + dockershim</text>
+      <rect class="box" x="40" y="84" width="240" height="36" rx="5"/><text x="160" y="107" text-anchor="middle">dockerd (Docker Engine)</text>
+      <rect class="box" x="40" y="134" width="240" height="36" rx="5"/><text x="160" y="157" text-anchor="middle">containerd</text>
+      <rect class="box" x="40" y="184" width="240" height="36" rx="5"/><text x="160" y="207" text-anchor="middle">runc</text>
+      <line class="ln" x1="160" y1="70" x2="160" y2="82" marker-end="url(#ah-shim1)"/>
+      <line class="ln" x1="160" y1="120" x2="160" y2="132" marker-end="url(#ah-shim1)"/>
+      <line class="ln" x1="160" y1="170" x2="160" y2="182" marker-end="url(#ah-shim1)"/>
+      <rect class="box-a" x="400" y="34" width="240" height="36" rx="5"/><text x="520" y="57" text-anchor="middle">kubelet</text>
+      <rect class="box-a" x="400" y="109" width="240" height="36" rx="5"/><text x="520" y="132" text-anchor="middle">containerd ou CRI-O</text>
+      <rect class="box-a" x="400" y="184" width="240" height="36" rx="5"/><text x="520" y="207" text-anchor="middle">runc</text>
+      <line class="ln-a" x1="520" y1="70" x2="520" y2="107" marker-end="url(#ah-shim1)"/>
+      <line class="ln-a" x1="520" y1="145" x2="520" y2="182" marker-end="url(#ah-shim1)"/>
+      <text class="lbl" x="530" y="94">CRI</text>
+      <text class="lbl" x="20" y="242">As imagens OCI funcionam nos dois caminhos; o que some é a camada do Docker Engine nos nós.</text>
+    </svg>
+    <figcaption>O Docker Engine já usava o containerd por baixo. Na nova pilha, o kubelet fala direto com o containerd (ou CRI-O), sem passar pelo dockerd.</figcaption>
+  </figure>
+  <h3>O que isso significa na prática</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Mudou?</th><th>Detalhe</th></tr></thead>
+    <tbody>
+      <tr><td>Suas imagens e Dockerfiles</td><td>Não</td><td>seguem o padrão OCI; <code>docker build</code> e <code>docker push</code> continuam valendo</td></tr>
+      <tr><td>Desenvolvimento local e CI</td><td>Não</td><td>Docker Desktop, Engine e Compose seguem normalmente</td></tr>
+      <tr><td><code>docker ps</code> num nó do cluster</td><td>Sim</td><td>não enxerga mais os containers do Kubernetes. Use <code>crictl ps</code> (e <code>nerdctl</code> ou <code>ctr</code>, conforme o runtime)</td></tr>
+      <tr><td>Pods que montavam o socket Docker do nó para fazer build</td><td>Sim, quebram</td><td>troque por BuildKit/Kaniko/Buildah ou por build fora do cluster</td></tr>
+      <tr><td>Agentes de log lendo <code>/var/lib/docker/containers</code></td><td>Sim</td><td>passam a ler <code>/var/log/pods</code> (formato de log da CRI, diferente do JSON do Docker)</td></tr>
+      <tr><td>Quem ainda quer Docker Engine como runtime</td><td>Opção</td><td>existe o adaptador externo <code>cri-dockerd</code>, mantido fora do núcleo do Kubernetes</td></tr>
+      <tr><td>Serviços gerenciados (EKS, AKS, GKE)</td><td>Transparente</td><td>os nós já usam containerd (ou equivalente); verifique antes de atualizar se havia dependência do socket Docker</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>"Docker" são três coisas: o formato da imagem (hoje padrão OCI), o Engine/CLI para você construir e testar, e um runtime de nó. O Kubernetes deixou de usar o <em>terceiro</em>. As duas primeiras continuam sendo o seu dia a dia.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O Kubernetes abandonou o Docker?" Abandonou o Docker Engine como <em>runtime dos nós</em> (remoção do dockershim na 1.24); usa containerd ou CRI-O. Imagens construídas com Docker funcionam sem mudança porque seguem a OCI. Complemente: o containerd, usado pelo Docker, é o mesmo que roda hoje nos nós.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Ao planejar upgrades de cluster, faça um <strong>inventário de dependências do socket Docker</strong> (pipelines de build dentro de pods, agentes de monitoramento, scripts de nó). É onde essa mudança costuma doer, não nas aplicações.</p></div>
+</section>
+
+<section class="chap" id="alternativas">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Swarm, Nomad, serviços gerenciados, Podman e como escolher</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>O que é</th><th>Pontos fortes</th><th>Cuidados</th></tr></thead>
+    <tbody>
+      <tr><td>Docker Compose</td><td>containers num host</td><td>simples, ótimo para dev, CI e apps pequenas</td><td>host único (seção 2)</td></tr>
+      <tr><td>Docker Swarm</td><td>orquestrador embutido no Docker; arquivos parecidos com Compose (<code>docker stack deploy</code>)</td><td>curva de aprendizado baixa; secrets, rolling update e overlay network prontos</td><td>ecossistema e adoção pequenos hoje; poucas ofertas gerenciadas. Aceitável para cenários simples já existentes; para projetos novos, avalie as outras opções</td></tr>
+      <tr><td>Kubernetes</td><td>padrão de mercado; gerenciado em EKS, AKS, GKE</td><td>ecossistema enorme, portabilidade entre nuvens, extensível</td><td>complexidade e custo de operação (seção 6)</td></tr>
+      <tr><td>HashiCorp Nomad</td><td>orquestrador de um binário só, que agenda containers e também processos não-container</td><td>mais simples de operar que o Kubernetes; bom para cargas mistas</td><td>comunidade e integrações menores; confira o modelo de licença atual (a HashiCorp mudou a licença de seus produtos em 2023)</td></tr>
+      <tr><td>AWS ECS com Fargate</td><td>orquestrador proprietário da AWS; Fargate remove a gestão de servidores</td><td>muito simples para quem já está na AWS; integra IAM, ALB, CloudWatch</td><td>trava na AWS; modelo próprio, não Kubernetes</td></tr>
+      <tr><td>Google Cloud Run</td><td>executa um container HTTP (ou job) com escala automática, inclusive a zero</td><td>quase nenhuma operação; paga por uso; ótimo para APIs stateless</td><td>modelo orientado a requisições; limites de tempo e de estado; ponha o banco fora</td></tr>
+      <tr><td>Azure Container Apps</td><td>serviço de containers sem cluster para gerenciar, com escala orientada a eventos</td><td>meio-termo entre simplicidade e recursos; bom no ecossistema Azure</td><td>menos controle que Kubernetes completo</td></tr>
+      <tr><td>Podman</td><td>engine de containers sem daemon, rootless por padrão, CLI compatível com o Docker</td><td>segurança por padrão, integração com systemd (Quadlet), <code>podman kube play</code> roda YAML estilo Kubernetes</td><td>não é um orquestrador de vários hosts; diferenças sutis de compatibilidade com Compose e redes</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Tabela de decisão</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Seu cenário</th><th>Caminho provável</th><th>Por quê</th></tr></thead>
+    <tbody>
+      <tr><td>Ferramenta interna, poucos usuários, tolera janela de manutenção</td><td>Compose num host com backup</td><td>menor custo e esforço</td></tr>
+      <tr><td>API stateless com tráfego variável, equipe pequena</td><td>Cloud Run, ECS/Fargate ou Container Apps</td><td>sem cluster para operar; escala automática</td></tr>
+      <tr><td>Dezenas de serviços, vários times, requisitos de portabilidade ou ecossistema</td><td>Kubernetes gerenciado + plataforma interna</td><td>vale o custo quando a escala organizacional justifica</td></tr>
+      <tr><td>Já 100% na AWS, sem exigência de portabilidade</td><td>ECS/Fargate (ou EKS se o time já domina Kubernetes)</td><td>integração nativa e menos peças</td></tr>
+      <tr><td>Cargas mistas (containers, binários, batch) e time enxuto</td><td>Nomad (avaliando licença)</td><td>um agendador simples para tudo</td></tr>
+      <tr><td>Servidores com segurança em primeiro lugar, sem daemon root</td><td>Podman com systemd/Quadlet</td><td>rootless e sem daemon</td></tr>
+      <tr><td>Aplicação com dados de pacientes</td><td>qualquer das anteriores, com <strong>região no Brasil</strong> quando possível (por exemplo, São Paulo)</td><td>a LGPD exige base legal e salvaguardas para transferência internacional de dados; confira com o jurídico/encarregado</td></tr>
+    </tbody>
+  </table></div>
+  <p>Critérios que sempre entram na decisão: <strong>habilidade do time</strong> (o que vocês conseguem operar às 3h), <strong>custo total</strong> (infra + pessoas), <strong>portabilidade</strong> (aceita trava num provedor?), <strong>estado</strong> (stateless é fácil; bancos geralmente ficam em serviço gerenciado fora do orquestrador), <strong>conformidade</strong> (região, auditoria, criptografia) e <strong>maturidade de observabilidade e segurança</strong>.</p>
+  <h3>Podman e alternativas ao Docker Desktop</h3>
+  <p>O <strong>Podman</strong> é uma alternativa sem daemon: cada container é filho do processo que o iniciou, o que elimina o "socket que é root". Funciona rootless por padrão e aceita a maior parte dos comandos (<code>alias docker=podman</code>). Vem acompanhado de <strong>Buildah</strong> (construir imagens) e <strong>Skopeo</strong> (copiar/inspecionar imagens em registries). Quanto às ferramentas de desktop: o <strong>Docker Engine</strong> é open source e gratuito; o <strong>Docker Desktop</strong> exige assinatura paga para uso comercial em empresas acima de certo porte (hoje, mais de 250 funcionários ou mais de US$ 10 milhões de receita anual; confirme os termos vigentes). Alternativas: Docker Engine dentro do WSL 2, Rancher Desktop, Podman Desktop e Colima (macOS/Linux).</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Escolher a plataforma pelo currículo do time ("queremos Kubernetes no portfólio") e não pelo problema. Um serviço pequeno em Kubernetes próprio custa mais em operação do que em Cloud Run ou ECS, e o time acaba gastando semanas com rede e upgrades em vez de produto.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Quando perguntarem "Kubernetes ou ECS/Cloud Run?", mostre critério, não preferência: habilidade do time, tamanho da carga e número de serviços, portabilidade, custo total e conformidade. Diga que, para poucos serviços stateless, o serviço gerenciado costuma ganhar; para muitos serviços e times, o Kubernetes gerenciado compensa.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Registre a decisão num <em>ADR</em> (registro de decisão de arquitetura) com as alternativas consideradas, o custo estimado e a data de revisão. Em 12 meses, as premissas (tamanho, time, orçamento) mudaram e vale reavaliar.</p></div>
+</section>
+
+<section class="chap" id="custos-operacao">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Custos, plataforma interna e responsabilidades</h2>
+  <p>Para quem coordena a equipe, containers são uma decisão de <strong>organização</strong> tanto quanto de tecnologia. O ganho (padronização, previsibilidade, entrega rápida) só aparece se alguém cuida do chão comum.</p>
+  <h3>Onde o custo realmente está</h3>
+  <ul>
+    <li><strong>Pessoas:</strong> operar orquestração, upgrades, segurança e observabilidade exige tempo especializado. Costuma ser o maior custo e o mais subestimado.</li>
+    <li><strong>Infraestrutura:</strong> requests e limits superdimensionados pagam por capacidade ociosa; ambientes de teste ligados 24h; imagens grandes (transferência e armazenamento no registry); logs e métricas com retenção excessiva.</li>
+    <li><strong>Licenças:</strong> Docker Desktop, registry privado, scanners e observabilidade comerciais.</li>
+    <li><strong>Risco:</strong> incidente de segurança com dado de paciente e indisponibilidade têm custo maior que qualquer item acima.</li>
+  </ul>
+  <h3>Padronização de imagens base</h3>
+  <p>Uma <strong>imagem base aprovada</strong> por linguagem (Java, Node, Python, .NET) mantida pela plataforma: versões fixas, usuário não-root, certificados corporativos, fuso e locale, ferramentas mínimas e varredura em CI. As equipes herdam (<code>FROM registro.interno/base/node:22</code>) e a plataforma publica correções centralmente. Ganho: um CVE na base é corrigido em um lugar, e todo serviço recebe ao reconstruir. Combine com <strong>templates</strong> de Dockerfile, Compose e manifests Kubernetes com os controles de segurança já ligados (o "caminho pavimentado").</p>
+  <h3>Plataforma interna (platform engineering)</h3>
+  <p>Quando há muitos times, uma pequena equipe de plataforma oferece o ambiente como <strong>produto interno</strong>: pipeline padrão, registry, cluster ou serviço gerenciado configurado, observabilidade pronta, gestão de segredos e documentação. Os times de produto fazem <em>autoatendimento</em> sem precisar entender cada detalhe de rede ou do cluster. Meça sucesso por tempo de primeiro deploy, frequência de deploy e satisfação dos times, não por número de ferramentas.</p>
+  <h3>Responsabilidades: desenvolvimento x plataforma/operação</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Tema</th><th>Time de desenvolvimento</th><th>Plataforma / operação</th></tr></thead>
+    <tbody>
+      <tr><td>Dockerfile e imagem do serviço</td><td>escreve, mantém, corrige CVEs da aplicação</td><td>fornece base aprovada, templates e scanner no pipeline</td></tr>
+      <tr><td>Health, readiness, shutdown limpo, logs</td><td>implementa no código</td><td>define o contrato e as ferramentas de coleta</td></tr>
+      <tr><td>Requests/limits e escala</td><td>propõe com base em medição</td><td>revisa, aplica cotas, ajuda a dimensionar</td></tr>
+      <tr><td>Segredos</td><td>usa a interface padrão; nunca no código</td><td>mantém cofre, rotação e acessos</td></tr>
+      <tr><td>Cluster/hosts, rede, upgrades</td><td>planeja compatibilidade</td><td>opera e atualiza</td></tr>
+      <tr><td>Plantão e incidentes</td><td>primeiro nível do próprio serviço (<em>you build it, you run it</em>)</td><td>plataforma e infraestrutura compartilhada</td></tr>
+      <tr><td>Backup e restauração de dados</td><td>define o que e quanto tempo guardar</td><td>executa, monitora e testa a restauração</td></tr>
+      <tr><td>Conformidade (LGPD)</td><td>minimização de dados, logs sem dado pessoal</td><td>criptografia, controle de acesso, auditoria; com o encarregado</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Padronize o que não diferencia o produto (imagem base, pipeline, logs, segredos, deploy) e deixe liberdade no que diferencia (linguagem, framework, arquitetura do serviço). Exceções existem, mas são <em>pedidas</em> e <em>registradas</em>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Para vagas de liderança: fale em termos de <strong>métricas</strong> (tempo de deploy, falhas de mudança, tempo para restaurar, custo por serviço), de <strong>padrões</strong> (imagem base, templates), de <strong>responsabilidades claras</strong> entre dev e plataforma e de <strong>riscos</strong> (segurança, LGPD, trava de fornecedor). Conte um caso em que você reduziu custo ou incidente com isso.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Perguntas para a sua próxima reunião de arquitetura: Quantos serviços têm dono e runbook? Qual a idade média das imagens em produção? Qual a taxa de uso de CPU/memória real versus reservada? Quem é acionado quando a imagem base tem um CVE crítico? Se ninguém sabe responder, comece pelo inventário.</p></div>
+</section>
+
+<section class="chap" id="preparacao">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Roteiro de preparação para entrevista</h2>
+  <p>Entrevistadores aprofundam a partir das suas respostas. Ter feito na prática vale mais que decorar. Roteiro de uma semana (cada passo aponta o módulo da trilha que sustenta):</p>
+  <ol class="seq">
+    <li><div><strong>Containers na mão</strong> (módulos 01 e 02). Suba um nginx e um postgres com <code>docker run</code>. Use <code>exec</code>, <code>logs</code>, <code>inspect</code>. Apague o container do postgres e veja os dados sumirem; repita com volume e veja ficarem.</div></li>
+    <li><div><strong>Seu primeiro Dockerfile</strong> (módulo 03). Containerize uma API pequena na linguagem que você usa. Meça o tamanho com <code>docker image ls</code>.</div></li>
+    <li><div><strong>Otimize</strong> (módulos 03 e 04). Reordene para usar o cache, adicione <code>.dockerignore</code>, transforme em multi-stage, rode como não-root. Compare tamanho e tempo de build antes e depois e <strong>anote os números</strong>: eles viram sua história.</div></li>
+    <li><div><strong>Rede e dados</strong> (módulo 05). Faça a API falar com o banco por nome numa rede própria. Provoque os erros clássicos de propósito: <code>localhost</code> no lugar do nome, app escutando em 127.0.0.1.</div></li>
+    <li><div><strong>Compose</strong> (módulos 06 e 07). Monte um projeto com API, banco e cache: healthchecks, migração como serviço, override de desenvolvimento, profiles.</div></li>
+    <li><div><strong>Quebre e conserte</strong> (módulo 09). Limite a memória até tomar OOM (exit 137), use CMD na forma shell e meça o <code>docker stop</code>, encha o log sem rotação.</div></li>
+    <li><div><strong>Publique e implante</strong> (módulo 08 e este). Faça push para o GitHub Container Registry com um workflow que constrói, escaneia com Trivy e publica com a tag do commit. Depois, rode a imagem num cluster local (<code>kind</code> ou minikube) com Deployment, Service e probes.</div></li>
+  </ol>
+  <h3>Laboratório mínimo permanente</h3>
+  <ul>
+    <li>Docker Engine (WSL 2 no Windows) ou Docker Desktop, e um repositório seu com um projeto de exemplo que você domina de ponta a ponta.</li>
+    <li><code>kind</code> ou minikube e <code>kubectl</code> para praticar Deployment, Service, probes e <code>rollout undo</code>.</li>
+    <li>Ambientes gratuitos no navegador, como o Play with Docker, para treinar sem instalar nada.</li>
+  </ul>
+  <h3>Como contar uma história de projeto com Docker</h3>
+  <p>A estrutura S-T-A-R funciona bem: <strong>Situação</strong> (o problema, com contexto de negócio), <strong>Tarefa</strong> (sua responsabilidade), <strong>Ação</strong> (o que você decidiu e fez, com as alternativas que descartou) e <strong>Resultado</strong> (com números e o que aprendeu). Modelo:</p>
+  <div class="note"><b>Exemplo de resposta</b><p><em>"Nosso serviço de agendamento demorava 25 minutos para implantar e tinha divergência entre homologação e produção (S). Fiquei responsável por padronizar a entrega (T). Containerizei a aplicação com Dockerfile multi-stage e usuário não-root, criei um Compose para desenvolvimento com o mesmo PostgreSQL de produção, e um pipeline que constrói, escaneia e publica com a tag do commit; descartei trocar a plataforma inteira por não haver necessidade de escala (A). A imagem caiu de 1,2 GB para 180 MB, o deploy passou de 25 para 6 minutos, e a divergência entre ambientes deixou de causar incidentes; o que eu faria diferente é ter definido os limites de recursos desde o início, porque tivemos um OOM na primeira semana (R)."</em> (Números ilustrativos: use os seus, medidos.)</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Se perguntarem...</th><th>Mostre que você...</th></tr></thead>
+    <tbody>
+      <tr><td>"Conte um problema difícil com containers"</td><td>diagnosticou com método (exit code, logs, inspect), achou a causa raiz e criou prevenção (alerta, limite, teste)</td></tr>
+      <tr><td>"Como você decidiria Kubernetes ou não?"</td><td>parte do requisito de negócio e do time, compara custo e alternativas</td></tr>
+      <tr><td>"Como garantiria segurança?"</td><td>fala de não-root, segredos, varredura, socket, rede, imagem mínima e LGPD, sem ser perguntado</td></tr>
+      <tr><td>"Como lideraria a adoção na equipe?"</td><td>propõe padrão, template, treinamento curto, métricas e exceções registradas</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note iv"><b>Na hora da entrevista</b><ul>
+    <li>Responda com definição + exemplo concreto do seu trabalho ("no projeto X, a imagem tinha 1,2 GB; com multi-stage caiu para 180 MB").</li>
+    <li>Quando não souber, diga como descobriria (<code>docker inspect</code>, logs, documentação). Saber diagnosticar pesa tanto quanto saber de cor.</li>
+    <li>Mencione segurança e operação sem ser perguntado: não-root, segredos, tags fixas, healthcheck, limites. É o que diferencia quem usou Docker de quem leu sobre Docker.</li>
+    <li>Admita limites com honestidade ("usei Kubernetes em laboratório, em produção usamos Compose") e mostre como supriria.</li>
+  </ul></div>
+  <div class="note mgr"><b>Para gestores</b><p>Para <em>entrevistar</em> candidatos: peça um diagnóstico ao vivo (container que sai com 137 ou porta que não responde) e uma decisão de arquitetura com trade-offs. Respostas com método e critério pesam mais do que memória de flags.</p></div>
+  <h3>Referências</h3>
+  <ul>
+    <li><strong>Documentação oficial do Docker</strong> (docs.docker.com): "Dockerfile best practices", "Multi-stage builds", segurança e a referência do Compose.</li>
+    <li><strong>Compose Specification</strong> (compose-spec.io): todas as chaves do arquivo Compose.</li>
+    <li><strong>Kubernetes</strong> (kubernetes.io/docs): tutoriais "Learn Kubernetes Basics" e a documentação de probes, Deployments e Services.</li>
+    <li><strong>Play with Docker</strong> (labs.play-with-docker.com): ambiente gratuito no navegador para praticar.</li>
+    <li><strong>The Twelve-Factor App</strong> (12factor.net): os princípios de aplicações preparadas para a nuvem.</li>
+  </ul>
+</section>
+
+
+<section class="chap" id="folha-comandos">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l1">Referência</span></div>
+  <h2>Folha de comandos</h2>
+  <p>Referência rápida de toda a trilha, para revisar antes de uma entrevista ou de um plantão.</p>
+  <h3>Containers</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker run -d --name x -p 8080:80 img</code></td><td>cria e sobe em segundo plano</td></tr>
+      <tr><td><code>docker run --rm -it img sh</code></td><td>shell descartável</td></tr>
+      <tr><td><code>docker ps -a</code></td><td>lista todos, inclusive parados</td></tr>
+      <tr><td><code>docker logs -f --tail 100 x</code></td><td>acompanha logs</td></tr>
+      <tr><td><code>docker exec -it x sh</code></td><td>entra num container em execução</td></tr>
+      <tr><td><code>docker stop | start | restart x</code></td><td>controla o ciclo de vida (stop = SIGTERM, depois SIGKILL)</td></tr>
+      <tr><td><code>docker kill x</code></td><td>SIGKILL imediato (ou outro sinal com <code>-s</code>)</td></tr>
+      <tr><td><code>docker rm -f x</code></td><td>remove (força parando antes)</td></tr>
+      <tr><td><code>docker inspect x</code></td><td>detalhes em JSON (<code>-f '{{.State.ExitCode}}'</code>)</td></tr>
+      <tr><td><code>docker stats</code></td><td>consumo ao vivo</td></tr>
+      <tr><td><code>docker cp x:/caminho ./</code></td><td>copia arquivos entre container e host</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Imagens</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker build -t app:1.0 .</code></td><td>constrói</td></tr>
+      <tr><td><code>docker build --target dev -t app:dev .</code></td><td>constrói até um estágio</td></tr>
+      <tr><td><code>docker build --no-cache .</code></td><td>ignora o cache</td></tr>
+      <tr><td><code>docker build --progress=plain .</code></td><td>saída completa, mostra <code>CACHED</code></td></tr>
+      <tr><td><code>docker build --secret id=x,src=arq .</code></td><td>segredo de build (BuildKit)</td></tr>
+      <tr><td><code>docker image ls</code></td><td>lista</td></tr>
+      <tr><td><code>docker image history app:1.0</code></td><td>camadas e tamanhos</td></tr>
+      <tr><td><code>docker tag app:1.0 reg/app:1.0</code></td><td>novo nome</td></tr>
+      <tr><td><code>docker push reg/app:1.0</code> / <code>docker pull img:tag</code></td><td>envia / baixa do registry</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Volumes e redes</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker volume create | ls | rm v</code></td><td>gerencia volumes</td></tr>
+      <tr><td><code>-v vol:/caminho</code></td><td>volume nomeado</td></tr>
+      <tr><td><code>-v ./pasta:/caminho:ro</code></td><td>bind mount somente leitura</td></tr>
+      <tr><td><code>--tmpfs /tmp</code></td><td>diretório em memória</td></tr>
+      <tr><td><code>docker network create net</code></td><td>rede com DNS por nome</td></tr>
+      <tr><td><code>--network net</code></td><td>conecta o container</td></tr>
+      <tr><td><code>docker network inspect net</code></td><td>quem está na rede</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Compose</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker compose up -d --build</code></td><td>constrói e sobe</td></tr>
+      <tr><td><code>docker compose ps</code></td><td>estado e health</td></tr>
+      <tr><td><code>docker compose logs -f svc</code></td><td>logs do serviço</td></tr>
+      <tr><td><code>docker compose exec svc sh</code></td><td>shell no serviço</td></tr>
+      <tr><td><code>docker compose run --rm svc cmd</code></td><td>comando avulso</td></tr>
+      <tr><td><code>docker compose down [-v]</code></td><td>derruba (e apaga volumes com <code>-v</code>)</td></tr>
+      <tr><td><code>docker compose config</code></td><td>mostra a configuração final resolvida</td></tr>
+      <tr><td><code>docker compose watch</code></td><td>sincroniza código ao editar</td></tr>
+      <tr><td><code>docker compose -f a.yaml -f b.yaml up</code></td><td>combina arquivos (override por ambiente)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Limpeza e diagnóstico</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker system df</code></td><td>uso de disco por tipo</td></tr>
+      <tr><td><code>docker system prune</code></td><td>remove o que está sem uso (com <code>--volumes</code> apaga volumes: cuidado)</td></tr>
+      <tr><td><code>docker builder prune</code></td><td>limpa cache de build</td></tr>
+      <tr><td><code>docker events</code></td><td>eventos do daemon (<code>die</code>, <code>oom</code>, <code>health_status</code>)</td></tr>
+      <tr><td><code>docker inspect -f '{{.State.OOMKilled}}' x</code></td><td>morreu por memória?</td></tr>
+      <tr><td><code>docker run --rm -it --network container:x nicolaka/netshoot</code></td><td>ferramentas de rede no namespace do container</td></tr>
+      <tr><td><code>docker debug x</code></td><td>depuração de imagem sem shell (Docker Desktop; confirme licença)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Segurança em execução</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Flag</th><th>Efeito</th></tr></thead>
+    <tbody>
+      <tr><td><code>--user 10001:10001</code></td><td>roda como usuário não-root</td></tr>
+      <tr><td><code>--cap-drop ALL --cap-add X</code></td><td>capabilities mínimas</td></tr>
+      <tr><td><code>--security-opt no-new-privileges</code></td><td>bloqueia escalada via setuid</td></tr>
+      <tr><td><code>--read-only --tmpfs /tmp</code></td><td>filesystem somente leitura</td></tr>
+      <tr><td><code>--memory 512m --cpus 1 --pids-limit 200</code></td><td>limites de recursos</td></tr>
+      <tr><td><code>--init</code></td><td>init mínimo como PID 1 (sinais e zumbis)</td></tr>
+      <tr><td><code>--log-opt max-size=10m --log-opt max-file=3</code></td><td>rotação de logs</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Kubernetes básico</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>kubectl apply -f arquivo.yaml</code></td><td>aplica o estado desejado</td></tr>
+      <tr><td><code>kubectl get pods,svc,deploy</code></td><td>lista objetos</td></tr>
+      <tr><td><code>kubectl describe pod x</code></td><td>detalhes e eventos</td></tr>
+      <tr><td><code>kubectl logs -f deploy/api</code></td><td>logs</td></tr>
+      <tr><td><code>kubectl rollout status | undo deploy/api</code></td><td>acompanha / desfaz um deploy</td></tr>
+      <tr><td><code>kubectl scale deploy/api --replicas=5</code></td><td>muda o número de réplicas</td></tr>
+      <tr><td><code>kubectl debug -it pod/x --image=busybox --target=api</code></td><td>container efêmero de depuração</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios graduados. Tente antes de abrir a resolução.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Faça uma aplicação tratar SIGTERM e meça o <code>docker stop</code> antes e depois.</span></summary><div class="ans">
+<pre data-file="server.js"><code class="js">const http = require('http');
+const server = http.createServer((req, res) =&gt; res.end('ok\n')).listen(8080);
+if (process.argv.includes('--graceful')) {
+  process.on('SIGTERM', () =&gt; { console.log('SIGTERM'); server.close(() =&gt; process.exit(0)); });
+}</code></pre>
+<pre data-file="Dockerfile"><code class="dockerfile">FROM node:22-slim
+WORKDIR /app
+COPY server.js .
+USER node
+ENTRYPOINT ["node", "server.js"]</code></pre>
+<pre><code class="sh">docker build -t lab-sig .
+docker run -d --name a lab-sig
+time docker stop a                  # ~10 s: PID 1 sem tratador ignora o SIGTERM; depois veio SIGKILL
+docker run -d --name b lab-sig --graceful
+time docker stop b                  # rápido, e docker logs b mostra "SIGTERM"
+docker inspect b --format '{{.State.ExitCode}}'     # 0
+docker rm -f a b</code></pre>
+  <p>Conclusão: encerramento limpo é responsabilidade da aplicação. Em produção, o mesmo vale para o <code>terminationGracePeriodSeconds</code> do Kubernetes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Suba a imagem num cluster local com Kubernetes, escale e faça rollback de um deploy ruim.</span></summary><div class="ans">
+<pre><code class="sh">kind create cluster
+kind load docker-image lab-sig:latest              # envia a imagem local ao cluster
+kubectl create deployment api --image=lab-sig:latest --port=8080
+kubectl patch deployment api -p '{"spec":{"template":{"spec":{"containers":[{"name":"lab-sig","imagePullPolicy":"IfNotPresent"}]}}}}'
+kubectl expose deployment api --port=80 --target-port=8080
+kubectl scale deploy/api --replicas=3
+kubectl get pods -o wide
+
+kubectl set image deploy/api lab-sig=imagem-inexistente:9    # deploy ruim
+kubectl rollout status deploy/api --timeout=30s              # não conclui
+kubectl get pods                                             # ErrImagePull / ImagePullBackOff
+kubectl rollout undo deploy/api                              # volta à versão anterior
+kubectl rollout status deploy/api
+kind delete cluster</code></pre>
+  <p>Observe que, com o rolling update, os pods antigos continuam atendendo enquanto o novo falha: o serviço não cai. Com tag <code>latest</code> e <code>imagePullPolicy</code> padrão, o Kubernetes tenta baixar de um registry, por isso o ajuste acima; em produção use tag de versão e um registry de verdade.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Troque o driver de logs para <code>local</code> e confirme que <code>docker logs</code> continua funcionando.</span></summary><div class="ans">
+<pre><code class="sh">docker run -d --name lg --log-driver local alpine sh -c 'while true; do date; sleep 1; done'
+docker inspect lg --format '{{.HostConfig.LogConfig.Type}}'
+local
+docker logs --tail 3 lg
+docker rm -f lg
+# padrão para o host: /etc/docker/daemon.json  =&gt;  { "log-driver": "local" }   (reinicie o daemon e recrie os containers)</code></pre>
+  <p>O driver <code>local</code> tem rotação por padrão (configurável com <code>max-size</code>/<code>max-file</code>). Em ambientes com coleta central, o agente lê os arquivos do host ou do nó; confirme que o agente suporta o formato do driver escolhido.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span>Escolha a plataforma e justifique para três cargas: (a) portal de agendamento de pacientes com picos; (b) 40 microsserviços de 6 times; (c) ferramenta interna de RH para 30 pessoas.</span></summary><div class="ans">
+  <div class="tbl"><table>
+    <thead><tr><th>Carga</th><th>Escolha</th><th>Justificativa</th></tr></thead>
+    <tbody>
+      <tr><td>(a) portal com picos</td><td>serviço gerenciado de containers (Cloud Run, ECS/Fargate ou Container Apps), banco gerenciado, região no Brasil</td><td>escala automática, sem cluster para operar; dados de pacientes exigem atenção à região e às salvaguardas da LGPD</td></tr>
+      <tr><td>(b) 40 microsserviços, 6 times</td><td>Kubernetes gerenciado + plataforma interna (imagem base, pipeline, observabilidade, GitOps)</td><td>a escala organizacional justifica o custo; padronização reduz a carga cognitiva</td></tr>
+      <tr><td>(c) ferramenta de RH</td><td>Compose em um host (ou serviço gerenciado simples), com backup e atualizações agendadas</td><td>baixo tráfego e tolerância a janela; custo e complexidade mínimos</td></tr>
+    </tbody>
+  </table></div>
+  <p>A resposta correta é o raciocínio: critérios (carga, time, custo, conformidade), não o nome da ferramenta. Registre num ADR.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Escreva sua história S-T-A-R de um projeto com Docker, com pelo menos dois números medidos.</span></summary><div class="ans">
+  <p>Modelo para preencher e treinar em voz alta (máximo de 2 minutos):</p>
+<pre><code class="text">S: [sistema], [problema com impacto: tempo, custo, incidente, divergência entre ambientes].
+T: eu era responsável por [escopo] com [equipe/prazo].
+A: decidi [3 ações], descartei [alternativa] porque [motivo]. Cuidei de [segurança/limites/logs].
+R: [métrica antes] -> [métrica depois]: tamanho da imagem, tempo de build, tempo de deploy,
+   incidentes, custo. Aprendizado: [o que faria diferente].</code></pre>
+  <p>Se você ainda não tem números reais, gere-os: pegue um projeto seu, meça (tamanho da imagem, tempo de build com e sem cache, tempo de subida), aplique multi-stage, não-root e cache, e meça de novo. Registre antes/depois; essa é a história.</p></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>1. "Precisamos migrar para Kubernetes?"</h3>
+  <p>Cinco serviços rodam em Compose numa VM, com dois desenvolvedores cuidando de tudo. Um executivo leu que "todo mundo usa Kubernetes".</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Pergunte pelo requisito: houve queda por falha da VM? A disponibilidade exigida é maior que a atual? Há planos de dobrar o número de serviços ou de times?</li>
+    <li>Se o problema é "VM única", considere primeiro: segunda VM com balanceador, backups testados, ou serviço gerenciado de containers.</li>
+    <li>Estime o custo total de Kubernetes gerenciado: pessoas, upgrades, observabilidade, treinamento. Compare com alternativas num ADR.</li>
+    <li>Se avançar, faça piloto com um serviço não crítico e meça tempo de deploy e esforço de operação antes de migrar o resto.</li>
+  </ul></div>
+
+  <h3>2. Todo deploy gera uma rajada de erros 502</h3>
+  <p>A cada versão nova, os usuários veem erros por alguns segundos. O serviço roda com três réplicas em Kubernetes.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Verifique <strong>readiness</strong>: o Pod entra no balanceamento antes de a aplicação estar pronta?</li>
+    <li>Verifique <strong>SIGTERM</strong>: a aplicação encerra as requisições em curso? CMD em forma shell? O prazo (<code>terminationGracePeriodSeconds</code>) cobre a requisição mais longa?</li>
+    <li>Use <code>maxUnavailable: 0</code> e um <code>preStop</code> curto (alguns segundos) para o balanceador retirar o Pod antes de o processo receber o sinal.</li>
+    <li>Valide com um teste de carga durante um deploy e acompanhe a taxa de erro como métrica de qualidade de release.</li>
+  </ul></div>
+
+  <h3>3. O upgrade do cluster quebrou o pipeline de build</h3>
+  <p>Depois de atualizar o cluster, os jobs de CI que rodavam dentro de pods e montavam o socket Docker do nó passaram a falhar.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Entenda a causa: os nós não têm mais Docker Engine (runtime agora é containerd; seção 4). O socket montado deixou de existir.</li>
+    <li>Troque por builder sem daemon (BuildKit em modo rootless, Kaniko, Buildah) ou por build fora do cluster em runners dedicados.</li>
+    <li>Aproveite para eliminar o risco do módulo 09: montar socket no CI era root no nó.</li>
+    <li>Inclua no checklist de upgrade o inventário de dependências de socket, caminhos <code>/var/lib/docker</code> e scripts de nó.</li>
+  </ul></div>
+
+  <h3>4. A conta de nuvem dobrou em três meses</h3>
+  <p>O número de serviços cresceu e o custo de computação, armazenamento e observabilidade subiu muito mais que o tráfego.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Compare <code>requests</code> com uso real (média e pico): a maioria dos serviços reserva bem mais do que consome. Ajuste com margem e use autoscaling.</li>
+    <li>Desligue ambientes de teste fora do horário; limite o ciclo de vida de ambientes por branch.</li>
+    <li>Reduza imagens (multi-stage, base mínima) e aplique política de retenção no registry.</li>
+    <li>Revise cardinalidade e retenção de logs e métricas; remova logs verbosos e dado pessoal desnecessário (que também é risco LGPD).</li>
+    <li>Atribua custo por serviço/time (labels, namespaces) e mostre aos donos: o que é medido, melhora.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Orquestrador</dt><dd>Sistema que mantém o estado desejado de containers em vários hosts: agenda, recupera, atualiza e escala.</dd></div>
+    <div><dt>Pod</dt><dd>Menor unidade do Kubernetes: um ou mais containers com rede e volumes em comum.</dd></div>
+    <div><dt>Deployment</dt><dd>Objeto que mantém N réplicas de um Pod e faz rolling update e rollback.</dd></div>
+    <div><dt>Service</dt><dd>Nome e IP estáveis com balanceamento entre Pods prontos.</dd></div>
+    <div><dt>Ingress / Gateway API</dt><dd>Entrada HTTP(S) do cluster por host e caminho; exige um controller.</dd></div>
+    <div><dt>ConfigMap / Secret</dt><dd>Objetos de configuração e de dados sensíveis injetados nos Pods.</dd></div>
+    <div><dt>Liveness / readiness / startup</dt><dd>Sondas que decidem reiniciar, receber tráfego ou aguardar a inicialização.</dd></div>
+    <div><dt>requests / limits</dt><dd>Recursos reservados para agendar o Pod e teto aplicado em execução.</dd></div>
+    <div><dt>CRI</dt><dd>Container Runtime Interface: API entre o kubelet e o runtime de containers.</dd></div>
+    <div><dt>containerd / CRI-O</dt><dd>Runtimes de containers usados pelos nós do Kubernetes.</dd></div>
+    <div><dt>dockershim</dt><dd>Ponte interna que ligava o kubelet ao Docker Engine; removida na versão 1.24.</dd></div>
+    <div><dt>OCI</dt><dd>Open Container Initiative: padrão aberto de imagem e runtime de containers.</dd></div>
+    <div><dt>12-factor app</dt><dd>Conjunto de princípios para aplicações portáteis e escaláveis na nuvem.</dd></div>
+    <div><dt>Graceful shutdown</dt><dd>Encerramento limpo ao receber SIGTERM: concluir o trabalho em curso e sair.</dd></div>
+    <div><dt>Fargate / Cloud Run</dt><dd>Execução de containers sem gerenciar servidores ou cluster.</dd></div>
+    <div><dt>Plataforma interna</dt><dd>Conjunto de ferramentas e padrões oferecidos pela equipe de plataforma aos times de produto.</dd></div>
+  </dl>
+</section>
+
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Entrevista</span></div>
+  <h2>Perguntas frequentes de entrevista</h2>
+  <p>Responda em voz alta antes de abrir. A resposta ideal tem uma frase de definição e um exemplo prático. Estão aqui as 24 perguntas do guia original (algumas agrupadas) e perguntas novas sobre produção, Kubernetes e gestão. Os módulos 01 a 09 têm perguntas mais profundas sobre cada tema.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre container e máquina virtual? E entre imagem e container?</span></summary><div class="ans">
+  <p>A VM virtualiza hardware e roda um SO completo com kernel próprio sobre um hypervisor. O container é um processo isolado por namespaces e limitado por cgroups, que compartilha o kernel do host: mais leve (MBs, sobe em segundos), enquanto a VM isola mais e pode rodar outro SO.</p>
+  <p>A imagem é um modelo imutável em camadas; o container é uma instância em execução dela, com uma camada gravável própria. Uma imagem gera vários containers.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>O que são as camadas de uma imagem e por que importam?</span></summary><div class="ans">
+  <p>Cada instrução que altera arquivos gera uma camada somente-leitura, empilhada via overlay2. São compartilhadas entre imagens e cacheadas no build. Importam para tamanho (apagar numa camada posterior não reduz a imagem), velocidade de build (ordem das instruções) e de pull (camadas já baixadas não são baixadas de novo). Segredos ficam em camadas para sempre.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>CMD x ENTRYPOINT? COPY x ADD?</span></summary><div class="ans">
+  <p>ENTRYPOINT define o executável; CMD define os argumentos padrão (ou o comando, se não houver ENTRYPOINT). Argumentos no <code>docker run</code> substituem o CMD; o ENTRYPOINT só muda com <code>--entrypoint</code>. Use sempre a forma exec (JSON) para o processo receber sinais.</p>
+  <p>COPY e ADD copiam arquivos do contexto; o ADD também baixa URLs e extrai tar locais. Prefira COPY, previsível; ADD só quando quiser a extração automática.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>ARG x ENV?</span></summary><div class="ans">
+  <p>ARG existe só durante o build (<code>--build-arg</code>). ENV fica gravado na imagem e existe no container em execução. Nenhum dos dois serve para segredos: ambos aparecem no histórico/metadados da imagem. Segredos de build usam <code>RUN --mount=type=secret</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>O que é multi-stage build e como você reduz o tamanho de uma imagem?</span></summary><div class="ans">
+  <p>Vários <code>FROM</code> no mesmo Dockerfile: estágios de build com SDK e dependências de desenvolvimento, e um estágio final que copia só o artefato (<code>COPY --from</code>). Resultado: imagem menor, pull mais rápido, menos CVEs; permite também alvos (<code>--target dev</code>).</p>
+  <ul><li>Multi-stage levando só o artefato.</li><li>Base menor (slim, alpine, distroless).</li><li>Só dependências de produção.</li><li>Limpar caches na mesma instrução RUN.</li><li><code>.dockerignore</code>.</li></ul>
+  <p>Para conferir: <code>docker image history</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Como acelerar o build? O que é o contexto de build?</span></summary><div class="ans">
+  <p>Ordenar instruções do que muda menos para o que muda mais (manifesto de dependências e instalação antes do código), <code>.dockerignore</code>, cache mounts do BuildKit e, no CI, cache remoto (<code>--cache-from</code>/<code>--cache-to</code>).</p>
+  <p>O contexto é o conjunto de arquivos enviado ao builder em <code>docker build &lt;caminho&gt;</code>; COPY e ADD só enxergam o que está nele. Contexto grande deixa o build lento; o <code>.dockerignore</code> reduz e impede que arquivos sensíveis entrem.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Como persistir dados? Volume x bind mount?</span></summary><div class="ans">
+  <p>Dados vão para fora da camada gravável. Volume nomeado é gerenciado pelo Docker, portável e indicado para bancos. Bind mount liga uma pasta do host: ótimo em desenvolvimento, frágil em produção. tmpfs fica em memória. Volumes sobrevivem a <code>docker rm</code> e <code>compose down</code> (mas não a <code>down -v</code>).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Como dois containers se comunicam?</span></summary><div class="ans">
+  <p>Na mesma rede definida pelo usuário (ou no mesmo projeto Compose), usando o nome do serviço como hostname; o DNS interno resolve. A conexão usa a porta interna; não é preciso publicar porta. A bridge padrão não tem resolução por nome.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>A aplicação roda, mas não acesso pela porta publicada. O que verifico?</span></summary><div class="ans">
+  <ol><li>O container está de pé? (<code>docker ps</code>, não em loop de reinício)</li><li>O mapeamento está certo? (<code>-p host:container</code> com a porta em que a app realmente escuta)</li><li>A app escuta em <code>0.0.0.0</code>, não em <code>127.0.0.1</code>?</li><li>Logs da aplicação.</li><li>Firewall ou outro processo usando a porta no host.</li></ol></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>O que o depends_on garante? E .env x env_file x environment?</span></summary><div class="ans">
+  <p>Na forma curta, só a ordem de início, não que o serviço esteja pronto. Com <code>condition: service_healthy</code> espera o healthcheck; com <code>service_completed_successfully</code>, espera um serviço terminar com sucesso (migração). A aplicação deve reconectar mesmo assim.</p>
+  <p>O <code>.env</code> da pasta interpola <code>${VAR}</code> no próprio arquivo Compose. <code>env_file</code> injeta variáveis de um arquivo no container. <code>environment</code> define no YAML e tem precedência sobre o env_file.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como você trata segredos?</span></summary><div class="ans">
+  <p>Nunca na imagem (ENV, ARG ou arquivo copiado) nem no git. Em runtime: secrets do Compose/Swarm/Kubernetes montados como arquivo, ou um cofre (Vault, AWS Secrets Manager). No build: <code>--mount=type=secret</code>. Variáveis de ambiente aparecem em <code>docker inspect</code> e podem vazar em logs. Segredo vazado se rotaciona.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>O container morre com exit code 137. O que significa?</span></summary><div class="ans">
+  <p>128 + 9: SIGKILL. A causa comum é falta de memória (<code>docker inspect</code> mostra <code>OOMKilled: true</code>): aumente o limite com base em medição ou ache o vazamento. Outra causa: <code>docker stop</code> esperou 10 s sem a aplicação encerrar, normalmente por CMD na forma shell ou app que não trata SIGTERM.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Por que não rodar o container como root?</span></summary><div class="ans">
+  <p>O root do container é UID 0 do host com restrições. Se a app for explorada e houver falha de isolamento (kernel, volume sensível, socket), o invasor ganha root no host. Com <code>USER</code> não-root, <code>cap_drop</code> e <code>no-new-privileges</code>, o estrago fica contido (módulo 09).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>Por que não usar a tag latest em produção?</span></summary><div class="ans">
+  <p>É mutável e não diz qual versão roda. Dois servidores podem rodar versões diferentes com a mesma tag e o rollback fica impossível; no Kubernetes, o manifesto não muda, então nada é reimplantado. Use versão semântica ou SHA do commit, e digest para imutabilidade total.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Quantos processos devem rodar num container?</span></summary><div class="ans">
+  <p>Idealmente um processo principal (uma responsabilidade). API, worker e banco em containers separados escalam, reiniciam e geram logs de forma independente. Processos auxiliares do mesmo serviço são aceitáveis; use um init (<code>--init</code>/tini) para sinais e zumbis.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Docker Compose em produção: pode?</span></summary><div class="ans">
+  <p>Pode, para aplicações pequenas num único servidor, com <code>restart</code>, healthchecks, limites de recursos e rotação de logs. A limitação é ser uma máquina só: sem alta disponibilidade entre hosts, auto-scaling ou rolling update nativo. Acima disso, Kubernetes ou serviço gerenciado (ECS, Cloud Run).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>O Kubernetes deixou de suportar Docker?</span></summary><div class="ans">
+  <p>Deixou de usar o Docker Engine como runtime dos nós (remoção do dockershim na 1.24); usa containerd ou CRI-O. Imagens construídas com Docker continuam funcionando, porque seguem o padrão OCI. O que quebra é quem dependia do socket Docker do nó (builds dentro de pods, agentes).</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Como você colocaria uma aplicação legada num container?</span></summary><div class="ans">
+  <ol><li>Levantar dependências: runtime, bibliotecas do sistema, variáveis, arquivos de configuração, portas.</li><li>Tirar configuração e segredos do código para variáveis de ambiente.</li><li>Logs para stdout.</li><li>Dados persistentes (uploads, sessões em disco) para volumes ou serviços externos.</li><li>Dockerfile multi-stage, usuário não-root, healthcheck, tratamento de SIGTERM.</li><li>Compose com as dependências (banco, cache) para desenvolvimento e testes.</li></ol></div></details>
+
+  <details class="qa"><summary><span class="qn">19</span><span>docker stop x docker kill x docker rm?</span></summary><div class="ans">
+  <p><code>stop</code> envia SIGTERM e, após o prazo (10 s por padrão), SIGKILL. <code>kill</code> envia SIGKILL imediatamente (ou outro sinal com <code>-s</code>). <code>rm</code> remove um container parado (<code>-f</code> força parando antes), descartando a camada gravável.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">20</span><span>Explique Pod, Deployment, Service e Ingress, ligando ao Compose.</span></summary><div class="ans">
+  <p>Pod: um ou mais containers com rede e volumes em comum, efêmero. Deployment: mantém N réplicas e faz rolling update/rollback. Service: nome e IP estáveis com balanceamento entre pods prontos. Ingress: entrada HTTP por host e caminho. Um <code>service</code> do Compose corresponde a Deployment + Service; <code>environment</code> a ConfigMap; <code>secrets</code> a Secret; volume nomeado a PVC; healthcheck a probes.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">21</span><span>Liveness x readiness: qual a diferença e qual erro comum?</span></summary><div class="ans">
+  <p>Liveness decide se o container deve ser <em>reiniciado</em>; readiness decide se ele recebe <em>tráfego</em>. A startup probe cobre a inicialização lenta. Erro comum: checar o banco na liveness, o que provoca reinícios em cascata quando a dependência cai. Liveness verifica o processo; dependências, se entrarem, ficam na readiness.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">22</span><span>O que são requests e limits no Kubernetes?</span></summary><div class="ans">
+  <p><code>requests</code> é o que o agendador reserva ao escolher um nó; <code>limits</code> é o teto aplicado em execução. Estouro de memória = OOMKilled; de CPU = throttling. Requests altos desperdiçam dinheiro; baixos causam disputa e despejo. Ajuste com métricas reais.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">23</span><span>O que é graceful shutdown e como você garante que um deploy não gera erros?</span></summary><div class="ans">
+  <p>Ao receber SIGTERM a aplicação para de aceitar trabalho, conclui o que está em curso, fecha conexões e sai com 0 dentro do prazo. Para o deploy sem erros: readiness correta, <code>maxUnavailable: 0</code>, <code>preStop</code> curto, <code>terminationGracePeriodSeconds</code> maior que a requisição mais longa, CMD em forma exec e sinal chegando ao processo certo.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">24</span><span>Kubernetes, ECS/Fargate ou Cloud Run? Como você decide e como conta a história para a diretoria?</span></summary><div class="ans">
+  <p>Decido por critérios: habilidade do time, número de serviços e times, carga (stateless com picos?), portabilidade, custo total (pessoas incluídas) e conformidade (região no Brasil e LGPD para dados de saúde). Poucos serviços stateless: serviço gerenciado costuma ganhar. Muitos serviços e times: Kubernetes gerenciado com plataforma interna. Para a diretoria: custo e risco em números, alternativas consideradas, registro em ADR e data de revisão; piloto antes de migrar. Cito também padronização de imagem base e responsabilidades dev x plataforma.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

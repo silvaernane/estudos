@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 02: JOINs a fundo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 02 de 12 · JOINs a fundo</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a aria-current="page" href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li class="sub"><ol>
+      <li><a href="#o-que-e-join"><span class="n">1</span>O que um JOIN faz e os tipos de JOIN</a></li>
+      <li><a href="#on-where"><span class="n">2</span>Condição no ON ou no WHERE: a armadilha do LEFT JOIN</a></li>
+      <li><a href="#self-cross"><span class="n">3</span>Self join e CROSS JOIN</a></li>
+      <li><a href="#fan-out"><span class="n">4</span>Multiplicação de linhas e somas infladas (fan-out)</a></li>
+      <li><a href="#semi-anti"><span class="n">5</span>Semi-join e anti-join: EXISTS, IN e a pegadinha do NOT IN</a></li>
+      <li><a href="#legado-using"><span class="n">6</span>Sintaxe legada (+) do Oracle, NATURAL JOIN e USING</a></li>
+      <li><a href="#intervalos"><span class="n">7</span>JOINs com intervalos de datas</a></li>
+      <li><a href="#execucao"><span class="n">8</span>Como o banco executa um JOIN (visão geral)</a></li>
+      <li><a href="#boas-praticas"><span class="n">9</span>Boas práticas de legibilidade e revisão de código SQL</a></li>
+      <li><a href="#exercicios"><span class="n">10</span>Exercícios</a></li>
+      <li><a href="#cenarios-glossario"><span class="n">11</span>Cenários práticos de trabalho e glossário</a></li>
+      <li><a href="#entrevista"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html"><span class="n">05</span>Funções de janela</a></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 02 · <span class="lvl l1">Básico</span> <span class="lvl l2">Intermediário</span></div>
+  <h1>JOINs a fundo</h1>
+  <p class="lede">O JOIN é a operação que faz o modelo relacional valer a pena e a que mais produz resultados errados sem dar erro: linhas que somem, linhas que se multiplicam, somas infladas, anti-joins quebrados por um NULL. Este módulo ensina o que um JOIN realmente faz, como evitar as armadilhas clássicas e como o banco o executa.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar um JOIN como produto cartesiano filtrado e escolher entre INNER, LEFT, RIGHT, FULL, CROSS e self join.</li>
+    <li>Decidir entre condição no <code>ON</code> e no <code>WHERE</code> em um LEFT JOIN e reconhecer o "LEFT JOIN que virou INNER".</li>
+    <li>Identificar multiplicação de linhas (<em>fan-out</em>), evitar somas infladas agregando antes de juntar e abandonar o <code>DISTINCT</code> como remendo.</li>
+    <li>Escrever semi-join e anti-join corretos (<code>EXISTS</code>, <code>NOT EXISTS</code>, <code>LEFT JOIN ... IS NULL</code>) e explicar a pegadinha do <code>NOT IN</code> com NULL.</li>
+    <li>Ler e migrar a sintaxe legada <code>(+)</code> do Oracle, usar <code>USING</code> com critério e juntar por intervalos de datas.</li>
+    <li>Descrever nested loop, hash join e merge join e revisar código SQL com um checklist objetivo.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="o-que-e-join">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>O que um JOIN faz e os tipos de JOIN</h2>
+  <p>Os dados estão separados em tabelas para não repetir informação (módulo 01). O JOIN os reúne de novo: ele combina linhas de duas tabelas quando uma condição é verdadeira. Pense assim: o banco forma <strong>todos os pares possíveis</strong> de linhas (o <em>produto cartesiano</em>) e <strong>mantém só os pares em que a condição do <code>ON</code> é verdadeira</strong>. É um modelo conceitual: na prática o banco nunca materializa o produto (usa índices, hash ou ordenação), mas o <em>resultado</em> é sempre o mesmo que o produto filtrado.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 160" role="img" aria-label="JOIN como produto cartesiano filtrado: medico com 3 linhas e atendimento com 4 linhas geram 12 pares, o filtro do ON mantém 4">
+      <defs><marker id="ah-prod" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="20" width="150" height="40" rx="5"/><text x="95" y="45" text-anchor="middle">medico (3)</text>
+      <rect class="box" x="20" y="80" width="150" height="40" rx="5"/><text x="95" y="105" text-anchor="middle">atendimento (4)</text>
+      <path class="ln" d="M170,40 L190,40 L190,70 L210,70" marker-end="url(#ah-prod)"/>
+      <path class="ln" d="M170,100 L190,100 L190,80 L210,80"/>
+      <rect class="box-m" x="210" y="50" width="160" height="50" rx="5"/>
+      <text x="290" y="71" text-anchor="middle">produto cartesiano</text><text x="290" y="89" text-anchor="middle">3 x 4 = 12 pares</text>
+      <line class="ln" x1="370" y1="75" x2="400" y2="75" marker-end="url(#ah-prod)"/>
+      <rect class="box-w" x="400" y="50" width="130" height="50" rx="5"/>
+      <text x="465" y="71" text-anchor="middle">filtro do ON</text><text x="465" y="89" text-anchor="middle">mantém 4 pares</text>
+      <line class="ln" x1="530" y1="75" x2="570" y2="75" marker-end="url(#ah-prod)"/>
+      <rect class="box-a" x="570" y="50" width="110" height="50" rx="5"/>
+      <text x="625" y="71" text-anchor="middle">INNER JOIN</text><text x="625" y="89" text-anchor="middle">4 linhas</text>
+      <text class="lbl" x="20" y="148">Modelo conceitual: o banco usa índice, hash ou ordenação e nunca monta os 12 pares.</text>
+    </svg>
+    <figcaption>Um JOIN equivale a um produto cartesiano seguido de filtro pela condição do <code>ON</code>.</figcaption>
+  </figure>
+
+  <h3>Dados de exemplo deste módulo</h3>
+  <p>Versões reduzidas das tabelas (colunas omitidas). Três convênios, três médicos e quatro atendimentos; repare que <strong>Gama Seguros</strong> e <strong>Carla</strong> não têm atendimento, e que o atendimento 2 é particular (<code>id_convenio</code> NULL).</p>
+<pre><code class="text">medico                       convenio                    atendimento
+id_medico | nome   | espec.  id_convenio | nome          id | id_medico | id_convenio | status    | valor
+1         | Ana    | Cardio  1           | Alfa Saúde    1  | 1         | 1           | REALIZADO | 250.00
+2         | Bruno  | Ortop.  2           | Beta Plano    2  | 1         | NULL        | CANCELADO | 250.00
+3         | Carla  | Pediat. 3           | Gama Seguros  3  | 2         | 1           | REALIZADO | 400.00
+                                                          4  | 2         | 2           | REALIZADO | 180.00
+
+atendimento_item
+id_item | id_atendimento | cod_procedimento | qtd | valor_unit
+1       | 1              | P100             | 1   | 100.00
+2       | 1              | P200             | 2   |  75.00
+3       | 3              | P300             | 1   | 400.00
+4       | 4              | P100             | 1   | 180.00</code></pre>
+
+  <h3>Os tipos, vistos como "ligações"</h3>
+  <p>A figura mostra <code>convenio</code> à esquerda e <code>atendimento</code> à direita, ligados quando <code>c.id_convenio = a.id_convenio</code>. Em vermelho, as linhas sem par.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 300" role="img" aria-label="Três convênios à esquerda e quatro atendimentos à direita ligados por id_convenio; Gama Seguros e o atendimento 2 não têm par">
+      <text class="ttl" x="40" y="18">convenio</text><text class="ttl" x="450" y="18">atendimento</text>
+      <rect class="box" x="40" y="40" width="150" height="32" rx="5"/><text x="52" y="61">1 Alfa Saúde</text>
+      <rect class="box" x="40" y="90" width="150" height="32" rx="5"/><text x="52" y="111">2 Beta Plano</text>
+      <rect class="box-b" x="40" y="140" width="150" height="32" rx="5"/><text x="52" y="161">3 Gama Seguros</text>
+      <rect class="box" x="450" y="30" width="210" height="32" rx="5"/><text x="462" y="51">a1  id_convenio = 1</text>
+      <rect class="box-b" x="450" y="75" width="210" height="32" rx="5"/><text x="462" y="96">a2  id_convenio = NULL</text>
+      <rect class="box" x="450" y="120" width="210" height="32" rx="5"/><text x="462" y="141">a3  id_convenio = 1</text>
+      <rect class="box" x="450" y="165" width="210" height="32" rx="5"/><text x="462" y="186">a4  id_convenio = 2</text>
+      <line class="ln-a" x1="190" y1="56" x2="450" y2="46"/>
+      <line class="ln-a" x1="190" y1="56" x2="450" y2="136"/>
+      <line class="ln-a" x1="190" y1="106" x2="450" y2="181"/>
+      <text class="lbl" x="20" y="232">INNER: só as 3 ligações.</text>
+      <text class="lbl" x="20" y="250">LEFT (convenio à esquerda): as 3 ligações + Gama, com colunas de atendimento NULL.</text>
+      <text class="lbl" x="20" y="268">RIGHT: as 3 ligações + a2 (particular), com colunas de convenio NULL.</text>
+      <text class="lbl" x="20" y="286">FULL: as 3 ligações + Gama + a2.</text>
+    </svg>
+    <figcaption>Os quatro tipos de JOIN sobre as mesmas duas tabelas. A diferença é só o que acontece com as linhas sem par.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo</th><th>Devolve</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><code>INNER JOIN</code></td><td>Só os pares que satisfazem o <code>ON</code></td><td>Dados obrigatórios (atendimento e seu paciente)</td></tr>
+      <tr><td><code>LEFT [OUTER] JOIN</code></td><td>Todas as linhas da esquerda; a direita vem NULL quando não há par</td><td>"Todos os médicos, mesmo sem atendimento"; dados opcionais (convênio)</td></tr>
+      <tr><td><code>RIGHT [OUTER] JOIN</code></td><td>Espelho do LEFT: todas as da direita</td><td>Raro: troque a ordem e use LEFT</td></tr>
+      <tr><td><code>FULL [OUTER] JOIN</code></td><td>Todas as linhas dos dois lados</td><td>Reconciliar duas fontes (o que existe só aqui, só ali, nos dois)</td></tr>
+      <tr><td><code>CROSS JOIN</code></td><td>Todas as combinações, sem <code>ON</code></td><td>Gerar combinações (calendário x setor)</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sql">-- INNER: Gama some; o atendimento 2 também (id_convenio NULL não casa com nada)
+SELECT a.id_atendimento, c.nome AS convenio
+FROM atendimento a
+JOIN convenio c ON c.id_convenio = a.id_convenio;        -- JOIN = INNER JOIN
+-- 1 Alfa Saúde | 3 Alfa Saúde | 4 Beta Plano     (3 linhas)
+
+-- LEFT: todos os atendimentos; particular vira convênio NULL
+SELECT a.id_atendimento, c.nome AS convenio
+FROM atendimento a
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio;
+-- 1 Alfa | 2 NULL | 3 Alfa | 4 Beta               (4 linhas)
+
+-- FULL: reconcilia as duas pontas
+SELECT a.id_atendimento, c.nome AS convenio
+FROM atendimento a
+FULL JOIN convenio c ON c.id_convenio = a.id_convenio;
+-- 1 Alfa | 3 Alfa | 4 Beta | 2 NULL | NULL Gama   (5 linhas; a ordem não é garantida)</code></pre>
+  <div class="note trap"><b>NULL não casa com NULL no JOIN</b><p>A condição <code>a.id_convenio = c.id_convenio</code> é UNKNOWN quando um dos lados é NULL, então o par é descartado. Por isso o atendimento particular some num INNER JOIN, e é o motivo de dados opcionais pedirem LEFT JOIN. Se uma tela mostra "menos atendimentos que o esperado" depois de um JOIN novo, procure uma FK opcional.</p></div>
+  <p><strong>Tipos de dados na junção.</strong> Junte colunas do mesmo tipo (número com número). Comparar <code>VARCHAR</code> com <code>NUMBER</code> no Oracle converte a coluna, desativando índice e falhando se houver texto não numérico (<code>ORA-01722</code>). No PostgreSQL, o <code>FULL JOIN</code> só aceita condições de igualdade que permitam hash ou merge (<code>FULL JOIN is only supported with merge-joinable or hash-joinable join conditions</code>).</p>
+  <div class="note iv"><b>Na entrevista</b><p>"Explique INNER, LEFT, RIGHT e FULL." Dê a definição pela <em>linha sem par</em>: INNER descarta, LEFT preserva as da esquerda, RIGHT as da direita, FULL as dos dois lados. Se puder, demonstre com um exemplo de 3 linhas, como o acima. Mostrar que você pensa em "produto filtrado" e que RIGHT é só um LEFT espelhado demonstra domínio.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A escolha INNER versus LEFT é uma <em>decisão de negócio</em> disfarçada de sintaxe: "atendimentos sem convênio devem aparecer neste relatório?". Peça ao autor que responda a pergunta explicitamente na revisão. Muitos números divergentes entre relatórios vêm de um INNER onde deveria haver um LEFT (ou o contrário).</p></div>
+</section>
+
+<section class="chap" id="on-where">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Condição no ON ou no WHERE: a armadilha do LEFT JOIN</h2>
+  <p>Em <code>INNER JOIN</code>, colocar um filtro no <code>ON</code> ou no <code>WHERE</code> dá o mesmo resultado. Em <code>LEFT JOIN</code>, <strong>não</strong>. A razão está na ordem lógica (módulo 01): o <code>ON</code> é avaliado <em>durante</em> o JOIN, decidindo quais pares existem; o <code>WHERE</code> roda <em>depois</em> e descarta linhas do resultado, inclusive as que vieram da preservação do lado esquerdo.</p>
+<pre><code class="sql">-- Objetivo: TODOS os médicos, com a quantidade de atendimentos realizados (0 se não houver)
+
+-- ERRADO: o filtro está no WHERE; Carla (sem atendimento) vem com a.status NULL e é descartada
+SELECT m.nome, COUNT(a.id_atendimento) AS qtd
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+WHERE a.status = 'REALIZADO'
+GROUP BY m.nome;
+-- Ana 1 | Bruno 2          (Carla sumiu: o LEFT JOIN virou INNER)
+
+-- CERTO: o filtro da tabela da direita fica no ON
+SELECT m.nome, COUNT(a.id_atendimento) AS qtd
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+                       AND a.status = 'REALIZADO'
+GROUP BY m.nome;
+-- Ana 1 | Bruno 2 | Carla 0</code></pre>
+  <p>Repare que Ana tem dois atendimentos (um realizado, um cancelado). Com o filtro no <code>ON</code>, o cancelado simplesmente não forma par e Ana fica com 1. O <code>COUNT(a.id_atendimento)</code> (e não <code>COUNT(*)</code>) é essencial: ele ignora o NULL de Carla e dá 0, em vez de 1.</p>
+
+  <h3>O inverso: filtro sobre a tabela da esquerda no ON</h3>
+<pre><code class="sql">-- Armadilha oposta: filtrar a tabela PRESERVADA dentro do ON não elimina nenhuma linha dela
+SELECT m.nome, a.id_atendimento
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+                       AND m.especialidade = 'Cardiologia';
+-- Ana 1 | Ana 2 | Bruno NULL | Carla NULL     (todos os médicos continuam aparecendo)</code></pre>
+  <p>No LEFT JOIN, o <code>ON</code> nunca remove linhas da esquerda: apenas decide se elas têm par. Para restringir os médicos, o filtro vai no <code>WHERE</code> (<code>WHERE m.especialidade = 'Cardiologia'</code>).</p>
+
+  <h3>Resumo e outras formas do mesmo erro</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Você quer</th><th>Onde pôr o filtro</th></tr></thead>
+    <tbody>
+      <tr><td>Restringir a tabela <strong>preservada</strong> (esquerda no LEFT)</td><td><code>WHERE</code></td></tr>
+      <tr><td>Restringir quais linhas da tabela <strong>opcional</strong> (direita) podem fazer par, mantendo a esquerda</td><td><code>ON</code></td></tr>
+      <tr><td>Achar linhas da esquerda <strong>sem</strong> par</td><td><code>WHERE direita.chave IS NULL</code> (anti-join, seção 5)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Sintoma disfarçado:</strong> qualquer predicado do <code>WHERE</code> sobre coluna da tabela opcional, exceto <code>IS NULL</code>, transforma o LEFT em INNER: <code>a.valor &gt; 0</code>, <code>a.status &lt;&gt; 'CANCELADO'</code>, <code>a.status = 'REALIZADO'</code>. Só <code>IS NULL</code> (ou uma expressão que trate o NULL, como <code>COALESCE(a.status, '-') &lt;&gt; 'CANCELADO'</code>) preserva as linhas sem par.</li>
+    <li><strong>Encadeamento:</strong> um <code>INNER JOIN</code> posterior cuja condição usa colunas da tabela opcional também anula o LEFT anterior. Em cadeias de joins, encadeie LEFT com LEFT, ou isole a parte interna numa subconsulta/CTE.</li>
+    <li><strong>Várias tabelas opcionais:</strong> <code>FROM a LEFT JOIN b ... LEFT JOIN c ON c.x = b.x</code> está correto; se <code>b</code> não tem par, <code>c</code> também não terá.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Em LEFT JOIN, condição que descreve <em>o relacionamento</em> ou restringe a tabela da <em>direita</em> vai no <code>ON</code>; condição que restringe o resultado final (a tabela da esquerda) vai no <code>WHERE</code>. Sempre que ver um <code>LEFT JOIN</code> seguido de <code>WHERE tabela_da_direita.coluna ...</code>, pare e pergunte qual era a intenção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Esta é provavelmente a pergunta de JOIN mais frequente em entrevistas: "qual a diferença entre filtrar no <code>ON</code> e no <code>WHERE</code> num LEFT JOIN?". Resposta: o <code>ON</code> decide o pareamento e preserva a esquerda; o <code>WHERE</code> filtra o resultado e descarta as linhas com NULL da direita, convertendo o LEFT em INNER. Dê o exemplo dos médicos sem atendimento.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>É o erro mais barato de pegar em revisão e um dos mais caros em produção, porque o resultado "parece certo": só faltam as linhas "vazias" (médicos sem produção, convênios sem uso), que ninguém nota. Inclua no checklist de revisão: "LEFT JOIN + WHERE sobre a tabela da direita?".</p></div>
+</section>
+
+<section class="chap" id="self-cross">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Self join e CROSS JOIN</h2>
+  <h3>Self join: a tabela junta com ela mesma</h3>
+  <p>Quando uma tabela tem uma FK para si mesma (<code>setor.id_setor_pai</code>), listar cada linha com os dados de seu "pai" exige juntar a tabela consigo, usando <strong>dois aliases</strong> para diferenciar os papéis.</p>
+<pre><code class="text">setor
+id_setor | nome                | id_setor_pai
+1        | Hospital            | NULL
+2        | Pronto Atendimento  | 1
+3        | Ambulatório         | 1
+4        | Cardiologia         | 3</code></pre>
+<pre><code class="sql">SELECT s.nome AS setor, p.nome AS setor_pai
+FROM setor s
+LEFT JOIN setor p ON p.id_setor = s.id_setor_pai;       -- LEFT: a raiz não tem pai
+-- Hospital | NULL
+-- Pronto Atendimento | Hospital
+-- Ambulatório | Hospital
+-- Cardiologia | Ambulatório</code></pre>
+  <p>Com INNER JOIN, o "Hospital" (raiz, pai NULL) desapareceria. O self join resolve <em>um nível</em>. Para percorrer a hierarquia inteira (avô, bisavô, "todos os setores abaixo do Hospital") sem saber a profundidade, use CTE recursiva (módulo 04). Outros usos clássicos de self join:</p>
+  <ul>
+    <li><strong>Pares na mesma tabela:</strong> atendimentos do mesmo paciente em até 30 dias (<code>a1.id_paciente = a2.id_paciente AND a2.dt_atendimento &gt; a1.dt_atendimento AND a2.dt_atendimento &lt;= a1.dt_atendimento + 30</code>, "retorno"). Em tabela grande é caro; avalie funções de janela (<code>LAG</code>, módulo 05), que fazem o mesmo com uma só leitura.</li>
+    <li><strong>Comparar com o registro anterior ou com a média do grupo:</strong> hoje também resolvido por janelas.</li>
+    <li><strong>Duplicatas:</strong> <code>a.id &lt; b.id AND a.cpf = b.cpf</code> encontra cadastros repetidos (a condição <code>&lt;</code> evita listar o par duas vezes e o par consigo mesmo).</li>
+  </ul>
+
+  <h3>CROSS JOIN: o produto cartesiano proposital</h3>
+  <p><code>CROSS JOIN</code> combina cada linha de uma tabela com cada linha da outra, sem condição. O número de linhas é o produto dos tamanhos, então só faz sentido com conjuntos pequenos. Usos legítimos: gerar o esqueleto de um relatório (todo setor x todo dia do mês) para depois fazer <code>LEFT JOIN</code> com os dados reais e mostrar zeros, e gerar combinações de teste.</p>
+<pre><code class="sql">-- Esqueleto: toda combinação setor x tipo de atendimento, para o relatório mostrar também os zeros
+SELECT s.nome AS setor, t.tipo
+FROM setor s
+CROSS JOIN (SELECT 'CONSULTA' AS tipo FROM dual      -- Oracle; no PG, tire o "FROM dual"
+            UNION ALL SELECT 'EXAME' FROM dual
+            UNION ALL SELECT 'RETORNO' FROM dual) t; -- 4 setores x 3 tipos = 12 linhas</code></pre>
+  <div class="note trap"><b>O CROSS JOIN acidental</b><p>Sintaxe antiga com vírgula (<code>FROM paciente p, atendimento a</code>) sem a condição no <code>WHERE</code>, ou um <code>JOIN</code> cuja condição se refere só a uma das tabelas, produz produto cartesiano: 10 mil pacientes x 10 milhões de atendimentos = 100 bilhões de linhas, um incidente de produção. Use sempre <code>JOIN ... ON</code> explícito; assim a ausência da condição vira erro de sintaxe, e <code>CROSS JOIN</code> escrito por extenso mostra a intenção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Quando você usaria um self join?" Hierarquias de um nível (setor e setor pai), comparação de pares na mesma tabela e detecção de duplicatas. Acrescente que, para a hierarquia completa, usa CTE recursiva, e que muitos self joins de "linha anterior" hoje são <code>LAG</code>. "E CROSS JOIN?": gerar esqueletos/combinações com conjuntos pequenos.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Hierarquias (setores, centros de custo, planos de contas) são fonte de relatórios com profundidade fixa "chumbada" em self joins empilhados (três níveis hoje, quatro amanhã e o relatório quebra). Pergunte como o time lida com profundidade variável e se há um limite de níveis documentado.</p></div>
+</section>
+
+
+<section class="chap" id="fan-out">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Multiplicação de linhas e somas infladas (fan-out)</h2>
+  <p>Ao juntar a tabela "um" (<code>atendimento</code>) com a tabela "muitos" (<code>atendimento_item</code>), cada linha do lado "um" <strong>se repete uma vez por filho</strong>. Se você somar uma coluna do pai depois do JOIN, ela é somada várias vezes. O resultado é plausível, não dá erro e está errado.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 240" role="img" aria-label="Fan-out: o atendimento a1 com 2 itens vira 2 linhas e a soma sai 500 em vez de 250; agregando os itens antes, sai 250">
+      <defs><marker id="ah-fan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="20">JOIN direto: a linha do pai se repete por filho</text>
+      <rect class="box" x="20" y="40" width="170" height="44" rx="5"/><text x="105" y="66" text-anchor="middle">a1: valor 250,00</text>
+      <rect class="box-b" x="250" y="30" width="250" height="30" rx="5"/><text x="262" y="50">a1 | 250,00 | item i1</text>
+      <rect class="box-b" x="250" y="70" width="250" height="30" rx="5"/><text x="262" y="90">a1 | 250,00 | item i2</text>
+      <line class="ln" x1="190" y1="58" x2="250" y2="45" marker-end="url(#ah-fan)"/>
+      <line class="ln" x1="190" y1="66" x2="250" y2="85" marker-end="url(#ah-fan)"/>
+      <line class="ln-b" x1="500" y1="45" x2="540" y2="58" marker-end="url(#ah-fan)"/>
+      <line class="ln-b" x1="500" y1="85" x2="540" y2="72" marker-end="url(#ah-fan)"/>
+      <rect class="box-b" x="540" y="42" width="140" height="46" rx="5"/><text x="610" y="62" text-anchor="middle">SUM = 500,00</text><text x="610" y="79" text-anchor="middle">(real: 250,00)</text>
+      <text class="ttl" x="20" y="148">Agregar antes: uma linha por atendimento</text>
+      <rect class="box-a" x="20" y="165" width="190" height="46" rx="5"/><text x="115" y="185" text-anchor="middle">GROUP BY id_atendimento</text><text x="115" y="202" text-anchor="middle">a1: 1 linha</text>
+      <line class="ln-a" x1="210" y1="188" x2="270" y2="188" marker-end="url(#ah-fan)"/>
+      <rect class="box-a" x="270" y="165" width="170" height="46" rx="5"/><text x="355" y="185" text-anchor="middle">JOIN com a1</text><text x="355" y="202" text-anchor="middle">1 linha: 250,00</text>
+      <line class="ln-a" x1="440" y1="188" x2="510" y2="188" marker-end="url(#ah-fan)"/>
+      <rect class="box-a" x="510" y="165" width="170" height="46" rx="5"/><text x="595" y="185" text-anchor="middle">SUM = 250,00</text><text x="595" y="202" text-anchor="middle">(correto)</text>
+    </svg>
+    <figcaption>Em cima, a explosão de linhas do JOIN com a tabela filha; embaixo, a correção: reduzir o lado "muitos" a uma linha por chave antes de juntar.</figcaption>
+  </figure>
+<pre><code class="sql">-- Faturamento dos atendimentos realizados (correto: 250 + 400 + 180 = 830)
+-- ERRADO: o JOIN com os itens repete o valor do atendimento 1 (2 itens)
+SELECT SUM(a.valor) AS total, COUNT(*) AS qtd
+FROM atendimento a
+JOIN atendimento_item i ON i.id_atendimento = a.id_atendimento
+WHERE a.status = 'REALIZADO';
+-- total = 1080,00 | qtd = 4      (inflado em 250; são 3 atendimentos)</code></pre>
+  <p>Observe que <code>COUNT(*)</code> também mente (4 em vez de 3). Soluções, da melhor para a pior:</p>
+  <ol>
+    <li><strong>Não junte o que não usa.</strong> Se o total vem só de <code>atendimento</code>, não precisa do JOIN. Para "só os atendimentos que têm item", use <code>EXISTS</code> (semi-join, seção 5).</li>
+    <li><strong>Agregue o lado "muitos" antes de juntar</strong>, deixando uma linha por chave:</li>
+  </ol>
+<pre><code class="sql">-- Valor dos atendimentos junto com o total calculado dos itens, sem multiplicar linhas
+WITH itens AS (
+  SELECT id_atendimento,
+         SUM(qtd * valor_unit) AS total_itens,
+         COUNT(*)              AS qtd_itens
+  FROM atendimento_item
+  GROUP BY id_atendimento                      -- uma linha por atendimento
+)
+SELECT SUM(a.valor)       AS total,            -- 830,00: cada atendimento aparece uma vez
+       SUM(i.total_itens) AS total_itens,      -- 830,00: bate com o valor do atendimento
+       COUNT(*)           AS qtd
+FROM atendimento a
+JOIN itens i ON i.id_atendimento = a.id_atendimento
+WHERE a.status = 'REALIZADO';</code></pre>
+  <ol start="3">
+    <li><strong>Funções de janela</strong> ou <strong>subconsulta correlacionada</strong> no <code>SELECT</code> quando o lado "muitos" é lido uma vez por linha de saída (cuidado com custo).</li>
+    <li><strong><code>DISTINCT</code>/<code>COUNT(DISTINCT)</code></strong> só em contagem de chaves (<code>COUNT(DISTINCT a.id_atendimento)</code> dá 3). Para somas, <code>SUM(DISTINCT valor)</code> é <strong>errado</strong>: remove valores repetidos, não linhas repetidas (dois atendimentos de 250 virariam um).</li>
+  </ol>
+
+  <h3>Fan-out entre duas tabelas filhas</h3>
+  <p>O pior caso é juntar o mesmo pai a <em>duas</em> tabelas "muitos" independentes (itens e, digamos, anexos): para cada atendimento, a combinação de todos os itens com todos os anexos (3 itens x 4 anexos = 12 linhas para um atendimento). As duas somas ficam infladas por produtos diferentes. A regra é a mesma: agregue cada filha separadamente (uma CTE para cada) e junte os resultados já com uma linha por pai.</p>
+
+  <h3>Como detectar</h3>
+  <ul>
+    <li>Compare <code>COUNT(*)</code> antes e depois do JOIN: se subiu, o JOIN multiplica (às vezes é intencional, mas deve ser conhecido).</li>
+    <li>Verifique a unicidade da chave do lado direito: <code>SELECT id_atendimento, COUNT(*) FROM atendimento_item GROUP BY id_atendimento HAVING COUNT(*) &gt; 1</code>. Se devolve linhas, o JOIN pelo <code>id_atendimento</code> multiplica.</li>
+    <li>Desconfie de <code>DISTINCT</code> na consulta, principalmente junto de <code>SUM</code>.</li>
+    <li>Reconcilie o total com uma consulta mais simples da mesma tabela de origem.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum em BI e ORMs</b><p>Ferramentas de relatório e mapeadores objeto-relacional montam os JOINs sozinhos. Arrastar uma métrica do pai e um campo do filho para o mesmo painel gera exatamente este fan-out e totais errados. Peça ao time que audite as métricas "de cabeçalho" (valor total, quantidade) contra a tabela de origem.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Se você precisou de <code>DISTINCT</code> para o resultado "ficar certo", desconfie do JOIN. Antes de juntar uma tabela "muitos", pergunte: o que quero é saber <em>se existe</em> (EXISTS), um <em>resumo</em> dela (agregue antes) ou cada <em>linha</em> dela (então a repetição do pai é esperada)?</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Fiz um JOIN e a soma ficou maior que o esperado, o que pode ser?" Multiplicação de linhas: o pai se repete por filho. Explique a correção (agregar o lado "muitos" antes do JOIN) e por que <code>DISTINCT</code> não resolve soma. É pergunta de pleno a sênior e costuma vir com um exemplo de faturamento.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Totais inflados em dashboards corroem a confiança nos dados de toda a área. Estabeleça uma "fonte única" por métrica (view ou CTE homologada) e testes de reconciliação automáticos: o total do relatório precisa bater com a tabela de origem, em todo deploy. Quando duas áreas mostram números diferentes para a mesma métrica, comece pesquisando fan-out e filtros de LEFT JOIN.</p></div>
+</section>
+
+<section class="chap" id="semi-anti">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Semi-join e anti-join: EXISTS, IN e a pegadinha do NOT IN</h2>
+  <p>Muitas vezes você só quer saber <em>se existe</em> correspondência, sem trazer colunas do outro lado. Fazer JOIN aí multiplica linhas (seção 4) e força <code>DISTINCT</code>. O <strong>semi-join</strong> devolve as linhas da esquerda que <em>têm</em> par (sem repeti-las); o <strong>anti-join</strong>, as que <em>não têm</em>.</p>
+  <h3>Semi-join</h3>
+<pre><code class="sql">-- Convênios que têm pelo menos um atendimento (semi-join). Resultado: Alfa Saúde, Beta Plano
+SELECT c.id_convenio, c.nome
+FROM convenio c
+WHERE EXISTS (SELECT 1 FROM atendimento a WHERE a.id_convenio = c.id_convenio);
+
+-- Equivalente com IN
+SELECT c.id_convenio, c.nome
+FROM convenio c
+WHERE c.id_convenio IN (SELECT a.id_convenio FROM atendimento a);</code></pre>
+  <p><code>EXISTS</code> e <code>IN</code> dão o mesmo resultado aqui e os otimizadores modernos os planejam como o mesmo <em>semi join</em> (o banco para de procurar no primeiro par encontrado). O <code>SELECT 1</code> dentro do <code>EXISTS</code> é convenção: a lista de colunas é ignorada. Prefira <code>EXISTS</code> quando a condição tem várias colunas ou predicados (<code>a.status = 'REALIZADO'</code>); use <code>IN</code> quando a leitura for mais natural (lista de valores).</p>
+
+  <h3>Anti-join: três formas, uma pegadinha</h3>
+<pre><code class="sql">-- (1) NOT EXISTS: a forma recomendada. Resultado: Gama Seguros
+SELECT c.id_convenio, c.nome
+FROM convenio c
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a WHERE a.id_convenio = c.id_convenio);
+
+-- (2) LEFT JOIN ... IS NULL: funciona e muitos times usam. Resultado: Gama Seguros
+SELECT c.id_convenio, c.nome
+FROM convenio c
+LEFT JOIN atendimento a ON a.id_convenio = c.id_convenio
+WHERE a.id_atendimento IS NULL;        -- teste numa coluna NOT NULL da direita (a PK)
+
+-- (3) NOT IN: PERIGOSO. Resultado: ZERO linhas (por quê? abaixo)
+SELECT c.id_convenio, c.nome
+FROM convenio c
+WHERE c.id_convenio NOT IN (SELECT a.id_convenio FROM atendimento a);</code></pre>
+  <p>A subconsulta do <code>NOT IN</code> devolve <code>(1, NULL, 1, 2)</code>, pois o atendimento 2 é particular. Para Gama (id 3): <code>3 &lt;&gt; 1 AND 3 &lt;&gt; NULL AND 3 &lt;&gt; 1 AND 3 &lt;&gt; 2</code>. O termo com NULL é UNKNOWN, e <code>TRUE AND UNKNOWN</code> é UNKNOWN: a linha nunca é aceita. Para todo convênio o resultado é o mesmo, e a consulta devolve vazio. Um único NULL na subconsulta "envenena" o <code>NOT IN</code>, e o erro é traiçoeiro porque a consulta funciona enquanto a coluna não tiver NULL e quebra no dia em que aparecer o primeiro.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Forma</th><th>NULL na subconsulta</th><th>Plano típico</th><th>Veredito</th></tr></thead>
+    <tbody>
+      <tr><td><code>NOT EXISTS</code></td><td>Correto</td><td>Oracle: <code>HASH JOIN ANTI</code> / <code>NESTED LOOPS ANTI</code>. PG: <code>Hash Anti Join</code> / <code>Nested Loop Anti Join</code></td><td>Padrão</td></tr>
+      <tr><td><code>LEFT JOIN ... IS NULL</code></td><td>Correto (se testar coluna NOT NULL da direita)</td><td>Os dois bancos costumam reconhecer o padrão e usar anti join</td><td>Aceitável; menos explícito</td></tr>
+      <tr><td><code>NOT IN</code></td><td><strong>Zero linhas</strong></td><td>Oracle tem anti join "null-aware"; PG pode cair em <em>hashed SubPlan</em> e ficar muito lento se não couber em memória</td><td>Evitar; só com coluna <code>NOT NULL</code> declarada ou filtro <code>IS NOT NULL</code></td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Duas variações úteis.</strong> (a) O filtro de negócio do lado direito entra <em>dentro</em> do <code>NOT EXISTS</code>: "pacientes sem atendimento REALIZADO" é <code>NOT EXISTS (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente AND a.status = 'REALIZADO')</code>; se o filtro fosse para fora, mudaria o significado. (b) No <code>LEFT JOIN ... IS NULL</code>, o filtro da direita vai no <code>ON</code> (seção 2), não no <code>WHERE</code>.</p>
+  <h3>Semi-join com JOIN comum: o resultado repete</h3>
+<pre><code class="sql">-- Pacientes com pelo menos um atendimento realizado: JOIN repete o paciente por atendimento
+SELECT p.id_paciente FROM paciente p
+JOIN atendimento a ON a.id_paciente = p.id_paciente AND a.status = 'REALIZADO';   -- paciente com 2 realizados aparece 2x
+
+-- Semi-join: cada paciente uma vez, sem DISTINCT
+SELECT p.id_paciente FROM paciente p
+WHERE EXISTS (SELECT 1 FROM atendimento a WHERE a.id_paciente = p.id_paciente AND a.status = 'REALIZADO');</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>"Existe?" é <code>EXISTS</code>. "Não existe?" é <code>NOT EXISTS</code>. <code>NOT IN</code> só com lista literal de valores não nulos ou subconsulta de coluna <code>NOT NULL</code> declarada. Se o resultado precisa de colunas do outro lado, aí sim use JOIN.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como achar clientes sem pedidos?" (aqui, convênios sem atendimento). Responda <code>NOT EXISTS</code>, cite a alternativa <code>LEFT JOIN ... IS NULL</code> e explique por que não <code>NOT IN</code>: um NULL na lista o torna vazio. Se perguntarem "<code>EXISTS</code> ou <code>IN</code>?", diga que o otimizador os trata como semi-join e que a diferença real aparece na negação.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Anti-joins quebrados por NULL são bugs latentes: passam em teste e falham em produção quando surge o primeiro NULL. Uma regra simples de revisão ("proibido <code>NOT IN</code> com subconsulta") elimina uma classe inteira de incidentes. Linters de SQL conseguem sinalizar o padrão automaticamente.</p></div>
+</section>
+
+<section class="chap" id="legado-using">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Sintaxe legada (+) do Oracle, NATURAL JOIN e USING</h2>
+  <h3>O operador (+) do Oracle</h3>
+  <p>Antes do Oracle 9i, o único jeito de escrever um outer join era com o operador <code>(+)</code> no <code>WHERE</code>, do lado da tabela <em>opcional</em>. Há muito código legado assim, e você precisa saber lê-lo.</p>
+<pre><code class="sql">-- Legado Oracle: todos os médicos, mesmo sem atendimento realizado
+SELECT m.nome, COUNT(a.id_atendimento) AS qtd
+FROM medico m, atendimento a                      -- junção por vírgula
+WHERE a.id_medico(+) = m.id_medico                -- (+) do lado opcional = LEFT JOIN
+  AND a.status(+)    = 'REALIZADO'                -- o filtro também precisa do (+)!
+GROUP BY m.nome;
+
+-- Equivalente ANSI (o que se deve escrever)
+SELECT m.nome, COUNT(a.id_atendimento) AS qtd
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico AND a.status = 'REALIZADO'
+GROUP BY m.nome;</code></pre>
+  <p><strong>Por que evitar o <code>(+)</code>:</strong> (1) o filtro da tabela opcional também exige <code>(+)</code>; esquecer o <code>(+)</code> em <code>a.status = 'REALIZADO'</code> mistura filtro e junção e transforma o outer em inner, o mesmo erro da seção 2, mais difícil de ver; (2) não existe <code>FULL OUTER</code> com <code>(+)</code>; (3) há restrições (não combina com <code>OR</code> nem com <code>IN</code> em certas formas, e exige o <code>(+)</code> em todas as condições entre as duas tabelas); (4) a Oracle recomenda a sintaxe ANSI na própria documentação; (5) mistura junção e filtro no <code>WHERE</code>, o que dificulta a revisão e facilita o produto cartesiano acidental. O PostgreSQL não tem <code>(+)</code>: migrar do Oracle para o PG exige reescrever esses trechos.</p>
+
+  <h3>NATURAL JOIN: evite</h3>
+  <p><code>NATURAL JOIN</code> junta por <em>todas as colunas de mesmo nome</em> nas duas tabelas, sem <code>ON</code>. É curto e perigoso: o resultado muda se alguém adicionar uma coluna com nome coincidente.</p>
+<pre><code class="sql">-- paciente e medico têm ambas a coluna "nome": o NATURAL JOIN junta por nome igual,
+-- o que nunca é o que se quer
+SELECT * FROM paciente NATURAL JOIN medico;       -- só pares com o mesmo nome</code></pre>
+
+  <h3>USING: aceitável para chaves de mesmo nome</h3>
+  <p><code>USING (coluna)</code> junta por igualdade em colunas com o mesmo nome nas duas tabelas e devolve <strong>uma só</strong> coluna no resultado.</p>
+<pre><code class="sql">SELECT id_paciente, p.nome, a.dt_atendimento      -- id_paciente aparece uma vez
+FROM paciente p
+JOIN atendimento a USING (id_paciente);           -- o mesmo que ON a.id_paciente = p.id_paciente</code></pre>
+  <ul>
+    <li>No Oracle, a coluna do <code>USING</code> <strong>não pode ter qualificador</strong> (alias) em lugar nenhum da consulta: <code>p.id_paciente</code> dá erro (<code>ORA-25154</code>). No PostgreSQL, ela pode ser qualificada.</li>
+    <li>Só serve para igualdade de colunas com o mesmo nome; condições adicionais vão no <code>WHERE</code> ou obrigam a voltar ao <code>ON</code>. Em LEFT JOIN com filtro na direita, o <code>ON</code> é necessário.</li>
+    <li>Em equipes grandes, muitos padronizam <code>ON</code> sempre, pela uniformidade; <code>USING</code> fica como açúcar sintático para chaves bem nomeadas.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Convenções de nome do esquema (<code>id_paciente</code> em todas as tabelas) são o que torna o <code>USING</code> viável; uma coluna <code>dt_criacao</code> presente nas duas tabelas é o que torna o <code>NATURAL JOIN</code> um desastre. Nunca use <code>NATURAL JOIN</code> em código de produção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Em equipes com sistemas legados, "o que significa <code>(+)</code>?" é pergunta comum. Responda: outer join antigo do Oracle, <code>(+)</code> no lado opcional, equivale a <code>LEFT</code>/<code>RIGHT JOIN</code> ANSI, e hoje se evita pelas limitações e pelos erros fáceis. Acrescente por que <code>NATURAL JOIN</code> é perigoso.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Código com <code>(+)</code> e junção por vírgula é um indicador de dívida técnica e de risco em migração Oracle para PostgreSQL. Faça um inventário (<code>grep</code> por <code>(+)</code> e por <code>FROM a, b</code>), estime o esforço e use as reescritas como oportunidade para criar testes de caracterização: executar a versão antiga e a nova e comparar resultados.</p></div>
+</section>
+
+
+<section class="chap" id="intervalos">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>JOINs com intervalos de datas</h2>
+  <p>Nem todo JOIN é por igualdade de chave. Dados com <strong>vigência</strong> (preço válido de uma data a outra, convênio ativo no período) ou com <strong>períodos</strong> (internação, escala) pedem junção por intervalo: "a qual linha da tabela de vigência pertence esta data?". Valem as mesmas regras do módulo 01: intervalos <strong>semiabertos</strong> <code>[início, fim)</code> e coluna "nua".</p>
+  <h3>Vigência: o preço válido na data do atendimento</h3>
+  <p>Suponha uma tabela auxiliar (fora do esquema principal, só para este exemplo) <code>tabela_preco (cod_procedimento, dt_inicio, dt_fim, valor)</code>, com <code>dt_fim</code> <em>exclusivo</em> (o dia em que o preço seguinte começa).</p>
+<pre><code class="sql">SELECT i.id_item, i.cod_procedimento, a.dt_atendimento, p.valor AS preco_vigente
+FROM atendimento a
+JOIN atendimento_item i ON i.id_atendimento = a.id_atendimento
+JOIN tabela_preco p     ON p.cod_procedimento = i.cod_procedimento     -- parte de igualdade (indexável)
+                       AND a.dt_atendimento &gt;= p.dt_inicio             -- parte de intervalo
+                       AND a.dt_atendimento &lt;  p.dt_fim;               -- fim exclusivo</code></pre>
+  <ul>
+    <li><strong>Garanta que as vigências não se sobreponham.</strong> Se duas linhas de <code>tabela_preco</code> cobrem a mesma data, o JOIN devolve <em>duas</em> linhas para o item (fan-out da seção 4). Em PostgreSQL, uma restrição <code>EXCLUDE USING gist</code> com intervalos (e a extensão <code>btree_gist</code> para a igualdade do código) impede a sobreposição na própria tabela; no Oracle, a garantia costuma vir de regra de aplicação, <code>TRIGGER</code> ou consulta periódica de auditoria.</li>
+    <li><strong>Vigência aberta (sem fim):</strong> use <code>dt_fim</code> NULL com <code>COALESCE(p.dt_fim, DATE '9999-12-31')</code> ou, melhor, grave sempre uma data sentinela (<code>9999-12-31</code>), que mantém a condição indexável e evita <code>OR ... IS NULL</code>.</li>
+    <li><strong>Sem vigência encontrada:</strong> o INNER JOIN descarta o item silenciosamente. Se o preço é obrigatório, use <code>LEFT JOIN</code> e trate <code>p.valor IS NULL</code> como erro de dados, para não perder faturamento.</li>
+  </ul>
+
+  <h3>Sobreposição de períodos</h3>
+  <p>Dois intervalos <code>[a1, a2)</code> e <code>[b1, b2)</code> se sobrepõem exatamente quando <strong>cada um começa antes de o outro terminar</strong>:</p>
+<pre><code class="sql">WHERE a.inicio &lt; b.fim AND b.inicio &lt; a.fim      -- com intervalos semiabertos
+-- Ex.: duas internações do mesmo leito que se sobrepõem (conflito de agenda)
+-- Intervalos que apenas se tocam ([1,5) e [5,9)) NÃO se sobrepõem, e isso é o desejado</code></pre>
+  <p>Essa é a única forma curta e correta; as tentativas manuais com <code>BETWEEN</code> e <code>OR</code> costumam esquecer um dos casos (um intervalo contido no outro). Junções por sobreposição são de desempenho delicado (seção 8): filtre antes por uma igualdade (mesmo leito, mesmo médico).</p>
+
+  <h3>Calendário: relatórios sem buracos</h3>
+  <p>Para listar <strong>todos os dias</strong> de um mês, inclusive os sem nenhum atendimento, você precisa de uma fonte de linhas que não vem de <code>atendimento</code>. Gera-se uma sequência de datas e faz-se <code>LEFT JOIN</code> com os dados, com o intervalo de cada dia semiaberto:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">WITH dias AS (
+  SELECT DATE '2026-03-01' + LEVEL - 1 AS dia
+  FROM dual CONNECT BY LEVEL &lt;= 31
+)
+SELECT d.dia, COUNT(a.id_atendimento) AS qtd
+FROM dias d
+LEFT JOIN atendimento a ON a.dt_atendimento &gt;= d.dia
+                       AND a.dt_atendimento &lt;  d.dia + 1
+                       AND a.status = 'REALIZADO'
+GROUP BY d.dia
+ORDER BY d.dia;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">WITH dias AS (
+  SELECT d::date AS dia
+  FROM generate_series(DATE '2026-03-01', DATE '2026-03-31', INTERVAL '1 day') AS g(d)
+)
+SELECT d.dia, COUNT(a.id_atendimento) AS qtd
+FROM dias d
+LEFT JOIN atendimento a ON a.dt_atendimento &gt;= d.dia
+                       AND a.dt_atendimento &lt;  d.dia + 1
+                       AND a.status = 'REALIZADO'
+GROUP BY d.dia
+ORDER BY d.dia;</code></pre>
+  </div>
+  <p>Note <code>COUNT(a.id_atendimento)</code> (não <code>COUNT(*)</code>), o filtro de status no <code>ON</code> e a coluna <code>dt_atendimento</code> nua. É a combinação do filtro de datas (módulo 01, seção 6) com a regra do <code>ON</code> (seção 2 deste módulo): sem ela, o dia sem atendimento some ou aparece com 1. Em tabelas grandes, considere agregar <code>atendimento</code> por dia antes (CTE) e só então juntar ao calendário.</p>
+  <div class="note trap"><b>Armadilha comum</b><p>Usar <code>BETWEEN d.dt_inicio AND d.dt_fim</code> numa junção de vigência com fim exclusivo faz o dia da virada casar com <strong>duas</strong> vigências (a que termina e a que começa): o item aparece duas vezes. Defina uma convenção (fim exclusivo) para todas as tabelas de vigência e escreva a regra no dicionário de dados.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como juntar atendimentos ao preço vigente na data?" JOIN com condição de intervalo <code>&gt;= dt_inicio AND &lt; dt_fim</code>, mais a igualdade do código do procedimento; mencione sobreposição de vigências (fan-out) e vigência aberta. Para a condição de sobreposição entre períodos, a fórmula <code>a.inicio &lt; b.fim AND b.inicio &lt; a.fim</code> é a resposta esperada.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Dados com vigência (tabelas de preço, convênios, contratos) são onde a integridade mais falha: lacunas e sobreposições que ninguém vê até o faturamento fechar errado. Exija validação de consistência na carga ou restrição no banco, e um relatório periódico de "vigências com buraco ou sobreposição".</p></div>
+</section>
+
+<section class="chap" id="execucao">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Como o banco executa um JOIN (visão geral)</h2>
+  <p>Você descreve <em>o que</em> juntar; o otimizador escolhe <em>como</em>. Os dois bancos têm três algoritmos de junção. Conhecê-los em alto nível explica por que uma consulta é rápida ou lenta e permite ler um plano de execução (módulo 09). O módulo 07 trata do otimizador e das estatísticas em profundidade.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 255" role="img" aria-label="Três algoritmos de junção: nested loop, hash join e merge join, cada um em dois passos, com quando usar">
+      <defs><marker id="ah-alg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="14" width="200" height="34" rx="5"/><text x="120" y="36" text-anchor="middle">Nested loop</text>
+      <rect class="box-a" x="250" y="14" width="200" height="34" rx="5"/><text x="350" y="36" text-anchor="middle">Hash join</text>
+      <rect class="box-a" x="480" y="14" width="200" height="34" rx="5"/><text x="580" y="36" text-anchor="middle">Merge join</text>
+      <line class="ln" x1="120" y1="48" x2="120" y2="78" marker-end="url(#ah-alg)"/>
+      <line class="ln" x1="350" y1="48" x2="350" y2="78" marker-end="url(#ah-alg)"/>
+      <line class="ln" x1="580" y1="48" x2="580" y2="78" marker-end="url(#ah-alg)"/>
+      <rect class="box" x="20" y="80" width="200" height="46" rx="5"/><text x="32" y="100">para cada linha da</text><text x="32" y="116">tabela externa (A)</text>
+      <rect class="box" x="250" y="80" width="200" height="46" rx="5"/><text x="262" y="100">monta hash da</text><text x="262" y="116">menor tabela (build)</text>
+      <rect class="box" x="480" y="80" width="200" height="46" rx="5"/><text x="492" y="100">ordena A e B pela</text><text x="492" y="116">chave do ON (sort)</text>
+      <line class="ln" x1="120" y1="126" x2="120" y2="152" marker-end="url(#ah-alg)"/>
+      <line class="ln" x1="350" y1="126" x2="350" y2="152" marker-end="url(#ah-alg)"/>
+      <line class="ln" x1="580" y1="126" x2="580" y2="152" marker-end="url(#ah-alg)"/>
+      <rect class="box" x="20" y="154" width="200" height="46" rx="5"/><text x="32" y="174">busca os pares na</text><text x="32" y="190">interna (B) por índice</text>
+      <rect class="box" x="250" y="154" width="200" height="46" rx="5"/><text x="262" y="174">varre a maior (probe)</text><text x="262" y="190">e consulta o hash</text>
+      <rect class="box" x="480" y="154" width="200" height="46" rx="5"/><text x="492" y="174">caminha nas duas</text><text x="492" y="190">em paralelo (merge)</text>
+      <text class="lbl" x="20" y="222">bom: poucas linhas + índice</text><text class="lbl" x="20" y="239">ruim: A grande sem índice</text>
+      <text class="lbl" x="250" y="222">bom: sem índice, igualdade</text><text class="lbl" x="250" y="239">usa memória do banco</text>
+      <text class="lbl" x="480" y="222">bom: grandes, já ordenadas</text><text class="lbl" x="480" y="239">custo: sort das duas</text>
+    </svg>
+    <figcaption>Os três algoritmos de junção. O otimizador escolhe pelo tamanho estimado das entradas, pela existência de índices e pela condição do JOIN.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Algoritmo</th><th>Como funciona</th><th>Melhor quando</th><th>Limitações</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nested loop</strong></td><td>Para cada linha externa, busca as correspondentes na interna (idealmente por índice)</td><td>Poucas linhas externas e índice na chave da interna: consultas OLTP ("atendimentos deste paciente")</td><td>Sem índice, vira produto cartesiano filtrado: custo proporcional a (linhas externas x linhas internas)</td></tr>
+      <tr><td><strong>Hash join</strong></td><td>Constrói uma tabela hash em memória com a menor entrada e varre a maior consultando o hash</td><td>Entradas grandes sem índice útil, relatórios; só <strong>igualdade</strong></td><td>Consome memória (se faltar, usa disco e fica mais lento); não serve para <code>&lt;</code>, <code>&gt;</code>, <code>BETWEEN</code></td></tr>
+      <tr><td><strong>Merge join</strong> (Oracle: sort merge)</td><td>Ordena as duas entradas pela chave e caminha nas duas ao mesmo tempo</td><td>Entradas grandes já ordenadas (por índice) ou quando a saída ordenada é útil</td><td>Custo de ordenar quando não vem ordenado; no PostgreSQL, só para igualdade</td></tr>
+    </tbody>
+  </table></div>
+  <p>Exemplo de como isso aparece. Para "atendimentos de um paciente e seu médico", o planejador usa nested loop com índice: poucas linhas, muitas buscas pontuais. Para "faturamento por convênio no ano", usa hash join entre milhões de linhas e a (pequena) tabela de convênios. Os planos abaixo são <strong>ilustrativos</strong> (números inventados):</p>
+<pre><code class="text">-- PostgreSQL (EXPLAIN)                                 -- Oracle (DBMS_XPLAN)
+Hash Join                                               | Id | Operation          | Name        |
+  Hash Cond: (a.id_convenio = c.id_convenio)            |  1 | HASH JOIN          |             |
+  -&gt; Seq Scan on atendimento a                          |  2 |  TABLE ACCESS FULL | CONVENIO    |
+  -&gt; Hash                                               |  3 |  TABLE ACCESS FULL | ATENDIMENTO |
+       -&gt; Seq Scan on convenio c</code></pre>
+  <h3>O que influencia a escolha</h3>
+  <ul>
+    <li><strong>Estimativa de linhas</strong> (estatísticas): se o otimizador acha que sobram 10 linhas e sobram 1 milhão, escolhe nested loop e o plano explode. A maior parte dos "JOIN que ficou lento" é estimativa errada (módulo 07).</li>
+    <li><strong>Índices</strong> na coluna de junção do lado interno (as FKs de que falamos no módulo 01) viabilizam o nested loop eficiente.</li>
+    <li><strong>Ordem dos joins:</strong> com 4 ou mais tabelas, a ordem importa muito; o otimizador testa combinações, mas desiste de explorar todas acima de certo número de tabelas. A ordem em que você escreve os JOINs <em>normalmente</em> não decide a ordem física (exceto com outer joins, que restringem reordenação, e parâmetros específicos do banco).</li>
+    <li><strong>Joins não equi</strong> (intervalos da seção 7, <code>&lt;</code> e <code>&gt;</code>) não usam hash join: caem em nested loop (ou, no Oracle, sort merge em alguns casos). Por isso uma igualdade extra na condição (mesmo código, mesmo leito) é decisiva.</li>
+    <li><strong>Hints e parâmetros</strong> (Oracle <code>/*+ USE_HASH */</code>, <code>/*+ LEADING */</code>; PostgreSQL <code>enable_hashjoin</code> e similares, para diagnóstico) forçam escolhas, mas são último recurso: corrija estatísticas e índices primeiro.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Nested loop é para <em>poucas linhas e índice</em>; hash join é para <em>muitas linhas e igualdade</em>; merge join, para <em>muitas linhas já ordenadas</em>. Um nested loop sobre milhões de linhas sem índice é quase sempre o culpado de uma consulta que "ficou lenta com o crescimento da tabela".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Quais algoritmos de JOIN existem e quando cada um é escolhido?" Dê as três linhas da tabela acima e acrescente que a escolha depende das <em>estimativas de cardinalidade</em>, que vêm das estatísticas. Perguntas sênior que seguem: "por que o hash join não serve para <code>&gt;</code>?" (o hash só localiza igualdade) e "o que acontece quando o hash não cabe em memória?" (derrama para disco).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Quando uma consulta fica lenta "do nada", a causa típica é mudança de plano: o volume cresceu, as estatísticas envelheceram e o otimizador trocou de algoritmo. Em vez de pedir "aumentar o servidor", peça o plano de execução antes e depois. Ter o plano de consultas críticas versionado (e alertas de regressão) vale mais que hardware.</p></div>
+</section>
+
+<section class="chap" id="boas-praticas">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Boas práticas de legibilidade e revisão de código SQL</h2>
+  <p>JOIN errado não dá erro de execução; só se descobre lendo ou reconciliando. Por isso a <strong>legibilidade</strong> é um controle de qualidade, não estética: consulta que se lê rápido é consulta que se revisa.</p>
+  <h3>Estilo</h3>
+<pre><code class="sql">-- Ruim: junção por vírgula, colunas sem qualificador, filtro e relação misturados
+select nome, valor from atendimento, paciente, convenio
+where atendimento.id_paciente = paciente.id_paciente and id_convenio = 1 and status = 'REALIZADO';
+
+-- Bom: JOIN explícito, aliases curtos, qualificadores, relação no ON, filtro no WHERE
+SELECT p.nome       AS paciente,
+       c.nome       AS convenio,
+       a.valor
+FROM atendimento a
+JOIN paciente p      ON p.id_paciente = a.id_paciente
+LEFT JOIN convenio c ON c.id_convenio = a.id_convenio       -- opcional: particular fica
+WHERE a.status = 'REALIZADO'
+  AND a.dt_atendimento &gt;= TIMESTAMP '2026-03-01 00:00:00'
+  AND a.dt_atendimento &lt;  TIMESTAMP '2026-04-01 00:00:00'
+ORDER BY a.dt_atendimento, a.id_atendimento;</code></pre>
+  <ul>
+    <li><strong>Sempre <code>JOIN ... ON</code></strong> (nunca vírgula) e <strong>qualifique toda coluna</strong> com o alias: evita ambiguidade e quebra quando alguém adiciona uma coluna de mesmo nome.</li>
+    <li><strong>Comece pela tabela "principal"</strong> (a que define a granularidade do resultado) e junte as demais ao redor, com a relação no <code>ON</code> e as regras de negócio no <code>WHERE</code>.</li>
+    <li><strong>Um predicado por linha</strong>, <code>AND</code> alinhado; aliases curtos e consistentes (<code>a</code>, <code>p</code>, <code>c</code>) em todo o repositório.</li>
+    <li><strong>CTEs nomeadas</strong> para blocos com significado de negócio (<code>itens_por_atendimento</code>), em vez de subconsultas aninhadas de quatro níveis.</li>
+    <li><strong>Comente o "porquê"</strong>, não o "o quê": por que é LEFT, por que o filtro está no <code>ON</code>, por que a vigência é exclusiva.</li>
+  </ul>
+
+  <h3>Checklist de revisão para consultas com JOIN</h3>
+  <ol class="seq">
+    <li><div><strong>Granularidade.</strong> O que é uma linha do resultado? O autor consegue dizer em uma frase (uma linha por atendimento, por paciente por mês)?</div></li>
+    <li><div><strong>Cardinalidade de cada JOIN.</strong> Cada junção é 1:1, N:1 ou 1:N? Alguma multiplica linhas sem o autor ter percebido (seção 4)?</div></li>
+    <li><div><strong>INNER ou LEFT?</strong> Linhas sem par devem aparecer? Há <code>WHERE</code> sobre a tabela da direita de um LEFT (seção 2)?</div></li>
+    <li><div><strong>NULL.</strong> Chaves e filtros anuláveis estão tratados? Há <code>NOT IN</code> com subconsulta (seção 5)?</div></li>
+    <li><div><strong>DISTINCT ou GROUP BY "de remendo".</strong> Existe só para esconder duplicação?</div></li>
+    <li><div><strong>Datas.</strong> Intervalos semiabertos, coluna nua; vigências sem sobreposição (seção 7).</div></li>
+    <li><div><strong>Desempenho.</strong> Há índice nas FKs usadas? Funções sobre colunas de junção? Tipos iguais dos dois lados? O plano foi visto com volume realista?</div></li>
+    <li><div><strong>Teste com dados de borda:</strong> pai sem filhos, FK nula, filhos duplicados, vigência vazia.</div></li>
+  </ol>
+
+  <h3>Verificação rápida de sanidade</h3>
+<pre><code class="sql">-- A chave que estou usando para juntar é única no lado direito? (se devolver linhas, haverá fan-out)
+SELECT id_atendimento, COUNT(*) FROM atendimento_item GROUP BY id_atendimento HAVING COUNT(*) &gt; 1;
+
+-- O JOIN preservou ou multiplicou as linhas do lado esquerdo?
+SELECT (SELECT COUNT(*) FROM atendimento WHERE status = 'REALIZADO') AS antes,
+       (SELECT COUNT(*) FROM atendimento a JOIN convenio c ON c.id_convenio = a.id_convenio
+         WHERE a.status = 'REALIZADO') AS depois;   -- depois &lt; antes: perdeu (NULL ou INNER); &gt; antes: multiplicou</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Para toda consulta com JOIN, escreva (ao menos mentalmente) a frase: "uma linha de resultado = um ___". Se o resultado não bate com essa frase, o JOIN está errado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como você revisa uma consulta com vários JOINs?" Mostre método: granularidade primeiro, cardinalidade de cada junção, INNER versus LEFT, NULL, duplicação, e por fim desempenho (índices e plano). Quem tem um checklist transmite maturidade; vale mais que citar sintaxe. Em vaga de liderança, acrescente como você ensina o time e automatiza o que dá (linter, testes de reconciliação).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize: guia de estilo SQL curto no repositório, checklist de revisão no modelo de pull request, formatação automática (existem formatadores de SQL) e consultas críticas com testes de reconciliação. Isso reduz o tempo de revisão e o bus factor: SQL ilegível vira conhecimento preso na cabeça de uma pessoa.</p></div>
+</section>
+
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l1">Prática</span></div>
+  <h2>Exercícios</h2>
+  <p>Tente resolver antes de abrir a resposta. Use o esquema do módulo 01 e os dados de exemplo da seção 1 deste módulo.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Liste todos os médicos com a quantidade de atendimentos <em>cancelados</em>, incluindo os que têm zero. Depois explique o que acontece se mover <code>a.status = 'CANCELADO'</code> para o <code>WHERE</code>.</span></summary><div class="ans">
+<pre><code class="sql">SELECT m.nome, COUNT(a.id_atendimento) AS cancelados
+FROM medico m
+LEFT JOIN atendimento a ON a.id_medico = m.id_medico
+                       AND a.status = 'CANCELADO'
+GROUP BY m.nome;
+-- Ana 1 | Bruno 0 | Carla 0</code></pre>
+<p>No <code>WHERE</code>, Bruno e Carla (cujas linhas viriam com <code>a.status</code> NULL ou diferente de CANCELADO) seriam descartados, e o resultado seria só "Ana 1": o LEFT JOIN vira INNER.</p></div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>O faturamento dos atendimentos realizados deveria ser 830,00, mas a consulta abaixo devolve 1080,00. Explique e corrija.
+<pre><code class="sql">SELECT SUM(a.valor) FROM atendimento a
+JOIN atendimento_item i ON i.id_atendimento = a.id_atendimento
+WHERE a.status = 'REALIZADO';</code></pre></span></summary><div class="ans">
+<p>O atendimento 1 (250,00) tem dois itens, então aparece duas vezes no JOIN: 250 a mais. Correção mais simples: não juntar, pois o valor está no próprio atendimento: <code>SELECT SUM(valor) FROM atendimento WHERE status = 'REALIZADO'</code> (830,00). Se a regra exigir "só atendimentos com item", use semi-join:</p>
+<pre><code class="sql">SELECT SUM(a.valor) FROM atendimento a
+WHERE a.status = 'REALIZADO'
+  AND EXISTS (SELECT 1 FROM atendimento_item i WHERE i.id_atendimento = a.id_atendimento);   -- 830,00</code></pre></div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Liste os convênios <em>sem nenhum atendimento realizado</em>, em duas formas corretas, e diga por que <code>NOT IN</code> falha.</span></summary><div class="ans">
+<pre><code class="sql">SELECT c.nome FROM convenio c
+WHERE NOT EXISTS (SELECT 1 FROM atendimento a
+                  WHERE a.id_convenio = c.id_convenio AND a.status = 'REALIZADO');
+
+SELECT c.nome FROM convenio c
+LEFT JOIN atendimento a ON a.id_convenio = c.id_convenio AND a.status = 'REALIZADO'
+WHERE a.id_atendimento IS NULL;
+-- ambos: Gama Seguros</code></pre>
+<p><code>NOT IN (SELECT id_convenio FROM atendimento ...)</code> falha se algum <code>id_convenio</code> retornado for NULL (atendimento particular): o predicado nunca é TRUE e o resultado é vazio. Poderia funcionar filtrando <code>WHERE a.id_convenio IS NOT NULL</code> na subconsulta, mas <code>NOT EXISTS</code> é mais seguro.</p></div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Mostre cada setor com o nome do setor pai e, para os setores raiz, o texto "(raiz)". Em que a consulta quebra se a hierarquia tiver 5 níveis e você quiser o caminho completo?</span></summary><div class="ans">
+<pre><code class="sql">SELECT s.nome AS setor, COALESCE(p.nome, '(raiz)') AS setor_pai
+FROM setor s
+LEFT JOIN setor p ON p.id_setor = s.id_setor_pai;</code></pre>
+<p>O self join resolve um nível por vez; o caminho completo exigiria um self join por nível (e fixaria a profundidade). A solução geral é CTE recursiva (módulo 04).</p></div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Escreva um relatório com <em>uma linha por dia de março de 2026</em>, com a quantidade de atendimentos realizados e zero nos dias sem atendimento. Quais os três cuidados para não errar?</span></summary><div class="ans">
+<p>Gere o calendário (Oracle: <code>CONNECT BY LEVEL</code>; PostgreSQL: <code>generate_series</code>) e faça <code>LEFT JOIN</code> com intervalo semiaberto por dia, como na seção 7. Os três cuidados: (1) <code>COUNT(a.id_atendimento)</code> e não <code>COUNT(*)</code>, para que o dia vazio dê 0; (2) o filtro <code>a.status = 'REALIZADO'</code> no <code>ON</code>, não no <code>WHERE</code>; (3) intervalo <code>&gt;= dia AND &lt; dia + 1</code> com a coluna crua, para não perder as horas do dia nem o índice.</p></div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>A tabela <code>tabela_preco</code> (seção 7) ganhou duas linhas com vigências sobrepostas para o procedimento P100, e o faturamento subiu. Como confirmar a causa e como achar as linhas problemáticas?</span></summary><div class="ans">
+<p>Causa: o JOIN por intervalo devolve duas linhas de preço para o mesmo item, fan-out. Para achar as sobreposições, faça um self join com a condição de sobreposição:</p>
+<pre><code class="sql">SELECT x.cod_procedimento, x.dt_inicio, x.dt_fim, y.dt_inicio AS ini2, y.dt_fim AS fim2
+FROM tabela_preco x
+JOIN tabela_preco y ON y.cod_procedimento = x.cod_procedimento
+                   AND x.dt_inicio &lt; y.dt_fim AND y.dt_inicio &lt; x.dt_fim
+                   AND (x.dt_inicio &lt; y.dt_inicio OR (x.dt_inicio = y.dt_inicio AND x.dt_fim &lt; y.dt_fim));  -- evita par duplicado e consigo mesmo</code></pre>
+<p>Prevenção: restrição de exclusão no PostgreSQL (<code>EXCLUDE USING gist</code>), ou validação na carga e verificação periódica no Oracle.</p></div></details>
+</section>
+
+<section class="chap" id="cenarios-glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l2">Prática</span></div>
+  <h2>Cenários práticos de trabalho e glossário</h2>
+  <h3>1. "O dashboard mostra mais receita que o financeiro"</h3>
+  <p>A métrica "receita realizada" no painel soma <code>a.valor</code> depois de um JOIN com <code>atendimento_item</code> (para filtrar por procedimento). O total é maior que o do financeiro. <strong>O que fazer:</strong> reproduzir a diferença, confirmar o fan-out (<code>COUNT(*)</code> antes e depois do JOIN), corrigir somando os itens (<code>SUM(qtd * valor_unit)</code>) ou agregando antes, e criar um teste de reconciliação mensal automático entre painel e financeiro. Registre no relatório qual é a granularidade da métrica.</p>
+  <h3>2. "Os médicos sem produção sumiram do relatório de produtividade"</h3>
+  <p>Depois de acrescentar o filtro "somente realizados", Carla e outros médicos sem atendimento saíram da lista. <strong>O que fazer:</strong> reconhecer o LEFT JOIN convertido em INNER pelo <code>WHERE</code>, mover o filtro para o <code>ON</code>, usar <code>COUNT(a.id_atendimento)</code>, e perguntar ao negócio se médico sem produção deve aparecer (normalmente sim, é o que se quer enxergar). Ensine o time a regra do módulo.</p>
+  <h3>3. "A consulta ficou lenta quando a tabela passou de 50 milhões de linhas"</h3>
+  <p>Uma busca que fazia JOIN de <code>atendimento</code> com <code>atendimento_item</code> estava em 0,3 s e agora leva minutos. <strong>O que fazer:</strong> pedir o plano de execução (módulo 09); verificar se há índice em <code>atendimento_item.id_atendimento</code> (FK sem índice), se as estatísticas estão atualizadas e se a estimativa de linhas é razoável; ver se o plano mudou de nested loop para algo inadequado. Corrija o índice ou a consulta antes de pensar em hardware.</p>
+  <h3>4. "A migração Oracle para PostgreSQL quebrou 200 consultas"</h3>
+  <p>Boa parte usa <code>(+)</code>, <code>MINUS</code>, <code>NVL</code>, <code>DUAL</code> e <code>''</code> tratado como NULL. <strong>O que fazer:</strong> inventariar por padrão (<code>grep</code>), reescrever junções para ANSI primeiro (o que já pode ser feito no Oracle, ainda antes da migração), montar testes que comparam resultado antigo e novo, e atenção especial às consultas em que string vazia e NULL se confundem.</p>
+
+  <h3>Glossário</h3>
+  <dl class="gloss">
+    <div><dt>JOIN</dt><dd>Combinação de linhas de duas tabelas segundo uma condição.</dd></div>
+    <div><dt>Produto cartesiano</dt><dd>Todos os pares possíveis de linhas de duas tabelas.</dd></div>
+    <div><dt>Outer join</dt><dd>JOIN que preserva linhas sem par (LEFT, RIGHT, FULL).</dd></div>
+    <div><dt>Self join</dt><dd>Tabela juntada com ela mesma, usando dois aliases.</dd></div>
+    <div><dt>Fan-out</dt><dd>Multiplicação de linhas do lado "um" por causa do lado "muitos".</dd></div>
+    <div><dt>Granularidade</dt><dd>O que representa uma linha do resultado.</dd></div>
+    <div><dt>Semi-join</dt><dd>Linhas da esquerda que têm par, sem repeti-las (<code>EXISTS</code>/<code>IN</code>).</dd></div>
+    <div><dt>Anti-join</dt><dd>Linhas da esquerda que não têm par (<code>NOT EXISTS</code>).</dd></div>
+    <div><dt>Predicado correlacionado</dt><dd>Subconsulta que referencia a consulta externa.</dd></div>
+    <div><dt>Nested loop</dt><dd>Algoritmo que busca, para cada linha externa, as correspondentes na interna.</dd></div>
+    <div><dt>Hash join</dt><dd>Algoritmo que monta hash da menor entrada e consulta com a maior.</dd></div>
+    <div><dt>Merge join</dt><dd>Algoritmo que ordena as duas entradas e as percorre juntas.</dd></div>
+    <div><dt>Vigência</dt><dd>Período em que um dado vale (<code>dt_inicio</code> a <code>dt_fim</code>).</dd></div>
+    <div><dt>Cardinalidade (do plano)</dt><dd>Número estimado de linhas de uma etapa.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="entrevista">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l1">Prática</span><span class="lvl l3">Sênior</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre INNER JOIN e LEFT JOIN?</span></summary><div class="ans"><p>INNER devolve só os pares que satisfazem o <code>ON</code>; LEFT preserva todas as linhas da esquerda, preenchendo com NULL as colunas da direita quando não há par. A escolha define se linhas sem correspondência aparecem.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>O que é um CROSS JOIN e quando usar?</span></summary><div class="ans"><p>Produto cartesiano: toda combinação entre as duas tabelas, sem condição. Usa-se para gerar combinações (calendário x setor) com conjuntos pequenos. Acidental, é incidente: sempre JOIN com <code>ON</code> explícito.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Qual a diferença entre filtrar no ON e no WHERE?</span></summary><div class="ans"><p>No INNER JOIN, nenhuma. No LEFT JOIN, o <code>ON</code> decide o pareamento e preserva a esquerda; o <code>WHERE</code> roda depois e descarta linhas com NULL da direita, transformando o LEFT em INNER. Filtro da tabela opcional vai no <code>ON</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>NULL casa com NULL em um JOIN?</span></summary><div class="ans"><p>Não: <code>NULL = NULL</code> é UNKNOWN e o par é descartado. Por isso FK opcional pede LEFT JOIN. Para juntar tratando NULL como igual, é preciso uma condição explícita (<code>IS NOT DISTINCT FROM</code> no PostgreSQL, ou <code>OR (a IS NULL AND b IS NULL)</code>).</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Fiz um JOIN e a contagem/soma ficou maior que o esperado. O que pode ser?</span></summary><div class="ans"><p>Fan-out: junção com a tabela "muitos" repete a linha do pai. Verifique a unicidade da chave do lado direito. Corrija agregando o lado "muitos" antes de juntar, ou usando <code>EXISTS</code> se só queria saber se há filhos. <code>DISTINCT</code> não resolve soma.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Como achar registros sem correspondência em outra tabela?</span></summary><div class="ans"><p>Anti-join: <code>NOT EXISTS</code> (recomendado) ou <code>LEFT JOIN ... WHERE direita.pk IS NULL</code>. Evite <code>NOT IN</code> com subconsulta anulável.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Por que NOT IN pode devolver vazio?</span></summary><div class="ans"><p>Se a lista tem um NULL, <code>x &lt;&gt; NULL</code> é UNKNOWN, e <code>NOT IN</code> é uma cadeia de <code>AND</code> de desigualdades: nunca fica TRUE. Resultado vazio mesmo havendo linhas sem correspondência.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>EXISTS ou IN?</span></summary><div class="ans"><p>Para a forma positiva são equivalentes e os otimizadores modernos geram o mesmo semi-join. <code>EXISTS</code> é mais natural com várias condições; <code>IN</code>, com lista de valores. A diferença real está na negação, onde <code>NOT EXISTS</code> é seguro.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>O que é um self join e dê um exemplo.</span></summary><div class="ans"><p>Juntar a tabela com ela mesma usando aliases diferentes. Exemplo: <code>setor</code> com <code>setor_pai</code> via <code>id_setor_pai</code>, com LEFT JOIN para não perder a raiz. Para hierarquias de profundidade variável, CTE recursiva.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>O que significa (+) em um SQL Oracle?</span></summary><div class="ans"><p>Outer join legado: o <code>(+)</code> no lado opcional da condição equivale a <code>LEFT</code>/<code>RIGHT JOIN</code>. Tem limitações (sem FULL, exige <code>(+)</code> também nos filtros da tabela opcional) e deve ser migrado para ANSI.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Por que evitar NATURAL JOIN? E USING, é seguro?</span></summary><div class="ans"><p>NATURAL junta por todas as colunas de mesmo nome, e o resultado muda se uma coluna coincidente for adicionada. <code>USING (col)</code> é explícito e aceitável para chaves de mesmo nome; no Oracle a coluna do <code>USING</code> não aceita qualificador.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Como juntar uma tabela com vigência (preço por período)?</span></summary><div class="ans"><p>JOIN com igualdade da chave mais <code>data &gt;= dt_inicio AND data &lt; dt_fim</code> (fim exclusivo), garantindo vigências sem sobreposição (senão há fan-out) e definindo o que fazer sem vigência (LEFT JOIN e tratar NULL como erro de dados).</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Quais são os algoritmos de JOIN e quando cada um é usado?</span></summary><div class="ans"><p>Nested loop (poucas linhas externas e índice), hash join (entradas grandes, igualdade, usa memória) e merge join (entradas grandes e ordenadas). O otimizador escolhe pelas estimativas de linhas, índices e condição do JOIN.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Uma consulta com JOIN ficou lenta quando a tabela cresceu. Como investiga?</span></summary><div class="ans"><p>Plano de execução (<code>EXPLAIN ANALYZE</code> no PG; <code>DBMS_XPLAN</code> no Oracle): algoritmo escolhido, estimativa versus real de linhas, varreduras completas. Confira índices nas FKs, estatísticas atualizadas, conversões implícitas de tipo e funções sobre colunas de junção. Só então considere reescrita ou hint.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Por que hash join não serve para junção por intervalo?</span></summary><div class="ans"><p>O hash só localiza igualdade de chave. Condições como <code>&gt;=</code>/<code>&lt;</code> exigem comparar faixas, caindo em nested loop (ou merge em alguns casos). Dê ao otimizador uma igualdade extra para reduzir as candidatas.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Como você revisa uma consulta com vários JOINs? (liderança)</span></summary><div class="ans"><p>Granularidade do resultado, cardinalidade de cada junção, INNER versus LEFT com a decisão de negócio explícita, tratamento de NULL, <code>DISTINCT</code> de remendo, datas, e por fim plano e índices. Transformo isso em checklist de pull request e em testes de reconciliação automáticos.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Dois relatórios mostram números diferentes para a mesma métrica. Por onde começa? (gestão)</span></summary><div class="ans"><p>Pela definição e a granularidade da métrica, depois pelos suspeitos de JOIN: fan-out, LEFT convertido em INNER, filtros de data com <code>BETWEEN</code>, NULL. Reconcilio por contagem e soma em fatias (dia, convênio) até isolar a divergência, e depois estabeleço uma fonte única homologada para a métrica.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

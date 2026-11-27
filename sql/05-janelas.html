@@ -1,0 +1,1472 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL 05: Funções de janela</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha SQL — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 12 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#4b4fb3; --accent-soft:#e8e9f8;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#a8abf5; --accent-soft:#1d1f3d;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#a8abf5; --accent-soft:#1d1f3d;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>SQL</span></a>
+  <div class="topnote">Módulo 05 de 12 · Funções de janela</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-fundamentos.html"><span class="n">01</span>Fundamentos e modelo relacional</a></li>
+    <li><a href="02-joins.html"><span class="n">02</span>JOINs a fundo</a></li>
+    <li><a href="03-agregacao.html"><span class="n">03</span>Agregação e agrupamento</a></li>
+    <li><a href="04-subconsultas-ctes.html"><span class="n">04</span>Subconsultas, CTEs e recursão</a></li>
+    <li><a href="05-janelas.html" aria-current="page"><span class="n">05</span>Funções de janela</a></li>
+    <li class="sub"><ol>
+      <li><a href="#janela-vs-group"><span class="n">1</span>O que é uma janela, e por que não é um GROUP BY</a></li>
+      <li><a href="#ranking-topn"><span class="n">2</span>Ranking, top-N por grupo e deduplicação</a></li>
+      <li><a href="#lag-lead"><span class="n">3</span>LAG e LEAD: olhar a linha anterior e a próxima</a></li>
+      <li><a href="#molduras"><span class="n">4</span>Molduras (frames): ROWS, RANGE, GROUPS, acumulados e a pegadinha do LAST_VALUE</a></li>
+      <li><a href="#percentuais"><span class="n">5</span>Percentuais do total, participação e curva ABC</a></li>
+      <li><a href="#gaps-islands"><span class="n">6</span>Gaps and islands: sequências e períodos contínuos</a></li>
+      <li><a href="#topn-paginacao"><span class="n">7</span>Conjuntos, top-N e paginação: OFFSET vs keyset</a></li>
+      <li><a href="#window-qualify-custo"><span class="n">8</span>Cláusula WINDOW, a ausência do QUALIFY e o custo das janelas</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="06-escrita-modelagem.html"><span class="n">06</span>Escrita, transações e modelagem</a></li>
+    <li><a href="07-otimizador.html"><span class="n">07</span>Como o banco executa</a></li>
+    <li><a href="08-indices.html"><span class="n">08</span>Índices a fundo</a></li>
+    <li><a href="09-planos.html"><span class="n">09</span>Lendo planos de execução</a></li>
+    <li><a href="10-concorrencia.html"><span class="n">10</span>Concorrência, locks e MVCC</a></li>
+    <li><a href="11-escala.html"><span class="n">11</span>Escala e manutenção</a></li>
+    <li><a href="12-diagnostico.html"><span class="n">12</span>Diagnóstico e gestão</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 05 · <span class="lvl l2">Intermediário</span> <span class="lvl l3">Avançado</span></div>
+  <h1>Funções de janela</h1>
+  <p class="lede">Calcule sobre grupos de linhas sem colapsá-las: ranking, anterior e próximo, acumulados, percentuais, sequências e paginação. É o recurso que mais troca código longo e lento por consulta curta, e uma das áreas que mais pesam em entrevista.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar a diferença entre janela e GROUP BY e o lugar da janela na ordem lógica da consulta</li>
+    <li>Escolher entre ROW_NUMBER, RANK, DENSE_RANK e NTILE diante de empates, e fazer top-N por grupo e deduplicação</li>
+    <li>Usar LAG/LEAD para intervalos entre atendimentos e indicadores de retorno em 30 dias, sem errar o filtro antes/depois da janela</li>
+    <li>Dominar molduras (ROWS, RANGE, GROUPS), a pegadinha do LAST_VALUE, acumulados e médias móveis</li>
+    <li>Calcular participações e curva ABC, e resolver gaps and islands (dias seguidos, períodos de internação)</li>
+    <li>Paginar com keyset em vez de OFFSET e ler o custo das janelas no plano (sort, memória, temp)</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="janela-vs-group">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>O que é uma janela, e por que não é um GROUP BY</h2>
+  <p>O <code>GROUP BY</code> responde "quanto no total, por grupo" e, para isso, <strong>colapsa</strong> as linhas: entram 5 atendimentos, saem 2 pacientes. Muita pergunta de negócio precisa das duas coisas ao mesmo tempo: o detalhe <em>e</em> um número calculado sobre o grupo. "Cada atendimento ao lado do total do paciente." "Cada consulta com a data da consulta anterior." "O último atendimento de cada paciente, com todas as colunas." Antes das funções de janela isso virava autojoin com subconsulta agregada, ou subconsulta correlacionada: mais código, mais leituras da tabela.</p>
+  <p>Uma <strong>função de janela</strong> (também chamada função analítica, no Oracle) calcula sobre um conjunto de linhas relacionadas à linha atual, <strong>sem remover nenhuma linha</strong> do resultado. Cada linha de entrada continua sendo uma linha de saída; a função só acrescenta uma coluna.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 240" role="img" aria-label="À esquerda, GROUP BY reduz cinco linhas a duas. À direita, a função de janela mantém as cinco linhas e acrescenta o total do paciente em cada uma">
+      <defs>
+        <marker id="ah-j1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ah-j2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="22">GROUP BY: colapsa</text>
+      <rect class="box" x="20" y="40" width="130" height="28" rx="4"/><text x="85" y="59" text-anchor="middle">p7 · 300</text>
+      <rect class="box" x="20" y="72" width="130" height="28" rx="4"/><text x="85" y="91" text-anchor="middle">p7 · 250</text>
+      <rect class="box" x="20" y="104" width="130" height="28" rx="4"/><text x="85" y="123" text-anchor="middle">p7 · 100</text>
+      <rect class="box" x="20" y="136" width="130" height="28" rx="4"/><text x="85" y="155" text-anchor="middle">p8 · 80</text>
+      <rect class="box" x="20" y="168" width="130" height="28" rx="4"/><text x="85" y="187" text-anchor="middle">p8 · 120</text>
+      <line class="ln" x1="150" y1="86" x2="210" y2="86" marker-end="url(#ah-j1)"/>
+      <line class="ln" x1="150" y1="166" x2="210" y2="166" marker-end="url(#ah-j1)"/>
+      <rect class="box-a" x="214" y="40" width="120" height="92" rx="5"/><text x="274" y="90" text-anchor="middle">p7 · 650</text>
+      <rect class="box-a" x="214" y="136" width="120" height="60" rx="5"/><text x="274" y="170" text-anchor="middle">p8 · 200</text>
+      <text class="lbl" x="20" y="222">5 linhas entram, 2 saem. O detalhe se perdeu.</text>
+      <line class="ln" x1="354" y1="12" x2="354" y2="226"/>
+      <text class="ttl" x="376" y="22">OVER (PARTITION BY): preserva</text>
+      <rect class="box" x="376" y="40" width="96" height="28" rx="4"/><text x="424" y="59" text-anchor="middle">p7 · 300</text>
+      <rect class="box" x="376" y="72" width="96" height="28" rx="4"/><text x="424" y="91" text-anchor="middle">p7 · 250</text>
+      <rect class="box" x="376" y="104" width="96" height="28" rx="4"/><text x="424" y="123" text-anchor="middle">p7 · 100</text>
+      <rect class="box" x="376" y="136" width="96" height="28" rx="4"/><text x="424" y="155" text-anchor="middle">p8 · 80</text>
+      <rect class="box" x="376" y="168" width="96" height="28" rx="4"/><text x="424" y="187" text-anchor="middle">p8 · 120</text>
+      <line class="ln" x1="472" y1="54" x2="516" y2="54" marker-end="url(#ah-j2)"/>
+      <line class="ln" x1="472" y1="86" x2="516" y2="86" marker-end="url(#ah-j2)"/>
+      <line class="ln" x1="472" y1="118" x2="516" y2="118" marker-end="url(#ah-j2)"/>
+      <line class="ln" x1="472" y1="150" x2="516" y2="150" marker-end="url(#ah-j2)"/>
+      <line class="ln" x1="472" y1="182" x2="516" y2="182" marker-end="url(#ah-j2)"/>
+      <rect class="box-a" x="520" y="40" width="144" height="28" rx="4"/><text x="592" y="59" text-anchor="middle">p7 · 300 · 650</text>
+      <rect class="box-a" x="520" y="72" width="144" height="28" rx="4"/><text x="592" y="91" text-anchor="middle">p7 · 250 · 650</text>
+      <rect class="box-a" x="520" y="104" width="144" height="28" rx="4"/><text x="592" y="123" text-anchor="middle">p7 · 100 · 650</text>
+      <rect class="box-a" x="520" y="136" width="144" height="28" rx="4"/><text x="592" y="155" text-anchor="middle">p8 · 80 · 200</text>
+      <rect class="box-a" x="520" y="168" width="144" height="28" rx="4"/><text x="592" y="187" text-anchor="middle">p8 · 120 · 200</text>
+      <text class="lbl" x="376" y="222">5 linhas entram, 5 saem, com o total.</text>
+    </svg>
+    <figcaption>Cada caixa é "paciente · valor". A janela agrega sem colapsar: a coluna nova (o total) aparece em todas as linhas do mesmo paciente.</figcaption>
+  </figure>
+
+<pre data-file="mesma pergunta, duas formas"><code class="sql">-- GROUP BY: uma linha por paciente
+SELECT id_paciente, SUM(valor) AS total
+FROM atendimento
+GROUP BY id_paciente;
+
+-- Janela: uma linha por atendimento, com o total do paciente ao lado
+SELECT id_atendimento, id_paciente, valor,
+       SUM(valor) OVER (PARTITION BY id_paciente) AS total_paciente
+FROM atendimento;</code></pre>
+<pre data-file="saída da segunda consulta (dados fictícios)"><code class="text">id_atendimento  id_paciente  valor   total_paciente
+              1            7  300.00          650.00
+              2            7  250.00          650.00
+              3            7  100.00          650.00
+              4            8   80.00          200.00
+              5            8  120.00          200.00</code></pre>
+
+  <h3>Anatomia do OVER</h3>
+<pre><code class="sql">funcao(args) OVER (
+    PARTITION BY coluna_grupo        -- 1. divide em grupos independentes (opcional)
+    ORDER BY coluna_ordem            -- 2. ordem dentro de cada grupo (opcional, às vezes obrigatória)
+    ROWS BETWEEN ... AND ...         -- 3. moldura (frame): quais linhas do grupo a função enxerga
+)</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Parte</th><th>O que faz</th><th>Se omitir</th></tr></thead>
+    <tbody>
+      <tr><td><code>PARTITION BY</code></td><td>Reinicia o cálculo a cada valor distinto. Parece o GROUP BY, mas não colapsa.</td><td>A tabela inteira (após WHERE, GROUP BY e HAVING) é uma partição só.</td></tr>
+      <tr><td><code>ORDER BY</code></td><td>Define a ordem das linhas <em>dentro</em> da partição. Em funções de ranking e de deslocamento (LAG, LEAD) é obrigatório; em agregados, muda o significado: vira acumulado.</td><td>Sem ordem, o agregado enxerga a partição inteira. Ranking e LAG não fazem sentido.</td></tr>
+      <tr><td>Moldura</td><td>Recorta, dentro da partição ordenada, o intervalo de linhas que a função usa para a linha atual.</td><td>Veja a seção 4: o padrão tem uma pegadinha.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Esse <code>ORDER BY</code> de dentro do <code>OVER</code> <strong>não ordena o resultado</strong>. Ele só vale para o cálculo. A ordem em que as linhas chegam ao cliente continua indefinida, a menos que você escreva um <code>ORDER BY</code> no fim da consulta.</p>
+
+  <h3>Onde a janela entra na ordem lógica</h3>
+  <p>As funções de janela são avaliadas <strong>depois</strong> de <code>FROM</code>, <code>JOIN</code>, <code>WHERE</code>, <code>GROUP BY</code> e <code>HAVING</code>, e <strong>antes</strong> de <code>DISTINCT</code>, do <code>ORDER BY</code> final e do <code>FETCH FIRST</code>/<code>LIMIT</code>. Duas consequências práticas:</p>
+  <ul>
+    <li><strong>Não existe função de janela no WHERE</strong> (nem no GROUP BY ou HAVING). O filtro "só o primeiro de cada grupo" exige empacotar a consulta numa subconsulta ou CTE e filtrar por fora. É a razão de o <code>QUALIFY</code> existir em outros bancos (seção 8).</li>
+    <li><strong>O WHERE da mesma consulta já reduziu as linhas</strong> antes da janela. Se você filtra <code>status = 'REALIZADO'</code> no WHERE, o LAG, o ranking e a soma só enxergam os realizados. Isso pode ser exatamente o que se quer, ou um erro silencioso.</li>
+  </ul>
+  <p>Como a janela roda depois do GROUP BY, dá para aplicar janela sobre agregados: <code>SUM(SUM(valor)) OVER ()</code> soma os totais por grupo, e o resultado serve de denominador para percentuais (seção 5).</p>
+
+  <h3>Quais funções aceitam OVER</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Família</th><th>Funções</th><th>Para quê</th></tr></thead>
+    <tbody>
+      <tr><td>Agregadas</td><td><code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MIN</code>, <code>MAX</code></td><td>Total do grupo, acumulados, médias móveis</td></tr>
+      <tr><td>Ranking</td><td><code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>, <code>NTILE</code></td><td>Posição, top-N por grupo, deduplicação, faixas</td></tr>
+      <tr><td>Deslocamento</td><td><code>LAG</code>, <code>LEAD</code></td><td>Comparar com a linha anterior ou a próxima</td></tr>
+      <tr><td>Valor na moldura</td><td><code>FIRST_VALUE</code>, <code>LAST_VALUE</code>, <code>NTH_VALUE</code></td><td>Primeiro, último ou n-ésimo valor da janela</td></tr>
+      <tr><td>Distribuição</td><td><code>PERCENT_RANK</code>, <code>CUME_DIST</code>; <code>RATIO_TO_REPORT</code> (só Oracle)</td><td>Posição relativa, participação no total</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Limites que surpreendem</b><ul>
+    <li><strong>DISTINCT dentro de agregado de janela</strong>: <code>COUNT(DISTINCT x) OVER (...)</code> não é aceito no PostgreSQL. No Oracle só funciona em formas restritas (em geral sem <code>ORDER BY</code> nem moldura); confirme na sua versão. Saída portável: calcular o distinto numa subconsulta com GROUP BY e juntar de volta.</li>
+    <li><strong>FILTER</strong>: <code>COUNT(*) FILTER (WHERE tipo = 'RETORNO') OVER (PARTITION BY ...)</code> existe no PostgreSQL. No Oracle, use <code>SUM(CASE WHEN tipo = 'RETORNO' THEN 1 ELSE 0 END) OVER (...)</code>, que funciona nos dois.</li>
+    <li><strong>Janela dentro de janela</strong> não é permitido: <code>SUM(ROW_NUMBER() OVER (...)) OVER (...)</code> falha. Resolva em duas camadas (CTE).</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre GROUP BY e função de janela?" Resposta curta: o GROUP BY reduz o número de linhas, a janela mantém todas e acrescenta o resultado do cálculo como coluna. Complemente: a janela roda depois do WHERE/GROUP BY/HAVING, então não pode ser filtrada no WHERE, e o <code>ORDER BY</code> dentro do <code>OVER</code> não ordena o resultado final.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Funções de janela costumam ser o ponto de corte entre quem "sabe SQL" e quem "faz SQL por tentativa". Na revisão de código, olhe o sinal clássico de que faltou janela: consulta que lê a mesma tabela grande duas vezes (uma agregada, outra detalhada) e junta o resultado. Em tabela de milhões de linhas, uma leitura a menos costuma valer mais que qualquer índice novo.</p></div>
+</section>
+
+<section class="chap" id="ranking-topn">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Ranking, top-N por grupo e deduplicação</h2>
+  <p>As quatro funções de ranking exigem <code>ORDER BY</code> dentro do <code>OVER</code> e diferem em <strong>como tratam empates</strong>. É a pergunta de entrevista mais repetida do assunto.</p>
+<pre data-file="quatro rankings sobre os mesmos dados"><code class="sql">SELECT id_atendimento, valor,
+       ROW_NUMBER() OVER (ORDER BY valor DESC) AS rn,
+       RANK()       OVER (ORDER BY valor DESC) AS rk,
+       DENSE_RANK() OVER (ORDER BY valor DESC) AS drk,
+       NTILE(2)     OVER (ORDER BY valor DESC) AS metade
+FROM atendimento
+WHERE id_atendimento IN (11, 12, 13, 14);</code></pre>
+<pre data-file="saída (fictícia)"><code class="text">id_atendimento   valor   rn   rk   drk   metade
+            11  300.00    1    1     1        1
+            12  300.00    2    1     1        1      &lt;- empate com o 11
+            13  250.00    3    3     2        2      &lt;- RANK pula o 2; DENSE_RANK não
+            14  100.00    4    4     3        2</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Função</th><th>Empates</th><th>Usar quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>ROW_NUMBER()</code></td><td>Nunca repete: 1, 2, 3, 4. Quem fica na frente num empate é <strong>arbitrário</strong> (e pode mudar entre execuções).</td><td>Quer exatamente uma linha por grupo; deduplicação; paginação.</td></tr>
+      <tr><td><code>RANK()</code></td><td>Empatados dividem a posição e a seguinte é pulada: 1, 1, 3, 4.</td><td>Ranking esportivo; "todos os que empatam em primeiro".</td></tr>
+      <tr><td><code>DENSE_RANK()</code></td><td>Empatados dividem a posição, sem pular: 1, 1, 2, 3.</td><td>"Os 3 maiores valores distintos"; níveis.</td></tr>
+      <tr><td><code>NTILE(n)</code></td><td>Divide as linhas ordenadas em <em>n</em> faixas de tamanho igual ou com diferença de no máximo 1; as primeiras faixas ficam com a sobra. Empates <strong>podem cair em faixas diferentes</strong>.</td><td>Quartis, decis, amostras por faixa.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Detalhe do <code>NTILE</code>: com 10 linhas e <code>NTILE(4)</code> as faixas ficam com 3, 3, 2 e 2 linhas. Ele não olha o valor, só a posição: dois atendimentos com o mesmo valor podem receber faixas diferentes. Para faixas por <em>valor</em> (percentis de verdade), use <code>PERCENT_RANK</code> ou <code>CUME_DIST</code> (seção 5).</p>
+  <div class="note trap"><b>Ranking não determinístico</b><p>Se o <code>ORDER BY</code> do <code>OVER</code> tem empates, o <code>ROW_NUMBER</code> escolhe uma ordem qualquer entre os empatados, e o resultado pode mudar de uma execução para outra (plano diferente, paralelismo, estatísticas novas). Sempre inclua uma coluna única no final como desempate: <code>ORDER BY dt_atendimento DESC, id_atendimento DESC</code>.</p></div>
+
+  <h3>Top-1 por grupo: o último atendimento de cada paciente</h3>
+  <p>É o padrão mais usado das janelas. Numera as linhas de cada paciente da mais recente para a mais antiga e fica com a de número 1:</p>
+<pre><code class="sql">SELECT *
+FROM (
+  SELECT a.*,
+         ROW_NUMBER() OVER (PARTITION BY id_paciente
+                            ORDER BY dt_atendimento DESC, id_atendimento DESC) AS rn
+  FROM atendimento a
+  WHERE a.status = 'REALIZADO'
+) x
+WHERE rn = 1;</code></pre>
+  <p>Para <strong>top-N</strong> por grupo, troque por <code>rn &lt;= 3</code>. Para "todos os que empatam na data mais recente", troque <code>ROW_NUMBER</code> por <code>RANK</code>. A pergunta "quero uma linha ou aceito empate?" precisa ser respondida antes de escolher a função.</p>
+
+  <h3>Alternativas ao ROW_NUMBER para "um por grupo"</h3>
+  <p>A janela lê <strong>todas</strong> as linhas candidatas, ordena e descarta quase tudo. Para um top-1 por grupo existem formas que o banco executa de modo mais barato, dependendo da forma dos dados:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- KEEP (DENSE_RANK LAST): agregado que "escolhe" a linha pelo critério de ordem
+SELECT id_paciente,
+       MAX(id_atendimento) KEEP (DENSE_RANK LAST
+            ORDER BY dt_atendimento, id_atendimento) AS id_ultimo,
+       MAX(dt_atendimento) AS dt_ultimo
+FROM atendimento
+WHERE status = 'REALIZADO'
+GROUP BY id_paciente;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- DISTINCT ON: a primeira linha de cada grupo, segundo o ORDER BY
+SELECT DISTINCT ON (id_paciente) *
+FROM atendimento
+WHERE status = 'REALIZADO'
+ORDER BY id_paciente, dt_atendimento DESC, id_atendimento DESC;</code></pre>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Forma</th><th>Bom quando</th><th>Cuidado</th></tr></thead>
+    <tbody>
+      <tr><td><code>ROW_NUMBER</code> + filtro</td><td>Muitos pacientes entram no resultado; portável; você precisa do top-N, não só do top-1.</td><td>Lê e ordena tudo antes de descartar.</td></tr>
+      <tr><td><code>KEEP</code> (Oracle) / <code>DISTINCT ON</code> (PG)</td><td>Top-1 com poucas colunas; código curto.</td><td>Não portável. O <code>KEEP</code> devolve só colunas agregadas.</td></tr>
+      <tr><td><code>LATERAL</code> + <code>FETCH FIRST 1</code></td><td>Poucos pacientes na tabela de fora (por exemplo, os de uma lista) e índice <code>(id_paciente, dt_atendimento)</code>: cada paciente custa um acesso por índice.</td><td>Com milhões de pacientes, são milhões de buscas; a janela ou o <code>DISTINCT ON</code> podem ganhar.</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="LATERAL (PostgreSQL; no Oracle 12c+, CROSS APPLY no lugar de CROSS JOIN LATERAL)"><code class="sql">SELECT p.id_paciente, u.id_atendimento, u.dt_atendimento
+FROM paciente p
+CROSS JOIN LATERAL (SELECT a.id_atendimento, a.dt_atendimento
+                    FROM atendimento a
+                    WHERE a.id_paciente = p.id_paciente AND a.status = 'REALIZADO'
+                    ORDER BY a.dt_atendimento DESC, a.id_atendimento DESC
+                    LIMIT 1) u            -- Oracle: FETCH FIRST 1 ROW ONLY
+WHERE p.id_paciente IN (7, 8, 9);</code></pre>
+  <p>Quando o resultado final é pequeno (os pacientes de um médico, de um setor), <code>LATERAL</code> com índice costuma ser muito mais barato que a janela, porque a janela só filtra depois de calcular sobre tudo o que passou pelo WHERE interno. A regra de escolha vem do plano (módulo 09), não do gosto.</p>
+
+  <h3>Empates na borda do top-N: FETCH FIRST ... WITH TIES</h3>
+<pre><code class="sql">-- Os 5 atendimentos de maior valor, incluindo quem empata no 5º lugar
+SELECT id_atendimento, valor
+FROM atendimento
+ORDER BY valor DESC
+FETCH FIRST 5 ROWS WITH TIES;      -- Oracle 12c+; PostgreSQL 13+</code></pre>
+  <p>Sem <code>WITH TIES</code> (ou <code>ONLY</code>), o corte no 5º lugar é arbitrário entre os empatados. Com <code>WITH TIES</code> podem voltar mais de 5 linhas. É o <code>RANK</code> aplicado ao resultado inteiro, sem precisar de subconsulta.</p>
+
+  <h3>Deduplicação</h3>
+  <p>Duplicidade de cadastro é rotina em saúde: o mesmo CPF digitado em duas recepções. Para <em>achar</em> as duplicatas, a janela mostra a posição de cada linha dentro do grupo de iguais:</p>
+<pre><code class="sql">SELECT id_paciente, cpf, nome,
+       ROW_NUMBER() OVER (PARTITION BY cpf ORDER BY id_paciente) AS ordem,
+       COUNT(*)     OVER (PARTITION BY cpf)                       AS qtd_no_cpf
+FROM paciente
+WHERE cpf IS NOT NULL;
+-- ordem = 1 é o registro "sobrevivente"; ordem &gt; 1 são as candidatas a duplicata</code></pre>
+  <p>Para <em>apagar</em> o excesso em uma tabela com chave primária, filtre pelas linhas de <code>ordem &gt; 1</code>:</p>
+<pre><code class="sql">DELETE FROM paciente
+WHERE id_paciente IN (
+  SELECT id_paciente
+  FROM (SELECT id_paciente,
+               ROW_NUMBER() OVER (PARTITION BY cpf ORDER BY id_paciente) AS ordem
+        FROM paciente
+        WHERE cpf IS NOT NULL) x
+  WHERE ordem &gt; 1
+);</code></pre>
+  <p>Para linhas <strong>totalmente idênticas</strong>, sem chave que as distinga (tabela de carga, staging), é preciso o endereço físico da linha: <code>ROWID</code> no Oracle, <code>ctid</code> no PostgreSQL. Use-o no lugar de <code>id_paciente</code> no SELECT interno, no <code>ORDER BY</code> da janela e no <code>DELETE ... WHERE ROWID IN (...)</code> (<code>ctid IN (...)</code>), com <code>PARTITION BY</code> em todas as colunas que definem "idêntica".</p>
+  <p>Para <strong>só consultar</strong> sem duplicatas, a mesma janela com <code>rn = 1</code> basta: não destrói nada, e você escolhe com <code>ORDER BY</code> qual cópia é a "verdadeira" (a mais recente, a mais completa).</p>
+  <div class="note trap"><b>Deduplicação de cadastro de paciente não é um DELETE</b><ul>
+    <li><strong>Chaves estrangeiras</strong>: <code>atendimento</code> aponta para o paciente "duplicado". Apagar quebra a FK (ou, pior, em cascata, apaga o histórico clínico). O certo é <strong>mesclar</strong>: reapontar os filhos para o registro sobrevivente e só depois remover ou inativar o outro.</li>
+    <li><strong>NULL no PARTITION BY</strong>: todas as linhas com <code>cpf</code> nulo caem na <em>mesma</em> partição. Sem o <code>WHERE cpf IS NOT NULL</code>, o código acima trataria pacientes sem CPF como duplicatas entre si.</li>
+    <li><strong>CPF igual não é sempre a mesma pessoa</strong> (erro de digitação, CPF de responsável em criança). Em prontuário, uma fusão errada mistura histórico de duas pessoas; é um incidente de segurança do paciente, não de TI.</li>
+    <li>Depois de limpar, crie o <code>UNIQUE</code> (módulo 06) para a duplicata não voltar.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Diferença entre RANK, DENSE_RANK e ROW_NUMBER?" Dê o exemplo 300, 300, 250: RANK dá 1, 1, 3; DENSE_RANK dá 1, 1, 2; ROW_NUMBER dá 1, 2, 3. Depois mostre o diferencial: "para o último atendimento de cada paciente uso <code>ROW_NUMBER</code> com um desempate único; se o negócio aceitar empate, uso <code>RANK</code>".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>"Pegue o registro mais recente" é uma regra de negócio disfarçada de SQL: o que é "mais recente" (data do atendimento, do cadastro, da última alteração)? E o que fazer se empatar? Exija que a definição esteja escrita junto da consulta. Relatórios com "último" sem desempate mudam de número sozinhos, e é assim que nascem discussões do tipo "o número de ontem era outro".</p></div>
+</section>
+
+<section class="chap" id="lag-lead">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>LAG e LEAD: olhar a linha anterior e a próxima</h2>
+  <p><code>LAG(expr, n, padrão)</code> devolve o valor de <code>expr</code> na linha <em>n</em> posições antes da atual, dentro da partição e na ordem do <code>ORDER BY</code>. <code>LEAD</code> faz o mesmo olhando para frente. O <code>n</code> é 1 por padrão. Se não existe essa linha (a primeira da partição para o LAG, a última para o LEAD), o resultado é <code>NULL</code>, ou o <code>padrão</code> se você o informar. O <code>ORDER BY</code> é obrigatório.</p>
+
+  <h3>Intervalo entre atendimentos consecutivos do mesmo paciente</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">WITH x AS (
+  SELECT id_paciente, id_atendimento, dt_atendimento,
+         LAG(dt_atendimento) OVER (PARTITION BY id_paciente
+                                   ORDER BY dt_atendimento, id_atendimento) AS dt_anterior
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+)
+SELECT id_paciente, id_atendimento, dt_atendimento, dt_anterior,
+       TRUNC(dt_atendimento) - TRUNC(dt_anterior) AS dias    -- NUMBER, em dias inteiros
+FROM x;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">WITH x AS (
+  SELECT id_paciente, id_atendimento, dt_atendimento,
+         LAG(dt_atendimento) OVER (PARTITION BY id_paciente
+                                   ORDER BY dt_atendimento, id_atendimento) AS dt_anterior
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+)
+SELECT id_paciente, id_atendimento, dt_atendimento, dt_anterior,
+       dt_atendimento::date - dt_anterior::date AS dias      -- date - date = integer
+FROM x;</code></pre>
+  </div>
+<pre data-file="saída para o paciente 7 (fictícia)"><code class="text">id_paciente  id_atendimento  dt_atendimento    dt_anterior       dias
+          7              31  2025-01-10 09:00  (null)          (null)
+          7              58  2025-02-02 14:30  2025-01-10 09:00    23
+          7              97  2025-03-20 08:15  2025-02-02 14:30    46</code></pre>
+  <div class="note trap"><b>Subtrair datas: Oracle e PostgreSQL divergem</b><ul>
+    <li><strong>Oracle</strong>: <code>DATE - DATE</code> dá um <code>NUMBER</code> em dias, <em>com fração</em> se houver hora. <code>TIMESTAMP - TIMESTAMP</code> dá <code>INTERVAL DAY TO SECOND</code>, não número. <code>CAST(ts AS DATE)</code> mantém a hora. Para contar dias inteiros use <code>TRUNC(...)</code> nos dois lados.</li>
+    <li><strong>PostgreSQL</strong>: <code>timestamp - timestamp</code> dá <code>interval</code>. Converta para <code>date</code> (<code>::date</code>) para obter inteiro de dias.</li>
+    <li>"23 dias" calculado por data de calendário e "23 dias" por diferença de horas são regras diferentes. Escolha uma e documente.</li>
+  </ul></div>
+
+  <h3>Retorno em até 30 dias</h3>
+  <p>O indicador "reconsulta em até 30 dias" é um clássico de qualidade assistencial. Com <code>LEAD</code>, cada consulta olha a próxima do mesmo paciente:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">WITH x AS (
+  SELECT id_paciente, id_atendimento, dt_atendimento, tipo,
+         LEAD(dt_atendimento) OVER (PARTITION BY id_paciente
+                                    ORDER BY dt_atendimento, id_atendimento) AS dt_proxima
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+)
+SELECT COUNT(*)                                                         AS consultas,
+       SUM(CASE WHEN TRUNC(dt_proxima) - TRUNC(dt_atendimento) &lt;= 30
+                THEN 1 ELSE 0 END)                                      AS com_retorno_30d,
+       ROUND(100 * SUM(CASE WHEN TRUNC(dt_proxima) - TRUNC(dt_atendimento) &lt;= 30
+                            THEN 1 ELSE 0 END) / COUNT(*), 1)           AS pct
+FROM x
+WHERE tipo = 'CONSULTA'
+  AND dt_atendimento &gt;= DATE '2025-01-01' AND dt_atendimento &lt; DATE '2025-04-01';</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">WITH x AS (
+  SELECT id_paciente, id_atendimento, dt_atendimento, tipo,
+         LEAD(dt_atendimento) OVER (PARTITION BY id_paciente
+                                    ORDER BY dt_atendimento, id_atendimento) AS dt_proxima
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+)
+SELECT COUNT(*)                                                         AS consultas,
+       COUNT(*) FILTER (WHERE dt_proxima::date - dt_atendimento::date &lt;= 30) AS com_retorno_30d,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE dt_proxima::date - dt_atendimento::date &lt;= 30)
+                   / COUNT(*), 1)                                       AS pct
+FROM x
+WHERE tipo = 'CONSULTA'
+  AND dt_atendimento &gt;= DATE '2025-01-01' AND dt_atendimento &lt; DATE '2025-04-01';</code></pre>
+  </div>
+  <p>A ordem das camadas importa. O <code>LEAD</code> foi calculado <strong>dentro</strong> da CTE, sobre todos os atendimentos realizados, e só <em>depois</em> o filtro <code>tipo = 'CONSULTA'</code> e o período foram aplicados por fora. Se esses filtros ficassem no WHERE da CTE, a "próxima" seria a próxima <em>consulta</em> do período, e um retorno em 5 de abril de uma consulta de 28 de março ficaria de fora. Qual das duas leituras é a certa é decisão de negócio; o erro é não saber qual você implementou.</p>
+  <div class="note trap"><b>Filtrar antes ou depois da janela</b><p>O WHERE do mesmo <code>SELECT</code> elimina linhas <strong>antes</strong> de a janela ser calculada. Filtro que define o <em>universo da janela</em> vai junto; filtro que só decide <em>quais resultados mostrar</em> vai numa camada acima. Esse é o erro mais comum em indicadores com LAG/LEAD, e o resultado costuma parecer plausível, o que o torna difícil de pegar.</p></div>
+
+  <h3>Variação mês a mês e valor padrão</h3>
+<pre><code class="sql">WITH mensal AS (
+  SELECT EXTRACT(YEAR FROM dt_atendimento) * 100 + EXTRACT(MONTH FROM dt_atendimento) AS ano_mes,
+         SUM(valor) AS total
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+  GROUP BY EXTRACT(YEAR FROM dt_atendimento) * 100 + EXTRACT(MONTH FROM dt_atendimento)
+)
+SELECT ano_mes, total,
+       LAG(total) OVER (ORDER BY ano_mes)                                  AS mes_anterior,
+       total - LAG(total, 1, 0) OVER (ORDER BY ano_mes)                    AS variacao_abs,
+       ROUND(100 * (total - LAG(total) OVER (ORDER BY ano_mes))
+                 / NULLIF(LAG(total) OVER (ORDER BY ano_mes), 0), 1)       AS variacao_pct
+FROM mensal
+ORDER BY ano_mes;</code></pre>
+  <p>Três pontos: o terceiro argumento do <code>LAG</code> (<code>0</code>) evita <code>NULL</code> no primeiro mês; <code>NULLIF(..., 0)</code> evita divisão por zero; e o <code>LAG</code> trabalha com a <em>linha</em> anterior, não com o <em>mês</em> anterior. Se um mês não tem nenhum atendimento, ele não aparece em <code>mensal</code> e o LAG compara com dois meses atrás sem avisar. Para séries com buracos, gere um calendário completo e faça <code>LEFT JOIN</code> (PostgreSQL: <code>generate_series</code>; Oracle: <code>CONNECT BY LEVEL</code> ou CTE recursiva, módulo 04).</p>
+  <p>O Oracle aceita <code>LAG(col IGNORE NULLS)</code> para pular linhas com <code>NULL</code> e pegar o valor anterior <em>não nulo</em>. No PostgreSQL, até onde pude confirmar, <code>IGNORE NULLS</code> não existe; veja a técnica de "preencher para a frente" na seção 4.</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Todo <code>LAG</code>/<code>LEAD</code> precisa de três decisões escritas: o <code>PARTITION BY</code> (comparar dentro de quê?), o <code>ORDER BY</code> com desempate único (anterior segundo qual critério?) e o que fazer na primeira/última linha (<code>NULL</code> ou padrão).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como achar pacientes que voltaram em menos de 30 dias?" Mostre o <code>LEAD</code> por paciente e a diferença de datas, e cite a alternativa: autojoin <code>a1 JOIN a2 ON a2.id_paciente = a1.id_paciente AND a2.dt_atendimento &gt; a1.dt_atendimento</code> com <code>MIN</code> da próxima, que é bem mais cara e dá o <em>primeiro</em> retorno só com agrupamento extra. Em seguida, a ressalva dos filtros antes/depois da janela.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Taxa de retorno em 30 dias, reinternação, absenteísmo recorrente: indicadores com nome parecido e definições diferentes entre áreas. Peça que cada indicador tenha uma definição única versionada (qual evento, qual janela, quais exclusões) e que o SQL que o calcula seja o mesmo no painel e no relatório regulatório. A janela torna o cálculo curto, mas não resolve ambiguidade de definição.</p></div>
+</section>
+
+<section class="chap" id="molduras">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l3">Avançado</span></div>
+  <h2>Molduras (frames): ROWS, RANGE, GROUPS, acumulados e a pegadinha do LAST_VALUE</h2>
+  <p>A <strong>moldura</strong> responde a pergunta: "para <em>esta</em> linha, quais linhas da partição a função enxerga?". Ela só importa para funções que olham um conjunto (agregados e <code>FIRST_VALUE</code>/<code>LAST_VALUE</code>/<code>NTH_VALUE</code>). Ranking e <code>LAG</code>/<code>LEAD</code> ignoram a moldura.</p>
+<pre><code class="sql">{ ROWS | RANGE | GROUPS } BETWEEN inicio AND fim [ EXCLUDE ... ]
+
+inicio / fim:
+  UNBOUNDED PRECEDING     -- primeira linha da partição
+  n PRECEDING             -- n linhas (ROWS), n unidades de valor (RANGE) ou n grupos de empatados (GROUPS) antes
+  CURRENT ROW
+  n FOLLOWING
+  UNBOUNDED FOLLOWING     -- última linha da partição</code></pre>
+
+  <h3>As três unidades</h3>
+  <ul>
+    <li><strong>ROWS</strong>: conta <em>linhas físicas</em> na ordem do <code>ORDER BY</code>. "As 2 linhas anteriores e esta."</li>
+    <li><strong>RANGE</strong>: trabalha com o <em>valor</em> da coluna de ordenação. Linhas com o mesmo valor (<strong>pares</strong>, ou <em>peers</em>) são tratadas em bloco: entram juntas ou ficam fora juntas. Com deslocamento numérico ("5 PRECEDING"), vale a distância no valor, não a contagem de linhas.</li>
+    <li><strong>GROUPS</strong>: conta <em>grupos de pares</em>. "O grupo atual e o grupo anterior." Existe no PostgreSQL 11+ e no Oracle 21c+ (versões anteriores do Oracle, como a 19c, só têm <code>ROWS</code> e <code>RANGE</code>).</li>
+  </ul>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Cinco linhas ordenadas por chave 10, 20, 20, 30, 40, com a linha atual sendo r2. ROWS 1 PRECEDING a 1 FOLLOWING inclui r1, r2 e r3. RANGE 5 PRECEDING a 5 FOLLOWING inclui só r2 e r3, os pares da chave 20. GROUPS 1 PRECEDING a 1 FOLLOWING inclui os grupos 10, 20 e 30, ou seja r1 a r4">
+      <text class="ttl" x="20" y="22">Linha atual: r2 (chave 20). Chaves em ordem: 10, 20, 20, 30, 40</text>
+      <text class="ttl" x="20" y="62">ROWS</text><text class="lbl" x="20" y="78">1 PRECEDING a 1 FOLLOWING</text>
+      <rect class="box-a" x="200" y="48" width="70" height="34" rx="4"/><text x="235" y="70" text-anchor="middle">r1 · 10</text>
+      <rect class="box-w" x="278" y="48" width="70" height="34" rx="4"/><text x="313" y="70" text-anchor="middle">r2 · 20</text>
+      <rect class="box-a" x="356" y="48" width="70" height="34" rx="4"/><text x="391" y="70" text-anchor="middle">r3 · 20</text>
+      <rect class="box" x="434" y="48" width="70" height="34" rx="4"/><text x="469" y="70" text-anchor="middle">r4 · 30</text>
+      <rect class="box" x="512" y="48" width="70" height="34" rx="4"/><text x="547" y="70" text-anchor="middle">r5 · 40</text>
+      <text class="lbl" x="596" y="70">3 linhas</text>
+      <text class="ttl" x="20" y="116">RANGE</text><text class="lbl" x="20" y="132">5 PRECEDING a 5 FOLLOWING</text>
+      <rect class="box" x="200" y="102" width="70" height="34" rx="4"/><text x="235" y="124" text-anchor="middle">r1 · 10</text>
+      <rect class="box-w" x="278" y="102" width="70" height="34" rx="4"/><text x="313" y="124" text-anchor="middle">r2 · 20</text>
+      <rect class="box-a" x="356" y="102" width="70" height="34" rx="4"/><text x="391" y="124" text-anchor="middle">r3 · 20</text>
+      <rect class="box" x="434" y="102" width="70" height="34" rx="4"/><text x="469" y="124" text-anchor="middle">r4 · 30</text>
+      <rect class="box" x="512" y="102" width="70" height="34" rx="4"/><text x="547" y="124" text-anchor="middle">r5 · 40</text>
+      <text class="lbl" x="596" y="124">2 linhas</text>
+      <text class="ttl" x="20" y="170">GROUPS</text><text class="lbl" x="20" y="186">1 PRECEDING a 1 FOLLOWING</text>
+      <rect class="box-a" x="200" y="156" width="70" height="34" rx="4"/><text x="235" y="178" text-anchor="middle">r1 · 10</text>
+      <rect class="box-w" x="278" y="156" width="70" height="34" rx="4"/><text x="313" y="178" text-anchor="middle">r2 · 20</text>
+      <rect class="box-a" x="356" y="156" width="70" height="34" rx="4"/><text x="391" y="178" text-anchor="middle">r3 · 20</text>
+      <rect class="box-a" x="434" y="156" width="70" height="34" rx="4"/><text x="469" y="178" text-anchor="middle">r4 · 30</text>
+      <rect class="box" x="512" y="156" width="70" height="34" rx="4"/><text x="547" y="178" text-anchor="middle">r5 · 40</text>
+      <text class="lbl" x="596" y="178">4 linhas</text>
+      <text class="lbl" x="20" y="216">Laranja: linha atual. Azul: dentro da moldura. Sem cor: fora. r2 e r3 são pares (mesma chave).</text>
+    </svg>
+    <figcaption>A mesma linha atual, três molduras diferentes. ROWS conta linhas; RANGE olha a distância no valor da chave (e carrega os pares junto); GROUPS conta blocos de pares.</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Oracle</th><th>PostgreSQL</th></tr></thead>
+    <tbody>
+      <tr><td><code>ROWS</code></td><td>Sim</td><td>Sim</td></tr>
+      <tr><td><code>RANGE</code> com <code>UNBOUNDED</code>/<code>CURRENT ROW</code></td><td>Sim</td><td>Sim</td></tr>
+      <tr><td><code>RANGE</code> com deslocamento (<code>n PRECEDING</code>)</td><td>Sim: precisa de uma única coluna no ORDER BY (numérica, data ou intervalo); em datas usa <code>INTERVAL</code> ou número de dias</td><td>Sim, a partir da versão 11, com um único critério de ordenação</td></tr>
+      <tr><td><code>GROUPS</code></td><td>Sim, 21c+ (não na 19c)</td><td>Sim, 11+</td></tr>
+      <tr><td><code>EXCLUDE CURRENT ROW | GROUP | TIES</code></td><td>Sim, 21c+ (não na 19c)</td><td>Sim, 11+</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>A moldura padrão e por que ela engana</h3>
+  <ul>
+    <li>Sem <code>ORDER BY</code>: a moldura é a <strong>partição inteira</strong>. <code>SUM(valor) OVER (PARTITION BY id_paciente)</code> dá o total do paciente em todas as linhas.</li>
+    <li>Com <code>ORDER BY</code> e sem moldura explícita: <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>. Do começo da partição até a linha atual <strong>e todos os pares dela</strong>.</li>
+  </ul>
+  <p>Com datas únicas, isso parece um acumulado linha a linha. Com datas repetidas, não:</p>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">SELECT id_atendimento, TRUNC(dt_atendimento) AS dia, valor,
+       SUM(valor) OVER (ORDER BY TRUNC(dt_atendimento))                        AS padrao_range,
+       SUM(valor) OVER (ORDER BY TRUNC(dt_atendimento), id_atendimento
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)      AS por_linha
+FROM atendimento
+WHERE id_paciente = 7;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">SELECT id_atendimento, dt_atendimento::date AS dia, valor,
+       SUM(valor) OVER (ORDER BY dt_atendimento::date)                        AS padrao_range,
+       SUM(valor) OVER (ORDER BY dt_atendimento::date, id_atendimento
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)      AS por_linha
+FROM atendimento
+WHERE id_paciente = 7;</code></pre>
+  </div>
+<pre data-file="saída (fictícia): duas linhas no dia 01/02"><code class="text">id_atendimento  dia         valor  padrao_range  por_linha
+            40  2025-02-01  100.00        150.00     100.00
+            41  2025-02-01   50.00        150.00     150.00     &lt;- RANGE soma os dois pares nas duas linhas
+            42  2025-02-02   80.00        230.00     230.00</code></pre>
+  <div class="note trap"><b>Escreva a moldura sempre que houver ORDER BY num agregado</b><p>O acumulado por <code>RANGE</code> não está errado, só não é o que a maioria das pessoas pensa. Um relatório com "saldo acumulado" que mostra o mesmo valor em duas linhas do mesmo dia é sintoma disso. Para acumulado linha a linha, escreva <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code> e um <code>ORDER BY</code> com desempate único. Detalhe de desempenho: <code>ROWS</code> costuma ser mais barato que <code>RANGE</code>, porque não precisa localizar os pares.</p></div>
+
+  <h3>FIRST_VALUE, LAST_VALUE e NTH_VALUE</h3>
+  <p><code>FIRST_VALUE(x)</code> devolve <code>x</code> da primeira linha da <strong>moldura</strong>; <code>LAST_VALUE(x)</code>, da última; <code>NTH_VALUE(x, n)</code>, da n-ésima. Como a moldura padrão termina na linha atual, aparece a pegadinha clássica:</p>
+<pre><code class="sql">SELECT dt_atendimento, valor,
+       FIRST_VALUE(valor) OVER (ORDER BY dt_atendimento)                        AS primeiro,
+       LAST_VALUE(valor)  OVER (ORDER BY dt_atendimento)                        AS ultimo_errado,
+       LAST_VALUE(valor)  OVER (ORDER BY dt_atendimento
+                                ROWS BETWEEN UNBOUNDED PRECEDING
+                                         AND UNBOUNDED FOLLOWING)              AS ultimo_certo
+FROM atendimento
+WHERE id_paciente = 7;</code></pre>
+<pre data-file="saída (fictícia)"><code class="text">dt_atendimento    valor   primeiro  ultimo_errado  ultimo_certo
+2025-01-10 09:00  100.00    100.00         100.00        300.00
+2025-02-02 14:30  250.00    100.00         250.00        300.00
+2025-03-20 08:15  300.00    100.00         300.00        300.00</code></pre>
+  <p>O <code>ultimo_errado</code> é só o valor da própria linha, porque a moldura termina nela. Duas saídas: ampliar a moldura até <code>UNBOUNDED FOLLOWING</code>, como acima; ou <strong>inverter a ordem</strong> e usar <code>FIRST_VALUE</code> (<code>FIRST_VALUE(valor) OVER (ORDER BY dt_atendimento DESC)</code>), que dispensa moldura explícita porque o "primeiro" da moldura padrão é sempre o primeiro da partição.</p>
+
+  <h3>Preencher para a frente (último valor não nulo)</h3>
+  <p>No Oracle, <code>LAST_VALUE(col IGNORE NULLS) OVER (ORDER BY dia ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)</code> carrega o último valor conhecido. No PostgreSQL, até onde pude confirmar, não há <code>IGNORE NULLS</code>; a técnica portável usa duas janelas: <code>COUNT(col) OVER (ORDER BY dia)</code> numera "blocos" (cada valor não nulo abre um bloco, porque COUNT ignora NULL) e <code>FIRST_VALUE(col) OVER (PARTITION BY bloco ORDER BY dia)</code> copia o valor do início do bloco.</p>
+
+  <h3>Totais acumulados e médias móveis</h3>
+<div class="tabs">
+<pre data-label="Oracle"><code class="sql">WITH mensal AS (
+  SELECT TRUNC(dt_atendimento, 'MM') AS mes,
+         SUM(valor) AS total
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+  GROUP BY TRUNC(dt_atendimento, 'MM')
+)
+SELECT mes, total,
+       SUM(total) OVER (ORDER BY mes
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   AS acumulado,
+       AVG(total) OVER (ORDER BY mes
+                        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)           AS media_3m
+FROM mensal
+ORDER BY mes;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">WITH mensal AS (
+  SELECT DATE_TRUNC('month', dt_atendimento) AS mes,
+         SUM(valor) AS total
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+  GROUP BY DATE_TRUNC('month', dt_atendimento)
+)
+SELECT mes, total,
+       SUM(total) OVER (ORDER BY mes
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)   AS acumulado,
+       AVG(total) OVER (ORDER BY mes
+                        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)           AS media_3m
+FROM mensal
+ORDER BY mes;</code></pre>
+  </div>
+  <p><strong>Média móvel por linhas ou por tempo?</strong> <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> chama de "7 dias" as 7 últimas <em>linhas</em>. Se um dia não tem linha (fim de semana sem atendimento), a janela cobre mais de 7 dias de calendário. Para média de 7 dias corridos, use <code>RANGE</code> sobre a data:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">SELECT dia, total,
+       AVG(total) OVER (ORDER BY dia
+                        RANGE BETWEEN INTERVAL '6' DAY PRECEDING
+                                  AND CURRENT ROW) AS media_7d
+FROM faturamento_diario;      -- dia é DATE, uma linha por dia com movimento</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">SELECT dia, total,
+       AVG(total) OVER (ORDER BY dia
+                        RANGE BETWEEN INTERVAL '6 days' PRECEDING
+                                  AND CURRENT ROW) AS media_7d     -- PostgreSQL 11+
+FROM faturamento_diario;      -- dia é DATE, uma linha por dia com movimento</code></pre>
+  </div>
+  <p>Mesmo assim, a média de uma janela de 7 dias com 3 dias com dados divide por 3, não por 7. Se "dia sem atendimento" deve contar como zero, gere o calendário e faça <code>LEFT JOIN</code> antes da janela. E nas primeiras linhas a janela ainda está "enchendo": para exibir só médias completas, compare com <code>COUNT(*) OVER (mesma moldura)</code> e devolva <code>NULL</code> abaixo do mínimo.</p>
+<p>No PostgreSQL 11+ e no Oracle 21c+ (não na 19c): <code>EXCLUDE CURRENT ROW</code> (por exemplo, a média dos <em>outros</em> valores do paciente) e <code>GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW</code> (a soma do dia atual e do dia anterior com movimento).</p>
+  <div class="note rule"><b>Regra de bolso</b><p>Acumulado e média móvel: <code>ROWS</code> + <code>ORDER BY</code> único. Média por período de tempo: <code>RANGE</code> com intervalo (e calendário completo se há buracos). <code>LAST_VALUE</code>: sempre com <code>UNBOUNDED FOLLOWING</code>, ou use <code>FIRST_VALUE</code> com a ordem invertida.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a moldura padrão e por que o LAST_VALUE retorna a própria linha?" Resposta: com <code>ORDER BY</code>, o padrão é <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>; a moldura termina na linha atual (mais os pares), então o último valor <em>da moldura</em> é o da própria linha. Corrija com <code>UNBOUNDED FOLLOWING</code>. Cite também que <code>RANGE</code> soma os pares, o que bagunça acumulados com datas repetidas.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Média móvel e acumulado aparecem em quase todo painel financeiro. O erro típico não quebra nada: o número sai "quase certo". Peça teste com dados pequenos e conferidos à mão (3 dias, um deles repetido) no pull request, para provar que o acumulado soma linha a linha e a média móvel cobre o período prometido.</p></div>
+</section>
+
+<section class="chap" id="percentuais">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Percentuais do total, participação e curva ABC</h2>
+  <p>"Quanto cada convênio representa do faturamento?" é uma conta de <code>valor / total</code>. O total vem de <code>SUM(...) OVER ()</code>: janela sem partição nem ordem, ou seja, a consulta inteira como um grupo só.</p>
+<pre data-file="participação por convênio, sem autojoin"><code class="sql">SELECT c.nome,
+       SUM(a.valor)                                              AS total,
+       ROUND(100 * SUM(a.valor) / SUM(SUM(a.valor)) OVER (), 1)  AS pct_do_total
+FROM atendimento a
+JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY c.nome
+ORDER BY total DESC;</code></pre>
+  <p>Note o <code>SUM(SUM(a.valor)) OVER ()</code>: o <code>SUM</code> de dentro é o agregado do <code>GROUP BY</code> (por convênio), o de fora é a função de janela sobre esses totais. Funciona porque a janela é avaliada depois do GROUP BY.</p>
+
+  <h3>RATIO_TO_REPORT (Oracle) e o equivalente no PostgreSQL</h3>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- RATIO_TO_REPORT: valor / soma dos valores da partição. Sem ORDER BY.
+SELECT c.nome, SUM(a.valor) AS total,
+       RATIO_TO_REPORT(SUM(a.valor)) OVER () AS fracao
+FROM atendimento a JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY c.nome;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Não há RATIO_TO_REPORT: divida pela soma da janela.
+SELECT c.nome, SUM(a.valor) AS total,
+       SUM(a.valor)::numeric / NULLIF(SUM(SUM(a.valor)) OVER (), 0) AS fracao
+FROM atendimento a JOIN convenio c ON c.id_convenio = a.id_convenio
+WHERE a.status = 'REALIZADO'
+GROUP BY c.nome;</code></pre>
+  </div>
+  <p>Para a participação <strong>dentro de um grupo</strong>, acrescente <code>PARTITION BY</code>: o percentual de cada convênio dentro do setor, por exemplo, é <code>valor / SUM(valor) OVER (PARTITION BY id_setor)</code>. Dois cuidados:</p>
+  <ul>
+    <li><strong>Divisão inteira</strong>: no PostgreSQL <code>int / int</code> trunca (<code>7/2 = 3</code>). Com colunas <code>NUMERIC</code> (como <code>valor</code>) isso não ocorre, mas contagens (<code>COUNT(*)</code>, que é <code>bigint</code>) sim. Multiplique por <code>100.0</code> ou converta (<code>::numeric</code>). No Oracle, <code>NUMBER</code> não trunca.</li>
+    <li><strong>Total zero ou nulo</strong>: <code>NULLIF(total, 0)</code> no denominador evita erro de divisão por zero.</li>
+  </ul>
+
+  <h3>Curva ABC (Pareto): acumulado do percentual</h3>
+  <p>Combine a participação com um acumulado. A classe A são os convênios que, juntos, formam os primeiros ~80% do faturamento:</p>
+<pre><code class="sql">WITH t AS (
+  SELECT c.nome, SUM(a.valor) AS total
+  FROM atendimento a JOIN convenio c ON c.id_convenio = a.id_convenio
+  WHERE a.status = 'REALIZADO'
+  GROUP BY c.nome
+), p AS (
+  SELECT nome, total,
+         total / SUM(total) OVER ()                                    AS pct,
+         SUM(total) OVER (ORDER BY total DESC, nome
+                          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+           / SUM(total) OVER ()                                        AS pct_acum
+  FROM t
+)
+SELECT nome, total, ROUND(100 * pct, 1) AS pct, ROUND(100 * pct_acum, 1) AS pct_acum,
+       CASE WHEN pct_acum - pct &lt; 0.80 THEN 'A'      -- antes desta linha ainda não chegou a 80%
+            WHEN pct_acum - pct &lt; 0.95 THEN 'B'
+            ELSE 'C' END AS classe
+FROM p
+ORDER BY total DESC, nome;</code></pre>
+<pre data-file="saída (fictícia)"><code class="text">nome            total      pct   pct_acum  classe
+Particular   50000.00     50.0       50.0     A
+Conv Alfa    25000.00     25.0       75.0     A
+Conv Beta    15000.00     15.0       90.0     A      &lt;- antes dela estava em 75%
+Conv Gama     7000.00      7.0       97.0     B
+Conv Delta    3000.00      3.0      100.0     C</code></pre>
+  <p>O truque do <code>pct_acum - pct</code> classifica pelo acumulado <em>antes</em> da linha: assim o item que "atravessa" os 80% ainda entra em A. Os cortes (80/95) são convenção de negócio, não regra do SQL.</p>
+
+  <h3>PERCENT_RANK, CUME_DIST e percentis</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Função</th><th>Definição</th><th>Faixa</th></tr></thead>
+    <tbody>
+      <tr><td><code>PERCENT_RANK()</code></td><td><code>(RANK - 1) / (linhas da partição - 1)</code></td><td>0 até 1; a primeira linha é sempre 0</td></tr>
+      <tr><td><code>CUME_DIST()</code></td><td>linhas com valor menor ou igual ao atual (contando os pares) / total de linhas</td><td>maior que 0 até 1; a última é sempre 1</td></tr>
+      <tr><td><code>NTILE(n)</code></td><td>faixa 1..n por posição, sem olhar o valor</td><td>inteiro</td></tr>
+    </tbody>
+  </table></div>
+  <p>Para a <strong>mediana</strong> ou o percentil 90 de um valor (por exemplo, o tempo de espera até o atendimento), use as funções de distribuição inversa, que são <em>agregadas</em> com <code>WITHIN GROUP</code>:</p>
+<pre><code class="sql">SELECT id_setor,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY espera_min) AS mediana,
+       PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY espera_min) AS p90
+FROM fila_espera
+GROUP BY id_setor;</code></pre>
+  <p><code>PERCENTILE_CONT</code> interpola entre valores; <code>PERCENTILE_DISC</code> devolve um valor que existe na amostra. Nos dois bancos elas funcionam como agregado com <code>GROUP BY</code>. Para ter o percentil <em>ao lado de cada linha</em> como janela, o Oracle aceita <code>PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER (PARTITION BY ...)</code>; no PostgreSQL esse agregado ordenado não aceita <code>OVER</code>, então calcule no agrupamento e junte de volta. Cuidado em quem usa média de tempo de espera: a média esconde a cauda longa, e é a cauda que gera reclamação.</p>
+  <div class="note trap"><b>Percentual da linha errada</b><p>Se o <code>WHERE</code> remove linhas antes da janela, o "total" muda junto. <code>valor / SUM(valor) OVER ()</code> com <code>WHERE status = 'REALIZADO'</code> é a participação <em>entre realizados</em>. Se você queria a participação sobre tudo, o filtro tem de vir depois (camada externa). E percentuais arredondados (<code>ROUND(..., 1)</code>) raramente somam exatamente 100: mostre o arredondamento como apresentação, não use o valor arredondado em contas.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como calcular o percentual de cada linha sobre o total sem autojoin?" <code>valor / SUM(valor) OVER ()</code>; no Oracle também <code>RATIO_TO_REPORT(valor) OVER ()</code>. Acrescente <code>PARTITION BY</code> para o percentual dentro do grupo, <code>NULLIF</code> no denominador e atenção à divisão inteira no PostgreSQL.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>A curva ABC por convênio, procedimento ou médico mostra onde está a dependência: se 3 convênios respondem por 90% da receita, uma glosa em massa de um deles é risco de caixa. É uma consulta de 10 linhas e uma ótima pergunta para a próxima reunião de resultado. Dê ao time a definição dos cortes, não deixe cada analista escolher os seus.</p></div>
+</section>
+
+<section class="chap" id="gaps-islands">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Gaps and islands: sequências e períodos contínuos</h2>
+  <p>Problema recorrente: dado um conjunto de eventos ordenados, achar os <strong>blocos contínuos</strong> ("ilhas") e os <strong>buracos</strong> entre eles. Exemplos: sequências de dias seguidos com atendimento (adesão a um tratamento), períodos contínuos de internação, faixas de numeração de guias sem falha. Sem janela, isso exige autojoin recursivo; com janela, são duas camadas.</p>
+
+  <h3>Técnica 1: diferença entre a chave e o ROW_NUMBER</h3>
+  <p>Se a chave é um inteiro (ou uma data, que é número de dias), então, ao longo de uma sequência <strong>sem buracos</strong>, a chave e o <code>ROW_NUMBER</code> sobem juntos de 1 em 1, e a <em>diferença</em> entre os dois é constante. Quando há um buraco, a chave pula e a diferença muda. A diferença vira o identificador da ilha:</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Dias 1, 2, 3, 5, 6 e 9 com atendimento. Numerados de 1 a 6. A diferença dia menos número é 0, 0, 0, 1, 1, 3, o que forma três ilhas: dias 1 a 3, dias 5 a 6 e dia 9">
+      <text class="ttl" x="20" y="22">Dias com atendimento do paciente 7 (um dia por linha)</text>
+      <text class="lbl" x="20" y="58">dia</text>
+      <text class="lbl" x="20" y="98">rn (ROW_NUMBER)</text>
+      <text class="lbl" x="20" y="138">dia − rn</text>
+      <rect class="box-a" x="130" y="40" width="80" height="26" rx="4"/><text x="170" y="58" text-anchor="middle">1</text>
+      <rect class="box-a" x="218" y="40" width="80" height="26" rx="4"/><text x="258" y="58" text-anchor="middle">2</text>
+      <rect class="box-a" x="306" y="40" width="80" height="26" rx="4"/><text x="346" y="58" text-anchor="middle">3</text>
+      <rect class="box-w" x="394" y="40" width="80" height="26" rx="4"/><text x="434" y="58" text-anchor="middle">5</text>
+      <rect class="box-w" x="482" y="40" width="80" height="26" rx="4"/><text x="522" y="58" text-anchor="middle">6</text>
+      <rect class="box-m" x="570" y="40" width="80" height="26" rx="4"/><text x="610" y="58" text-anchor="middle">9</text>
+      <rect class="box" x="130" y="80" width="80" height="26" rx="4"/><text x="170" y="98" text-anchor="middle">1</text>
+      <rect class="box" x="218" y="80" width="80" height="26" rx="4"/><text x="258" y="98" text-anchor="middle">2</text>
+      <rect class="box" x="306" y="80" width="80" height="26" rx="4"/><text x="346" y="98" text-anchor="middle">3</text>
+      <rect class="box" x="394" y="80" width="80" height="26" rx="4"/><text x="434" y="98" text-anchor="middle">4</text>
+      <rect class="box" x="482" y="80" width="80" height="26" rx="4"/><text x="522" y="98" text-anchor="middle">5</text>
+      <rect class="box" x="570" y="80" width="80" height="26" rx="4"/><text x="610" y="98" text-anchor="middle">6</text>
+      <rect class="box-a" x="130" y="120" width="80" height="26" rx="4"/><text x="170" y="138" text-anchor="middle">0</text>
+      <rect class="box-a" x="218" y="120" width="80" height="26" rx="4"/><text x="258" y="138" text-anchor="middle">0</text>
+      <rect class="box-a" x="306" y="120" width="80" height="26" rx="4"/><text x="346" y="138" text-anchor="middle">0</text>
+      <rect class="box-w" x="394" y="120" width="80" height="26" rx="4"/><text x="434" y="138" text-anchor="middle">1</text>
+      <rect class="box-w" x="482" y="120" width="80" height="26" rx="4"/><text x="522" y="138" text-anchor="middle">1</text>
+      <rect class="box-m" x="570" y="120" width="80" height="26" rx="4"/><text x="610" y="138" text-anchor="middle">3</text>
+      <line class="ln-a" x1="130" y1="166" x2="386" y2="166"/>
+      <line class="ln" x1="394" y1="166" x2="562" y2="166"/>
+      <line class="ln-b" x1="570" y1="166" x2="650" y2="166"/>
+      <text class="lbl" x="130" y="186">ilha 1: dias 1 a 3</text>
+      <text class="lbl" x="394" y="186">ilha 2: dias 5 a 6</text>
+      <text class="lbl" x="570" y="186">ilha 3: dia 9</text>
+      <text class="lbl" x="20" y="210">Dia 4 e dias 7 e 8 não tiveram atendimento: são os buracos que o valor de "dia − rn" detecta.</text>
+    </svg>
+    <figcaption>Os números dos dias são ilustrativos (dia do mês). Cada valor distinto de "dia − rn" é uma ilha; MIN e MAX do dia por ilha dão início e fim.</figcaption>
+  </figure>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">WITH dias AS (
+  SELECT DISTINCT TRUNC(dt_atendimento) AS dia           -- DATE à meia-noite
+  FROM atendimento
+  WHERE id_paciente = :p AND status = 'REALIZADO'
+), g AS (
+  SELECT dia,
+         dia - ROW_NUMBER() OVER (ORDER BY dia) AS grp    -- DATE - NUMBER = DATE
+  FROM dias
+)
+SELECT MIN(dia) AS inicio, MAX(dia) AS fim, COUNT(*) AS dias_seguidos
+FROM g
+GROUP BY grp
+ORDER BY inicio;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">WITH dias AS (
+  SELECT DISTINCT dt_atendimento::date AS dia
+  FROM atendimento
+  WHERE id_paciente = $1 AND status = 'REALIZADO'
+), g AS (
+  SELECT dia,
+         dia - CAST(ROW_NUMBER() OVER (ORDER BY dia) AS integer) AS grp  -- date - integer = date
+  FROM dias
+)
+SELECT MIN(dia) AS inicio, MAX(dia) AS fim, COUNT(*) AS dias_seguidos
+FROM g
+GROUP BY grp
+ORDER BY inicio;</code></pre>
+  </div>
+<pre data-file="saída (fictícia)"><code class="text">inicio      fim         dias_seguidos
+2025-03-01  2025-03-03              3
+2025-03-05  2025-03-06              2
+2025-03-09  2025-03-09              1</code></pre>
+  <p>O <code>DISTINCT</code> sobre o dia é obrigatório: duas linhas no mesmo dia dariam dois <code>ROW_NUMBER</code> e quebrariam a conta. Para listar os <strong>buracos</strong> em vez das ilhas, use o par de ilhas consecutivas: <code>LEAD(inicio) OVER (ORDER BY inicio)</code> menos o <code>fim</code> da ilha atual.</p>
+
+  <h3>Técnica 2: marcar a quebra com LAG e somar o acumulado</h3>
+  <p>A técnica 1 só funciona com chave inteira e regra "consecutivo = diferença 1". Quando a regra é "mesmo episódio se a diferença for de até 30 dias", ou a chave é um timestamp, marque as quebras e some:</p>
+<pre><code class="sql">WITH x AS (
+  SELECT id_paciente, dt_atendimento,
+         CASE WHEN LAG(dt_atendimento) OVER (PARTITION BY id_paciente ORDER BY dt_atendimento) IS NULL
+                OR CAST(dt_atendimento AS DATE)                       -- PG: dt_atendimento::date
+                 - CAST(LAG(dt_atendimento) OVER (PARTITION BY id_paciente
+                                                  ORDER BY dt_atendimento) AS DATE) &gt; 30
+              THEN 1 ELSE 0 END AS nova_ilha
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+), y AS (
+  SELECT x.*,
+         SUM(nova_ilha) OVER (PARTITION BY id_paciente ORDER BY dt_atendimento
+                              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS episodio
+  FROM x
+)
+SELECT id_paciente, episodio, MIN(dt_atendimento) AS inicio, MAX(dt_atendimento) AS fim, COUNT(*) AS qtd
+FROM y
+GROUP BY id_paciente, episodio;</code></pre>
+  <p>Três camadas, uma ideia: (1) <code>LAG</code> compara com o anterior e marca <code>1</code> onde começa um episódio novo; (2) a soma acumulada dos <code>1</code> numera os episódios; (3) o <code>GROUP BY</code> resume cada um. No Oracle, troque <code>CAST(... AS DATE)</code> por <code>TRUNC(...)</code> se quiser dias inteiros (veja a seção 3).</p>
+
+  <h3>Períodos contínuos de internação (intervalos que se sobrepõem)</h3>
+  <p>Aqui cada linha já é um <em>intervalo</em> (entrada e saída), e intervalos podem se sobrepor ou se tocar (transferência entre leitos, reentrada no mesmo dia). Queremos fundir tudo o que é contínuo num período só. A tabela abaixo é ilustrativa e <strong>não faz parte do esquema-base</strong> do estudo: <code>internacao(id_internacao, id_paciente, dt_entrada, dt_saida)</code>, com <code>dt_saida</code> nula enquanto o paciente está internado.</p>
+<pre><code class="sql">WITH i AS (
+  SELECT id_paciente, dt_entrada,
+         COALESCE(dt_saida, LOCALTIMESTAMP) AS dt_saida           -- ainda internado: "até agora"
+  FROM internacao
+), x AS (
+  SELECT i.*,
+         MAX(dt_saida) OVER (PARTITION BY id_paciente
+                             ORDER BY dt_entrada, dt_saida
+                             ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS saida_max_anterior
+  FROM i
+), y AS (
+  SELECT x.*,
+         CASE WHEN saida_max_anterior IS NULL
+                OR dt_entrada &gt; saida_max_anterior THEN 1 ELSE 0 END AS novo_periodo
+  FROM x
+), z AS (
+  SELECT y.*,
+         SUM(novo_periodo) OVER (PARTITION BY id_paciente ORDER BY dt_entrada, dt_saida
+                                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS periodo
+  FROM y
+)
+SELECT id_paciente, periodo, MIN(dt_entrada) AS inicio, MAX(dt_saida) AS fim
+FROM z
+GROUP BY id_paciente, periodo
+ORDER BY id_paciente, inicio;</code></pre>
+  <p>A ideia está em <code>saida_max_anterior</code>: a <strong>maior saída</strong> entre todas as internações anteriores (não só a imediatamente anterior, porque uma internação longa pode cobrir várias curtas). Se a entrada atual é posterior a essa maior saída, há um buraco e começa um período novo; senão, a linha continua o período em curso. Para tolerar um intervalo (por exemplo, reentrada em até 24 h conta como o mesmo episódio), compare com <code>saida_max_anterior + INTERVAL '1' DAY</code> no Oracle (<code>+ INTERVAL '1 day'</code> no PostgreSQL).</p>
+<pre data-file="exemplo: três internações do mesmo paciente (fictícias)"><code class="text">dt_entrada   dt_saida     saida_max_anterior  novo_periodo  periodo
+2025-03-01   2025-03-10   (null)                         1        1
+2025-03-05   2025-03-08   2025-03-10                     0        1      &lt;- dentro da primeira
+2025-03-10   2025-03-15   2025-03-10                     0        1      &lt;- entrada = saída anterior: contínuo
+2025-04-02   2025-04-06   2025-03-15                     1        2      &lt;- buraco de 18 dias
+
+resultado: período 1 = 01/03 a 15/03; período 2 = 02/04 a 06/04</code></pre>
+  <div class="note trap"><b>Erros clássicos de gaps and islands</b><ul>
+    <li><strong>Duplicatas na chave</strong> (técnica 1): sem <code>DISTINCT</code> ou <code>DENSE_RANK</code>, linhas repetidas bagunçam a diferença.</li>
+    <li><strong>Comparar só com a linha anterior</strong> (internações): uma internação curta dentro de uma longa faz a "saída anterior" parecer um buraco. Use o <code>MAX</code> acumulado.</li>
+    <li><strong>NULL em data de saída</strong>: o <code>MAX</code> ignora <code>NULL</code> e o paciente ainda internado some do cálculo. Trate com <code>COALESCE</code> antes.</li>
+    <li><strong>Fuso e virada de dia</strong>: "dia" calculado em UTC e em horário de Brasília cortam atendimentos da noite em dias diferentes (módulo 06 trata do tipo certo para datas).</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>É a pergunta "difícil" favorita de entrevista de SQL. Explique a ideia antes do código: "numero as linhas e subtraio da data; em sequência sem buracos a diferença é constante, então cada valor da diferença é uma ilha". Depois dê a versão geral (LAG + soma acumulada) para regras como "até 30 dias". Acertar a ideia vale mais que decorar a sintaxe.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Períodos contínuos aparecem em contratos e regras de negócio: carência, internação contínua para faturamento (AIH, diárias), adesão a tratamento, afastamento. Cada regra define o que é "contínuo": quantas horas de intervalo, qual evento fecha o período. Garanta que essa definição venha do negócio e fique em teste automatizado com casos de borda (sobreposição, mesmo dia, em aberto), porque erro aqui vira glosa ou cobrança indevida.</p></div>
+</section>
+
+<section class="chap" id="topn-paginacao">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>Conjuntos, top-N e paginação: OFFSET vs keyset</h2>
+
+  <h3>UNION ou UNION ALL</h3>
+  <p><code>UNION</code> remove duplicatas, o que exige ordenar ou fazer hash de todo o resultado. <code>UNION ALL</code> só concatena. Se você sabe que as partes não se sobrepõem, ou se duplicatas não importam, use <code>UNION ALL</code>: é mais barato e não altera linhas. Os outros operadores de conjunto são <code>INTERSECT</code> e <code>EXCEPT</code> (no Oracle, <code>MINUS</code>; o 21c aceita os dois nomes). Todos eliminam duplicatas, e todos tratam dois <code>NULL</code> como iguais (ao contrário do <code>=</code>). Um <code>ORDER BY</code> no fim vale para o resultado combinado.</p>
+  <div class="note trap"><b>UNION "para garantir"</b><p>Trocar <code>UNION ALL</code> por <code>UNION</code> "só por segurança" muda o resultado (some linhas legitimamente repetidas, como dois atendimentos idênticos em valor e data) e adiciona um sort ou hash sobre milhões de linhas. Use <code>UNION</code> quando a deduplicação é parte da regra, e escreva um comentário dizendo isso.</p></div>
+
+  <h3>Top-N</h3>
+<pre><code class="sql">-- Padrão SQL: Oracle 12c+ e PostgreSQL
+SELECT * FROM atendimento
+ORDER BY valor DESC, id_atendimento
+FETCH FIRST 10 ROWS ONLY;      -- PG também aceita LIMIT 10</code></pre>
+  <div class="note trap"><b>Oracle legado: ROWNUM</b><p><code>ROWNUM</code> é atribuído <em>antes</em> do <code>ORDER BY</code>. <code>WHERE ROWNUM &lt;= 10 ORDER BY valor DESC</code> pega 10 linhas quaisquer e depois as ordena. O jeito certo com <code>ROWNUM</code> é ordenar numa subconsulta e filtrar por fora: <code>SELECT * FROM (SELECT ... ORDER BY valor DESC) WHERE ROWNUM &lt;= 10</code>. Em código novo, prefira <code>FETCH FIRST</code> (Oracle 12c+). Pelo que se vê nos planos, o Oracle executa o <code>FETCH FIRST ... ORDER BY</code> como um filtro de ranking sobre uma função de janela interna (operações como <code>WINDOW SORT PUSHED RANK</code>), e por isso ele costuma ser tão eficiente quanto o <code>ROWNUM</code> bem escrito.</p></div>
+  <p>O top-N também precisa de <strong>ordem total</strong>: <code>ORDER BY valor DESC</code> com 15 atendimentos empatados em R$ 300 devolve 10 quaisquer deles, e pode devolver outros na próxima execução. Acrescente o desempate único (<code>id_atendimento</code>) ou use <code>WITH TIES</code> quando o empate deve entrar (seção 2).</p>
+
+  <h3>Paginação com OFFSET: o custo cresce a cada página</h3>
+<pre><code class="sql">SELECT id_atendimento, dt_atendimento, valor
+FROM atendimento
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+OFFSET 100000 ROWS FETCH NEXT 50 ROWS ONLY;     -- PG também: LIMIT 50 OFFSET 100000</code></pre>
+  <p><code>OFFSET 100000</code> obriga o banco a produzir as 100.000 primeiras linhas na ordem pedida e <strong>descartá-las</strong>. Mesmo com índice ajudando na ordenação, ele percorre as 100.000 entradas de índice e, se a consulta pede colunas fora do índice, visita a tabela para cada uma (ou para boa parte delas). A página 5000 é milhares de vezes mais lenta que a página 1, e o custo cresce <strong>linearmente</strong> com o deslocamento. Há um segundo problema, de correção: se um atendimento novo é inserido enquanto o usuário navega, todas as linhas "escorregam" uma posição, e a página 2 repete o último item da página 1 (ou pula um, se algo foi removido).</p>
+
+  <h3>Paginação por chave (keyset, ou "seek")</h3>
+  <p>Em vez de "pule N linhas", guarde a <strong>última linha vista</strong> e peça "as próximas depois dela". É uma condição de busca no índice, não um descarte:</p>
+  <div class="tabs">
+<pre data-label="Oracle"><code class="sql">-- Índice: (dt_atendimento DESC, id_atendimento DESC)   [ou ascendente: o Oracle lê o índice nos dois sentidos]
+-- :dt e :id vêm da última linha da página anterior (na primeira página, omita o WHERE)
+SELECT id_atendimento, dt_atendimento, valor
+FROM atendimento
+WHERE dt_atendimento &lt; :dt
+   OR (dt_atendimento = :dt AND id_atendimento &lt; :id)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+FETCH FIRST 50 ROWS ONLY;</code></pre>
+<pre data-label="PostgreSQL"><code class="sql">-- Índice: (dt_atendimento, id_atendimento)  -- o PostgreSQL também varre o índice de trás para frente
+-- Comparação de tuplas: aceita no ORDER BY homogêneo (todas as colunas na mesma direção)
+SELECT id_atendimento, dt_atendimento, valor
+FROM atendimento
+WHERE (dt_atendimento, id_atendimento) &lt; ($1, $2)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+LIMIT 50;</code></pre>
+  </div>
+  <p>O <code>id_atendimento</code> serve de desempate: a ordenação fica única e nenhuma linha se perde ou repete entre páginas. O banco desce no índice direto até o ponto do cursor e lê 50 entradas: o custo da página 5000 é igual ao da página 1, e inserções durante a navegação não deslocam nada. A forma <code>OR</code> funciona nos dois bancos; a comparação de tuplas é mais curta e, no PostgreSQL, usa o índice diretamente. Para uma ordem mista (<code>dt DESC, id ASC</code>), a tupla não serve: use a forma com <code>OR</code>, e crie o índice com as mesmas direções.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 180" role="img" aria-label="Paginação com OFFSET: a página 1 lê 50 linhas; a página 5000 lê e descarta 100 mil linhas antes de devolver 50. Paginação keyset: as duas páginas fazem uma busca no índice e leem 50 linhas, com o mesmo custo">
+      <text class="ttl" x="20" y="22">OFFSET 100000 LIMIT 50</text>
+      <text class="ttl" x="380" y="22">Keyset: WHERE (dt, id) &lt; cursor</text>
+      <line class="ln" x1="360" y1="10" x2="360" y2="170"/>
+      <text class="lbl" x="20" y="64">pág. 1</text>
+      <rect class="box-a" x="90" y="46" width="24" height="26" rx="3"/>
+      <text class="lbl" x="124" y="64">lê 50, devolve 50</text>
+      <text class="lbl" x="20" y="108">pág. 5000</text>
+      <rect class="box-b" x="90" y="90" width="220" height="26" rx="3"/><text x="200" y="108" text-anchor="middle">descarta 100.000</text>
+      <rect class="box-a" x="314" y="90" width="24" height="26" rx="3"/>
+      <text class="lbl" x="20" y="150">pág. 5000: leu 100.050, devolveu 50</text>
+      <text class="lbl" x="380" y="64">pág. 1</text>
+      <rect class="box-w" x="450" y="46" width="50" height="26" rx="3"/><text x="475" y="64" text-anchor="middle">seek</text>
+      <rect class="box-a" x="504" y="46" width="24" height="26" rx="3"/>
+      <text class="lbl" x="380" y="108">pág. 5000</text>
+      <rect class="box-w" x="450" y="90" width="50" height="26" rx="3"/><text x="475" y="108" text-anchor="middle">seek</text>
+      <rect class="box-a" x="504" y="90" width="24" height="26" rx="3"/>
+      <text class="lbl" x="380" y="150">pág. 5000: mesmo custo da pág. 1</text>
+    </svg>
+    <figcaption>Larguras ilustrativas, fora de escala. O azul pequeno são as 50 linhas devolvidas; o vermelho é trabalho jogado fora. No keyset o "seek" é a descida no índice até o cursor.</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>OFFSET</th><th>Keyset</th></tr></thead>
+    <tbody>
+      <tr><td>Custo da página N</td><td>Cresce com N (lê e descarta)</td><td>Constante, se há índice na ordenação</td></tr>
+      <tr><td>Linhas inseridas durante a navegação</td><td>Duplica ou pula itens</td><td>Estável</td></tr>
+      <tr><td>Saltar para a "página 37"</td><td>Fácil</td><td>Impossível sem varrer; só anterior/próxima</td></tr>
+      <tr><td>Contagem total de páginas</td><td>Exige <code>COUNT(*)</code> separado, caro</td><td>Idem; geralmente se omite</td></tr>
+      <tr><td>Ordenação por colunas anuláveis</td><td>Funciona</td><td>Complicado: NULL não compara com <code>&lt;</code>; use colunas <code>NOT NULL</code> ou trate NULL à parte</td></tr>
+      <tr><td>Quando usar</td><td>Listas administrativas pequenas, protótipos</td><td>Tabelas grandes e crescentes, APIs, rolagem infinita, exportações</td></tr>
+    </tbody>
+  </table></div>
+  <p>Do lado da API, o cursor é a <strong>representação opaca</strong> da última linha (por exemplo, <code>dt</code> e <code>id</code> codificados em base64), que o cliente devolve sem interpretar. O desenho de endpoints, de limites e de links <code>next</code> está na <a href="../apis/01-design-rest.html#paginacao">trilha de APIs, módulo 01 (paginação em profundidade)</a>; aqui interessa o porquê de desempenho: keyset transforma "pular linhas" em "buscar no índice".</p>
+
+  <h3>Outras armadilhas da paginação</h3>
+  <ul>
+    <li><strong>Total com <code>COUNT(*) OVER ()</code></strong>: é tentador trazer o total em toda linha da página (<code>SELECT ..., COUNT(*) OVER () AS total ... LIMIT 50</code>), mas a janela precisa ver <em>todas</em> as linhas antes de o <code>LIMIT</code> cortar. Você paga a consulta inteira a cada página. Alternativas: omitir o total; devolver "há mais?" pedindo <code>limite + 1</code> linhas; usar estimativa (planner) para exibir "cerca de 1,2 milhão".</li>
+    <li><strong>Ordem diferente da do índice</strong>: se o <code>ORDER BY</code> da paginação não coincide com um índice, o banco ordena tudo a cada página, e o keyset perde a vantagem. O índice e a ordenação nascem juntos (módulo 08).</li>
+    <li><strong>Filtro + ordem</strong>: com <code>WHERE status = 'REALIZADO'</code>, o índice ideal é <code>(status, dt_atendimento, id_atendimento)</code>: a igualdade primeiro, depois a coluna de ordenação.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Se a tabela cresce sem limite e o usuário pode navegar fundo ou a API é pública, use keyset. Se a lista tem poucas centenas de linhas e o usuário quer "ir para a página 3", OFFSET resolve. Em qualquer caso: <code>ORDER BY</code> determinístico, limite máximo de página imposto pelo servidor, e nunca confie no tamanho pedido pelo cliente.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Por que paginar com OFFSET é ruim em tabela grande e qual a alternativa?" Explique o descarte (custo linear no deslocamento), o problema de consistência (itens repetidos ou pulados com inserções) e apresente keyset com índice em <code>(coluna_de_ordem, id)</code> e o <code>id</code> como desempate. Finalize com o preço: não há salto para página arbitrária.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>"A tela de histórico trava depois da página 200" e "a exportação do mês nunca termina" são, com frequência, o mesmo problema: OFFSET em tabela grande. Decida no desenho da API se o contrato é com cursor (hoje, e mudar depois quebra clientes). Um limite de página máximo e um teste de carga com a tabela em tamanho de produção evitam descobrir isso em plantão.</p></div>
+</section>
+
+<section class="chap" id="window-qualify-custo">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cláusula WINDOW, a ausência do QUALIFY e o custo das janelas</h2>
+
+  <h3>Cláusula WINDOW: nomear uma especificação</h3>
+  <p>Quando várias colunas usam a mesma janela, repetir <code>OVER (PARTITION BY ... ORDER BY ...)</code> polui o código e convida a divergência. O PostgreSQL permite nomear a janela:</p>
+<pre data-file="PostgreSQL (e outros bancos que seguem o padrão)"><code class="sql">SELECT id_atendimento, id_paciente, dt_atendimento, valor,
+       ROW_NUMBER() OVER w                    AS rn,
+       SUM(valor)   OVER w                    AS acumulado,
+       LAG(valor)   OVER w                    AS valor_anterior,
+       AVG(valor)   OVER (w ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS media_3   -- reaproveita e refina
+FROM atendimento
+WINDOW w AS (PARTITION BY id_paciente ORDER BY dt_atendimento, id_atendimento);</code></pre>
+  <p>A janela nomeada vem depois do <code>HAVING</code> e antes do <code>ORDER BY</code>. Ela pode ser reutilizada por <code>OVER w</code>, ou referenciada dentro de outra definição para acrescentar moldura (<code>OVER (w ROWS ...)</code>). No Oracle, a cláusula <code>WINDOW</code> existe a partir da 21c. Na 19c, ainda muito comum, repita a especificação em cada <code>OVER</code>. Isso não custa mais caro, porque o otimizador reconhece especificações idênticas e as calcula numa passada única.</p>
+
+  <h3>QUALIFY não existe no Oracle nem no PostgreSQL</h3>
+  <p><code>QUALIFY</code> é um filtro sobre o resultado de função de janela, no mesmo nível do SELECT, que aparece em Snowflake, BigQuery, Teradata e DuckDB: <code>SELECT ... FROM t QUALIFY ROW_NUMBER() OVER (...) = 1</code>. Em Oracle e PostgreSQL, a janela não pode estar em <code>WHERE</code>, então o padrão é empacotar:</p>
+<pre><code class="sql">-- Em vez de QUALIFY ROW_NUMBER() OVER (PARTITION BY id_paciente ORDER BY dt_atendimento DESC) = 1
+WITH r AS (
+  SELECT a.*,
+         ROW_NUMBER() OVER (PARTITION BY id_paciente
+                            ORDER BY dt_atendimento DESC, id_atendimento DESC) AS rn
+  FROM atendimento a
+)
+SELECT * FROM r WHERE rn = 1;</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Quero</th><th>Alternativa a QUALIFY</th></tr></thead>
+    <tbody>
+      <tr><td>Primeiro/último por grupo (todas as colunas)</td><td>CTE ou subconsulta + <code>WHERE rn = 1</code>; PostgreSQL: <code>DISTINCT ON</code></td></tr>
+      <tr><td>Primeiro/último por grupo (poucas colunas)</td><td>Oracle: <code>KEEP (DENSE_RANK ...)</code></td></tr>
+      <tr><td>Um por item de uma lista conhecida</td><td><code>LATERAL</code> com <code>FETCH FIRST n ROWS ONLY</code></td></tr>
+      <tr><td>Top-N geral com empates</td><td><code>FETCH FIRST n ROWS WITH TIES</code></td></tr>
+      <tr><td>Filtrar por acumulado/total (ex.: só a classe A da curva ABC)</td><td>CTE com a janela, filtro por fora</td></tr>
+    </tbody>
+  </table></div>
+  <p>Quem migra de Snowflake ou BigQuery para Oracle/PostgreSQL costuma esbarrar nisso: o <code>QUALIFY</code> vira CTE, e o código fica mais longo, mas o plano é o mesmo.</p>
+
+  <h3>O que uma janela custa por dentro</h3>
+  <p>Uma função de janela precisa que as linhas cheguem <strong>agrupadas por partição e ordenadas dentro dela</strong>. Isso quase sempre significa um <em>sort</em> explícito, a menos que um índice já entregue a ordem. Depois do sort, o operador de janela percorre as linhas calculando a função sobre a moldura de cada uma.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 700 240" role="img" aria-label="Fluxo de execução: leitura, sort por partição e ordem, operador de janela e resultado. Abaixo, duas janelas com especificações diferentes exigem dois sorts em sequência">
+      <defs>
+        <marker id="ah-w1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ah-w2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text class="ttl" x="20" y="22">Uma especificação de janela: um sort</text>
+      <rect class="box" x="20" y="36" width="130" height="40" rx="5"/><text x="85" y="61" text-anchor="middle">Scan / índice</text>
+      <line class="ln" x1="150" y1="56" x2="196" y2="56" marker-end="url(#ah-w1)"/>
+      <rect class="box-w" x="200" y="36" width="170" height="40" rx="5"/><text x="285" y="61" text-anchor="middle">Sort partição+ordem</text>
+      <line class="ln" x1="370" y1="56" x2="416" y2="56" marker-end="url(#ah-w1)"/>
+      <rect class="box-a" x="420" y="36" width="130" height="40" rx="5"/><text x="485" y="61" text-anchor="middle">WindowAgg</text>
+      <line class="ln" x1="550" y1="56" x2="586" y2="56" marker-end="url(#ah-w1)"/>
+      <rect class="box" x="590" y="36" width="90" height="40" rx="5"/><text x="635" y="61" text-anchor="middle">Resultado</text>
+      <text class="lbl" x="200" y="96">memória (work_mem / PGA); vaza para disco (temp) se não couber</text>
+      <text class="ttl" x="20" y="136">Duas especificações diferentes: dois sorts em sequência</text>
+      <rect class="box" x="20" y="150" width="80" height="40" rx="5"/><text x="60" y="175" text-anchor="middle">Scan</text>
+      <line class="ln" x1="100" y1="170" x2="126" y2="170" marker-end="url(#ah-w2)"/>
+      <rect class="box-w" x="130" y="150" width="90" height="40" rx="5"/><text x="175" y="175" text-anchor="middle">Sort A</text>
+      <line class="ln" x1="220" y1="170" x2="246" y2="170" marker-end="url(#ah-w2)"/>
+      <rect class="box-a" x="250" y="150" width="110" height="40" rx="5"/><text x="305" y="175" text-anchor="middle">WindowAgg A</text>
+      <line class="ln" x1="360" y1="170" x2="386" y2="170" marker-end="url(#ah-w2)"/>
+      <rect class="box-w" x="390" y="150" width="90" height="40" rx="5"/><text x="435" y="175" text-anchor="middle">Sort B</text>
+      <line class="ln" x1="480" y1="170" x2="506" y2="170" marker-end="url(#ah-w2)"/>
+      <rect class="box-a" x="510" y="150" width="110" height="40" rx="5"/><text x="565" y="175" text-anchor="middle">WindowAgg B</text>
+      <text class="lbl" x="20" y="216">Cada PARTITION BY/ORDER BY distinto reordena todas as linhas. Com índice na ordem certa, o Sort some.</text>
+    </svg>
+    <figcaption>Esquema simplificado. Os nomes dos operadores variam: o PostgreSQL mostra <code>WindowAgg</code> sobre <code>Sort</code>; o Oracle mostra <code>WINDOW SORT</code> ou <code>WINDOW BUFFER</code> (e <code>WINDOW NOSORT</code> quando um índice já entrega a ordem).</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Fonte de custo</th><th>O que acontece</th><th>O que fazer</th></tr></thead>
+    <tbody>
+      <tr><td>Sort</td><td>O(n log n) sobre todas as linhas que entram na janela, por partição+ordem.</td><td>Índice que entregue a ordem: <code>(id_paciente, dt_atendimento DESC)</code> para <code>PARTITION BY id_paciente ORDER BY dt_atendimento DESC</code>. O plano passa a ler o índice em ordem, sem sort (PostgreSQL: <code>Index Scan</code> sob o <code>WindowAgg</code>; Oracle: <code>WINDOW NOSORT</code>).</td></tr>
+      <tr><td>Memória e disco temporário</td><td>O sort usa memória (PostgreSQL: <code>work_mem</code>; Oracle: área de trabalho da PGA); se não cabe, vaza para disco. Moldura grande ou partição enorme (um paciente-fantasma com milhões de linhas, uma partição única por falta de <code>PARTITION BY</code>) obriga a guardar linhas da partição em buffer, que também vaza.</td><td>Filtrar cedo, selecionar poucas colunas dentro da janela, partições menores. No plano do PostgreSQL, procure <code>Sort Method: external merge  Disk: ...</code> e use <code>EXPLAIN (ANALYZE, BUFFERS)</code>.</td></tr>
+      <tr><td>Várias janelas diferentes</td><td>Um sort por especificação distinta. Especificações idênticas compartilham.</td><td>Padronizar o <code>PARTITION BY</code>/<code>ORDER BY</code> entre as colunas; deixar as janelas com a mesma especificação juntas.</td></tr>
+      <tr><td>Janela sobre dados que o WHERE poderia cortar</td><td>A janela roda sobre tudo o que passou do WHERE <em>da própria consulta</em>. Filtro aplicado por fora não reduz o trabalho da janela de dentro, a não ser que o otimizador consiga empurrá-lo (em geral só quando a coluna filtrada é parte do <code>PARTITION BY</code>).</td><td>Coloque dentro da CTE/subconsulta todo filtro que não muda o resultado da janela (período, status, convênio).</td></tr>
+      <tr><td>Top-N sobre janela (<code>rn &lt;= 10</code>)</td><td>Ingenuamente, calcula o ranking de todas as linhas antes de filtrar. Otimizações existem: no PostgreSQL 15+, <code>WindowAgg</code> pode parar cedo para condições do tipo <code>row_number() &lt;= N</code> (o plano mostra <code>Run Condition</code>); no Oracle, o plano pode mostrar <code>WINDOW SORT PUSHED RANK</code> (<code>STOPKEY</code>).</td><td>Confira no plano. Com poucos grupos de interesse, <code>LATERAL</code> + índice vence.</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="PostgreSQL: o que procurar no plano (exemplo ilustrativo, números inventados)"><code class="text">WindowAgg  (cost=... rows=8200000 ...) (actual time=... rows=8200000 loops=1)
+  -&gt;  Sort  (cost=... rows=8200000 ...) (actual time=... rows=8200000 loops=1)
+        Sort Key: id_paciente, dt_atendimento DESC
+        Sort Method: external merge  Disk: 612000kB          &lt;- vazou para o temp
+        -&gt;  Seq Scan on atendimento  (...)
+              Filter: ((status)::text = 'REALIZADO'::text)</code></pre>
+  <p>Nem sempre o índice ajuda: se a janela precisa de <em>quase todas</em> as linhas da tabela, ler tudo por índice (acessos aleatórios) pode ser mais lento do que um seq scan + sort. O plano e as estimativas decidem (módulos 07 e 09). O PostgreSQL 13 trouxe o <em>incremental sort</em>, que aproveita um índice que entrega só o prefixo da ordem pedida e ordena apenas o resto.</p>
+  <div class="note trap"><b>Janela sem PARTITION BY em tabela enorme</b><p><code>SUM(valor) OVER ()</code> ou <code>ROW_NUMBER() OVER (ORDER BY ...)</code> sobre milhões de linhas forma <strong>uma</strong> partição gigante: não há como paralelizar por grupo, tudo passa por um sort só, e a memória estoura. Se você quer o total geral só para dividir, calcule-o numa subconsulta pequena (<code>SELECT SUM(valor) FROM ...</code>) e junte, em vez de carregar o total em cada linha.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Antes de culpar a janela, olhe três coisas no plano: quantas linhas entram nela, se há sort com disco, e se existe índice que entregue a ordem. Janela lenta é, quase sempre, "muitas linhas demais" ou "sort demais".</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Funções de janela são caras?" Resposta madura: custam um sort por especificação distinta e memória proporcional à partição/moldura; costumam ser <em>mais baratas</em> que o autojoin equivalente, porque leem a tabela uma vez. O que as torna caras é aplicá-las a linhas que um filtro anterior eliminaria, ou sobre uma partição única gigante. Mencione índice que entrega a ordem e a leitura do plano.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Relatórios com cinco ou seis janelas diferentes sobre a tabela inteira de atendimentos são fontes recorrentes de consumo de temp e de lentidão no horário de pico. Não é motivo para proibir o recurso: é motivo para definir onde esses relatórios rodam (réplica de leitura, janela de baixa carga, tabela agregada pré-calculada) e quem os revisa. Módulos 11 e 12 aprofundam o diagnóstico e a escala.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Use o esquema do estudo (<code>paciente</code>, <code>medico</code>, <code>convenio</code>, <code>setor</code>, <code>atendimento</code>, <code>atendimento_item</code>). Tente escrever antes de abrir a resolução. Se tiver um banco de prática, rode as respostas e confira os planos.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span>Em cinco atendimentos com valores 500, 500, 500, 300 e 200, calcule à mão <code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code> e <code>NTILE(2)</code>, todos com <code>ORDER BY valor DESC</code>.</span></summary><div class="ans">
+<pre><code class="text">valor   ROW_NUMBER   RANK   DENSE_RANK   NTILE(2)
+  500            1      1            1          1
+  500            2      1            1          1
+  500            3      1            1          1
+  300            4      4            2          2
+  200            5      5            3          2</code></pre>
+    <p>O <code>NTILE(2)</code> divide 5 linhas em 3 + 2: a sobra vai para a primeira faixa. O <code>ROW_NUMBER</code> entre os três 500 é arbitrário, a menos que o <code>ORDER BY</code> tenha desempate único. Observe que o <code>RANK</code> salta de 1 para 4 e o <code>DENSE_RANK</code> vai de 1 para 2.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span>Liste o atendimento realizado mais recente de cada paciente (todas as colunas). Depois, ajuste para devolver <em>todos</em> os atendimentos que empatam na data/hora mais recente.</span></summary><div class="ans">
+<pre><code class="sql">-- Uma linha por paciente (desempate por id)
+SELECT *
+FROM (SELECT a.*,
+             ROW_NUMBER() OVER (PARTITION BY id_paciente
+                                ORDER BY dt_atendimento DESC, id_atendimento DESC) AS rn
+      FROM atendimento a
+      WHERE status = 'REALIZADO') x
+WHERE rn = 1;
+
+-- Todos os empatados na dt_atendimento mais recente: RANK sem desempate por id
+SELECT *
+FROM (SELECT a.*,
+             RANK() OVER (PARTITION BY id_paciente ORDER BY dt_atendimento DESC) AS rk
+      FROM atendimento a
+      WHERE status = 'REALIZADO') x
+WHERE rk = 1;</code></pre>
+    <p>Pontos de correção: o filtro <code>status = 'REALIZADO'</code> está <em>dentro</em> da subconsulta (a janela só considera realizados); o <code>RANK</code> só se comporta como esperado se o <code>ORDER BY</code> <em>não</em> tiver o desempate único, porque é justamente o empate que se quer manter. Alternativas: <code>DISTINCT ON</code> (PostgreSQL), <code>KEEP</code> (Oracle) ou <code>LATERAL</code> com <code>FETCH FIRST 1 ROW ONLY</code> quando há uma lista curta de pacientes.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span>Para cada paciente, calcule os dias desde o atendimento realizado anterior. Depois, informe o percentual de <code>CONSULTA</code> realizadas em 2025 que tiveram outro atendimento realizado do mesmo paciente em até 30 dias.</span></summary><div class="ans">
+    <p>A primeira parte é o exemplo da seção 3 (<code>LAG</code> + diferença de datas). Na segunda, o <code>LEAD</code> é calculado sobre <em>todos</em> os realizados e o filtro de tipo e período vem depois:</p>
+<pre data-file="PostgreSQL (Oracle: troque d::date por TRUNC(d))"><code class="sql">WITH x AS (
+  SELECT dt_atendimento, tipo,
+         LEAD(dt_atendimento) OVER (PARTITION BY id_paciente
+                                    ORDER BY dt_atendimento, id_atendimento) AS dt_proxima
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+)
+SELECT ROUND(100 * AVG(CASE WHEN dt_proxima::date - dt_atendimento::date &lt;= 30
+                            THEN 1 ELSE 0 END), 1) AS pct_reconsulta_30d
+FROM x
+WHERE tipo = 'CONSULTA'
+  AND dt_atendimento &gt;= DATE '2025-01-01' AND dt_atendimento &lt; DATE '2026-01-01';</code></pre>
+    <p>A média do <code>CASE</code> 0/1 é o percentual. Sem próximo atendimento, <code>dt_proxima</code> é <code>NULL</code>, a comparação não é verdadeira e cai no <code>ELSE 0</code> ("sem retorno"). Uma consulta de dezembro com retorno em janeiro de 2026 conta como "com retorno" justamente porque a janela foi calculada antes do filtro de período.</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Faturamento mensal de atendimentos realizados com: acumulado do ano (reiniciando em janeiro), média móvel de 3 meses mostrada só quando houver 3 meses completos e o mês de maior faturamento do ano em todas as linhas.</span></summary><div class="ans">
+<pre data-file="PostgreSQL (no Oracle: TRUNC(dt_atendimento, 'MM') no lugar de DATE_TRUNC)"><code class="sql">WITH mensal AS (
+  SELECT DATE_TRUNC('month', dt_atendimento) AS mes, SUM(valor) AS total
+  FROM atendimento
+  WHERE status = 'REALIZADO'
+  GROUP BY DATE_TRUNC('month', dt_atendimento)
+)
+SELECT mes, total,
+       SUM(total) OVER (PARTITION BY EXTRACT(YEAR FROM mes)
+                        ORDER BY mes
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)     AS acumulado_ano,
+       CASE WHEN COUNT(*) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) = 3
+            THEN AVG(total) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)
+       END                                                                    AS media_3m,
+       FIRST_VALUE(mes) OVER (PARTITION BY EXTRACT(YEAR FROM mes)
+                              ORDER BY total DESC, mes)                       AS mes_pico_do_ano
+FROM mensal
+ORDER BY mes;</code></pre>
+    <p>Três decisões: o <code>PARTITION BY</code> do ano reinicia o acumulado; <code>COUNT(*)</code> sobre a mesma moldura diz se a média está "cheia"; e o mês de pico usa <code>FIRST_VALUE</code> com a ordem invertida (<code>total DESC</code>), o que evita a pegadinha do <code>LAST_VALUE</code> e dispensa moldura explícita. O <code>CASE</code> sem <code>ELSE</code> devolve <code>NULL</code> quando a média ainda não tem 3 meses. Limite conhecido: <code>ROWS</code> assume que todos os meses existem em <code>mensal</code>; se algum mês pode faltar, faça <code>LEFT JOIN</code> com um calendário.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span>Para cada paciente, ache a <strong>maior sequência de dias consecutivos</strong> com atendimento realizado (início, fim, tamanho). Como mudar a regra para "dias com até 2 dias de intervalo contam como sequência"?</span></summary><div class="ans">
+<pre data-file="PostgreSQL (Oracle: TRUNC(dt_atendimento) e sem o CAST ... AS integer)"><code class="sql">WITH dias AS (
+  SELECT DISTINCT id_paciente, dt_atendimento::date AS dia
+  FROM atendimento WHERE status = 'REALIZADO'
+), g AS (
+  SELECT id_paciente, dia,
+         dia - CAST(ROW_NUMBER() OVER (PARTITION BY id_paciente ORDER BY dia) AS integer) AS grp
+  FROM dias
+), ilhas AS (
+  SELECT id_paciente, MIN(dia) AS inicio, MAX(dia) AS fim, COUNT(*) AS tamanho
+  FROM g GROUP BY id_paciente, grp
+), r AS (
+  SELECT ilhas.*, ROW_NUMBER() OVER (PARTITION BY id_paciente ORDER BY tamanho DESC, inicio) AS pos
+  FROM ilhas
+)
+SELECT id_paciente, inicio, fim, tamanho FROM r WHERE pos = 1;</code></pre>
+    <p>O <code>ROW_NUMBER</code> reinicia por paciente, e a segunda janela (<code>pos</code>) roda sobre o resultado do agrupamento: janela depois de GROUP BY, em camadas. Para "até 2 dias de intervalo", a diferença com <code>ROW_NUMBER</code> não serve; use a técnica 2 da seção 6 (<code>LAG(dia)</code>, marca <code>nova_ilha = 1</code> quando <code>dia - anterior &gt; 2</code> ou anterior nulo, soma acumulada, agrupamento).</p>
+  </div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Escreva a consulta de uma API de histórico de atendimentos de um paciente, mais recentes primeiro, 50 por página, com paginação keyset. Defina o índice e diga o que o cliente envia para pedir a página 2.</span></summary><div class="ans">
+<pre data-file="PostgreSQL (Oracle: FETCH FIRST 51 ROWS ONLY e a forma OR do WHERE)"><code class="sql">CREATE INDEX ix_atend_pac_dt ON atendimento (id_paciente, dt_atendimento DESC, id_atendimento DESC);
+
+-- 1ª página (51: a linha extra só indica que há próxima página)
+SELECT id_atendimento, dt_atendimento, tipo, valor
+FROM atendimento
+WHERE id_paciente = $1
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+LIMIT 51;
+
+-- seguintes: ($2, $3) = dt e id da última linha devolvida
+SELECT id_atendimento, dt_atendimento, tipo, valor
+FROM atendimento
+WHERE id_paciente = $1
+  AND (dt_atendimento, id_atendimento) &lt; ($2, $3)   -- Oracle: dt &lt; :dt OR (dt = :dt AND id &lt; :id)
+ORDER BY dt_atendimento DESC, id_atendimento DESC
+LIMIT 51;</code></pre>
+    <p>O cliente devolve o <strong>cursor</strong> recebido, que codifica <code>(dt_atendimento, id_atendimento)</code> da última linha mostrada; o servidor o monta e decodifica. A igualdade em <code>id_paciente</code> vem primeiro no índice, depois as colunas de ordem. O servidor impõe um limite máximo de página, e <code>dt_atendimento</code> precisa ser <code>NOT NULL</code>.</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Avançado</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <h3>Cenário 1: o relatório "último atendimento por paciente" leva 20 minutos</h3>
+  <p>Um painel da recepção lista, para os pacientes de um médico (cerca de 300), a data do último atendimento. A consulta usa <code>ROW_NUMBER() OVER (PARTITION BY id_paciente ORDER BY dt_atendimento DESC)</code> sobre <code>atendimento</code> inteira (80 milhões de linhas) e filtra os pacientes do médico <em>por fora</em>.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Diagnosticar</strong>: no plano, a janela e o sort processam as 80 milhões de linhas e só depois o filtro corta (e o sort vaza para disco). A janela foi calculada sobre quase tudo para entregar 300 linhas.</li>
+    <li><strong>Reduzir o universo antes da janela</strong>: mover o filtro dos pacientes do médico para dentro da CTE, ou trocar por <code>LATERAL</code> com <code>FETCH FIRST 1 ROW ONLY</code> a partir da lista de 300 pacientes.</li>
+    <li><strong>Garantir o índice</strong> <code>(id_paciente, dt_atendimento DESC)</code>: cada paciente vira uma busca curta, 300 acessos em vez de 80 milhões de linhas.</li>
+    <li><strong>Validar com o plano</strong> (módulo 09) e comparar tempo e leituras antes e depois. Registrar na revisão por que a forma mudou, para ninguém "simplificar de volta".</li>
+  </ul></div>
+
+  <h3>Cenário 2: cadastro com CPF duplicado, e a equipe quer um DELETE</h3>
+  <p>Auditoria encontra 4.200 CPFs com mais de um cadastro de paciente. Um desenvolvedor propõe <code>DELETE</code> de tudo com <code>ROW_NUMBER &gt; 1</code>. Há atendimentos ligados aos dois cadastros.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Não apagar</strong>. Primeiro, medir: quantos grupos, quantos com dados clínicos nos dois cadastros, quantos com nomes ou datas de nascimento diferentes (possível CPF errado, não duplicata).</li>
+    <li><strong>Separar</strong> os casos seguros (nome e data de nascimento iguais) dos que exigem revisão humana. Para os seguros, <strong>mesclar</strong>: atualizar <code>atendimento.id_paciente</code> (e demais tabelas filhas) para o cadastro sobrevivente, registrar a fusão em tabela de auditoria (quem, quando, de qual id para qual) e só então inativar ou remover o cadastro excedente.</li>
+    <li><strong>Executar em lotes</strong> com <code>COMMIT</code> por bloco e backup prévio; rodar em homologação com cópia recente.</li>
+    <li><strong>Prevenir</strong>: criar <code>UNIQUE</code> em <code>cpf</code> (ou índice parcial, se CPF pode ser nulo), validação de dígito verificador e busca de duplicata na tela de cadastro. Alinhar com o DPO: fusão de dados pessoais também é tratamento sob a LGPD, com registro.</li>
+  </ul></div>
+
+  <h3>Cenário 3: a listagem da API trava depois da página 300</h3>
+  <p>O app mostra o histórico de atendimentos com rolagem infinita. A API usa <code>?pagina=N</code> e <code>OFFSET</code>. Usuários mais antigos (milhares de atendimentos) reclamam; o monitoramento mostra picos de CPU do banco em horários de uso do app, e itens repetidos aparecem na tela.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Confirmar a causa</strong> no plano: o custo cresce com o deslocamento; itens repetidos vêm de inserções durante a rolagem.</li>
+    <li><strong>Migrar para cursor</strong> (keyset sobre <code>(dt_atendimento, id_atendimento)</code> com o índice da seção 7). Como o contrato da API muda, publicar a versão nova, manter a antiga por um período, medir o uso e desativá-la com aviso (trilha de APIs, módulos 01 e 07).</li>
+    <li><strong>Enquanto a migração não sai</strong>: limitar o <code>OFFSET</code> máximo, reduzir colunas lidas e, se preciso, a junção tardia para amenizar.</li>
+    <li><strong>Prevenir</strong>: teste de carga com volume de produção entra no critério de aceite de qualquer endpoint de listagem.</li>
+  </ul></div>
+
+  <h3>Cenário 4: o indicador de reconsulta tem um valor no painel e outro no relatório</h3>
+  <p>O painel executivo mostra 18,4% de reconsulta em 30 dias; o relatório da qualidade, 21,1%. Os dois dizem usar "a mesma regra". Ambos usam <code>LEAD</code>.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li><strong>Colocar as duas consultas lado a lado</strong> e comparar: onde está o filtro de <code>status</code> e <code>tipo</code> (dentro ou fora da janela)? O período filtra o evento inicial ou também o retorno? Cancelados e agendados entram? Dias por data de calendário ou por diferença de horas? Desempate por <code>id_atendimento</code> existe?</li>
+    <li><strong>Escolher uma definição</strong> com o dono do indicador (qualidade assistencial) e escrever: evento inicial, evento de retorno, janela de 30 dias, exclusões.</li>
+    <li><strong>Centralizar o cálculo</strong>: uma view ou tabela de fatos usada pelos dois produtos, não duas consultas parecidas.</li>
+    <li><strong>Testar</strong> com um conjunto pequeno de casos de borda (retorno exatamente no dia 30, mesmo dia, paciente com dois atendimentos no mesmo minuto, cancelamento entre os dois).</li>
+  </ul></div>
+
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Básico</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Função de janela</dt><dd>Função calculada sobre um conjunto de linhas relacionadas à linha atual, sem colapsá-las. No Oracle, também chamada função analítica.</dd></div>
+    <div><dt>OVER</dt><dd>Cláusula que transforma uma função em função de janela e descreve partição, ordem e moldura.</dd></div>
+    <div><dt>PARTITION BY</dt><dd>Divide as linhas em grupos independentes; o cálculo reinicia a cada grupo. Não reduz o número de linhas.</dd></div>
+    <div><dt>Moldura (frame)</dt><dd>Intervalo de linhas da partição ordenada que a função vê para a linha atual (ROWS, RANGE ou GROUPS).</dd></div>
+    <div><dt>Pares (peers)</dt><dd>Linhas com o mesmo valor na coluna de ordenação. O RANGE e o RANK as tratam em bloco.</dd></div>
+    <div><dt>ROW_NUMBER</dt><dd>Numeração única 1, 2, 3, sem repetição; empates saem em ordem arbitrária.</dd></div>
+    <div><dt>RANK / DENSE_RANK</dt><dd>Posição com empates compartilhados: RANK salta posições depois do empate, DENSE_RANK não.</dd></div>
+    <div><dt>NTILE</dt><dd>Divide as linhas ordenadas em n faixas de tamanho aproximadamente igual, pela posição.</dd></div>
+    <div><dt>LAG / LEAD</dt><dd>Valor de uma linha anterior (LAG) ou posterior (LEAD) dentro da partição.</dd></div>
+    <div><dt>Top-N por grupo</dt><dd>As N primeiras linhas de cada grupo segundo uma ordem, em geral com ROW_NUMBER e filtro por fora.</dd></div>
+    <div><dt>Gaps and islands</dt><dd>Problema de achar blocos contínuos (ilhas) e buracos (gaps) numa sequência ordenada.</dd></div>
+    <div><dt>Paginação keyset</dt><dd>Paginação por chave: "o que vem depois da última linha vista", usando o índice. Também chamada seek method.</dd></div>
+    <div><dt>OFFSET</dt><dd>Paginação que pula N linhas; o banco as produz e descarta, e o custo cresce com N.</dd></div>
+    <div><dt>QUALIFY</dt><dd>Filtro sobre funções de janela presente em outros bancos (Snowflake, BigQuery, Teradata, DuckDB); não existe no Oracle nem no PostgreSQL.</dd></div>
+    <div><dt>WindowAgg</dt><dd>Nome do operador de janela no plano do PostgreSQL. No Oracle aparecem WINDOW SORT, WINDOW BUFFER e WINDOW NOSORT.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l2">Intermediário</span><span class="lvl l3">Avançado</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Qual a diferença entre GROUP BY e uma função de janela?</span></summary><div class="ans"><p>O <code>GROUP BY</code> colapsa as linhas de cada grupo em uma. A função de janela calcula sobre o grupo mas mantém todas as linhas, acrescentando o resultado como coluna. Por isso a janela permite mostrar detalhe e agregado juntos, e por isso não pode ser usada no <code>WHERE</code>: ela é avaliada depois de WHERE, GROUP BY e HAVING.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">02</span><span>O que fazem PARTITION BY e ORDER BY dentro do OVER?</span></summary><div class="ans"><p><code>PARTITION BY</code> divide em grupos independentes (sem colapsar); <code>ORDER BY</code> define a ordem dentro de cada grupo, necessária para ranking, LAG/LEAD e acumulados. O <code>ORDER BY</code> do <code>OVER</code> não ordena o resultado final; para isso é preciso um <code>ORDER BY</code> no fim da consulta.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">03</span><span>Diferença entre ROW_NUMBER, RANK e DENSE_RANK.</span></summary><div class="ans"><p>Com valores 300, 300, 250: <code>ROW_NUMBER</code> dá 1, 2, 3 (nunca repete, empate arbitrário); <code>RANK</code> dá 1, 1, 3 (empatados compartilham a posição e a seguinte é pulada); <code>DENSE_RANK</code> dá 1, 1, 2 (sem saltos). Para "uma linha por grupo", <code>ROW_NUMBER</code> com desempate único; para "todos os empatados em primeiro", <code>RANK</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">04</span><span>Como obter o último atendimento de cada paciente?</span></summary><div class="ans"><p>Subconsulta com <code>ROW_NUMBER() OVER (PARTITION BY id_paciente ORDER BY dt_atendimento DESC, id_atendimento DESC)</code> e filtro <code>rn = 1</code> por fora. Alternativas: <code>DISTINCT ON</code> (PostgreSQL), <code>KEEP (DENSE_RANK LAST ...)</code> (Oracle) e <code>LATERAL</code> com <code>FETCH FIRST 1 ROW ONLY</code> quando só interessam alguns pacientes e há índice por <code>(id_paciente, dt_atendimento)</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">05</span><span>Para que serve o LAG e como tratar a primeira linha?</span></summary><div class="ans"><p>Traz o valor de uma linha anterior da partição, na ordem definida. Na primeira linha não há anterior, então o resultado é <code>NULL</code>, ou o valor padrão passado como terceiro argumento (<code>LAG(x, 1, 0)</code>). Uso típico: intervalo entre atendimentos, variação mês a mês. Exige <code>ORDER BY</code> com desempate único e cuidado com filtros no WHERE, que mudam quais linhas o <code>LAG</code> enxerga.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">06</span><span>Como calcular o percentual de cada linha sobre o total?</span></summary><div class="ans"><p><code>valor / SUM(valor) OVER ()</code>, e <code>PARTITION BY</code> para o percentual dentro do grupo. No Oracle também existe <code>RATIO_TO_REPORT(valor) OVER ()</code>. Proteja o denominador com <code>NULLIF</code>, cuide de divisão inteira no PostgreSQL com <code>COUNT</code> e lembre que o WHERE já restringiu o "total".</p></div></details>
+
+  <details class="qa"><summary><span class="qn">07</span><span>Qual é a moldura padrão de uma janela com ORDER BY e que problema isso causa?</span></summary><div class="ans"><p>É <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>: do início até a linha atual <em>incluindo os pares</em>. Em acumulados com datas repetidas, as linhas empatadas mostram o mesmo total. Para acumulado linha a linha, escreva <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code> com ordenação única.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">08</span><span>Por que LAST_VALUE "não funciona" e como corrigir?</span></summary><div class="ans"><p>Porque com a moldura padrão o último valor da moldura é o da própria linha (ou do último par dela). Corrige-se com <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code> ou invertendo a ordem e usando <code>FIRST_VALUE</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">09</span><span>Diferença entre ROWS, RANGE e GROUPS.</span></summary><div class="ans"><p><code>ROWS</code> conta linhas físicas; <code>RANGE</code> usa o valor da chave de ordenação e inclui todos os pares, aceitando deslocamentos em valor (por exemplo, <code>INTERVAL '6' DAY</code>); <code>GROUPS</code> conta grupos de pares. O PostgreSQL 11+ e o Oracle 21c+ têm os três e também <code>EXCLUDE</code>; o Oracle 19c só tem ROWS e RANGE.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">10</span><span>Como achar sequências de dias consecutivos com atendimento?</span></summary><div class="ans"><p>Gaps and islands. Pegue os dias distintos, numere com <code>ROW_NUMBER</code> e subtraia da data: a diferença é constante dentro de uma sequência sem buracos, então ela identifica a ilha. <code>GROUP BY</code> da diferença com <code>MIN</code>/<code>MAX</code> do dia dá início e fim. Para regras como "até 30 dias de intervalo", marque a quebra com <code>LAG</code> e acumule com <code>SUM() OVER</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">11</span><span>Como fundir internações que se sobrepõem em períodos contínuos?</span></summary><div class="ans"><p>Ordene por entrada, calcule o <code>MAX(saida)</code> acumulado das linhas <em>anteriores</em> (<code>ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING</code>), marque novo período quando a entrada é posterior a essa maior saída, some as marcas para numerar os períodos e agrupe. Tratar saída nula (paciente ainda internado) e a tolerância entre reentradas faz parte da regra de negócio.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">12</span><span>Por que paginação com OFFSET é ruim em tabela grande, e qual a alternativa?</span></summary><div class="ans"><p>O banco produz e descarta as linhas do deslocamento, então o custo cresce linearmente com a página; além disso, inserções durante a navegação repetem ou pulam itens. A alternativa é keyset: guardar a última linha vista e filtrar <code>(dt, id) &lt; (:dt, :id)</code> com índice nessas colunas e <code>id</code> como desempate. O custo fica constante; o preço é perder o salto para uma página arbitrária.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">13</span><span>Funções de janela existem no WHERE? E o QUALIFY?</span></summary><div class="ans"><p>Não existem no WHERE (a janela é avaliada depois). O filtro exige CTE ou subconsulta. O <code>QUALIFY</code>, que faz esse filtro no mesmo nível, existe em Snowflake, BigQuery, Teradata e DuckDB, mas não em Oracle nem em PostgreSQL. Alternativas: CTE + <code>WHERE rn = 1</code>, <code>DISTINCT ON</code> no PostgreSQL, <code>KEEP</code> no Oracle e <code>LATERAL</code>.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">14</span><span>O que uma função de janela custa em termos de execução?</span></summary><div class="ans"><p>Um sort por partição e ordem (salvo índice que já entregue a ordem), memória proporcional à partição e à moldura (com vazamento para disco se não couber) e um sort por especificação de janela distinta. Costuma custar menos que o autojoin equivalente porque lê a tabela uma vez. O custo explode quando a janela processa linhas que um filtro anterior eliminaria, ou quando falta <code>PARTITION BY</code> em tabela enorme.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">15</span><span>Uma consulta com ROW_NUMBER sobre 80 milhões de linhas retorna 300 linhas e demora 20 minutos. Como investigar?</span></summary><div class="ans"><p>Ler o plano (<code>EXPLAIN ANALYZE</code> ou plano real no Oracle): quantas linhas entram na janela, se há sort em disco e onde o filtro é aplicado. Em geral, o filtro está por fora da janela. Mover os filtros para dentro da CTE, criar o índice <code>(id_paciente, dt_atendimento DESC)</code> ou trocar por <code>LATERAL</code> com <code>FETCH FIRST 1</code> para a lista de pacientes. Depois, comparar o plano e o tempo antes e depois.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">16</span><span>Dois painéis mostram taxas de reconsulta diferentes. Como a equipe resolve?</span></summary><div class="ans"><p>Comparar as consultas: filtros de status e tipo dentro ou fora da janela, período aplicado ao evento inicial ou ao retorno, tratamento de cancelados, dias por data de calendário ou por horas, desempate. Definir o indicador por escrito com o dono do negócio, centralizar o cálculo numa view ou tabela de fatos compartilhada e criar testes com casos de borda. O problema é de definição e governança, não só de SQL.</p></div></details>
+
+  <details class="qa"><summary><span class="qn">17</span><span>Como você orienta o time sobre quando usar janela, autojoin, LATERAL ou pré-agregação?</span></summary><div class="ans"><p>Janela quando o cálculo precisa de detalhe e agregado juntos sobre muitas linhas; <code>LATERAL</code> com índice quando o conjunto de entrada é pequeno e cada item pede "os N melhores"; pré-agregação (tabela ou view materializada) quando o mesmo relatório pesado roda com frequência; autojoin quase nunca, exceto para casos que a janela não expressa. A decisão se confirma pelo plano e por teste com volume de produção, não por preferência. Na revisão de código, peço o plano das consultas novas sobre tabelas grandes e a definição escrita de regras como "último" e "30 dias".</p></div></details>
+
+  <details class="qa"><summary><span class="qn">18</span><span>Que práticas você exige em relatórios e APIs que listam grandes volumes?</span></summary><div class="ans"><p>Paginação por cursor com limite máximo imposto no servidor; <code>ORDER BY</code> determinístico com índice que o suporte; proibição de <code>COUNT(*)</code> total em toda requisição; testes de carga com volume de produção no critério de aceite; relatórios pesados em réplica de leitura ou janela de baixa carga; e alertas de uso de temp e de tempo de consulta. Documentar as definições de indicadores e manter o SQL deles num lugar único e versionado.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha SQL · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-sql-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

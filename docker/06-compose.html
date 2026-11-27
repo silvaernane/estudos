@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 06: Docker Compose essencial</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 06 de 10 · Docker Compose essencial</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html" aria-current="page"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li class="sub"><ol>
+      <li><a href="#por-que-compose"><span class="n">1</span>Por que Compose, e qual Compose</a></li>
+      <li><a href="#anatomia"><span class="n">2</span>Anatomia do compose.yaml</a></li>
+      <li><a href="#projeto-rede"><span class="n">3</span>Projeto, rede padrão e DNS por nome de serviço</a></li>
+      <li><a href="#variaveis"><span class="n">4</span>Variáveis: .env, env_file, environment e interpolação</a></li>
+      <li><a href="#healthcheck-depends"><span class="n">5</span>depends_on, healthchecks e ordem de inicialização</a></li>
+      <li><a href="#comandos-dev"><span class="n">6</span>Comandos do dia a dia e ciclo de desenvolvimento</a></li>
+      <li><a href="#exemplo-completo"><span class="n">7</span>Exemplo completo: API + PostgreSQL + Adminer</a></li>
+      <li><a href="#erros-comuns"><span class="n">8</span>Erros comuns e como diagnosticar</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="07-compose-avancado.html"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 06 · <span class="lvl l2">Intermediário</span></div>
+  <h1>Docker Compose essencial</h1>
+  <p class="lede">Uma aplicação real tem API, banco, cache e ferramentas de apoio. O Compose descreve tudo isso num arquivo versionado e sobe o conjunto com um comando. Este módulo ensina a ler, escrever e depurar esse arquivo, e a evitar as armadilhas que fazem o ambiente funcionar só na máquina de quem o criou.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Explicar por que usar o Compose, a diferença entre <code>docker compose</code> (v2) e <code>docker-compose</code> (v1) e por que o campo <code>version</code> é obsoleto.</li>
+    <li>Escrever e ler um <code>compose.yaml</code> com services, build, ports, volumes, networks, restart e command/entrypoint.</li>
+    <li>Entender o nome do projeto, a rede padrão e o DNS por nome de serviço.</li>
+    <li>Usar corretamente <code>.env</code>, <code>env_file</code> e <code>environment</code>, a precedência entre eles e a interpolação <code>${VAR:-padrao}</code> e <code>${VAR:?erro}</code>.</li>
+    <li>Controlar a ordem de inicialização com healthcheck e <code>depends_on: condition: service_healthy</code>.</li>
+    <li>Dominar os comandos do dia a dia, o ciclo de desenvolvimento com hot reload e montar uma stack completa API + PostgreSQL + Adminer.</li>
+    <li>Reconhecer e corrigir os erros comuns: localhost dentro do container, ordem de inicialização, porta em uso e volumes órfãos.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="por-que-compose">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l1">Básico</span></div>
+  <h2>Por que Compose, e qual Compose</h2>
+  <p>Subir uma aplicação com <code>docker run</code> funciona para um container. Com três, já é ruim: cada um tem dezenas de flags (portas, variáveis, volumes, rede, restart) que vivem na cabeça de alguém ou numa nota de wiki desatualizada, a ordem importa e a rede precisa ser criada antes. O <strong>Docker Compose</strong> resolve isso descrevendo a aplicação inteira, <strong>declarativamente</strong>, num arquivo YAML que vai para o Git junto com o código: serviços, redes, volumes, variáveis e dependências. Um <code>docker compose up</code> cria o que falta e converge o ambiente para o que o arquivo diz.</p>
+  <pre><code class="sh"># antes: três comandos longos, na ordem certa, lembrando de cada flag
+docker network create loja
+docker volume create pgdata
+docker run -d --name db --network loja -e POSTGRES_PASSWORD=dev -v pgdata:/var/lib/postgresql/data postgres:17-alpine
+docker run -d --name api --network loja -p 3000:3000 -e DATABASE_URL=postgres://postgres:dev@db:5432/postgres minha-api
+
+# depois: o mesmo, versionado
+docker compose up -d</code></pre>
+  <p>O ganho vai além da conveniência: o arquivo é <strong>documentação executável</strong> da arquitetura da aplicação, reprodutível por qualquer pessoa do time e pelo CI. O novo desenvolvedor faz <code>git clone</code>, <code>docker compose up</code> e tem o ambiente completo.</p>
+
+  <h3>Compose v2, v1 e a Compose Specification</h3>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Compose v2 (atual)</th><th>Compose v1 (legado)</th></tr></thead>
+    <tbody>
+      <tr><td>Comando</td><td><code>docker compose</code> (com espaço)</td><td><code>docker-compose</code> (com hífen)</td></tr>
+      <tr><td>O que é</td><td>Plugin do Docker CLI, escrito em Go; vem no Docker Desktop e no pacote <code>docker-compose-plugin</code> do Linux</td><td>Programa independente em Python</td></tr>
+      <tr><td>Estado</td><td>Mantido e em evolução</td><td><strong>Descontinuado</strong> (fim de suporte em 2023); não use em projetos novos</td></tr>
+      <tr><td>Nome dos containers</td><td><code>projeto-servico-1</code> (hífen)</td><td><code>projeto_servico_1</code> (sublinhado)</td></tr>
+      <tr><td>Formato do arquivo</td><td>Compose Specification</td><td>Formatos "2.x" e "3.x" com campo <code>version</code></td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="sh">docker compose version
+# Docker Compose version v2.xx.x      (o número depende da instalação)</code></pre>
+  <ul>
+    <li>A <strong>Compose Specification</strong> é a especificação aberta do formato do arquivo (usada pelo Compose v2 e por outras ferramentas). É uma única especificação, sem as "versões" 2 e 3 do passado.</li>
+    <li>O campo <code>version: "3.8"</code> no topo é <strong>obsoleto</strong>: o Compose atual o ignora e emite um aviso (<em>the attribute <code>version</code> is obsolete</em>). Remova-o de arquivos novos e antigos. O que decide os recursos disponíveis é a versão do Compose instalada, não o arquivo.</li>
+    <li>O nome preferido do arquivo é <strong><code>compose.yaml</code></strong> (também <code>compose.yml</code>). <code>docker-compose.yml</code> e <code>docker-compose.yaml</code> continuam sendo reconhecidos. O Compose procura o arquivo no diretório atual e nos diretórios acima; use <code>-f arquivo.yaml</code> para apontar outro.</li>
+    <li>Se aparecer <code>docker-compose: command not found</code> ou um tutorial usar hífen, é material antigo: troque por <code>docker compose</code>.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha: Compose não é produção em escala</b><p>O Compose é excelente para desenvolvimento, testes, CI e para implantações simples em um único host. Ele não replica entre máquinas, não faz failover nem rolling update sofisticado. Quando a necessidade for multi-host e alta disponibilidade, o assunto é orquestração (módulo 10).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"O que é o Docker Compose e por que usar?" Ferramenta que define e executa aplicações multi-container a partir de um arquivo YAML declarativo (serviços, redes, volumes). Dá reprodutibilidade, versionamento da infraestrutura local e um comando só para subir tudo. Mostre atualidade: "uso <code>docker compose</code> (v2, plugin); o <code>docker-compose</code> v1 está descontinuado e o campo <code>version</code> é obsoleto".</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Um <code>compose.yaml</code> no repositório reduz o tempo de integração de novos membros de dias para minutos e torna o ambiente de desenvolvimento um artefato revisável em PR. Faça dele parte da definição de pronto de cada serviço: "sobe com um comando e tem um README de como usar".</p></div>
+</section>
+
+<section class="chap" id="anatomia">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l1">Básico</span></div>
+  <h2>Anatomia do compose.yaml</h2>
+  <p>O arquivo tem poucos blocos de topo: <code>services</code> (obrigatório), <code>volumes</code>, <code>networks</code> (e, nos módulos seguintes, <code>configs</code>, <code>secrets</code> e <code>name</code>). Cada serviço vira um ou mais containers a partir de uma imagem.</p>
+  <pre data-file="compose.yaml"><code class="yaml">name: clinica                      # nome do projeto (opcional; padrão = nome da pasta)
+
+services:
+  api:
+    build:                          # constrói a imagem a partir de um Dockerfile
+      context: ./api                #   pasta de contexto
+      dockerfile: Dockerfile        #   (opcional) nome do arquivo
+      target: dev                   #   (opcional) estágio do multi-stage
+      args:
+        NODE_ENV: development       #   ARG do Dockerfile
+    image: clinica-api:dev          # com build: nome/tag dados à imagem construída
+    ports:
+      - "127.0.0.1:3000:3000"       # host:container (sempre entre aspas)
+    environment:
+      DATABASE_URL: postgres://app:dev@db:5432/app
+      LOG_LEVEL: debug
+    env_file:
+      - ./api/.env.dev              # variáveis lidas de arquivo
+    volumes:
+      - ./api/src:/app/src          # bind mount (código)
+      - uploads:/app/uploads        # volume nomeado
+    networks:
+      - frontend
+      - backend
+    command: ["npm", "run", "dev"]  # substitui o CMD da imagem
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine       # imagem pronta, sem build
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+  uploads:
+
+networks:
+  frontend:
+  backend:</code></pre>
+
+  <h3>As chaves que você usa todo dia</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Chave</th><th>O que faz</th><th>Observações</th></tr></thead>
+    <tbody>
+      <tr><td><code>image</code></td><td>Imagem a usar (baixada do registry)</td><td>Fixe a tag. Sem <code>build</code>, o Compose faz o pull.</td></tr>
+      <tr><td><code>build</code></td><td>Constrói a imagem localmente</td><td>Forma curta <code>build: ./api</code>; longa com <code>context</code>, <code>dockerfile</code>, <code>target</code>, <code>args</code>. Com <code>image</code> junto, define o nome da imagem construída.</td></tr>
+      <tr><td><code>ports</code></td><td>Publica portas no host</td><td>Entre aspas, para o YAML não interpretar <code>22:22</code> como número. Use <code>127.0.0.1:</code> para restringir.</td></tr>
+      <tr><td><code>expose</code></td><td>Documenta portas internas</td><td>Quase irrelevante: containers da mesma rede já se falam em qualquer porta.</td></tr>
+      <tr><td><code>environment</code></td><td>Variáveis de ambiente do container</td><td>Mapa (<code>CHAVE: valor</code>) ou lista (<code>- CHAVE=valor</code>).</td></tr>
+      <tr><td><code>env_file</code></td><td>Arquivo(s) com variáveis</td><td>Formato <code>CHAVE=valor</code>. Vários arquivos: o último vence.</td></tr>
+      <tr><td><code>volumes</code></td><td>Volumes nomeados e bind mounts</td><td>Volumes nomeados precisam ser declarados no bloco <code>volumes:</code> de topo. Caminhos relativos (<code>./src</code>) são em relação ao compose.yaml.</td></tr>
+      <tr><td><code>networks</code></td><td>Redes das quais o serviço participa</td><td>Sem isso, usa a rede padrão do projeto.</td></tr>
+      <tr><td><code>command</code></td><td>Substitui o <code>CMD</code> da imagem</td><td>Prefira a forma de lista (exec), sem shell.</td></tr>
+      <tr><td><code>entrypoint</code></td><td>Substitui o <code>ENTRYPOINT</code></td><td>Ao definir <code>entrypoint</code>, o Compose ignora o <code>CMD</code> padrão da imagem; defina <code>command</code> também se precisar.</td></tr>
+      <tr><td><code>restart</code></td><td>Política de reinício</td><td>Veja a tabela abaixo.</td></tr>
+      <tr><td><code>depends_on</code></td><td>Ordem de subida entre serviços</td><td>Forma curta só ordena o <em>início</em>; <code>condition</code> espera saúde (seção 5).</td></tr>
+      <tr><td><code>healthcheck</code></td><td>Como saber se o serviço está saudável</td><td>Sobrepõe o <code>HEALTHCHECK</code> da imagem.</td></tr>
+      <tr><td><code>container_name</code></td><td>Nome fixo do container</td><td>Evite: impede escalar o serviço e causa conflito se outro projeto usar o mesmo nome.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>image versus build</h3>
+  <ul>
+    <li><strong><code>image</code> sozinho:</strong> o Compose baixa a imagem (como <code>docker pull</code>). Típico para infraestrutura: Postgres, Redis, Adminer.</li>
+    <li><strong><code>build</code> sozinho:</strong> o Compose constrói a imagem e a nomeia <code>&lt;projeto&gt;-&lt;servico&gt;</code>. Típico para o código da própria equipe.</li>
+    <li><strong>Os dois:</strong> constrói e dá o nome indicado em <code>image</code>; útil para enviar a imagem a um registry depois (módulo 08).</li>
+    <li>Alterou o código ou o Dockerfile? <code>docker compose up -d --build</code> (ou <code>docker compose build</code>). O Compose não reconstrói sozinho: ele só constrói se a imagem ainda não existe.</li>
+  </ul>
+
+  <h3>command, entrypoint e restart</h3>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  worker:
+    image: minha-api
+    entrypoint: ["node"]                    # troca o ENTRYPOINT da imagem
+    command: ["dist/worker.js", "--fila", "agendamentos"]   # argumentos / CMD
+    restart: on-failure:5                   # reinicia só se falhar, no máximo 5 vezes</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th><code>restart</code></th><th>Comportamento</th></tr></thead>
+    <tbody>
+      <tr><td><code>"no"</code> (padrão)</td><td>Nunca reinicia. Escreva entre aspas: sem aspas, o YAML entende <code>no</code> como o booleano falso.</td></tr>
+      <tr><td><code>always</code></td><td>Sempre reinicia, inclusive quando o daemon sobe de novo, mesmo se você parou o container antes do reinício do daemon.</td></tr>
+      <tr><td><code>on-failure[:N]</code></td><td>Reinicia só com código de saída diferente de zero, até N vezes.</td></tr>
+      <tr><td><code>unless-stopped</code></td><td>Como <code>always</code>, mas respeita um <code>stop</code> manual (não volta depois de reiniciar o daemon).</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilhas de YAML que o Compose herda</b><ul>
+    <li><strong>Indentação com espaços</strong>, nunca tabs. Dois espaços por nível é o padrão.</li>
+    <li><strong>Portas sem aspas</strong>: <code>- 22:22</code> pode ser lido como o número 1342 (notação sexagesimal do YAML 1.1). Sempre <code>"22:22"</code>.</li>
+    <li><strong>Valores que viram booleanos</strong>: <code>yes</code>, <code>no</code>, <code>on</code>, <code>off</code> sem aspas. Em <code>environment</code>, escreva <code>"true"</code>/<code>"false"</code> quando a aplicação espera texto.</li>
+    <li><strong>Dois-pontos e # em valores</strong> (senhas, URLs): coloque o valor entre aspas.</li>
+    <li>Quando em dúvida sobre o que o Compose entendeu, rode <code>docker compose config</code> (seção 6): ele mostra o arquivo final já interpretado.</li>
+  </ul></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Imagem de terceiros: <code>image</code> com tag fixa. Código próprio: <code>build</code>. Porta que só você usa: <code>127.0.0.1:</code>. Dados: volume nomeado declarado. Restart: <code>unless-stopped</code> em servidores, <code>"no"</code> em desenvolvimento.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre <code>command</code> e <code>entrypoint</code>?" O <code>entrypoint</code> é o executável fixo do container; o <code>command</code> são os argumentos padrão (ou o comando padrão, se a imagem não tiver entrypoint). No Compose, <code>command</code> substitui o <code>CMD</code> da imagem e <code>entrypoint</code> substitui o <code>ENTRYPOINT</code> (e descarta o <code>CMD</code> padrão). Relembre o módulo 03 sobre forma exec versus shell.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Padronize o esqueleto do <code>compose.yaml</code> da empresa (nomes de serviço, convenção de portas, volumes nomeados, tags fixas) e revise-o em PR como código. Divergências entre projetos custam tempo de onboarding e escondem problemas de segurança (portas abertas, tags <code>latest</code>).</p></div>
+</section>
+
+<section class="chap" id="projeto-rede">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Projeto, rede padrão e DNS por nome de serviço</h2>
+  <p>Tudo que o Compose cria pertence a um <strong>projeto</strong>, identificado por um nome. O nome vira prefixo de containers, redes e volumes, e é por ele que o Compose sabe o que é "seu". Isso permite rodar duas cópias da mesma aplicação lado a lado (por exemplo, duas branches) sem conflito, desde que os nomes de projeto sejam diferentes.</p>
+  <h3>Como o nome do projeto é definido</h3>
+  <p>Em ordem de precedência (do que vence ao que perde):</p>
+  <ol>
+    <li>a opção <code>-p</code> / <code>--project-name</code> na linha de comando;</li>
+    <li>a variável de ambiente <code>COMPOSE_PROJECT_NAME</code> (pode estar no <code>.env</code>);</li>
+    <li>o campo <code>name:</code> no <code>compose.yaml</code>;</li>
+    <li>o nome da pasta do projeto (em minúsculas e normalizado).</li>
+  </ol>
+  <p>O nome só pode ter letras minúsculas, números, hífen e sublinhado. Um <code>name:</code> explícito no arquivo evita a surpresa de o nome depender da pasta em que cada pessoa clonou o repositório (ou do nome temporário de uma pasta no CI).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Recurso</th><th>Nome gerado (projeto <code>clinica</code>)</th></tr></thead>
+    <tbody>
+      <tr><td>Container</td><td><code>clinica-api-1</code>, <code>clinica-db-1</code> (serviço + índice da réplica)</td></tr>
+      <tr><td>Rede padrão</td><td><code>clinica_default</code></td></tr>
+      <tr><td>Rede declarada <code>backend</code></td><td><code>clinica_backend</code></td></tr>
+      <tr><td>Volume declarado <code>pgdata</code></td><td><code>clinica_pgdata</code></td></tr>
+      <tr><td>Imagem construída do serviço <code>api</code></td><td><code>clinica-api</code></td></tr>
+    </tbody>
+  </table></div>
+  <figure class="figure">
+    <svg viewBox="0 0 680 256" role="img" aria-label="Rede padrão do projeto clinica com os serviços api, db e adminer, DNS embutido resolvendo nomes de serviço, e o host publicando só as portas necessárias">
+      <defs><marker id="ah06a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="24">Projeto clinica: rede clinica_default</text>
+      <text class="ttl" x="520" y="24">Host</text>
+      <rect class="box-a" x="20" y="34" width="450" height="190" rx="6"/>
+      <rect class="box" x="40" y="62" width="130" height="44" rx="4"/><text x="105" y="82" text-anchor="middle">api</text><text class="lbl" x="105" y="98" text-anchor="middle">escuta :3000</text>
+      <rect class="box" x="40" y="152" width="130" height="44" rx="4"/><text x="105" y="172" text-anchor="middle">adminer</text><text class="lbl" x="105" y="188" text-anchor="middle">escuta :8080</text>
+      <rect class="box" x="300" y="108" width="150" height="44" rx="4"/><text x="375" y="128" text-anchor="middle">db</text><text class="lbl" x="375" y="144" text-anchor="middle">escuta :5432</text>
+      <line class="ln-a" x1="172" y1="90" x2="298" y2="120" marker-end="url(#ah06a)"/>
+      <line class="ln-a" x1="172" y1="168" x2="298" y2="140" marker-end="url(#ah06a)"/>
+      <text class="lbl" x="196" y="82">db:5432</text>
+      <text class="lbl" x="196" y="186">db:5432</text>
+      <text class="lbl" x="268" y="56">DNS embutido (127.0.0.11)</text>
+      <text class="lbl" x="268" y="72">resolve api, db e adminer</text>
+      <rect class="box-w" x="520" y="34" width="140" height="190" rx="6"/>
+      <text x="532" y="62">3000 → api</text>
+      <text x="532" y="86">8081 → adminer</text>
+      <text class="lbl" x="532" y="124">db: sem ports,</text>
+      <text class="lbl" x="532" y="140">só rede interna</text>
+      <text class="lbl" x="532" y="176">só o necessário</text>
+      <text class="lbl" x="532" y="192">é publicado</text>
+      <line class="ln" x1="518" y1="130" x2="472" y2="130" marker-end="url(#ah06a)"/>
+      <text class="lbl" x="20" y="244">Dentro da rede: nome do serviço e porta interna. De fora: só as portas publicadas.</text>
+    </svg>
+    <figcaption>O Compose cria a rede do projeto e registra cada serviço no DNS embutido pelo nome do serviço (e pelo nome do container).</figcaption>
+  </figure>
+  <p>O comportamento é o das redes definidas pelo usuário do módulo 05: o resolvedor embutido responde pelo <strong>nome do serviço</strong> (<code>db</code>, <code>api</code>). O serviço é encontrado pela <strong>porta interna</strong> (a que a aplicação escuta), não pela porta publicada. Com réplicas (<code>--scale</code>), o nome do serviço resolve para o IP de todas elas, em rodízio.</p>
+  <pre><code class="sh">docker compose up -d
+docker compose exec api sh -c "getent hosts db"
+# 172.19.0.2      db
+
+docker network ls --filter name=clinica
+# NETWORK ID     NAME              DRIVER    SCOPE
+# 3c1f0b9d7a12   clinica_default   bridge    local
+
+docker volume ls --filter name=clinica
+# DRIVER    VOLUME NAME
+# local     clinica_pgdata</code></pre>
+  <h3>Redes personalizadas</h3>
+  <p>Sem a chave <code>networks</code>, todos os serviços ficam na <code>default</code> e se enxergam. Para segmentar (por exemplo, o proxy só alcança a API e só a API alcança o banco), declare redes e ligue cada serviço só às que precisa:</p>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  proxy:
+    image: nginx:1.27-alpine
+    ports: ["80:80"]
+    networks: [frontend]
+  api:
+    build: ./api
+    networks: [frontend, backend]          # ponte entre as duas
+  db:
+    image: postgres:17-alpine
+    networks:
+      backend:
+        aliases: [banco-clinica]
+
+networks:
+  frontend:
+  backend:
+    internal: true                         # sem saída para a internet; só tráfego interno
+  legado:
+    external: true                         # rede que já existe (criada fora do Compose)</code></pre>
+  <ul>
+    <li><code>internal: true</code> bloqueia a saída para fora da rede: bom para o banco. Cuidado: containers só nessa rede também não baixam pacotes nem falam com APIs externas.</li>
+    <li><code>external: true</code> usa uma rede ou volume que o Compose <strong>não cria nem remove</strong>. É também a proteção de dados mais barata em produção: um volume <code>external</code> não é apagado por <code>down -v</code>.</li>
+    <li>Volumes e redes podem ter <code>name:</code> próprio para não receber o prefixo do projeto.</li>
+    <li>O Compose marca tudo com rótulos <code>com.docker.compose.project</code>; é assim que <code>down</code> encontra o que remover.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha: <code>container_name</code> fixo</b><p>Com <code>container_name: db</code> você perde o prefixo de projeto: duas cópias do projeto brigam pelo mesmo nome e o serviço não pode ser escalado (<code>--scale db=2</code> falha). O DNS por nome de serviço já resolve o que o <code>container_name</code> costuma querer resolver. Só use em casos justificados.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Como o serviço A encontra o serviço B no Compose?" Pelo nome do serviço, resolvido pelo DNS embutido da rede do projeto (<code>&lt;projeto&gt;_default</code>), usando a porta interna do B. Sem precisar de <code>links</code> (legado), de IP, nem de <code>ports</code>: <code>ports</code> é só para acesso de fora do Docker.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Fixe o <code>name:</code> do projeto no arquivo e cobre o uso de redes separadas para o banco. Em máquinas de CI compartilhadas, exija nomes de projeto únicos por execução (<code>-p</code> com o ID do job) para que pipelines paralelos não derrubem o ambiente uns dos outros.</p></div>
+</section>
+
+<section class="chap" id="variaveis">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Variáveis: .env, env_file, environment e interpolação</h2>
+  <p>Há <strong>dois problemas diferentes</strong> que parecem um só: (1) preencher <em>valores dentro do próprio <code>compose.yaml</code></em> (portas, tags, senhas), e (2) definir as <em>variáveis de ambiente que o processo dentro do container enxerga</em>. Misturar os dois é a maior fonte de confusão com variáveis no Compose.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mecanismo</th><th>O que faz</th><th>Vai para dentro do container?</th></tr></thead>
+    <tbody>
+      <tr><td><strong><code>.env</code></strong> (na pasta do projeto)</td><td>Fornece valores para a <strong>interpolação</strong> <code>${VAR}</code> do <code>compose.yaml</code>, e para variáveis do próprio Compose (<code>COMPOSE_PROJECT_NAME</code>, <code>COMPOSE_FILE</code>, <code>COMPOSE_PROFILES</code>).</td><td><strong>Não</strong>, por si só. Só chega ao container se o <code>compose.yaml</code> o referenciar (em <code>environment</code>, por exemplo).</td></tr>
+      <tr><td><strong><code>environment</code></strong></td><td>Define variáveis do container, direto no YAML.</td><td>Sim.</td></tr>
+      <tr><td><strong><code>env_file</code></strong></td><td>Carrega variáveis de um ou mais arquivos para o container.</td><td>Sim.</td></tr>
+      <tr><td><code>--env-file</code> (CLI)</td><td>Troca o arquivo usado na interpolação (no lugar do <code>.env</code>).</td><td>Não, mesma lógica do <code>.env</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="figure">
+    <svg viewBox="0 0 680 230" role="img" aria-label="De onde vêm os valores: shell e arquivo .env alimentam a interpolação do compose.yaml; env_file vai direto ao container">
+      <defs><marker id="ah06b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="36" width="140" height="44" rx="4"/><text x="32" y="55">shell / CI</text><text class="lbl" x="32" y="71">export DB_PASS=...</text>
+      <rect class="box" x="20" y="96" width="140" height="44" rx="4"/><text x="32" y="115">.env</text><text class="lbl" x="32" y="131">da pasta do projeto</text>
+      <rect class="box" x="20" y="170" width="140" height="44" rx="4"/><text x="32" y="189">env_file</text><text class="lbl" x="32" y="205">um por serviço</text>
+      <rect class="box-a" x="250" y="54" width="190" height="104" rx="5"/>
+      <text class="ttl" x="262" y="74">compose.yaml</text>
+      <text x="262" y="96">environment:</text>
+      <text x="262" y="114">  X: ${VAR:-padrao}</text>
+      <text class="lbl" x="262" y="138">interpolação das ${VAR}</text>
+      <rect class="box-m" x="510" y="90" width="150" height="86" rx="5"/>
+      <text class="ttl" x="522" y="112">container</text>
+      <text class="lbl" x="522" y="134">ambiente final</text>
+      <text class="lbl" x="522" y="152">(o que o processo lê)</text>
+      <line class="ln-a" x1="160" y1="58" x2="248" y2="88" marker-end="url(#ah06b)"/>
+      <line class="ln-a" x1="160" y1="118" x2="248" y2="118" marker-end="url(#ah06b)"/>
+      <line class="ln-a" x1="440" y1="112" x2="508" y2="124" marker-end="url(#ah06b)"/>
+      <line class="ln" x1="160" y1="192" x2="508" y2="160" marker-end="url(#ah06b)"/>
+      <text class="lbl" x="230" y="216">lido pelo Compose e injetado no container</text>
+    </svg>
+    <figcaption>O shell e o .env abastecem o compose.yaml (interpolação); environment e env_file abastecem o container.</figcaption>
+  </figure>
+
+  <h3>Interpolação no compose.yaml</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Sintaxe</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td><code>${VAR}</code> ou <code>$VAR</code></td><td>Valor de <code>VAR</code>. Se não existir, o Compose avisa e usa texto vazio.</td></tr>
+      <tr><td><code>${VAR:-padrao}</code></td><td><code>padrao</code> se <code>VAR</code> não existir <strong>ou estiver vazia</strong>.</td></tr>
+      <tr><td><code>${VAR-padrao}</code></td><td><code>padrao</code> só se <code>VAR</code> não existir (vazia conta como definida).</td></tr>
+      <tr><td><code>${VAR:?mensagem}</code></td><td><strong>Erro</strong> e para, se <code>VAR</code> não existir ou estiver vazia. Exibe a mensagem.</td></tr>
+      <tr><td><code>${VAR?mensagem}</code></td><td>Erro só se <code>VAR</code> não existir.</td></tr>
+      <tr><td><code>${VAR:+outro}</code></td><td><code>outro</code> se <code>VAR</code> estiver definida e não vazia; caso contrário, vazio.</td></tr>
+      <tr><td><code>$$</code></td><td>Um <code>$</code> literal (escape). Essencial em healthchecks com <code>CMD-SHELL</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <pre data-file=".env"><code class="sh"># NÃO versionar. Versione um .env.example sem segredos.
+POSTGRES_USER=app
+POSTGRES_PASSWORD=troque-isto
+POSTGRES_DB=clinica
+API_PORT=3000</code></pre>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  db:
+    image: postgres:${PG_VERSION:-17}-alpine                 # padrão 17 se PG_VERSION não existir
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}   # falha cedo, com mensagem clara
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+  api:
+    build: ./api
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"</code></pre>
+  <pre><code class="text">$ docker compose config
+error while interpolating services.db.environment.POSTGRES_PASSWORD: required variable POSTGRES_PASSWORD is missing a value: defina POSTGRES_PASSWORD no .env</code></pre>
+
+  <h3>Precedência</h3>
+  <p>Para a <strong>interpolação</strong> do <code>compose.yaml</code>, vence o que estiver mais acima:</p>
+  <ol>
+    <li>variável no <strong>shell</strong> (ou do CI) onde você roda o <code>docker compose</code>;</li>
+    <li>arquivo indicado por <code>--env-file</code>, ou o <code>.env</code> da pasta do projeto;</li>
+    <li>o valor padrão da própria sintaxe (<code>:-padrao</code>).</li>
+  </ol>
+  <p>Para o <strong>ambiente do container</strong>, do que mais vence ao que menos vence:</p>
+  <ol>
+    <li><code>docker compose run -e VAR=valor</code> na linha de comando;</li>
+    <li><code>environment</code> do serviço (inclusive o valor interpolado);</li>
+    <li><code>env_file</code> do serviço (com vários arquivos, o último vence);</li>
+    <li><code>ENV</code> da imagem (Dockerfile).</li>
+  </ol>
+  <pre><code class="sh"># ver o resultado final, com tudo resolvido
+docker compose config
+
+# demonstração: o shell vence o .env na interpolação
+echo "API_PORT=3000" &gt; .env
+API_PORT=4000 docker compose config | grep published
+#   published: "4000"</code></pre>
+  <div class="note trap"><b>Armadilhas de variáveis</b><ul>
+    <li><strong>"Mudei o .env e nada mudou."</strong> O container já foi criado com os valores antigos. Rode <code>docker compose up -d</code> (ele detecta a mudança de configuração e recria o serviço); <code>restart</code> não relê configuração.</li>
+    <li><strong>Uma variável exportada no seu terminal sobrepõe o <code>.env</code></strong> e ninguém lembra: "na minha máquina funciona". Confirme com <code>docker compose config</code> e <code>env | grep VAR</code>.</li>
+    <li><strong>O <code>.env</code> não é o ambiente do container.</strong> Para a aplicação ler <code>POSTGRES_PASSWORD</code>, é preciso repassá-la em <code>environment</code> ou em <code>env_file</code>.</li>
+    <li><strong>Segredos no <code>compose.yaml</code> versionado.</strong> Senha em texto no repositório é incidente. Use <code>.env</code> ignorado pelo Git para valores locais, e Docker secrets ou um cofre em ambientes compartilhados (módulos 07 e 09).</li>
+    <li><strong>Aspas no <code>.env</code></strong>: em geral são tratadas como delimitadores do valor e removidas, mas o comportamento varia entre ferramentas; evite espaços e caracteres especiais em valores quando puder e confira com <code>docker compose config</code>.</li>
+    <li><strong><code>$</code> em senhas</strong> é interpretado como variável. Escape como <code>$$</code>.</li>
+  </ul></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Valores que variam por máquina (porta, tag, senha local) vão no <code>.env</code> e entram no YAML por <code>${VAR:-padrao}</code>; use <code>${VAR:?erro}</code> para o que não tem padrão seguro (senha). Versione <code>.env.example</code>, nunca o <code>.env</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre <code>.env</code>, <code>env_file</code> e <code>environment</code>?" O <code>.env</code> alimenta a interpolação do próprio arquivo Compose; <code>environment</code> e <code>env_file</code> definem variáveis dentro do container. Precedência no container: <code>run -e</code>, depois <code>environment</code>, depois <code>env_file</code>, depois o <code>ENV</code> da imagem. Para interpolação: o shell vence o <code>.env</code>.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Política simples e auditável: <code>.env</code> no <code>.gitignore</code>, <code>.env.example</code> versionado, varredura de segredos no CI e rotação de qualquer credencial que já tenha sido commitada (apagar do histórico não basta). Em saúde, uma senha de banco no repositório pode significar acesso a dados de pacientes.</p></div>
+</section>
+
+<section class="chap" id="healthcheck-depends">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l2">Intermediário</span></div>
+  <h2>depends_on, healthchecks e ordem de inicialização</h2>
+  <p>O problema clássico: a API sobe antes de o banco aceitar conexões e cai com <code>connection refused</code>. Subir e estar <strong>pronto</strong> são coisas diferentes: o Postgres leva alguns segundos para inicializar o cluster (e, na primeira vez, para executar os scripts de init); o Oracle Free leva minutos na criação do banco.</p>
+  <h3>O que o <code>depends_on</code> faz</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Forma</th><th>Espera até...</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><code>depends_on: [db]</code></td><td>o container <code>db</code> ter <strong>iniciado</strong> (não que o banco esteja pronto)</td><td>Só ordem de criação e de desligamento.</td></tr>
+      <tr><td><code>condition: service_started</code></td><td>igual à forma curta</td><td>Padrão explícito.</td></tr>
+      <tr><td><code>condition: service_healthy</code></td><td>o <code>healthcheck</code> do serviço reportar <code>healthy</code></td><td>Banco, broker, qualquer coisa que a API exige pronta.</td></tr>
+      <tr><td><code>condition: service_completed_successfully</code></td><td>o serviço <strong>terminar</strong> com código 0</td><td>Jobs únicos: migrações, seed, geração de certificados.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Também existem <code>restart: true</code> (reinicia este serviço quando a dependência for reiniciada pelo Compose) e <code>required: false</code> (dependência opcional; não bloqueia se o serviço não for iniciado, por exemplo por perfil).</p>
+
+  <h3>Healthcheck: como o Docker decide o que é "saudável"</h3>
+  <p>O <code>healthcheck</code> roda um comando periodicamente <strong>dentro do container</strong>. O estado passa por três valores: <code>starting</code> (período inicial, falhas não contam), <code>healthy</code> (o comando saiu com código 0) e <code>unhealthy</code> (falhou <code>retries</code> vezes seguidas). O Docker não reinicia container <em>unhealthy</em> por conta própria: o estado serve para <code>depends_on</code>, para <code>docker ps</code> e para orquestradores.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 210" role="img" aria-label="Linha do tempo: o serviço db fica em starting até o healthcheck passar e vira healthy; a api só inicia depois que o db está healthy">
+      <defs><marker id="ah06c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text x="20" y="63">db</text>
+      <text x="20" y="123">api</text>
+      <rect class="box-w" x="130" y="40" width="200" height="36" rx="4"/><text x="230" y="63" text-anchor="middle">starting (retries)</text>
+      <rect class="box-a" x="330" y="40" width="290" height="36" rx="4"/><text x="475" y="63" text-anchor="middle">healthy</text>
+      <rect class="box" x="130" y="100" width="200" height="36" rx="4"/><text x="230" y="123" text-anchor="middle">aguarda service_healthy</text>
+      <rect class="box-a" x="330" y="100" width="290" height="36" rx="4"/><text x="475" y="123" text-anchor="middle">api inicia</text>
+      <line class="ln-b" x1="330" y1="30" x2="330" y2="148"/>
+      <text class="lbl" x="338" y="164">pg_isready responde: healthy</text>
+      <line class="ln" x1="130" y1="176" x2="620" y2="176" marker-end="url(#ah06c)"/>
+      <text class="lbl" x="130" y="194">tempo</text>
+    </svg>
+    <figcaption>Com <code>service_healthy</code>, o Compose segura a API até o banco passar no healthcheck.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Campo</th><th>Significado</th><th>Padrão</th></tr></thead>
+    <tbody>
+      <tr><td><code>test</code></td><td>O comando. <code>["CMD", ...]</code> (sem shell), <code>["CMD-SHELL", "..."]</code> (com shell) ou <code>["NONE"]</code> (desliga um healthcheck herdado da imagem).</td><td>sem padrão</td></tr>
+      <tr><td><code>interval</code></td><td>Tempo entre execuções.</td><td>30s</td></tr>
+      <tr><td><code>timeout</code></td><td>Tempo máximo de cada execução.</td><td>30s</td></tr>
+      <tr><td><code>retries</code></td><td>Falhas seguidas para virar <code>unhealthy</code>.</td><td>3</td></tr>
+      <tr><td><code>start_period</code></td><td>Janela inicial em que falhas não contam (banco lento para subir).</td><td>0s</td></tr>
+      <tr><td><code>start_interval</code></td><td>Intervalo entre execuções <em>durante</em> o <code>start_period</code> (versões recentes do Docker Engine e do Compose).</td><td>5s</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Healthchecks bem escritos</h3>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: app
+    healthcheck:
+      # $$ evita que o COMPOSE interpole; o shell do container expande a variável
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build: ./api
+    depends_on:
+      db:
+        condition: service_healthy        # espera o Postgres responder
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]   # Alpine/busybox
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  cache:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5</code></pre>
+  <ul>
+    <li><strong>Teste a prontidão real.</strong> <code>pg_isready</code> verifica se o servidor aceita conexões. Para um HTTP, chame um endpoint <code>/health</code> que verifique as dependências críticas da aplicação (com cuidado: um health que consulta o banco inteiro a cada 5 s vira carga).</li>
+    <li><strong>A ferramenta precisa existir na imagem.</strong> Imagens enxutas (Alpine, slim, distroless) podem não ter <code>curl</code>. Em Alpine, o <code>wget</code> do busybox costuma existir; em distroless não há nada: use um binário próprio de healthcheck ou o próprio executável da aplicação com um modo <code>--health</code>. O <code>curl -f</code> falha com código diferente de zero em respostas 4xx/5xx, o que se quer num healthcheck.</li>
+    <li><strong>Use <code>localhost</code> e a porta interna</strong>: o healthcheck roda <em>dentro</em> do container do serviço.</li>
+    <li><strong>Intervalos razoáveis.</strong> <code>interval</code> curto demais gera carga; <code>start_period</code> curto demais marca o serviço lento como falho. Para o Oracle Free na primeira subida, planeje minutos.</li>
+    <li>Ver o estado: <code>docker compose ps</code> mostra <code>(healthy)</code>, <code>(unhealthy)</code> ou <code>(health: starting)</code>; <code>docker inspect --format '{{json .State.Health}}' container</code> mostra o histórico das últimas execuções.</li>
+    <li><code>docker compose up -d --wait</code> sobe e só retorna quando os serviços estiverem running/healthy. Ideal para scripts e CI.</li>
+  </ul>
+  <h3>Job de migração com <code>service_completed_successfully</code></h3>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  migrar:
+    build: ./api
+    command: ["npm", "run", "migrate"]       # roda e termina
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+  api:
+    build: ./api
+    depends_on:
+      migrar:
+        condition: service_completed_successfully   # só sobe depois que as migrações terminam com sucesso</code></pre>
+  <div class="note trap"><b>Armadilha: healthcheck não substitui retry na aplicação</b><p>Healthcheck e <code>depends_on</code> só controlam a ordem de <strong>subida</strong>. O banco pode reiniciar depois, a rede pode piscar, a conexão pode cair. Uma aplicação robusta reconecta com retry e backoff (veja a trilha de APIs, <a href="../apis/06-confiabilidade.html">APIs 06: Confiabilidade</a>). Quem confia só na ordem de subida tem um ambiente que "funciona hoje".</p></div>
+  <div class="note trap"><b>Armadilha: healthcheck que sempre passa</b><p><code>test: ["CMD", "true"]</code> ou checar só se o processo existe dá <code>healthy</code> antes de o serviço estar pronto. E um healthcheck que depende de ferramenta ausente falha para sempre (o serviço fica <code>unhealthy</code> e o <code>depends_on</code> nunca libera): veja os logs do healthcheck no <code>docker inspect</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"A API sobe antes do banco e quebra. Como resolver?" Healthcheck no banco (<code>pg_isready</code>) e <code>depends_on</code> com <code>condition: service_healthy</code> na API, mais retry com backoff na própria aplicação, porque a ordem de subida não cobre quedas posteriores. Mencione <code>service_completed_successfully</code> para migrações.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Healthcheck é contrato de operação: o que "pronto" significa para cada serviço. Exija um endpoint de saúde em toda API e que ele seja o mesmo usado pelo Compose, pelo balanceador e pelo monitoramento. Evita três definições diferentes de "saudável" em três ferramentas.</p></div>
+</section>
+
+<section class="chap" id="comandos-dev">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Comandos do dia a dia e ciclo de desenvolvimento</h2>
+  <h3>Os comandos essenciais</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker compose up -d</code></td><td>Cria (ou recria o que mudou) e inicia tudo em segundo plano. Sem <code>-d</code>, fica em primeiro plano mostrando os logs (Ctrl+C para).</td></tr>
+      <tr><td><code>docker compose up -d --build</code></td><td>Reconstrói as imagens com <code>build:</code> antes de subir.</td></tr>
+      <tr><td><code>docker compose up -d --wait</code></td><td>Sobe e só retorna quando os serviços estão running/healthy. Bom para scripts e CI.</td></tr>
+      <tr><td><code>docker compose up -d --force-recreate</code></td><td>Recria os containers mesmo sem mudança de configuração.</td></tr>
+      <tr><td><code>docker compose ps</code> (<code>-a</code> inclui os parados)</td><td>Estado dos serviços, portas e health.</td></tr>
+      <tr><td><code>docker compose logs -f --tail=100 api</code></td><td>Segue os logs de um serviço (sem o nome, todos os serviços).</td></tr>
+      <tr><td><code>docker compose exec api sh</code></td><td>Shell num container <strong>já em execução</strong>. Em scripts sem terminal, use <code>-T</code>.</td></tr>
+      <tr><td><code>docker compose run --rm api npm test</code></td><td>Container <strong>novo e avulso</strong> do serviço, para um comando pontual (testes, migração). Sobe as dependências; não publica as portas do serviço (a menos que use <code>--service-ports</code>).</td></tr>
+      <tr><td><code>docker compose build [--no-cache] [--pull]</code></td><td>Constrói as imagens sem subir. <code>--pull</code> atualiza a imagem base.</td></tr>
+      <tr><td><code>docker compose pull</code></td><td>Baixa as imagens do registry sem subir.</td></tr>
+      <tr><td><code>docker compose config</code></td><td>Mostra o arquivo final: variáveis resolvidas, arquivos mesclados, caminhos expandidos. <code>-q</code> só valida; <code>--services</code> lista os serviços.</td></tr>
+      <tr><td><code>docker compose restart api</code></td><td>Reinicia os processos <strong>sem recriar</strong> o container nem reler a configuração.</td></tr>
+      <tr><td><code>docker compose stop</code> / <code>start</code></td><td>Para / inicia sem remover.</td></tr>
+      <tr><td><code>docker compose down</code></td><td>Para e <strong>remove containers e redes</strong> do projeto. Volumes e imagens ficam.</td></tr>
+      <tr><td><code>docker compose down -v</code></td><td>Remove também os <strong>volumes nomeados</strong> declarados no arquivo e os anônimos: <strong>apaga os dados</strong>.</td></tr>
+      <tr><td><code>docker compose down --remove-orphans</code></td><td>Remove também containers de serviços que não existem mais no arquivo.</td></tr>
+      <tr><td><code>docker compose ls</code></td><td>Lista os projetos Compose em execução na máquina.</td></tr>
+    </tbody>
+  </table></div>
+  <pre><code class="text">$ docker compose ps
+NAME                IMAGE                COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+clinica-adminer-1   adminer:4            "entrypoint.sh docke…"   adminer   2 minutes ago    Up About a minute         127.0.0.1:8081-&gt;8080/tcp
+clinica-api-1       clinica-api          "docker-entrypoint.s…"   api       2 minutes ago    Up About a minute (healthy)   127.0.0.1:3000-&gt;3000/tcp
+clinica-db-1        postgres:17-alpine   "docker-entrypoint.s…"   db        2 minutes ago    Up 2 minutes (healthy)    127.0.0.1:5432-&gt;5432/tcp</code></pre>
+  <div class="note trap"><b>Armadilha: <code>down -v</code> e <code>restart</code></b><ul>
+    <li><code>docker compose down -v</code> é o comando mais destrutivo do dia a dia: apaga o banco do projeto. Ótimo para "recomeçar do zero" em desenvolvimento; desastre em um servidor. Em ambientes compartilhados, declare o volume do banco como <code>external: true</code> (o Compose não remove volumes externos) e evite dar o <code>-v</code> a quem não precisa.</li>
+    <li><code>docker compose restart</code> <strong>não aplica</strong> mudanças de <code>environment</code>, portas ou imagem. Para aplicar, rode <code>up -d</code> (recria só o que mudou) ou <code>up -d --force-recreate</code>.</li>
+    <li><code>exec</code> exige o container em execução; <code>run</code> cria um novo. Um comando de manutenção (migração) que escreve em arquivos deve usar <code>run --rm</code>, para não depender do container "principal".</li>
+  </ul></div>
+  <h3>Quando o Compose recria um container</h3>
+  <p>O <code>up</code> compara a configuração desejada com a de cada container existente. Mudou algo que o afeta (imagem, variável, porta, volume, comando), recria <em>aquele</em> serviço; não mudou, mantém. Alterar apenas o <strong>código</strong> não muda a configuração: para uma imagem construída, use <code>up -d --build</code>. Dependentes costumam ser recriados também.</p>
+
+  <h3>Ciclo de desenvolvimento: bind mount e hot reload</h3>
+  <p>Reconstruir a imagem a cada alteração de código é lento demais para o dia a dia. O ciclo de desenvolvimento usa um <strong>bind mount do código</strong> e um processo que observa os arquivos e reinicia sozinho (hot reload). Você edita no host, o container enxerga a mudança e recarrega.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 206" role="img" aria-label="Ciclo de desenvolvimento: o editor salva no host, o bind mount expõe o código ao container, o watcher recarrega e o navegador vê o resultado; as dependências ficam num volume do container">
+      <defs><marker id="ah06d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="30" width="120" height="48" rx="4"/><text x="80" y="50" text-anchor="middle">editor</text><text class="lbl" x="80" y="68" text-anchor="middle">salva src/app.js</text>
+      <rect class="box-w" x="170" y="30" width="170" height="48" rx="4"/><text x="255" y="50" text-anchor="middle">bind mount</text><text class="lbl" x="255" y="68" text-anchor="middle">./src → /app/src</text>
+      <rect class="box-a" x="370" y="30" width="150" height="48" rx="4"/><text x="445" y="50" text-anchor="middle">container</text><text class="lbl" x="445" y="68" text-anchor="middle">nodemon / --reload</text>
+      <rect class="box" x="550" y="30" width="110" height="48" rx="4"/><text x="605" y="50" text-anchor="middle">navegador</text><text class="lbl" x="605" y="68" text-anchor="middle">localhost:3000</text>
+      <line class="ln-a" x1="140" y1="54" x2="168" y2="54" marker-end="url(#ah06d)"/>
+      <line class="ln-a" x1="340" y1="54" x2="368" y2="54" marker-end="url(#ah06d)"/>
+      <line class="ln-a" x1="520" y1="54" x2="548" y2="54" marker-end="url(#ah06d)"/>
+      <rect class="box-m" x="370" y="110" width="290" height="48" rx="4"/><text x="385" y="130">volume /app/node_modules</text><text class="lbl" x="385" y="148">dependências ficam no container</text>
+      <line class="ln-a" x1="445" y1="108" x2="445" y2="80" marker-end="url(#ah06d)"/>
+      <text class="lbl" x="20" y="190">O bind mount cobre só o código: as dependências da imagem não ficam escondidas.</text>
+    </svg>
+    <figcaption>Editar no host, recarregar no container. O volume em node_modules evita que o bind mount esconda as dependências instaladas na imagem.</figcaption>
+  </figure>
+  <pre data-file="compose.yaml (trecho de desenvolvimento)"><code class="yaml">services:
+  api:
+    build:
+      context: ./api
+      target: dev                       # estágio de desenvolvimento do Dockerfile
+    command: ["npm", "run", "dev"]      # nodemon / node --watch / uvicorn --reload ...
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./api/src:/app/src              # só o código-fonte, não a pasta inteira
+      - /app/node_modules               # volume anônimo: preserva as dependências da imagem
+    environment:
+      CHOKIDAR_USEPOLLING: "true"       # só se o hot reload não detectar mudanças (Mac/Windows)</code></pre>
+  <ul>
+    <li><strong>Por que não montar <code>./api:/app</code> inteiro?</strong> O bind mount esconde o que a imagem tinha em <code>/app</code>, inclusive <code>node_modules</code>. Se o host não tem as dependências (ou as tem para outro sistema operacional), a aplicação quebra. Monte só o código, ou proteja <code>node_modules</code> com um volume, como acima.</li>
+    <li><strong>O servidor precisa escutar em <code>0.0.0.0</code></strong> e o dev server do framework precisa de <code>--host 0.0.0.0</code> (Vite, Next, uvicorn, Flask) para a porta publicada funcionar.</li>
+    <li><strong>Ferramentas de recarga por linguagem:</strong> Node (<code>nodemon</code>, ou <code>node --watch</code> nas versões recentes), Python (<code>uvicorn --reload</code>, Flask em modo debug), Java (Spring DevTools), .NET (<code>dotnet watch</code>).</li>
+    <li><strong>Mac e Windows:</strong> eventos de arquivo podem não atravessar o compartilhamento; habilite polling (ver módulo 05) ou use o recurso abaixo. No Windows, mantenha o projeto dentro do WSL 2.</li>
+    <li><strong>Arquivos de override:</strong> o Compose lê automaticamente um <code>compose.override.yaml</code> ao lado do <code>compose.yaml</code> e o mescla por cima. Padrão comum: o <code>compose.yaml</code> com o essencial e o override com bind mounts e portas de desenvolvimento (aprofundado no módulo 07).</li>
+  </ul>
+  <h3>Compose Watch: alternativa ao bind mount</h3>
+  <p>Versões recentes do Compose v2 têm o recurso <code>develop.watch</code>: em vez de montar o código, o Compose <strong>observa</strong> arquivos no host e os <strong>sincroniza</strong> com o container, ou reconstrói a imagem quando um arquivo de dependências muda. Evita os problemas de desempenho e de permissão de bind mount, ao custo de ser um mecanismo a mais.</p>
+  <pre data-file="compose.yaml (trecho)"><code class="yaml">services:
+  api:
+    build: ./api
+    develop:
+      watch:
+        - action: sync                  # copia a mudança para o container (o watcher interno recarrega)
+          path: ./api/src
+          target: /app/src
+        - action: rebuild               # mudou dependências: reconstrói a imagem e recria o container
+          path: ./api/package.json</code></pre>
+  <pre><code class="sh">docker compose up --watch        # sobe e observa (ou: docker compose watch)</code></pre>
+  <div class="note rule"><b>Regra de bolso</b><p>Desenvolvimento: código por bind mount (ou <code>watch</code>), dependências na imagem, servidor em modo de recarga. Produção: imagem imutável, sem bind mount de código. O <code>compose.yaml</code> base é de "produção-like"; o que é de desenvolvimento fica no override.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Qual a diferença entre <code>docker compose exec</code> e <code>run</code>?" <code>exec</code> executa um comando dentro de um container <em>já em execução</em>; <code>run</code> cria um <em>novo</em> container do serviço (com a mesma configuração) para o comando e, com <code>--rm</code>, o remove ao fim. E "diferença entre <code>down</code> e <code>down -v</code>?" O segundo também apaga os volumes: os dados.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Um ambiente de desenvolvimento que sobe com um comando e recarrega o código sozinho é produtividade direta. Meça: quanto tempo um dev novo leva do clone até a primeira requisição funcionando? Meta razoável: menos de 30 minutos, dos quais a maior parte é download de imagens.</p></div>
+</section>
+
+<section class="chap" id="exemplo-completo">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exemplo completo: API + PostgreSQL + Adminer</h2>
+  <p>Uma stack típica de desenvolvimento: uma API que fala com o PostgreSQL, e o Adminer (interface web leve de administração de banco; o pgAdmin é a alternativa com mais recursos e mais pesada). O banco tem volume nomeado e healthcheck; a API só sobe com o banco saudável; as portas administrativas ficam só em <code>127.0.0.1</code>.</p>
+  <pre><code class="text">clinica/
+├── compose.yaml
+├── .env                 # local, fora do Git
+├── .env.example         # versionado, sem segredos
+├── .gitignore           # contém ".env"
+└── api/
+    ├── Dockerfile
+    ├── package.json
+    └── src/             # a API: lê DATABASE_URL e expõe GET /health</code></pre>
+  <pre data-file=".env.example"><code class="sh">POSTGRES_USER=app
+POSTGRES_PASSWORD=troque-isto
+POSTGRES_DB=clinica
+API_PORT=3000
+ADMINER_PORT=8081</code></pre>
+  <pre data-file="api/Dockerfile"><code class="dockerfile">FROM node:22-alpine AS dev
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "dev"]</code></pre>
+  <pre data-file="compose.yaml"><code class="yaml">name: clinica
+
+services:
+  api:
+    build:
+      context: ./api
+      target: dev
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PORT: "3000"
+    volumes:
+      - ./api/src:/app/src            # hot reload do código
+      - /app/node_modules             # preserva as dependências da imagem
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-clinica}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # - ./db/init:/docker-entrypoint-initdb.d:ro   # scripts SQL de carga inicial (só rodam com o volume vazio)
+    ports:
+      - "127.0.0.1:5432:5432"         # só para ferramentas locais (psql, DBeaver)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:4
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:</code></pre>
+  <h3>Subindo e verificando</h3>
+  <pre><code class="sh">cp .env.example .env              # e edite a senha
+docker compose config -q          # valida e resolve variáveis (sem saída = ok)
+docker compose up -d --build --wait
+docker compose ps
+curl -s localhost:3000/health
+docker compose logs -f api</code></pre>
+  <pre><code class="text">$ docker compose up -d --build --wait
+[+] Running 5/5
+ ✔ Network clinica_default       Created
+ ✔ Volume "clinica_pgdata"       Created
+ ✔ Container clinica-db-1        Healthy
+ ✔ Container clinica-api-1       Healthy
+ ✔ Container clinica-adminer-1   Started
+$ curl -s localhost:3000/health
+{"status":"ok","db":"up"}</code></pre>
+  <p>No Adminer (<code>http://localhost:8081</code>), escolha o sistema <em>PostgreSQL</em> e informe <code>db</code> como servidor, com o usuário, a senha e o banco do <code>.env</code>. O servidor é <code>db</code> (nome do serviço), e não <code>localhost</code>: o Adminer roda em outro container. (O formato exato da saída do <code>up</code> varia entre versões do Compose.)</p>
+  <h3>Dia a dia nessa stack</h3>
+  <pre><code class="sh">docker compose exec db psql -U app -d clinica -c "\dt"           # consulta direta no banco
+docker compose run --rm api npm run migrate                      # migração pontual
+docker compose exec -T db pg_dump -U app clinica &gt; backup.sql    # backup lógico (-T: sem TTY)
+docker compose down                                              # derruba; os dados do volume permanecem
+docker compose down -v                                           # derruba E APAGA os dados</code></pre>
+  <div class="note"><b>Variações úteis</b><ul>
+    <li><strong>pgAdmin no lugar do Adminer:</strong> imagem <code>dpage/pgadmin4</code>, com as variáveis <code>PGADMIN_DEFAULT_EMAIL</code> e <code>PGADMIN_DEFAULT_PASSWORD</code>, porta interna 80. Mais recursos, mais memória, inicialização mais lenta.</li>
+    <li><strong>Ferramentas só quando necessárias:</strong> com <code>profiles</code> (módulo 07), o Adminer só sobe com <code>--profile ferramentas</code>, e deixa de existir no ambiente padrão.</li>
+    <li><strong>Segredos:</strong> troque a senha em <code>environment</code> por <code>POSTGRES_PASSWORD_FILE</code> com Docker secrets em ambientes compartilhados (módulos 07 e 09).</li>
+    <li><strong>Oracle em vez de Postgres:</strong> mesmo desenho, com a imagem do Oracle Free (módulo 05), <code>start_period</code> de minutos e o healthcheck da imagem.</li>
+  </ul></div>
+  <div class="note iv"><b>Na entrevista</b><p>Peça-lhe para "escrever um compose para uma API com banco". Cubra: <code>build</code> da API, <code>image</code> do banco com tag fixa, volume nomeado, variáveis por <code>.env</code>, <code>depends_on</code> com <code>service_healthy</code>, healthcheck do banco, portas em <code>127.0.0.1</code> e o banco acessado por nome de serviço. É um checklist que o entrevistador reconhece.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Uma stack assim no repositório é o "ambiente padrão" do projeto. Garanta que ela é a mesma que o CI usa para testes de integração: elimina a classe de falhas "passa no CI, falha no dev" e vice-versa. E mantenha o <code>.env.example</code> atualizado a cada nova variável: é o contrato de configuração da aplicação.</p></div>
+</section>
+
+<section class="chap" id="erros-comuns">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Erros comuns e como diagnosticar</h2>
+  <p>Quase todo problema de Compose cai numa das categorias abaixo. O primeiro passo é sempre o mesmo: <code>docker compose config</code> (o que o Compose entendeu), <code>docker compose ps -a</code> (quem está de pé, quem saiu) e <code>docker compose logs</code> (por que saiu).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Sintoma</th><th>Causa mais provável</th><th>Correção</th></tr></thead>
+    <tbody>
+      <tr><td><code>connection refused</code> a <code>localhost:5432</code> na API</td><td><code>localhost</code> dentro do container é o próprio container</td><td>Use o nome do serviço: <code>db:5432</code></td></tr>
+      <tr><td>API cai na 1ª subida e funciona na 2ª</td><td>Banco ainda inicializando; <code>depends_on</code> só ordenou o início</td><td>Healthcheck + <code>service_healthy</code> + retry na aplicação</td></tr>
+      <tr><td><code>port is already allocated</code> / <code>address already in use</code></td><td>Outro container ou processo do host usa a porta</td><td>Descubra o dono; troque a porta do host (<code>${PORTA:-5433}:5432</code>) ou pare o outro</td></tr>
+      <tr><td>Alterei o <code>.env</code>/<code>environment</code> e nada mudou</td><td>O container antigo foi mantido; <code>restart</code> não relê configuração</td><td><code>docker compose up -d</code> (ou <code>--force-recreate</code>)</td></tr>
+      <tr><td>Alterei o código e a imagem não mudou</td><td>O Compose só constrói se a imagem não existe</td><td><code>up -d --build</code></td></tr>
+      <tr><td>Banco "voltou vazio" ou "ainda tem a senha velha"</td><td>Pasta/nome de projeto mudou (novo volume vazio), ou o volume antigo mantém o cluster inicializado</td><td>Fixe <code>name:</code>; para recomeçar, <code>down -v</code> (perde os dados)</td></tr>
+      <tr><td>Scripts de <code>initdb.d</code> não rodaram</td><td>O volume de dados já tinha cluster</td><td>Só rodam com o volume vazio: <code>down -v</code> em desenvolvimento</td></tr>
+      <tr><td><code>Found orphan containers</code></td><td>Serviço removido/renomeado no arquivo; o container antigo continua</td><td><code>up -d --remove-orphans</code> ou <code>down --remove-orphans</code></td></tr>
+      <tr><td><code>no configuration file provided: not found</code></td><td>Comando executado fora da pasta do projeto</td><td><code>cd</code> para a pasta, ou <code>-f caminho/compose.yaml</code> (e <code>--project-directory</code>, se o <code>.env</code> mora em outro lugar)</td></tr>
+      <tr><td><code>yaml: ... mapping values are not allowed</code></td><td>Indentação, tab, dois-pontos sem aspas</td><td>Espaços (nunca tabs); aspas em valores com <code>:</code> ou <code>#</code>; <code>docker compose config</code></td></tr>
+      <tr><td><code>service ... refers to undefined volume</code></td><td>Volume usado no serviço, mas não declarado no bloco de topo</td><td>Declare em <code>volumes:</code> no fim do arquivo</td></tr>
+      <tr><td>Serviço fica <code>unhealthy</code> para sempre</td><td>Ferramenta do healthcheck ausente na imagem, ou porta/URL errada</td><td><code>docker inspect --format '{{json .State.Health}}' ...</code>; ajuste o <code>test</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Os quatro clássicos em detalhe</h3>
+  <h3>1. localhost dentro do container</h3>
+  <pre data-file="errado → certo"><code class="yaml">services:
+  api:
+    environment:
+      # errado: dentro do container da api, "localhost" é a própria api
+      # DATABASE_URL: postgres://app:dev@localhost:5432/app
+      DATABASE_URL: postgres://app:dev@db:5432/app     # certo: nome do serviço e porta interna</code></pre>
+  <p>Regra: <code>localhost</code> só serve para o que roda <em>no mesmo container</em>. Para outro serviço, o nome dele; para o host, <code>host.docker.internal</code> (módulo 05). O mesmo vale ao contrário: o seu navegador usa <code>localhost:PORTA_PUBLICADA</code>, porque ele está no host.</p>
+  <h3>2. Ordem de inicialização sem healthcheck</h3>
+  <p>Sintoma intermitente: "às vezes sobe, às vezes não", pior em máquinas lentas e no CI. É uma <strong>condição de corrida</strong> entre a API e o banco. O conserto completo está na seção 5; evite as "soluções" frágeis: <code>sleep 10</code> no entrypoint (lento quando o banco é rápido, insuficiente quando é lento) e scripts <code>wait-for-it</code> copiados sem entender.</p>
+  <h3>3. Porta já em uso</h3>
+  <pre><code class="sh">docker compose up -d
+# Error response from daemon: ... Bind for 127.0.0.1:5432 failed: port is already allocated
+
+docker ps --filter publish=5432                  # algum container publicando a 5432?
+ss -ltnp | grep 5432                             # Linux: processo do host
+lsof -iTCP:5432 -sTCP:LISTEN                     # Mac
+netstat -ano | findstr :5432                     # Windows (PID na última coluna)
+
+# solução permanente: porta do host configurável
+#   ports: ["127.0.0.1:${DB_PORT:-5432}:5432"]  e DB_PORT=5433 no .env</code></pre>
+  <p>Um Postgres local instalado fora do Docker e o do container disputando a 5432 é o caso mais comum. Entre containers, nunca há conflito de porta interna (cada um tem seu namespace), só de porta publicada no host.</p>
+  <h3>4. Volumes órfãos e o projeto que "mudou de nome"</h3>
+  <p>O volume pertence ao <strong>projeto</strong> (<code>clinica_pgdata</code>). Renomear a pasta (sem <code>name:</code> fixo), clonar em outro diretório ou usar <code>-p</code> diferente cria um projeto novo, com volume novo e vazio: parece que "o banco sumiu", mas os dados antigos continuam em um volume que ninguém usa mais, ocupando disco.</p>
+  <pre><code class="sh">docker volume ls                                  # procure pgdata com prefixos diferentes
+docker volume ls -f dangling=true                 # volumes sem container associado
+docker system df -v                               # quanto cada volume e imagem ocupa
+
+# conteúdo de um volume órfão, sem montar nada de verdade
+docker run --rm -v projetoantigo_pgdata:/d:ro alpine ls -la /d
+
+# apague só o que você tem certeza de que é lixo
+docker volume rm projetoantigo_pgdata</code></pre>
+  <div class="note trap"><b>Armadilha: <code>docker volume prune</code> como faxina</b><p>Ele apaga volumes <em>sem container associado</em>, e um banco com o stack parado (<code>compose down</code>) está exatamente nessa condição. Com <code>-a</code>, apaga também os nomeados. Nunca rode em um servidor sem listar antes (<code>docker volume ls -f dangling=true</code>) e sem backup.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>Depurou o Compose? Sempre nesta ordem: <code>config</code> (o que o Compose entendeu) → <code>ps -a</code> (estado) → <code>logs</code> (causa) → <code>exec</code> ou <code>run</code> (investigar por dentro). Antes de qualquer <code>-v</code> ou <code>prune</code>: <code>docker volume ls</code> e backup.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Seu compose funciona na sua máquina e falha no CI. Por quê?" Hipóteses em ordem: ordem de inicialização sem healthcheck (CI é mais lento), porta ocupada por outro job (use nomes de projeto e portas aleatórias/sem publicar), variáveis do <code>.env</code> inexistentes no CI (use <code>:?erro</code> para falhar cedo), bind mount com UID diferente, e imagens desatualizadas (<code>--build</code>/<code>--pull</code>).</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Reduza a classe inteira de erros com um modelo de projeto: <code>name:</code> fixo, <code>.env.example</code>, healthchecks, portas configuráveis em <code>127.0.0.1</code>, volumes nomeados e um comando único de verificação (<code>docker compose config -q &amp;&amp; docker compose up -d --wait</code>) no CI.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios em uma pasta vazia, com Docker Compose v2. Tente antes de abrir a resolução.</p>
+  <details class="qa"><summary><span class="qn">E1</span><span>Converta esses dois comandos <code>docker run</code> num <code>compose.yaml</code> e prove que o Adminer encontra o banco pelo nome do serviço: <code>docker run -d --name db -e POSTGRES_PASSWORD=dev -v pgdata:/var/lib/postgresql/data postgres:17-alpine</code> e <code>docker run -d -p 8081:8080 adminer:4</code>.</span></summary><div class="ans">
+<pre data-file="compose.yaml"><code class="yaml">name: lab1
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  adminer:
+    image: adminer:4
+    ports:
+      - "127.0.0.1:8081:8080"
+volumes:
+  pgdata:</code></pre>
+<pre><code class="sh">docker compose up -d
+docker compose exec adminer getent hosts db        # resolve para o IP do container db
+# no navegador: http://localhost:8081 -> sistema PostgreSQL, servidor "db", usuário postgres, senha dev
+docker compose down -v</code></pre>
+  <p>O servidor no Adminer é <code>db</code>, o nome do serviço, resolvido pelo DNS da rede <code>lab1_default</code>. O db não precisa de <code>ports</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E2</span><span>Demonstre a precedência: defina <code>PORTA</code> no <code>.env</code>, depois sobrescreva no shell, e compare o resultado com <code>docker compose config</code>. Depois use <code>${VAR:?erro}</code> para falhar quando faltar uma variável.</span></summary><div class="ans">
+<pre><code class="sh">cat &gt; compose.yaml &lt;&lt;'EOF'
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:${PORTA:-8080}:80"
+    environment:
+      SENHA: ${SENHA:?defina SENHA no .env}
+EOF
+
+docker compose config            # erro: required variable SENHA is missing a value: defina SENHA no .env
+
+printf 'SENHA=abc\nPORTA=8085\n' &gt; .env
+docker compose config | grep -E 'published|SENHA'       # published: "8085" ; SENHA: abc
+
+PORTA=9000 docker compose config | grep published       # published: "9000"  (o shell vence o .env)</code></pre>
+  <p>Sem <code>PORTA</code> em lugar nenhum, valeria o padrão <code>8080</code>. O <code>${SENHA:?...}</code> interrompe antes de subir qualquer coisa.</p></div></details>
+  <details class="qa"><summary><span class="qn">E3</span><span>Observe o <code>depends_on</code> com <code>service_healthy</code>. Crie um serviço que só fica saudável depois de 15 segundos e uma aplicação que depende dele. Acompanhe com <code>docker compose ps</code>.</span></summary><div class="ans">
+<pre data-file="compose.yaml"><code class="yaml">services:
+  lento:
+    image: alpine:3.20
+    command: ["sh", "-c", "sleep 15; touch /tmp/pronto; sleep 3600"]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/pronto"]
+      interval: 2s
+      retries: 20
+  app:
+    image: alpine:3.20
+    command: ["sh", "-c", "echo app iniciou; sleep 3600"]
+    depends_on:
+      lento:
+        condition: service_healthy</code></pre>
+<pre><code class="sh">docker compose up -d &amp;
+sleep 5 &amp;&amp; docker compose ps          # lento: (health: starting); app: ainda nem foi criado
+sleep 15 &amp;&amp; docker compose ps         # lento: (healthy); app: Up
+docker compose logs app                  # app iniciou
+docker compose down</code></pre>
+  <p>Troque a condição por <code>service_started</code> (ou a forma curta) e repita: a <code>app</code> inicia imediatamente, sem esperar a saúde do <code>lento</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">E4</span><span>Prove a diferença entre <code>down</code> e <code>down -v</code> com um banco: crie uma tabela, derrube com <code>down</code>, suba de novo e confirme que ela existe; depois derrube com <code>-v</code> e confirme que sumiu.</span></summary><div class="ans">
+<pre><code class="sh">cat &gt; compose.yaml &lt;&lt;'EOF'
+name: lab4
+services:
+  db:
+    image: postgres:17-alpine
+    environment: { POSTGRES_PASSWORD: dev }
+    volumes: [ "pgdata:/var/lib/postgresql/data" ]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      retries: 20
+volumes:
+  pgdata:
+EOF
+
+docker compose up -d --wait
+docker compose exec db psql -U postgres -c "create table t(id int); insert into t values (1);"
+docker compose down                                  # containers e rede removidos; volume fica
+docker compose up -d --wait
+docker compose exec db psql -U postgres -c "select * from t;"     # 1 linha: sobreviveu
+
+docker compose down -v                               # remove o volume
+docker compose up -d --wait
+docker compose exec db psql -U postgres -c "select * from t;"     # ERROR: relation "t" does not exist
+docker compose down -v</code></pre>
+  <p>Os dados moram no volume nomeado, não no container: <code>down</code> o preserva, <code>down -v</code> o destrói.</p></div></details>
+  <details class="qa"><summary><span class="qn">E5</span><span>Monte um ciclo de desenvolvimento simples: um nginx servindo uma pasta do host por bind mount somente leitura. Edite um arquivo no host e veja a mudança sem recriar o container.</span></summary><div class="ans">
+<pre><code class="sh">mkdir -p site && echo '&lt;h1&gt;versão 1&lt;/h1&gt;' &gt; site/index.html
+cat &gt; compose.yaml &lt;&lt;'EOF'
+services:
+  web:
+    image: nginx:alpine
+    ports: ["127.0.0.1:8080:80"]
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+EOF
+docker compose up -d
+curl -s localhost:8080                       # &lt;h1&gt;versão 1&lt;/h1&gt;
+
+echo '&lt;h1&gt;versão 2&lt;/h1&gt;' &gt; site/index.html
+curl -s localhost:8080                       # &lt;h1&gt;versão 2&lt;/h1&gt;  (sem restart, sem rebuild)
+
+docker compose exec web sh -c 'echo x &gt; /usr/share/nginx/html/x'    # falha: read-only file system
+docker compose down</code></pre>
+  <p>O container enxerga o arquivo editado no host em tempo real, e o <code>:ro</code> impede que o processo altere o código-fonte. (Em Mac e Windows, uma edição pode levar um instante a aparecer.)</p></div></details>
+  <details class="qa"><summary><span class="qn">E6</span><span>Encontre ao menos seis problemas neste compose e corrija-os.</span></summary><div class="ans">
+<pre data-file="compose.yaml (com defeitos)"><code class="yaml">version: "3.8"
+services:
+  api:
+    build: ./api
+    ports:
+      - 3000:3000
+    environment:
+      DATABASE_URL: postgres://app:segredo123@localhost:5432/app
+    depends_on:
+      - db
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: segredo123
+    volumes:
+      - /var/lib/postgresql/data</code></pre>
+<pre data-file="compose.yaml (corrigido)"><code class="yaml">name: clinica
+services:
+  api:
+    build: ./api
+    ports:
+      - "127.0.0.1:3000:3000"                                   # entre aspas; só local
+    environment:
+      DATABASE_URL: postgres://app:${POSTGRES_PASSWORD:?defina}@db:5432/app   # db, não localhost; segredo no .env
+    depends_on:
+      db:
+        condition: service_healthy                              # espera o banco
+  db:
+    image: postgres:17-alpine                                   # tag fixa
+    ports:
+      - "127.0.0.1:5432:5432"                                   # não expor em 0.0.0.0
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina}
+    volumes:
+      - pgdata:/var/lib/postgresql/data                         # volume NOMEADO (antes: anônimo)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      retries: 10
+volumes:
+  pgdata:</code></pre>
+  <p>Problemas: (1) <code>version</code> obsoleto; (2) porta sem aspas; (3) <code>localhost</code> no lugar de <code>db</code>; (4) senha em texto no arquivo versionado; (5) <code>depends_on</code> sem healthcheck; (6) <code>postgres:latest</code>; (7) banco publicado em todas as interfaces; (8) volume anônimo, sem nome nem declaração.</p></div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+  <h3>1. "O ambiente sobe, mas a API reinicia em loop nos primeiros segundos"</h3>
+  <p>O log mostra <code>ECONNREFUSED</code> ao banco; depois de algumas reinicializações, funciona.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Diagnóstico: a API subiu antes do Postgres aceitar conexões. Confirme em <code>docker compose logs db</code> (o <em>ready to accept connections</em> chega depois do primeiro erro da API).</li>
+    <li>Correção: healthcheck com <code>pg_isready</code> no banco, <code>depends_on: condition: service_healthy</code> na API e retry com backoff no código de conexão.</li>
+    <li>Não use <code>sleep</code> fixo: o tempo de subida varia entre máquinas.</li>
+  </ul></div>
+  <h3>2. "Clonei o projeto em outra pasta e o banco veio vazio"</h3>
+  <p>O colega diz que "sumiu tudo" depois que renomeou a pasta do repositório.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Explique: sem <code>name:</code>, o nome do projeto vem da pasta, e o volume é <code>&lt;projeto&gt;_pgdata</code>. A pasta nova gerou um projeto e um volume novos e vazios.</li>
+    <li>Recupere: <code>docker volume ls</code> mostra o volume antigo; copie para o novo (<code>cp -a</code> entre volumes, módulo 05) ou suba com <code>-p nome-antigo</code>.</li>
+    <li>Previna: <code>name:</code> fixo no <code>compose.yaml</code> e, quando os dados importam, volume <code>external</code>.</li>
+  </ul></div>
+  <h3>3. "Troquei a senha no .env e o banco continua aceitando a antiga"</h3>
+  <p>Depois de um <code>docker compose up -d</code>, a API falha na autenticação com a senha nova.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Explique: <code>POSTGRES_PASSWORD</code> só é usada na <strong>inicialização</strong> do cluster (volume vazio). O volume antigo mantém a senha antiga.</li>
+    <li>Em desenvolvimento, sem dados importantes: <code>down -v</code> e subir de novo. Com dados: troque a senha dentro do banco (<code>ALTER USER ... PASSWORD ...</code>) e atualize o <code>.env</code> da aplicação.</li>
+    <li>Registre a regra: variáveis de inicialização do banco não são "configuração viva".</li>
+  </ul></div>
+  <h3>4. "O disco do servidor de CI encheu"</h3>
+  <p>Um servidor de integração contínua com Docker fica sem espaço depois de semanas.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Meça antes de apagar: <code>docker system df -v</code> (imagens, containers, volumes, cache de build).</li>
+    <li>Pipelines devem terminar com <code>docker compose down -v --remove-orphans</code> (em CI, os volumes são descartáveis) e usar nome de projeto único por execução (<code>-p</code>).</li>
+    <li>Limpeza periódica agendada de imagens e cache sem uso (<code>docker image prune</code>, <code>docker builder prune</code>); <code>docker volume prune</code> só depois de listar o que será apagado.</li>
+  </ul></div>
+  <h3>5. "O Compose está lento e o hot reload não funciona no Windows"</h3>
+  <p>Um desenvolvedor reclama que <code>npm install</code> leva minutos e as mudanças de código não recarregam.</p>
+  <div class="note rule"><b>O que fazer</b><ul>
+    <li>Verifique onde está o projeto: se em <code>C:\</code>, mova-o para o sistema de arquivos do WSL 2 e rode o Docker de lá (módulo 05).</li>
+    <li>Mantenha <code>node_modules</code> num volume da imagem (não no bind mount) e monte só o <code>src</code>.</li>
+    <li>Se o watcher não detecta mudanças, habilite polling ou migre para <code>docker compose watch</code>.</li>
+  </ul></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l1">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Compose Specification</dt><dd>Especificação aberta do formato do arquivo Compose, usada pelo Compose v2.</dd></div>
+    <div><dt>Compose v2</dt><dd>Plugin do Docker CLI (<code>docker compose</code>). O v1 (<code>docker-compose</code>) está descontinuado.</dd></div>
+    <div><dt>Serviço</dt><dd>Definição de um componente da aplicação (imagem, portas, volumes). Gera um ou mais containers.</dd></div>
+    <div><dt>Projeto</dt><dd>Conjunto de serviços, redes e volumes com um nome; prefixa tudo que o Compose cria.</dd></div>
+    <div><dt>Rede padrão</dt><dd>Rede <code>&lt;projeto&gt;_default</code> criada pelo Compose, com DNS pelo nome do serviço.</dd></div>
+    <div><dt>Interpolação</dt><dd>Substituição de <code>${VAR}</code> no <code>compose.yaml</code> por valores do shell ou do <code>.env</code>.</dd></div>
+    <div><dt>.env</dt><dd>Arquivo da pasta do projeto com valores para interpolação; não vai ao container por si só.</dd></div>
+    <div><dt>env_file</dt><dd>Chave do serviço que carrega variáveis de arquivo para dentro do container.</dd></div>
+    <div><dt>Healthcheck</dt><dd>Comando periódico que define se o serviço está <code>healthy</code>, <code>unhealthy</code> ou <code>starting</code>.</dd></div>
+    <div><dt>depends_on</dt><dd>Declara dependências entre serviços; com <code>condition</code>, espera início, saúde ou término com sucesso.</dd></div>
+    <div><dt>Bind mount</dt><dd>Pasta do host montada no container; base do ciclo de desenvolvimento com hot reload.</dd></div>
+    <div><dt>Hot reload</dt><dd>Recarga automática da aplicação quando o código muda, sem reconstruir a imagem.</dd></div>
+    <div><dt>Volume órfão</dt><dd>Volume sem container associado, normalmente de um projeto antigo ou renomeado.</dd></div>
+    <div><dt>Container órfão</dt><dd>Container de um serviço que já não existe no arquivo; removido com <code>--remove-orphans</code>.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Entrevista</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+  <details class="qa"><summary><span class="qn">01</span><span>O que é o Docker Compose e qual problema resolve?</span></summary><div class="ans"><p>É a ferramenta que descreve uma aplicação multi-container num arquivo YAML (serviços, redes, volumes, variáveis) e a sobe com <code>docker compose up</code>. Resolve a reprodutibilidade e o trabalho de orquestrar vários <code>docker run</code> com muitas flags, e torna o ambiente versionável junto com o código.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Qual a diferença entre <code>docker compose</code> e <code>docker-compose</code>?</summary><div class="ans"><p>O primeiro é o Compose v2, plugin do Docker CLI em Go, atual e mantido. O segundo é o v1, programa em Python, descontinuado. Os nomes de container mudam (hífen no v2, sublinhado no v1) e o campo <code>version</code> do arquivo é obsoleto em ambos os casos atuais.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Qual a diferença entre <code>image</code> e <code>build</code> num serviço?</span></summary><div class="ans"><p><code>image</code> usa uma imagem pronta (pull do registry); <code>build</code> constrói a imagem de um Dockerfile local. Com os dois, constrói e nomeia a imagem. O Compose não reconstrói sozinho quando o código muda: é preciso <code>--build</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Como os serviços se encontram dentro do Compose?</span></summary><div class="ans"><p>O Compose cria uma rede bridge definida pelo usuário por projeto, com DNS embutido: cada serviço é encontrado pelo seu nome e pela porta interna (<code>db:5432</code>). <code>ports</code> só é necessário para acesso de fora do Docker.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Como o nome do projeto é definido e por que importa?</span></summary><div class="ans"><p>Por precedência: <code>-p</code>, <code>COMPOSE_PROJECT_NAME</code>, <code>name:</code> no arquivo, nome da pasta. Importa porque prefixa containers, redes e volumes: mudar o nome gera recursos novos (volume vazio). Fixar <code>name:</code> evita surpresas.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Diferença entre <code>.env</code>, <code>env_file</code> e <code>environment</code>?</summary><div class="ans"><p><code>.env</code> alimenta a interpolação do <code>compose.yaml</code> (e variáveis do próprio Compose) e não vai ao container sozinho; <code>environment</code> e <code>env_file</code> definem variáveis dentro do container. No container: <code>run -e</code> vence <code>environment</code>, que vence <code>env_file</code>, que vence o <code>ENV</code> da imagem. Na interpolação, o shell vence o <code>.env</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Explique <code>${VAR:-padrao}</code> e <code>${VAR:?erro}</code>.</summary><div class="ans"><p>O primeiro usa <code>padrao</code> quando <code>VAR</code> não existe ou está vazia. O segundo aborta com a mensagem quando <code>VAR</code> não existe ou está vazia: serve para falhar cedo em variáveis obrigatórias, como senha. Sem <code>:</code>, a checagem considera só "não definida".</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span><code>depends_on</code> garante que o banco está pronto?</summary><div class="ans"><p>Não, na forma curta só ordena o início dos containers. Para esperar prontidão, use <code>condition: service_healthy</code> com um <code>healthcheck</code> no banco (<code>pg_isready</code>). Ainda assim, a aplicação deve reconectar com retry, porque a ordem de subida não cobre quedas posteriores.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>Como escrever um bom healthcheck?</span></summary><div class="ans"><p>Testar a prontidão real, com o comando disponível na imagem (<code>pg_isready</code>, <code>wget --spider</code>/<code>curl -f</code> no endpoint <code>/health</code>), usando <code>localhost</code> e a porta interna, com <code>interval</code>, <code>timeout</code>, <code>retries</code> e um <code>start_period</code> adequado. Em <code>CMD-SHELL</code> com variáveis, escapar o cifrão como <code>$$</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Qual a diferença entre <code>docker compose down</code> e <code>down -v</code>?</summary><div class="ans"><p><code>down</code> remove containers e redes e mantém volumes e imagens. <code>down -v</code> também remove os volumes nomeados do arquivo e os anônimos: apaga os dados. Em produção, volumes <code>external</code> não são removidos pelo Compose.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Mudei uma variável e rodei <code>restart</code>, mas nada mudou. Por quê?</span></summary><div class="ans"><p>O <code>restart</code> reinicia o processo no mesmo container e não relê a configuração. Para aplicar, <code>docker compose up -d</code> detecta a diferença e recria o serviço (ou <code>--force-recreate</code>).</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>Diferença entre <code>exec</code> e <code>run</code>?</summary><div class="ans"><p><code>exec</code> roda um comando num container já em execução. <code>run</code> cria um container novo do serviço (sobe as dependências, não publica portas por padrão) para um comando pontual, e com <code>--rm</code> o remove ao terminar. Use <code>run --rm</code> para migrações e testes.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span>Como montar um ambiente de desenvolvimento com hot reload?</span></summary><div class="ans"><p>Bind mount do código-fonte (só <code>./src</code>, preservando as dependências da imagem com um volume), comando de desenvolvimento com recarga (<code>nodemon</code>, <code>--reload</code>), servidor escutando em <code>0.0.0.0</code>, polling se os eventos de arquivo não atravessarem a VM e, alternativamente, <code>develop.watch</code>. Configurações de desenvolvimento no <code>compose.override.yaml</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>A API não conecta ao banco com <code>localhost:5432</code> dentro do Compose. Por quê?</span></summary><div class="ans"><p>Dentro do container, <code>localhost</code> é o próprio container da API. O banco está em outro container: o endereço é o nome do serviço (<code>db:5432</code>), resolvido pelo DNS da rede do projeto.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>O que é <code>docker compose config</code> e quando usar?</summary><div class="ans"><p>Mostra o arquivo final já mesclado (overrides, <code>-f</code> múltiplos) e com variáveis interpoladas, e valida a sintaxe. É a primeira coisa a rodar ao depurar "o Compose não fez o que eu esperava"; <code>-q</code> serve de verificação no CI.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Dois projetos precisam do mesmo banco em porta fixa e entram em conflito. Como resolver?</span></summary><div class="ans"><p>Tornar a porta do host configurável (<code>${DB_PORT:-5432}:5432</code>), publicar só em <code>127.0.0.1</code>, ou não publicar (os serviços do próprio projeto acessam por nome). Em CI, usar nomes de projeto únicos e evitar publicar portas.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Quando o Compose deixa de bastar?</span></summary><div class="ans"><p>Quando se precisa de vários hosts, failover automático, rolling updates sofisticados, autoscaling ou gestão centralizada de segredos e configuração. Aí entram Swarm ou Kubernetes (módulo 10). Para ambiente de desenvolvimento, CI e produção simples em um host, o Compose atende bem.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Gestão: que padrões você exige nos <code>compose.yaml</code> do time?</summary><div class="ans"><p><code>name:</code> fixo; tags de imagem fixadas; segredos fora do repositório (<code>.env</code> ignorado, <code>.env.example</code> versionado); healthchecks e <code>service_healthy</code>; volumes nomeados para dados; portas em <code>127.0.0.1</code> e só as necessárias; um comando de verificação no CI (<code>config -q</code> e <code>up --wait</code>); e a mesma stack no desenvolvimento e nos testes de integração.</p></div></details>
+</section>
+
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1526 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker 07: Compose avançado e projeto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Trilha Docker — estilo comum a todos os módulos. NÃO ALTERAR este bloco nos módulos.
+   Layout: barra lateral com os 10 módulos + seções do módulo atual; coluna de leitura de ~80ch. */
+:root{
+  --bg:#f4f6f5; --surface:#ffffff; --ink:#14201b; --muted:#53625b; --line:#d7e0db;
+  --accent:#0b6f86; --accent-soft:#dff1f5;
+  --mgr:#7a3f8f; --mgr-soft:#f3e7f6;
+  --iv:#b35a14; --iv-soft:#fbebdd;
+  --good:#2b7a3e; --good-soft:#e3f2e6; --warn:#8f5600; --warn-soft:#fbf0db; --bad:#a3322a; --bad-soft:#f9e4e1;
+  --code-bg:#0f1a16; --code-fg:#dce7e1; --code-line:#1f3029;
+  --kw:#7fd3a8; --fn:#efc46e; --str:#a9d3f5; --num:#f2a079; --com:#7f9189; --var:#d0a3ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+    --accent:#62c8de; --accent-soft:#11303a;
+    --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+    --iv:#f0a061; --iv-soft:#2e1f12;
+    --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+    --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1411; --surface:#121e19; --ink:#e1eae5; --muted:#97aaa1; --line:#233630;
+  --accent:#62c8de; --accent-soft:#11303a;
+  --mgr:#d7a2ea; --mgr-soft:#2a1a30;
+  --iv:#f0a061; --iv-soft:#2e1f12;
+  --good:#7bcf8d; --good-soft:#15291b; --warn:#e8b563; --warn-soft:#2c2212; --bad:#f08a80; --bad-soft:#2e1714;
+  --code-bg:#08100d; --code-fg:#dce7e1; --code-line:#1a2b24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+img{max-width:100%}
+[hidden]{display:none!important}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding-block:10px;max-width:1240px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:8px}
+.brand span{color:var(--accent)}
+.brand i{display:inline-flex;gap:2px}
+.brand i b{width:4px;height:12px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(2){height:8px;margin-top:4px;opacity:.7}
+.brand i b:nth-child(3){height:5px;margin-top:7px;opacity:.45}
+.topnote{font-size:.85rem;color:var(--muted)}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:48px;padding-block:28px 80px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);align-self:start;max-height:calc(100vh - 90px);overflow:auto;font-size:.9rem}
+nav.toc summary{display:none}
+.toc-group{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 6px}
+.toc-group:first-of-type{margin-top:0}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}
+nav.toc a{display:flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink);padding:3px 8px;border-radius:6px}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a .n{font:400 .75rem var(--f-mono);color:var(--muted);min-width:1.6em}
+nav.toc a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+nav.toc a.done .n{color:var(--good)}
+nav.toc a.done .n::after{content:" ✓"}
+nav.toc .sub a{padding-left:20px;font-size:.86rem;color:var(--muted)}
+.progress{margin-top:18px;font-size:.8rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+
+main{min-width:0;max-width:80ch}
+.intro .eyebrow{font:600 .78rem var(--f-mono);color:var(--accent);margin-bottom:8px}
+.intro h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.5vw,3rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;text-wrap:balance}
+.intro p.lede{font-size:1.15rem;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.objetivos{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;font-size:.95rem}
+.objetivos b{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.objetivos ul{margin:0}
+
+.lvl{display:inline-flex;align-items:center;gap:6px;font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:99px}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.l1{color:var(--good);background:var(--good-soft)}
+.l2{color:var(--warn);background:var(--warn-soft)}
+.l3{color:var(--bad);background:var(--bad-soft)}
+
+section.chap{padding-top:56px;scroll-margin-top:70px}
+.chap-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.chap-head .num{font:600 .8rem var(--f-mono);color:var(--muted)}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.02em;line-height:1.15;margin:4px 0 14px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:500;font-size:1.22rem;margin:30px 0 8px;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:5px}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+abbr{text-decoration:underline dotted;cursor:help}
+
+pre{margin:0 0 18px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;overflow-x:auto;
+  font:400 .84rem/1.55 var(--f-mono);border:1px solid var(--code-line);tab-size:2;position:relative}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre[data-file]{padding-top:34px}
+pre[data-file]::before{content:attr(data-file);position:absolute;top:0;left:0;right:0;padding:5px 16px;font:600 .72rem var(--f-mono);color:var(--com);border-bottom:1px solid var(--code-line)}
+.k{color:var(--kw);font-weight:600}.f{color:var(--fn)}.s{color:var(--str)}.d{color:var(--num)}.c{color:var(--com);font-style:italic}.v{color:var(--var)}
+
+.tabs{margin:0 0 18px}
+.tab-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:-1px}
+.tab-row button{font:600 .75rem var(--f-body);border:1px solid var(--code-line);border-bottom:0;background:var(--surface);color:var(--muted);padding:4px 12px;border-radius:8px 8px 0 0;cursor:pointer}
+.tab-row button[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg)}
+.tabs pre{border-top-left-radius:0;margin:0}
+
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:.96rem}
+.note > b:first-child{display:block;font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.note.rule{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.note.rule > b:first-child{color:var(--accent)}
+.note.trap{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.note.trap > b:first-child{color:var(--bad)}
+.note.iv{border-color:color-mix(in srgb,var(--iv) 45%,var(--line));background:color-mix(in srgb,var(--iv-soft) 55%,var(--surface))}
+.note.iv > b:first-child{color:var(--iv)}
+.note.mgr{border-color:color-mix(in srgb,var(--mgr) 45%,var(--line));background:color-mix(in srgb,var(--mgr-soft) 55%,var(--surface))}
+.note.mgr > b:first-child{color:var(--mgr)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+
+.figure{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;margin:0 0 18px;overflow-x:auto}
+.figure svg{display:block;width:100%;min-width:540px;height:auto}
+.figure figcaption{font-size:.85rem;color:var(--muted);margin-top:8px}
+.figure svg text{font-family:var(--f-mono);font-size:12px;fill:var(--ink)}
+.figure svg .lbl{font-family:var(--f-body);font-size:12px;fill:var(--muted)}
+.figure svg .ttl{font-family:var(--f-body);font-weight:700;font-size:13px;fill:var(--ink)}
+.figure svg .box{fill:var(--surface);stroke:var(--line)}
+.figure svg .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+.figure svg .box-m{fill:var(--mgr-soft);stroke:var(--mgr)}
+.figure svg .box-w{fill:var(--iv-soft);stroke:var(--iv)}
+.figure svg .box-b{fill:var(--bad-soft);stroke:var(--bad)}
+.figure svg .ln{stroke:var(--muted);fill:none}
+.figure svg .ln-a{stroke:var(--accent);fill:none}
+.figure svg .ln-b{stroke:var(--bad);fill:none}
+.figure svg .ah{fill:var(--muted)}
+
+.seq{list-style:none;padding:0;margin:0 0 18px;counter-reset:sq;display:grid;gap:8px}
+.seq li{counter-increment:sq;display:grid;grid-template-columns:2em minmax(0,1fr);gap:6px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seq li::before{content:counter(sq);font:600 .8rem var(--f-mono);color:var(--bg);background:var(--accent);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 10px}
+.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none;display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:4px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .qn{font:600 .8rem var(--f-mono);color:var(--iv);padding-top:3px}
+.qa[open] summary{border-bottom:1px solid var(--line)}
+.qa .ans{padding:12px 16px 4px calc(16px + 2.2em + 4px)}
+@media (max-width:600px){.qa .ans{padding-left:16px}}
+.qa-tools{display:flex;gap:8px;margin-bottom:14px}
+.qa-tools button,.mark button{font:600 .85rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+.mark{margin-top:22px;display:flex;align-items:center;gap:10px}
+.mark button[aria-pressed="true"]{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0 0 18px}
+.gloss > div{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px;font-size:.92rem}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+
+.pager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:56px}
+.pager a{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+.pager small{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.pager .next{text-align:right}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0;padding-top:12px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 12px}
+  nav.toc summary{display:block;cursor:pointer;font-weight:600;padding:8px 0}
+  section.chap{padding-top:44px}
+  .topnote{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><i aria-hidden="true"><b></b><b></b><b></b></i>Trilha <span>Docker</span></a>
+  <div class="topnote">Módulo 07 de 10 · Compose avançado e projeto</div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <details id="tocdetails" open>
+  <summary>Sumário</summary>
+  <div class="toc-group">Módulos</div>
+  <!-- NÃO ALTERAR a lista de módulos, exceto: colocar aria-current="page" no módulo atual
+       e, logo depois dele, inserir <li class="sub"> com links para as seções deste módulo. -->
+  <ol id="modulos">
+    <li><a href="01-containers.html"><span class="n">01</span>Containers e arquitetura</a></li>
+    <li><a href="02-imagens-ciclo.html"><span class="n">02</span>Imagens e ciclo de vida</a></li>
+    <li><a href="03-dockerfile.html"><span class="n">03</span>Dockerfile e cache de build</a></li>
+    <li><a href="04-multi-stage.html"><span class="n">04</span>Multi-stage e imagens de produção</a></li>
+    <li><a href="05-dados-redes.html"><span class="n">05</span>Volumes e redes</a></li>
+    <li><a href="06-compose.html"><span class="n">06</span>Docker Compose essencial</a></li>
+    <li><a href="07-compose-avancado.html" aria-current="page"><span class="n">07</span>Compose avançado e projeto</a></li>
+    <li class="sub"><ol>
+      <li><a href="#compor-arquivos"><span class="n">1</span>Compor arquivos: merge, include, extends e âncoras</a></li>
+      <li><a href="#ordem-saude"><span class="n">2</span>Ordem de subida: healthchecks, depends_on e jobs de migração</a></li>
+      <li><a href="#segredos-config"><span class="n">3</span>Variáveis, secrets e configs</a></li>
+      <li><a href="#profiles-ambientes"><span class="n">4</span>Profiles e ambientes: dev, teste e CI com o mesmo arquivo</a></li>
+      <li><a href="#projeto"><span class="n">5</span>Projeto completo: a agenda com sete serviços</a></li>
+      <li><a href="#subida-testes"><span class="n">6</span>Roteiro de subida e de testes do projeto</a></li>
+      <li><a href="#watch-escala-recursos"><span class="n">7</span>Watch, escala, limites de recursos e logs</a></li>
+      <li><a href="#limites-compose"><span class="n">8</span>Quando o Compose deixa de ser suficiente</a></li>
+      <li><a href="#exercicios"><span class="n">9</span>Exercícios</a></li>
+      <li><a href="#cenarios"><span class="n">10</span>Cenários práticos de trabalho</a></li>
+      <li><a href="#glossario"><span class="n">11</span>Glossário</a></li>
+      <li><a href="#perguntas"><span class="n">12</span>Perguntas de entrevista</a></li>
+    </ol></li>
+    <li><a href="08-registry-ci.html"><span class="n">08</span>Registry, CI/CD e supply chain</a></li>
+    <li><a href="09-seguranca-debug.html"><span class="n">09</span>Segurança e troubleshooting</a></li>
+    <li><a href="10-producao.html"><span class="n">10</span>Produção, orquestração e entrevista</a></li>
+  </ol>
+  <!-- EXEMPLO do bloco de seções (inserir dentro de #modulos, logo após o <li> do módulo atual):
+    <li class="sub"><ol>
+      <li><a href="#secao-1"><span class="n">1</span>Nome da seção</a></li>
+      ...
+    </ol></li>
+  -->
+  <div class="progress"><span id="progtxt"></span><div class="bar"><i id="progbar"></i></div></div>
+  </details>
+</nav>
+
+<main>
+<div class="intro">
+  <div class="eyebrow">MÓDULO 07 · <span class="lvl l3">Avançado</span></div>
+  <h1>Compose avançado e projeto</h1>
+  <p class="lede">O módulo 06 ensinou a descrever uma aplicação em um arquivo. Aqui o mesmo arquivo passa a servir desenvolvimento, teste e CI, sobe na ordem certa, guarda segredos fora do ambiente e escala o que pode escalar. Fechamos com um projeto completo de sete serviços e com o critério para saber quando o Compose deixou de ser suficiente.</p>
+  <div class="objetivos"><b>Ao final você saberá</b><ul>
+    <li>Combinar vários arquivos com merge, <code>include</code>, <code>extends</code>, âncoras YAML e extension fields, prevendo o resultado com <code>docker compose config</code>.</li>
+    <li>Ordenar a subida com healthchecks e <code>depends_on</code>, incluindo job de migração que roda e termina (<code>service_completed_successfully</code>).</li>
+    <li>Escolher entre variável de ambiente, secret e config, e saber o que cada um expõe.</li>
+    <li>Usar profiles, <code>develop.watch</code>, <code>--scale</code>, limites de recursos e logging, sabendo o que é respeitado fora do Swarm.</li>
+    <li>Montar, subir, testar e defender o projeto "agenda" (proxy, web, api, worker, migrate, db, redis) e dizer quando migrar para outro orquestrador.</li>
+  </ul></div>
+</div>
+
+<section class="chap" id="compor-arquivos">
+  <div class="chap-head"><span class="num">1</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Compor arquivos: merge, include, extends e âncoras</h2>
+  <p>Um projeto real tem mais de um contexto: o desenvolvedor quer bind mount e debugger, o CI quer um job de teste, o servidor quer versão fixa e nenhuma porta de debug. Duplicar o <code>compose.yaml</code> três vezes garante que eles divirjam. O Compose oferece quatro mecanismos de reaproveitamento, cada um resolvido em um momento diferente. Saber qual é qual evita a maior parte das confusões.</p>
+  <div class="note"><b>Nota de versão</b><p>Tudo aqui é <strong>Compose v2</strong> (o plugin <code>docker compose</code>, não o antigo <code>docker-compose</code> em Python). O campo <code>version:</code> no topo do arquivo é obsoleto e só gera aviso: não use. O nome preferido do arquivo é <code>compose.yaml</code>; <code>docker-compose.yml</code> ainda é aceito.</p></div>
+
+  <h3>Vários arquivos e o override automático</h3>
+  <p>Sem a opção <code>-f</code>, o Compose procura <code>compose.yaml</code> e mescla <code>compose.override.yaml</code> automaticamente, se existir. Com <code>-f</code>, <strong>só os arquivos listados</strong> entram, na ordem dada, e o override automático deixa de ser lido. Os arquivos posteriores vencem os anteriores.</p>
+<pre><code class="sh">docker compose up -d                                   # compose.yaml + compose.override.yaml
+docker compose -f compose.yaml up -d                   # só o base (produção)
+docker compose -f compose.yaml -f compose.ci.yaml up   # base + CI (o override NÃO entra)
+COMPOSE_FILE=compose.yaml:compose.ci.yaml docker compose up   # o mesmo, por variável (separador ":" no Linux, ";" no Windows)
+
+docker compose config            # mostra o resultado final, já mesclado e interpolado
+docker compose config --services # só os nomes dos serviços</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Rodar <code>docker compose -f compose.yaml -f compose.ci.yaml up</code> no CI e esperar que os bind mounts do override de desenvolvimento estejam lá (ou, ao contrário, que não estejam). Com <code>-f</code>, o override automático some. Sempre confira o que vai rodar com <code>docker compose ... config</code>.</p></div>
+
+  <h3>Regras de merge</h3>
+  <p>O merge é feito por tipo de campo, não por "o último vence" em tudo:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Tipo do campo</th><th>O que acontece</th><th>Exemplos</th></tr></thead>
+    <tbody>
+      <tr><td>Valor simples</td><td>o posterior <strong>substitui</strong></td><td><code>image</code>, <code>restart</code>, <code>build.target</code></td></tr>
+      <tr><td>Mapa</td><td>mesclado <strong>chave a chave</strong>; chave repetida: posterior vence</td><td><code>environment</code>, <code>labels</code>, <code>build</code>, <code>healthcheck</code></td></tr>
+      <tr><td>Lista "de adicionar"</td><td>os itens são <strong>concatenados</strong></td><td><code>ports</code>, <code>expose</code>, <code>dns</code>, <code>tmpfs</code></td></tr>
+      <tr><td>Lista de comando</td><td>o posterior <strong>substitui</strong> a lista inteira</td><td><code>command</code>, <code>entrypoint</code>, <code>healthcheck.test</code></td></tr>
+      <tr><td>Lista com chave natural</td><td>mesclada pela chave: ponto de montagem, nome do secret etc.</td><td><code>volumes</code> (pelo destino), <code>secrets</code>, <code>configs</code>, <code>depends_on</code></td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="compose.yaml (base)"><code class="yaml">services:
+  api:
+    image: agenda/api:1.4.2
+    command: ["node", "dist/server.js"]
+    environment:
+      LOG_LEVEL: info
+      DATABASE_HOST: db
+    ports:
+      - "3000:3000"</code></pre>
+<pre data-file="compose.override.yaml"><code class="yaml">services:
+  api:
+    command: ["npm", "run", "dev"]    # substitui a lista inteira
+    environment:
+      LOG_LEVEL: debug                # chave repetida: o override vence
+      DEBUG: "true"                   # chave nova: acrescentada
+    ports:
+      - "9229:9229"                   # concatenada: a API publica 3000 e 9229</code></pre>
+  <p>Resultado de <code>docker compose config</code> (resumido): <code>command</code> é <code>npm run dev</code>; <code>environment</code> tem as três chaves (<code>LOG_LEVEL=debug</code>, <code>DATABASE_HOST=db</code>, <code>DEBUG=true</code>); <code>ports</code> tem as duas portas.</p>
+  <p>Quando a regra padrão atrapalha, duas tags YAML do Compose controlam o merge (disponíveis a partir da série 2.24; confira com <code>docker compose version</code>):</p>
+<pre><code class="yaml">services:
+  api:
+    ports: !override                  # em vez de concatenar, SUBSTITUI a lista do base
+      - "127.0.0.1:3000:3000"
+  db:
+    ports: !reset []                  # remove o que o arquivo anterior definiu</code></pre>
+
+  <h3>include: compor projetos</h3>
+  <p><code>include</code> (a partir do Compose 2.20) importa outro arquivo Compose <em>inteiro</em>, com seus próprios caminhos relativos e variáveis. Serve para um time de plataforma publicar "o banco" ou "a observabilidade" e vários projetos reutilizarem.</p>
+<pre data-file="compose.yaml"><code class="yaml">include:
+  - path: ../plataforma/observabilidade.yaml
+  - path: ./db/compose.yaml
+    project_directory: ./db           # caminhos relativos resolvidos aqui
+    env_file: ./db/.env               # variáveis só para o arquivo incluído
+
+services:
+  api:
+    depends_on: [postgres]            # "postgres" vem do arquivo incluído</code></pre>
+  <p>Diferença essencial em relação ao merge: o conteúdo incluído é <strong>autocontido</strong> e conflito de nome de recurso (dois arquivos definindo o mesmo serviço) é <strong>erro</strong>, não mescla. Para customizar um serviço incluído, liste mais de um caminho em <code>path</code> (o primeiro é o base, os seguintes mesclam como overrides) ou use um arquivo de override à parte.</p>
+
+  <h3>extends: herdar de um serviço</h3>
+<pre data-file="common.yaml"><code class="yaml">services:
+  app-base:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: info</code></pre>
+<pre data-file="compose.yaml"><code class="yaml">services:
+  worker:
+    extends:
+      file: common.yaml
+      service: app-base
+    command: ["node", "dist/worker.js"]</code></pre>
+  <p><code>extends</code> copia a definição de <em>um serviço</em> (de outro arquivo ou do mesmo) e aplica as mesmas regras de merge por cima. Os campos que ligam serviços entre si (<code>depends_on</code>, <code>links</code>, <code>volumes_from</code>) <strong>não</strong> são herdados, justamente porque dependem do conjunto de serviços de cada projeto.</p>
+
+  <h3>Âncoras YAML e extension fields</h3>
+  <p>Âncoras (<code>&amp;nome</code>), aliases (<code>*nome</code>) e a chave de merge (<code>&lt;&lt;</code>) são recursos do <strong>YAML</strong>, não do Compose: resolvem-se ao ler o arquivo, antes de o Compose enxergar qualquer coisa. Chaves de topo começando com <code>x-</code> (<em>extension fields</em>) são ignoradas pelo Compose e servem de depósito para blocos reutilizáveis.</p>
+<pre><code class="yaml">x-api-base: &amp;api-base           # bloco reutilizável (ignorado pelo Compose)
+  build:
+    context: ./api
+    target: prod
+  restart: unless-stopped
+  environment: &amp;api-env
+    DATABASE_HOST: db
+    REDIS_URL: redis://redis:6379
+
+x-logging: &amp;default-logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  api:
+    &lt;&lt;: *api-base                  # traz build, restart e environment
+    logging: *default-logging
+    environment:                  # TROCA o environment inteiro (merge é raso)
+      &lt;&lt;: *api-env                # truque: reimporta o mapa e acrescenta
+      PORT: "3000"
+  worker:
+    &lt;&lt;: [*api-base]               # lista de âncoras também é aceita
+    command: ["node", "dist/worker.js"]</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Mecanismo</th><th>Quando age</th><th>Cruza arquivos?</th><th>Use para</th></tr></thead>
+    <tbody>
+      <tr><td>Merge (<code>-f</code>, override)</td><td>pelo Compose, ao carregar</td><td>sim, é a função dele</td><td>variações por ambiente do mesmo projeto</td></tr>
+      <tr><td><code>include</code></td><td>pelo Compose</td><td>sim, com isolamento</td><td>compor módulos de times diferentes</td></tr>
+      <tr><td><code>extends</code></td><td>pelo Compose</td><td>sim</td><td>herdar um serviço-base, inclusive de outro arquivo</td></tr>
+      <tr><td>Âncoras e <code>x-</code></td><td>pelo parser YAML</td><td><strong>não</strong></td><td>deduplicar dentro de um arquivo</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p>A chave de merge <code>&lt;&lt;</code> é <strong>rasa</strong>. Se o serviço define <code>environment:</code> próprio, ele <em>substitui</em> o mapa da âncora em vez de somá-lo (por isso o truque <code>&lt;&lt;: *api-env</code> acima). E uma âncora não existe fora do arquivo onde foi declarada: não dá para usar <code>*api-base</code> no <code>compose.override.yaml</code>.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Override e <code>-f</code> mesclam por tipo de campo: valores substituem, mapas se fundem, <code>ports</code> concatena e <code>command</code> substitui. <code>include</code> compõe projetos sem mesclar, <code>extends</code> herda um serviço e âncoras são só YAML, dentro de um arquivo. Eu confiro tudo com <code>docker compose config</code>."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Defina uma convenção única para o time: o base descreve o que roda em produção; o override automático é só conveniência de desenvolvimento; CI e produção sempre com <code>-f</code> explícito. Cobre que o <code>docker compose config</code> do ambiente de produção seja revisado em pull request, como código.</p></div>
+</section>
+
+<section class="chap" id="ordem-saude">
+  <div class="chap-head"><span class="num">2</span><span class="lvl l3">Avançado</span></div>
+  <h2>Ordem de subida: healthchecks, depends_on e jobs de migração</h2>
+  <p>A forma curta <code>depends_on: [db]</code> só garante a <strong>ordem de início</strong>: o processo do banco foi iniciado, não que aceita conexões. Subir a API contra um Postgres ainda recuperando o WAL dá erro de conexão na primeira tentativa. A solução é medir "pronto" com um <code>healthcheck</code> e depender dessa condição.</p>
+
+  <h3>Anatomia do healthcheck</h3>
+<pre><code class="yaml">db:
+  image: postgres:17-alpine
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U app -d agenda"]   # exit 0 = saudável
+    interval: 5s        # de quanto em quanto tempo testa
+    timeout: 3s         # o teste que passar disso conta como falha
+    retries: 10         # falhas seguidas até virar "unhealthy"
+    start_period: 10s   # falhas no início não contam (tempo de aquecimento)</code></pre>
+  <ul>
+    <li><code>test</code> aceita <code>["CMD", ...]</code> (executa o binário direto), <code>["CMD-SHELL", "..."]</code> (passa pelo <code>/bin/sh -c</code>) ou <code>["NONE"]</code> (desliga um healthcheck herdado da imagem).</li>
+    <li>Estados: <code>starting</code> (no <code>start_period</code>), <code>healthy</code> e <code>unhealthy</code>. Aparecem em <code>docker ps</code> e <code>docker compose ps</code>.</li>
+    <li>Há ainda <code>start_interval</code>, um intervalo mais curto usado só durante o <code>start_period</code>, em versões recentes do Engine. Confirme na sua versão antes de depender dele.</li>
+    <li>O teste roda <strong>dentro</strong> do container: a ferramenta (<code>wget</code>, <code>curl</code>, <code>pg_isready</code>) precisa existir na imagem. Em imagem distroless, faça o próprio binário da aplicação oferecer um modo <code>--healthcheck</code>.</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Fora do Swarm e do Kubernetes, <strong>um container <code>unhealthy</code> não é reiniciado</strong>. O healthcheck só informa (e libera ou bloqueia o <code>depends_on</code>). <code>restart: unless-stopped</code> reage a processo que <em>morre</em>, não a processo que <em>trava</em>. Para auto-cura por saúde no Docker puro, é preciso uma ferramenta externa ou um orquestrador.</p></div>
+
+  <h3>depends_on na forma longa</h3>
+<pre><code class="yaml">api:
+  depends_on:
+    db:
+      condition: service_healthy                  # espera o healthcheck passar
+    migrate:
+      condition: service_completed_successfully   # espera TERMINAR com exit 0
+    redis:
+      condition: service_started                  # o padrão da forma curta
+      restart: true                               # se redis for reiniciado pelo Compose, reinicia a api
+    adminer:
+      condition: service_started
+      required: false                             # se o serviço estiver desligado (profile), não é erro</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Condição</th><th>Libera o dependente quando</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><code>service_started</code></td><td>o container foi iniciado</td><td>serviços sem healthcheck, ordem simples</td></tr>
+      <tr><td><code>service_healthy</code></td><td>o healthcheck ficou <code>healthy</code></td><td>banco, cache, broker, API da qual outro depende</td></tr>
+      <tr><td><code>service_completed_successfully</code></td><td>o container <strong>terminou</strong> com código 0</td><td>migrations, seed, geração de assets, init jobs</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Grafo de dependências de subida: db e redis saudáveis liberam migrate; migrate concluído libera api e worker; api saudável libera o proxy">
+      <defs><marker id="ah-ord" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="ttl" x="20" y="18">1. dados</text>
+      <text class="ttl" x="210" y="18">2. job</text>
+      <text class="ttl" x="400" y="18">3. aplicação</text>
+      <text class="ttl" x="570" y="18">4. borda</text>
+      <rect class="box" x="20" y="30" width="120" height="44" rx="5"/><text x="80" y="49" text-anchor="middle">db</text><text class="lbl" x="80" y="66" text-anchor="middle">healthy</text>
+      <rect class="box" x="20" y="150" width="120" height="44" rx="5"/><text x="80" y="169" text-anchor="middle">redis</text><text class="lbl" x="80" y="186" text-anchor="middle">healthy</text>
+      <rect class="box-w" x="210" y="30" width="120" height="44" rx="5"/><text x="270" y="49" text-anchor="middle">migrate</text><text class="lbl" x="270" y="66" text-anchor="middle">roda e sai (0)</text>
+      <rect class="box-a" x="400" y="30" width="120" height="44" rx="5"/><text x="460" y="49" text-anchor="middle">api</text><text class="lbl" x="460" y="66" text-anchor="middle">healthy</text>
+      <rect class="box-a" x="400" y="150" width="120" height="44" rx="5"/><text x="460" y="169" text-anchor="middle">worker</text><text class="lbl" x="460" y="186" text-anchor="middle">redis + migrate</text>
+      <rect class="box-m" x="570" y="30" width="100" height="44" rx="5"/><text x="620" y="49" text-anchor="middle">proxy</text><text class="lbl" x="620" y="66" text-anchor="middle">publica :80</text>
+      <line class="ln" x1="140" y1="52" x2="208" y2="52" marker-end="url(#ah-ord)"/>
+      <text class="lbl" x="146" y="44">healthy</text>
+      <line class="ln" x1="330" y1="52" x2="398" y2="52" marker-end="url(#ah-ord)"/>
+      <text class="lbl" x="338" y="44">exit 0</text>
+      <line class="ln" x1="520" y1="52" x2="568" y2="52" marker-end="url(#ah-ord)"/>
+      <line class="ln" x1="140" y1="172" x2="398" y2="172" marker-end="url(#ah-ord)"/>
+      <text class="lbl" x="200" y="164">redis healthy</text>
+      <line class="ln" x1="300" y1="74" x2="420" y2="148" marker-end="url(#ah-ord)"/>
+      <text class="lbl" x="352" y="122">exit 0</text>
+      <text class="lbl" x="20" y="226">api também espera db e redis (setas omitidas). Se migrate falhar, api e worker não iniciam.</text>
+    </svg>
+    <figcaption>Ordem de subida do projeto, derivada das condições de <code>depends_on</code>. O Compose resolve o grafo e inicia em paralelo o que não depende de nada.</figcaption>
+  </figure>
+
+  <h3>Migração como job separado</h3>
+  <p>Se cada réplica da API rodasse a migração ao iniciar, duas réplicas subindo juntas disputariam o mesmo <code>ALTER TABLE</code>. Um serviço <code>migrate</code> com a <strong>mesma imagem</strong> da API, outro <code>command</code>, <code>restart: "no"</code> e <code>service_completed_successfully</code> nos dependentes resolve a corrida e dá um ponto único de falha visível:</p>
+<pre><code class="text">$ docker compose up -d
+ ✘ Container agenda-migrate-1  service "migrate" didn't complete successfully: exit 1
+dependency failed to start: container agenda-migrate-1 exited (1)
+
+$ docker compose logs migrate
+migrate-1  | ERROR: relation "paciente" already exists</code></pre>
+  <ul>
+    <li>A migração deve ser <strong>idempotente</strong> (ferramentas como Flyway, Liquibase e as migrations de ORMs guardam uma tabela de controle) e usar <strong>lock</strong> (advisory lock no PostgreSQL), para o caso de duas execuções simultâneas.</li>
+    <li>O job termina e o container fica em <code>Exited (0)</code>. Ele não aparece em <code>docker compose ps</code> sem <code>-a</code>, e isso é normal.</li>
+    <li>Migração que mexe em tabelas grandes (como <code>atendimento</code>) deve ser compatível com a versão anterior da aplicação (padrão expandir/contrair): adiciona-se a coluna, depois muda-se o código, depois remove-se a antiga. Isso importa quando duas versões coexistem durante o deploy.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>A aplicação sempre faz <strong>retry com espera</strong> ao conectar. O <code>depends_on</code> é um otimizador de subida no Compose, não uma garantia: o banco pode reiniciar depois, e o Kubernetes não oferece ordem nenhuma.</p></div>
+  <div class="note"><b>Saiba mais</b><p>Healthcheck não é liveness probe nem readiness probe do Kubernetes, embora se pareçam. Um <code>/health</code> que consulta o banco é útil para ordenar a subida no Compose, mas, num orquestrador que reinicia por saúde, uma falha momentânea do banco pode derrubar todas as APIs em cascata. Separe "estou vivo" de "estou pronto para receber tráfego". O assunto continua no módulo 10 e na trilha de APIs (<a href="../apis/06-confiabilidade.html">confiabilidade</a>).</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"<code>depends_on</code> simples só ordena o início. Eu uso <code>service_healthy</code> para banco e cache e <code>service_completed_successfully</code> para o job de migração, que roda uma vez e termina. Mesmo assim a aplicação reconecta sozinha, porque a ordem de subida não resolve o banco que cai depois."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Pergunte ao time onde a migração roda hoje. "No startup de cada instância" é risco de deploy quebrado em horário de pico. Peça migração versionada, idempotente, com job próprio no pipeline e plano de reversão (em geral, migração para frente compatível, não "rollback de schema").</p></div>
+</section>
+
+<section class="chap" id="segredos-config">
+  <div class="chap-head"><span class="num">3</span><span class="lvl l3">Avançado</span></div>
+  <h2>Variáveis, secrets e configs</h2>
+  <p>Credenciais em variável de ambiente aparecem em <code>docker inspect</code>, em <code>/proc/&lt;pid&gt;/environ</code>, em dumps de erro e são herdadas por todo processo filho. Secrets e configs resolvem isso levando o dado como <strong>arquivo</strong>. Antes, vale separar as três fontes de variáveis, que a maioria mistura.</p>
+
+  <h3>Quem lê o quê: .env, env_file e environment</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Mecanismo</th><th>Serve para</th><th>Chega ao container?</th></tr></thead>
+    <tbody>
+      <tr><td><code>.env</code> na pasta do projeto</td><td><strong>interpolar</strong> o <code>compose.yaml</code> (<code>${TAG}</code>); outro arquivo com <code>--env-file</code></td><td>não, sozinho</td></tr>
+      <tr><td><code>env_file: [./api.env]</code></td><td>carregar um arquivo de variáveis para o container</td><td>sim</td></tr>
+      <tr><td><code>environment:</code></td><td>definir variáveis direto no YAML</td><td>sim (vence o <code>env_file</code>)</td></tr>
+      <tr><td>variável do shell/CI</td><td>interpolação, com precedência sobre o <code>.env</code></td><td>só se citada no <code>environment</code></td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="yaml">services:
+  api:
+    image: registry.exemplo.com/api:${TAG:-dev}        # do shell/.env, ou "dev"
+    env_file:
+      - path: ./api.env
+        required: false                                  # não falha se o arquivo não existir
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PUBLIC_URL: ${PUBLIC_URL:?defina PUBLIC_URL}       # erro claro se estiver vazia
+      PRECO: "R$$ 10"                                    # "$$" escapa o cifrão literal</code></pre>
+  <p>Formas de interpolação: <code>${VAR:-padrao}</code> (padrão se não definida <em>ou vazia</em>), <code>${VAR-padrao}</code> (só se não definida), <code>${VAR:?mensagem}</code> (erro se não definida ou vazia). A precedência para o valor final dentro do container é: <code>docker compose run -e</code>, depois <code>environment</code>, depois <code>env_file</code>, depois o <code>ENV</code> do Dockerfile.</p>
+  <div class="note trap"><b>Armadilha comum</b><p><code>docker compose config</code> imprime o YAML <strong>já interpolado</strong>, com senhas vindas do <code>.env</code> em texto puro. Não cole essa saída em chamado nem a deixe em log de CI sem mascarar.</p></div>
+
+  <h3>Secrets</h3>
+  <p>No Compose (fora do Swarm), um secret declarado com <code>file:</code> é montado como <strong>arquivo somente leitura</strong> em <code>/run/secrets/&lt;nome&gt;</code> no container que o referencia. Só os serviços listados em <code>secrets:</code> o enxergam.</p>
+<pre data-file="compose.yaml"><code class="yaml">services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password   # convenção *_FILE das imagens oficiais
+    secrets: [db_password]
+  api:
+    environment:
+      DATABASE_PASSWORD_FILE: /run/secrets/db_password
+      INTEGRACAO_TOKEN_FILE: /run/secrets/integracao_token
+    secrets:
+      - db_password
+      - integracao_token
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt        # arquivo no host, fora do git
+  integracao_token:
+    environment: INTEGRACAO_TOKEN          # lê de uma variável do host ou do CI</code></pre>
+<pre data-file="api/src/config.ts (leitura na aplicação)"><code class="js">import { readFileSync } from "node:fs";
+
+// aceita VAR_FILE (secret) ou VAR (desenvolvimento rápido)
+export function secret(name: string): string {
+  const file = process.env[`${name}_FILE`];
+  return file ? readFileSync(file, "utf8").trim() : process.env[name] ?? "";
+}</code></pre>
+  <ul>
+    <li><strong>Ganho real</strong>: o valor não aparece em <code>docker inspect</code> nem no ambiente do processo e de seus filhos.</li>
+    <li><strong>Limite real</strong>: fora do Swarm o secret é um bind mount do arquivo do host. Quem lê o disco do host lê o segredo, e as permissões do arquivo no host valem. Não é cofre nem tem rotação automática.</li>
+    <li>Aplicações que só leem variável: um <code>entrypoint</code> que faz <code>export DB_PASSWORD="$(cat /run/secrets/db_password)"</code> e depois <code>exec "$@"</code> funciona, mas recoloca o valor no ambiente <em>daquele</em> processo. Prefira ensinar a aplicação a ler o arquivo.</li>
+    <li>Segredo de <strong>build</strong> (token de registry privado no <code>npm ci</code>) é outro mecanismo: <code>build.secrets</code> e <code>RUN --mount=type=secret</code> (módulos 03 e 09). Nunca <code>ARG</code>/<code>ENV</code>, que ficam nas camadas.</li>
+  </ul>
+
+  <h3>Configs</h3>
+  <p><code>configs</code> têm a mesma mecânica dos secrets, mas para configuração <strong>não sensível</strong> que você quer declarar em vez de montar na mão: <code>nginx.conf</code>, <code>prometheus.yml</code>. Podem vir de <code>file:</code>, de <code>content:</code> (inline no YAML) ou de <code>environment:</code>.</p>
+<pre><code class="yaml">services:
+  proxy:
+    image: nginx:1.27-alpine
+    configs:
+      - source: proxy_conf
+        target: /etc/nginx/conf.d/default.conf   # sem target, o padrão é /&lt;nome&gt;
+
+configs:
+  proxy_conf:
+    file: ./proxy/nginx.conf
+  banner:
+    content: |
+      ambiente=${AMBIENTE:-dev}</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Dado</th><th>Melhor veículo</th><th>Por quê</th></tr></thead>
+    <tbody>
+      <tr><td>Nível de log, URL pública, flags</td><td><code>environment</code></td><td>não sensível, simples, visível de propósito</td></tr>
+      <tr><td>Senha, token, chave privada</td><td><code>secrets</code> (ou cofre externo)</td><td>fora do ambiente, do <code>inspect</code> e do git</td></tr>
+      <tr><td>Arquivo de configuração inteiro</td><td><code>configs</code> ou bind mount <code>:ro</code></td><td>declarativo; não vira variável</td></tr>
+      <tr><td>Estado da aplicação</td><td>volume nomeado</td><td>ciclo de vida independente do container</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note rule"><b>Regra de bolso</b><p>No <code>.gitignore</code>: <code>.env</code>, <code>secrets/</code>. No repositório: <code>.env.example</code> com nomes e valores fictícios. Em produção real, o Compose lê o secret de um arquivo que o pipeline de deploy criou a partir do cofre (Vault, AWS Secrets Manager, GitHub Secrets), nunca de algo versionado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Variável de ambiente vaza em <code>docker inspect</code> e em processos filhos. Com secret do Compose a senha vira arquivo em <code>/run/secrets</code>, visível só ao serviço que o declara, e a aplicação lê pela convenção <code>*_FILE</code>. Não substitui um cofre: em produção o arquivo vem de um gerenciador de segredos."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Dados de saúde e credenciais de integração (convênios, laboratórios) exigem trilha de quem acessou e rotação. Compose secrets não oferecem nenhum dos dois. Garanta que há rotação definida, que nenhum segredo está no repositório (varredura com <code>gitleaks</code> ou similar no CI) e que quem tem acesso ao host de produção é um grupo pequeno e auditado.</p></div>
+</section>
+
+<section class="chap" id="profiles-ambientes">
+  <div class="chap-head"><span class="num">4</span><span class="lvl l2">Intermediário</span></div>
+  <h2>Profiles e ambientes: dev, teste e CI com o mesmo arquivo</h2>
+  <p>O objetivo é um só desenho da aplicação, com variações pequenas e explícitas por ambiente. Duas ferramentas fazem isso: <strong>profiles</strong> ligam e desligam serviços; <strong>arquivos de override</strong> mudam como os serviços são configurados.</p>
+
+  <h3>Profiles</h3>
+  <p>Serviço sem <code>profiles</code> sobe sempre. Serviço com <code>profiles: [x]</code> só sobe se o profile for ativado.</p>
+<pre><code class="yaml">services:
+  adminer:
+    image: adminer
+    profiles: [debug]
+  tests:
+    build: { context: ./api, target: dev }
+    profiles: [test]
+    command: ["npm", "test"]</code></pre>
+<pre><code class="sh">docker compose --profile debug up -d          # sobe tudo + adminer
+docker compose --profile debug --profile test up -d
+COMPOSE_PROFILES=debug,test docker compose up -d
+docker compose run --rm tests                 # citar o serviço pelo nome ativa o profile dele
+docker compose --profile "*" config --services   # todos os profiles (útil para listar)</code></pre>
+  <ul>
+    <li>Serviço <strong>sem</strong> profile que depende de serviço <strong>com</strong> profile dá erro de configuração. O contrário é comum: <code>tests</code> (profile <code>test</code>) depende de <code>api</code>.</li>
+    <li><code>docker compose down</code> também só remove os serviços dos profiles ativos. Rode com os mesmos profiles ou use <code>--profile "*"</code>.</li>
+    <li>Profiles não são ambientes. Misturar "profile = produção" com "profile = dev" no mesmo arquivo cria exatamente o problema que se queria evitar: ninguém consegue ler o que roda em cada lugar.</li>
+  </ul>
+
+  <h3>Um desenho, três ambientes</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Três combinações de arquivos Compose (desenvolvimento, CI e produção) convergem para docker compose config e depois para o Engine">
+      <defs><marker id="ah-env" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box-a" x="20" y="30" width="270" height="58" rx="5"/>
+      <text class="ttl" x="34" y="47">Desenvolvimento</text><text x="34" y="63">compose.yaml</text><text class="lbl" x="34" y="79">+ compose.override.yaml (automático)</text>
+      <rect class="box-w" x="20" y="110" width="270" height="58" rx="5"/>
+      <text class="ttl" x="34" y="127">Teste e CI</text><text x="34" y="143">compose.yaml</text><text class="lbl" x="34" y="159">+ compose.ci.yaml (com -f, sem override)</text>
+      <rect class="box-m" x="20" y="190" width="270" height="58" rx="5"/>
+      <text class="ttl" x="34" y="207">Produção (servidor único)</text><text x="34" y="223">compose.yaml</text><text class="lbl" x="34" y="239">TAG e REGISTRY vindos do deploy</text>
+      <line class="ln" x1="290" y1="59" x2="370" y2="120" marker-end="url(#ah-env)"/>
+      <line class="ln" x1="290" y1="139" x2="370" y2="139" marker-end="url(#ah-env)"/>
+      <line class="ln" x1="290" y1="219" x2="370" y2="158" marker-end="url(#ah-env)"/>
+      <rect class="box" x="372" y="112" width="170" height="54" rx="5"/>
+      <text x="457" y="135" text-anchor="middle">compose config</text><text class="lbl" x="457" y="153" text-anchor="middle">merge + interpolação</text>
+      <line class="ln-a" x1="542" y1="139" x2="588" y2="139" marker-end="url(#ah-env)"/>
+      <rect class="box" x="590" y="112" width="80" height="54" rx="5"/>
+      <text x="630" y="143" text-anchor="middle">Engine</text>
+    </svg>
+    <figcaption>O <code>compose.yaml</code> é o mesmo nos três casos. O que muda é a lista de arquivos e as variáveis; o <code>config</code> mostra o resultado antes de executar.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Desenvolvimento</th><th>Teste / CI</th><th>Produção (host único)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Arquivos</strong></td><td>base + override (automático)</td><td><code>-f</code> base + <code>-f compose.ci.yaml</code></td><td><code>-f compose.yaml</code></td></tr>
+      <tr><td><strong>Imagem</strong></td><td>build local, alvo <code>dev</code></td><td>build no pipeline (cache), alvo <code>prod</code> + job de testes</td><td>pull de tag fixa do registry</td></tr>
+      <tr><td><strong>Código</strong></td><td><code>develop.watch</code> ou bind mount</td><td>só o que está na imagem</td><td>só o que está na imagem</td></tr>
+      <tr><td><strong>Portas no host</strong></td><td>3000, 9229, 5432 (só 127.0.0.1)</td><td>nenhuma ou porta aleatória (jobs em paralelo)</td><td>só a do proxy</td></tr>
+      <tr><td><strong>Segredos</strong></td><td>arquivo local fictício</td><td>criados a partir do secret do CI</td><td>criados a partir do cofre</td></tr>
+      <tr><td><strong>Ciclo</strong></td><td>sobe e fica</td><td>sobe, testa, <code>down -v</code></td><td>sobe e fica, <code>restart</code> ligado</td></tr>
+    </tbody>
+  </table></div>
+<pre data-file="compose.ci.yaml"><code class="yaml"># Uso: docker compose -f compose.yaml -f compose.ci.yaml run --rm tests
+services:
+  proxy:
+    ports: !reset []                  # sem porta fixa: vários jobs no mesmo runner (Compose 2.24+)
+
+  tests:
+    build:
+      context: ./api
+      target: dev                     # tem devDependencies (jest, tsc)
+    image: agenda/api-test:${TAG:-ci}
+    command: ["npm", "test"]
+    profiles: [test]
+    environment:
+      API_URL: http://proxy           # fala com o sistema pelo mesmo caminho do usuário
+    depends_on:
+      proxy: { condition: service_started }
+      api:   { condition: service_healthy }
+    networks: [frontend]</code></pre>
+<pre data-file="trecho de um workflow de CI"><code class="sh">export COMPOSE_PROJECT_NAME="agenda-ci-${GITHUB_RUN_ID}"   # isola redes, volumes e nomes por execução
+mkdir -p secrets &amp;&amp; printf '%s' "$CI_DB_PASSWORD" &gt; secrets/db_password.txt
+
+C="docker compose -f compose.yaml -f compose.ci.yaml"
+$C config -q                         # valida o YAML (falha antes de gastar minutos de build)
+$C build                             # usa cache do BuildKit
+$C up -d --wait                      # sobe e espera os healthchecks
+$C run --rm tests; rc=$?             # o código de saída do job é o do teste
+$C logs --no-color &gt; compose.log     # guarda os logs como artefato
+$C down -v --remove-orphans          # limpa SEMPRE, mesmo com falha
+exit $rc</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p>Esquecer o <code>down -v</code> no CI. Runners reutilizados acumulam volumes e redes de execuções antigas, e o banco da execução seguinte começa com dados da anterior. O <code>COMPOSE_PROJECT_NAME</code> único evita colisão de nomes, mas não limpa nada.</p></div>
+  <div class="note rule"><b>Regra de bolso</b><p>O teste de integração acessa o sistema pelo <strong>mesmo caminho do usuário</strong> (o proxy), dentro da rede do Compose. Se só funciona com porta publicada no host, o teste depende do ambiente do runner.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Mesmo <code>compose.yaml</code> para todos os ambientes; o override automático dá o conforto de desenvolvimento, o CI usa <code>-f</code> com um arquivo próprio e profile <code>test</code>, e a produção usa só o base com a tag fixada. Cada execução de CI tem um project name único e termina com <code>down -v</code>."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>"Funciona na minha máquina" costuma ser diferença de ambiente. Ter o CI subindo o <strong>mesmo</strong> arquivo que o desenvolvedor usa corta essa classe de problema. O custo é tempo de pipeline: acompanhe a duração do job e use cache de build (módulo 08).</p></div>
+</section>
+
+<section class="chap" id="projeto">
+  <div class="chap-head"><span class="num">5</span><span class="lvl l3">Avançado</span></div>
+  <h2>Projeto completo: a agenda com sete serviços</h2>
+  <p>Uma aplicação de agenda com sete serviços junta tudo dos módulos anteriores. Vale saber desenhá-la num quadro durante a entrevista, explicando por que cada peça existe.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 330" role="img" aria-label="Diagrama dos serviços do projeto: proxy, web, api, worker, migrate, db e redis, com as redes frontend e backend">
+      <defs><marker id="ah-arq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <text class="lbl" x="14" y="26">navegador</text>
+      <line class="ln" x1="80" y1="22" x2="268" y2="22" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="160" y="16">:80</text>
+      <rect class="box-m" x="270" y="6" width="150" height="32" rx="5"/>
+      <text x="345" y="26" text-anchor="middle">proxy (nginx)</text>
+      <line class="ln" x1="310" y1="38" x2="170" y2="86" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="390" y1="38" x2="480" y2="86" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="228" y="56">/</text>
+      <text class="lbl" x="450" y="56">/api</text>
+      <rect class="box-a" x="70" y="88" width="170" height="46" rx="5"/>
+      <text x="155" y="107" text-anchor="middle">web</text><text class="lbl" x="155" y="124" text-anchor="middle">build node → nginx</text>
+      <rect class="box-a" x="400" y="88" width="160" height="46" rx="5"/>
+      <text x="480" y="107" text-anchor="middle">api</text><text class="lbl" x="480" y="124" text-anchor="middle">multi-stage, alvo prod</text>
+      <rect class="box-a" x="430" y="170" width="150" height="46" rx="5"/>
+      <text x="505" y="189" text-anchor="middle">worker</text><text class="lbl" x="505" y="206" text-anchor="middle">mesma imagem da api</text>
+      <rect class="box-w" x="215" y="170" width="140" height="46" rx="5" stroke-dasharray="5 3"/>
+      <text x="285" y="189" text-anchor="middle">migrate</text><text class="lbl" x="285" y="206" text-anchor="middle">roda uma vez e sai</text>
+      <rect class="box" x="215" y="262" width="160" height="46" rx="5"/>
+      <text x="295" y="281" text-anchor="middle">db</text><text class="lbl" x="295" y="298" text-anchor="middle">postgres + volume</text>
+      <rect class="box" x="540" y="262" width="120" height="46" rx="5"/>
+      <text x="600" y="281" text-anchor="middle">redis</text><text class="lbl" x="600" y="298" text-anchor="middle">fila de tarefas</text>
+      <line class="ln" x1="410" y1="134" x2="350" y2="260" marker-end="url(#ah-arq)"/>
+      <path class="ln" d="M560,111 L615,111 L615,260" marker-end="url(#ah-arq)" stroke-dasharray="3 3"/>
+      <line class="ln" x1="540" y1="216" x2="580" y2="260" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="440" y1="216" x2="372" y2="262" marker-end="url(#ah-arq)"/>
+      <line class="ln" x1="285" y1="216" x2="285" y2="260" marker-end="url(#ah-arq)"/>
+      <text class="lbl" x="14" y="176">rede frontend: proxy, web, api</text>
+      <text class="lbl" x="14" y="194">rede backend: api, worker,</text>
+      <text class="lbl" x="14" y="210">migrate, db, redis</text>
+      <text class="lbl" x="14" y="238">só o proxy publica porta</text>
+    </svg>
+    <figcaption>Dois Dockerfiles próprios (web e api, esta usada por três serviços), o proxy com imagem oficial mais configuração, e duas imagens oficiais (postgres, redis). O banco fica numa rede que o proxy não alcança. Linha tracejada: uso eventual (publicar/consumir tarefas).</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Serviço</th><th>Imagem</th><th>Redes</th><th>Papel</th><th>Sobe quando</th></tr></thead>
+    <tbody>
+      <tr><td><code>proxy</code></td><td><code>nginx:1.27-alpine</code> + conf</td><td>frontend</td><td>única porta publicada; roteia <code>/</code> e <code>/api</code></td><td>web e api prontos</td></tr>
+      <tr><td><code>web</code></td><td>própria (build node, runtime nginx)</td><td>frontend</td><td>arquivos estáticos do front-end</td><td>logo</td></tr>
+      <tr><td><code>api</code></td><td>própria, alvo <code>prod</code></td><td>frontend, backend</td><td>regras de negócio, HTTP</td><td>db, redis saudáveis; migrate concluído</td></tr>
+      <tr><td><code>worker</code></td><td>a mesma da api</td><td>backend</td><td>consome tarefas do Redis (e-mails, lembretes)</td><td>redis saudável; migrate concluído</td></tr>
+      <tr><td><code>migrate</code></td><td>a mesma da api</td><td>backend</td><td>aplica as migrations e termina</td><td>db saudável</td></tr>
+      <tr><td><code>db</code></td><td><code>postgres:17-alpine</code></td><td>backend</td><td>dados, volume <code>pgdata</code></td><td>primeiro</td></tr>
+      <tr><td><code>redis</code></td><td><code>redis:7-alpine</code></td><td>backend</td><td>fila, volume <code>redisdata</code> com AOF</td><td>primeiro</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Estrutura de arquivos</h3>
+<pre data-file="estrutura"><code class="text">agenda/
+├── compose.yaml            # base: como roda em produção
+├── compose.override.yaml   # só desenvolvimento (aplicado automaticamente)
+├── compose.ci.yaml         # só CI (seção anterior), usado com -f
+├── .env                    # TAG, HTTP_PORT, REGISTRY (fora do git)
+├── .env.example            # modelo versionado, valores fictícios
+├── .gitignore              # .env, secrets/
+├── secrets/db_password.txt # fora do git
+├── proxy/nginx.conf
+├── web/   Dockerfile  nginx.conf  src/ ...
+└── api/   Dockerfile  .dockerignore  src/ ...</code></pre>
+<pre data-file=".env.example"><code class="sh">TAG=dev
+HTTP_PORT=80
+REGISTRY=agenda</code></pre>
+
+  <h3>Dockerfiles</h3>
+  <p>O <code>api/Dockerfile</code> é multi-stage com seis estágios (<code>base</code>, <code>deps</code>, <code>dev</code>, <code>build</code>, <code>prod-deps</code>, <code>prod</code>). O Compose escolhe o alvo: <code>prod</code> na base, <code>dev</code> no override. O <code>web/Dockerfile</code> compila o front-end com Node e entrega só os estáticos num Nginx (detalhes de multi-stage no módulo 04).</p>
+<pre data-file="api/Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+FROM node:22-alpine AS base
+WORKDIR /app
+
+# todas as dependências (inclusive dev), para compilar
+FROM base AS deps
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# alvo de desenvolvimento: usado pelo override, com hot reload
+FROM deps AS dev
+COPY . .
+CMD ["npm", "run", "dev"]
+
+# compila TypeScript → dist/
+FROM deps AS build
+COPY . .
+RUN npm run build
+
+# só dependências de produção
+FROM base AS prod-deps
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+
+# imagem final: sem código-fonte TS, sem devDependencies, sem root
+FROM node:22-alpine AS prod
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=build     --chown=node:node /app/dist ./dist
+COPY --chown=node:node package.json ./
+USER node
+EXPOSE 3000
+CMD ["node", "dist/server.js"]</code></pre>
+<pre data-file="api/.dockerignore"><code class="text">node_modules
+dist
+.git
+.env
+secrets
+*.log</code></pre>
+<pre data-file="web/Dockerfile"><code class="dockerfile"># syntax=docker/dockerfile:1
+# 1. build do front-end (React, Vue, Angular...)
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+ARG VITE_API_URL=/api
+RUN npm run build            # gera /app/dist
+
+# 2. só os arquivos estáticos, servidos pelo Nginx
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+# a imagem do nginx já define CMD ["nginx", "-g", "daemon off;"]</code></pre>
+<pre data-file="web/nginx.conf"><code class="text">server {
+  listen 80;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location /assets/ {                      # arquivos com hash no nome: cache longo
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+  location / {
+    try_files $uri /index.html;            # SPA: rotas do front caem no index
+  }
+}</code></pre>
+<pre data-file="proxy/nginx.conf"><code class="text">server {
+  listen 80;
+
+  location /api/ {
+    proxy_pass http://api:3000/;           # "api" resolvido pelo DNS do Docker
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  location / {
+    proxy_pass http://web:80;
+  }
+}</code></pre>
+
+  <h3>compose.yaml (base: produção)</h3>
+<pre data-file="compose.yaml"><code class="yaml">name: agenda
+
+x-api-base: &amp;api-base
+  build:
+    context: ./api
+    target: prod
+  image: ${REGISTRY:-agenda}/api:${TAG:-dev}
+  environment:
+    DATABASE_HOST: db
+    DATABASE_USER: app
+    DATABASE_NAME: agenda
+    DATABASE_PASSWORD_FILE: /run/secrets/db_password
+    REDIS_URL: redis://redis:6379
+  secrets: [db_password]
+  networks: [backend]
+  logging: &amp;default-logging
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+  deploy:
+    resources:
+      limits: { cpus: "1.0", memory: 512M }
+
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      web: { condition: service_healthy }
+      api: { condition: service_healthy }
+    networks: [frontend]
+    logging: *default-logging
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    image: ${REGISTRY:-agenda}/web:${TAG:-dev}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]   # 127.0.0.1, não "localhost" (evita IPv6)
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [frontend]
+    logging: *default-logging
+    restart: unless-stopped
+
+  migrate:
+    &lt;&lt;: *api-base
+    command: ["node", "dist/migrate.js"]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    &lt;&lt;: *api-base
+    command: ["node", "dist/server.js"]
+    networks: [frontend, backend]
+    depends_on:
+      db:      { condition: service_healthy }
+      redis:   { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  worker:
+    &lt;&lt;: *api-base
+    command: ["node", "dist/worker.js"]
+    depends_on:
+      redis:   { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: agenda
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d agenda"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks: [backend]
+    logging: *default-logging
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    networks: [backend]
+    logging: *default-logging
+    restart: unless-stopped
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  pgdata:
+  redisdata:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt</code></pre>
+  <div class="note trap"><b>Armadilha comum</b><p><code>migrate</code>, <code>api</code> e <code>worker</code> têm <code>build</code> e <code>image</code> idênticos, então o Compose "constrói" três vezes. O cache do BuildKit torna as duas últimas instantâneas e o resultado é a mesma imagem (mesmo ID). Não "otimize" tirando o <code>build</code> de dois deles: numa máquina limpa o Compose tentaria baixar <code>agenda/api</code> de um registry que não existe.</p></div>
+
+  <h3>compose.override.yaml (só desenvolvimento)</h3>
+<pre data-file="compose.override.yaml"><code class="yaml"># Mesclado automaticamente em desenvolvimento.
+# Em produção: docker compose -f compose.yaml up -d
+services:
+  api:
+    build:
+      target: dev                  # estágio dev do Dockerfile
+    image: agenda/api-dev          # nome próprio: não sobrescreve a imagem prod do worker
+    command: ["npm", "run", "dev"]
+    ports:
+      - "3000:3000"                # acesso direto à API
+      - "9229:9229"                # debugger do Node
+    develop:
+      watch:
+        - action: sync
+          path: ./api/src
+          target: /app/src
+        - action: rebuild
+          path: ./api/package.json
+
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"      # para o DBeaver/psql local, só na máquina
+
+  adminer:
+    image: adminer
+    profiles: [debug]
+    ports: ["127.0.0.1:8081:8080"]
+    networks: [backend]</code></pre>
+  <div class="note"><b>Por que <code>image: agenda/api-dev</code> no override</b><p>As três peças <code>migrate</code>, <code>api</code> e <code>worker</code> compartilham o nome <code>agenda/api:${TAG}</code>. Se o override só trocasse o <code>target</code> da API para <code>dev</code>, o Compose construiria a imagem <code>dev</code> <em>com o mesmo nome e tag</em> da imagem <code>prod</code> usada por <code>worker</code> e <code>migrate</code>: a última construção vence e o worker passaria a rodar a imagem de desenvolvimento (ou vice-versa), de forma silenciosa. Dar à API de dev um nome próprio elimina a colisão. Na mesma linha, o <code>build.target</code> do override <em>mescla</em> com o <code>build</code> do base (mapa com mapa): o <code>context</code> continua o mesmo.</p></div>
+  <div class="note iv"><b>Pontos para defender numa entrevista</b><ul>
+    <li><strong>Segmentação de rede</strong>: o proxy não alcança o banco; um comprometimento do proxy não dá caminho direto ao Postgres.</li>
+    <li><strong>Uma porta publicada</strong> em produção (a do proxy).</li>
+    <li><strong>Migração como serviço separado</strong>, que roda uma vez, em vez de rodar dentro de cada réplica da API.</li>
+    <li><strong>Mesma imagem, processos diferentes</strong> (api, worker, migrate): um build, um artefato versionado.</li>
+    <li><strong>Healthchecks + depends_on com condição</strong> para a ordem de subida, e aplicação que reconecta sozinha.</li>
+    <li><strong>Senha em secret</strong>, não em variável de ambiente nem no git.</li>
+    <li><strong>Limites de recurso e rotação de log</strong> definidos, para um serviço não consumir o host inteiro.</li>
+  </ul></div>
+  <div class="note mgr"><b>Para gestores</b><p>Este projeto é um bom "critério de aceite" de maturidade de um serviço novo: tem ordem de subida definida, migração controlada, segredos fora do código, limites e logs com rotação? O que não está aqui (backup dos volumes, monitoramento, TLS no proxy, alta disponibilidade) é a lista do que falta para chamar de produção. Veja a seção "Quando o Compose deixa de ser suficiente".</p></div>
+</section>
+
+<section class="chap" id="subida-testes">
+  <div class="chap-head"><span class="num">6</span><span class="lvl l3">Avançado</span></div>
+  <h2>Roteiro de subida e de testes do projeto</h2>
+  <p>Ter os arquivos não basta: um projeto só "existe" quando você sabe subi-lo do zero, provar que funciona e provar que falha do jeito esperado. Este é o roteiro que serve também como checklist de revisão.</p>
+
+  <h3>Subir do zero</h3>
+  <ol class="seq">
+    <li><div><strong>Preparar o que não está no git.</strong> <code>cp .env.example .env</code>; criar <code>secrets/db_password.txt</code> com uma senha de desenvolvimento (<code>mkdir -p secrets &amp;&amp; printf 'dev-senha-fraca' &gt; secrets/db_password.txt</code>). Sem esse arquivo o Compose recusa subir: o erro cita o caminho do secret.</div></li>
+    <li><div><strong>Validar a configuração.</strong> <code>docker compose config -q</code> (silencioso, só erra se houver problema). Em produção, o mesmo com <code>-f compose.yaml</code>.</div></li>
+    <li><div><strong>Subir.</strong> <code>docker compose up -d --build --wait</code>. O <code>--wait</code> bloqueia até os serviços ficarem prontos e devolve erro se algum falhar.</div></li>
+    <li><div><strong>Conferir o estado.</strong> Todos <code>healthy</code> ou <code>Up</code>; <code>migrate</code> terminou com 0.</div></li>
+    <li><div><strong>Rodar os testes de fumaça</strong> (abaixo) e, em desenvolvimento, <code>docker compose watch</code>.</div></li>
+  </ol>
+  <p>O que o Compose faz no <code>up</code>, em ordem:</p>
+  <ol>
+    <li>Constrói <code>web</code> e <code>api</code>. <code>migrate</code>, <code>api</code> e <code>worker</code> usam o mesmo contexto e alvo; o cache do BuildKit faz a imagem ser construída uma vez.</li>
+    <li>Cria as redes <code>agenda_frontend</code> e <code>agenda_backend</code> e os volumes <code>agenda_pgdata</code> e <code>agenda_redisdata</code> (o prefixo é o <code>name:</code> do projeto).</li>
+    <li>Sobe <code>db</code> e <code>redis</code> e espera os healthchecks.</li>
+    <li>Roda <code>migrate</code>; se sair com 0, libera <code>api</code> e <code>worker</code>.</li>
+    <li>Quando <code>api</code> e <code>web</code> ficam <code>healthy</code>, sobe o <code>proxy</code>.</li>
+  </ol>
+<pre><code class="sh">docker compose up -d --build           # desenvolvimento (com override)
+docker compose watch                   # sincroniza código enquanto você edita
+docker compose --profile debug up -d   # inclui o adminer
+docker compose logs -f api worker
+docker compose -f compose.yaml config  # confere a configuração de produção
+TAG=1.4.2 docker compose -f compose.yaml up -d   # produção com versão fixa
+
+docker compose ps --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}'</code></pre>
+<pre><code class="text">SERVICE   STATUS                    PORTS
+api       Up 41 seconds (healthy)   0.0.0.0:3000-&gt;3000/tcp, 0.0.0.0:9229-&gt;9229/tcp
+db        Up 52 seconds (healthy)   127.0.0.1:5432-&gt;5432/tcp
+proxy     Up 28 seconds             0.0.0.0:80-&gt;80/tcp
+redis     Up 52 seconds (healthy)   6379/tcp
+web       Up 52 seconds (healthy)   80/tcp
+worker    Up 41 seconds</code></pre>
+  <p>(Saída de desenvolvimento, com o override. Em produção a API não publica 3000/9229 e o banco não publica 5432. <code>migrate</code> só aparece com <code>docker compose ps -a</code>, como <code>Exited (0)</code>.)</p>
+
+  <h3>Testes de fumaça: provar o desenho</h3>
+  <p>Cada decisão do projeto vira uma verificação executável. Um script curto no repositório (e no CI) impede que alguém desfaça a segmentação de rede sem perceber.</p>
+<pre data-file="scripts/smoke.sh"><code class="sh">#!/bin/sh
+set -eu
+BASE=${BASE:-http://localhost:${HTTP_PORT:-80}}
+FAILED=0
+check() {   # $1 = descrição, $2 = comando (deve sair com 0)
+  if sh -c "$2" &gt;/dev/null 2&gt;&amp;1; then echo "OK     $1"; else echo "FALHA  $1"; FAILED=1; fi
+}
+
+check "front-end responde 200 pelo proxy"   "curl -fsS $BASE/ -o /dev/null"
+check "API responde via /api (contrato /health)" "curl -fsS $BASE/api/health"
+check "proxy NÃO alcança o banco"           "! docker compose exec -T proxy nc -z -w2 db 5432"
+check "senha NÃO está no ambiente da api"   "! docker compose exec -T api printenv | grep -q '^DATABASE_PASSWORD='"
+check "secret montado como arquivo"         "docker compose exec -T api test -s /run/secrets/db_password"
+check "só o proxy publica porta (produção)" "[ \$(docker compose ps --format '{{.Ports}}' | grep -c '0.0.0.0') -eq 1 ]"
+exit $FAILED</code></pre>
+  <p>A última verificação só vale para a configuração de produção (sem override). Em desenvolvimento, a API publica 3000 e 9229 de propósito.</p>
+
+  <h3>Testes de falha: o que acontece quando algo quebra</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Experimento</th><th>Comando</th><th>Resultado esperado</th></tr></thead>
+    <tbody>
+      <tr><td>Banco reinicia com tudo no ar</td><td><code>docker compose restart db</code></td><td>a API perde conexões, o healthcheck da API pode oscilar e ela volta sozinha; se não voltar, falta retry no pool</td></tr>
+      <tr><td>Migração falha</td><td>quebrar um SQL e <code>up -d</code></td><td><code>dependency failed to start</code>; <code>api</code> e <code>worker</code> não sobem; <code>logs migrate</code> mostra o erro</td></tr>
+      <tr><td>Segredo ausente</td><td>renomear <code>secrets/db_password.txt</code></td><td>o Compose recusa a subir, citando o arquivo</td></tr>
+      <tr><td>Aplicação morre</td><td><code>docker compose kill api</code></td><td><code>restart: unless-stopped</code> recria o processo; confira <code>ps</code></td></tr>
+      <tr><td>Aplicação trava (não morre)</td><td>simular <code>/health</code> lento</td><td>fica <code>unhealthy</code>, <strong>não</strong> é reiniciada: prova do limite do Compose</td></tr>
+      <tr><td>Dados persistem?</td><td><code>down</code> e <code>up</code> de novo; depois <code>down -v</code></td><td><code>down</code> mantém os volumes; <code>down -v</code> apaga (e o banco volta vazio)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note trap"><b>Armadilha comum</b><p><code>docker compose down -v</code> apaga os <strong>volumes nomeados</strong>, ou seja, o banco. Em máquina de desenvolvimento é conveniente; num servidor, é uma perda de dados com um comando. Documente no README qual comando é seguro e proíba <code>-v</code> em scripts de produção.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>Se pedirem para "desenhar e subir uma aplicação com banco, fila e API": desenhe as redes, diga a ordem de subida (db/redis saudáveis, migração, API, proxy), onde ficam os segredos e como você prova que o banco não está exposto. Mostrar um teste de fumaça valendo a segmentação de rede impressiona mais que descrevê-la.</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Peça para o <code>smoke.sh</code> (ou equivalente) rodar no pipeline. Ele é barato e transforma decisões de arquitetura e segurança em testes automáticos: regressão de configuração passa a falhar no pull request, não em produção.</p></div>
+</section>
+
+<section class="chap" id="watch-escala-recursos">
+  <div class="chap-head"><span class="num">7</span><span class="lvl l3">Avançado</span></div>
+  <h2>Watch, escala, limites de recursos e logs</h2>
+
+  <h3>Compose watch: desenvolvimento sem bind mount</h3>
+  <p>O bind mount do código funciona, mas é lento em Windows e macOS (o arquivo atravessa uma camada de virtualização), traz problemas de permissão e mistura o <code>node_modules</code> do host com o do container. O <code>docker compose watch</code> observa arquivos no host e aplica uma <strong>ação por regra</strong>.</p>
+  <figure class="figure">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Fluxo do compose watch: alteração de arquivo no host é comparada às regras e dispara sync, sync mais restart ou rebuild">
+      <defs><marker id="ah-wch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="box" x="20" y="80" width="150" height="54" rx="5"/>
+      <text x="95" y="103" text-anchor="middle">host: ./api</text><text class="lbl" x="95" y="121" text-anchor="middle">você salva um arquivo</text>
+      <line class="ln" x1="170" y1="107" x2="228" y2="107" marker-end="url(#ah-wch)"/>
+      <rect class="box-a" x="230" y="80" width="150" height="54" rx="5"/>
+      <text x="305" y="103" text-anchor="middle">compose watch</text><text class="lbl" x="305" y="121" text-anchor="middle">casa com as regras</text>
+      <line class="ln-a" x1="380" y1="100" x2="448" y2="42" marker-end="url(#ah-wch)"/>
+      <line class="ln-a" x1="380" y1="107" x2="448" y2="107" marker-end="url(#ah-wch)"/>
+      <line class="ln-a" x1="380" y1="114" x2="448" y2="172" marker-end="url(#ah-wch)"/>
+      <rect class="box-a" x="450" y="20" width="220" height="46" rx="5"/>
+      <text x="460" y="40">sync</text><text class="lbl" x="460" y="57">copia; o dev server recarrega</text>
+      <rect class="box-w" x="450" y="85" width="220" height="46" rx="5"/>
+      <text x="460" y="105">sync+restart</text><text class="lbl" x="460" y="122">copia e reinicia o container</text>
+      <rect class="box-m" x="450" y="150" width="220" height="46" rx="5"/>
+      <text x="460" y="170">rebuild</text><text class="lbl" x="460" y="187">reconstrói a imagem e recria</text>
+    </svg>
+    <figcaption>Cada mudança aciona só a ação mais barata que resolve: copiar código, reiniciar para ler configuração ou reconstruir quando as dependências mudam.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Ação</th><th>O que faz</th><th>Use quando</th><th>Disponível desde</th></tr></thead>
+    <tbody>
+      <tr><td><code>sync</code></td><td>copia o arquivo para o container</td><td>código-fonte com hot reload (nodemon, vite, uvicorn --reload)</td><td>Compose 2.22 (GA, out/2023)</td></tr>
+      <tr><td><code>rebuild</code></td><td>reconstrói a imagem e recria o container</td><td><code>package.json</code>, lockfile, <code>Dockerfile</code>, dependências nativas</td><td>2.22</td></tr>
+      <tr><td><code>sync+restart</code></td><td>copia e reinicia o container</td><td>arquivos de configuração lidos só na inicialização</td><td>2.23</td></tr>
+      <tr><td><code>sync+exec</code></td><td>copia e executa um comando no container</td><td>recarregar sem reiniciar (ex.: <code>nginx -s reload</code>)</td><td>2.32</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="yaml">services:
+  api:
+    build: { context: ./api, target: dev }
+    command: ["npm", "run", "dev"]        # dev server que recarrega sozinho
+    develop:
+      watch:
+        - action: sync
+          path: ./api/src
+          target: /app/src
+          ignore:
+            - "**/*.test.ts"
+        - action: sync+restart
+          path: ./api/config
+          target: /app/config
+        - action: rebuild
+          path: ./api/package.json
+  site:                                   # exemplo isolado: serviço Nginx de desenvolvimento
+    develop:
+      watch:
+        - action: sync+exec
+          path: ./site/nginx.conf
+          target: /etc/nginx/conf.d/default.conf
+          exec:
+            command: nginx -s reload</code></pre>
+<pre><code class="sh">docker compose watch              # só observa (sobe os serviços necessários)
+docker compose up --watch         # sobe e observa no mesmo comando</code></pre>
+  <ul>
+    <li>Regras <code>rebuild</code> exigem <code>build:</code> no serviço (o Compose precisa saber o que reconstruir). O <code>watch</code> é para o fluxo de <strong>desenvolvimento</strong>, nunca para produção.</li>
+    <li>O <code>sync</code> grava dentro do container, então a imagem precisa ter as ferramentas básicas de arquivo e permissão de escrita no destino. Imagens distroless e usuários sem permissão no diretório de destino falham.</li>
+    <li>O fluxo é <strong>de mão única</strong> (host para container). Arquivos gerados dentro do container não voltam.</li>
+    <li>Os caminhos de <code>ignore</code> são relativos ao <code>path</code> da regra, não à raiz do projeto.</li>
+  </ul>
+
+  <h3>Escala: --scale e deploy.replicas</h3>
+<pre><code class="sh">docker compose up -d --scale worker=3
+docker compose ps worker --format 'table {{.Name}}\t{{.Status}}'</code></pre>
+<pre><code class="text">NAME              STATUS
+agenda-worker-1   Up 8 seconds
+agenda-worker-2   Up 8 seconds
+agenda-worker-3   Up 8 seconds</code></pre>
+  <p>Também se declara no arquivo com <code>deploy: { replicas: 3 }</code>; a opção de linha de comando prevalece. Escalar funciona bem para o <code>worker</code>: várias instâncias consumindo da mesma fila (<em>competing consumers</em>) é o desenho normal, desde que as tarefas sejam <strong>idempotentes</strong>, porque uma entrega pode se repetir (ver a trilha de APIs, <a href="../apis/06-confiabilidade.html">confiabilidade</a>). Os limites do <code>--scale</code> são reais:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Limite</th><th>Efeito</th><th>Saída</th></tr></thead>
+    <tbody>
+      <tr><td>Porta fixa no host</td><td><code>Bind for 0.0.0.0:3000 failed: port is already allocated</code> a partir da 2ª réplica</td><td>não publicar a porta (acessar pelo proxy) ou usar faixa: <code>"3000-3002:3000"</code></td></tr>
+      <tr><td><code>container_name</code> fixo</td><td>nomes não se repetem: erro</td><td>remover <code>container_name</code></td></tr>
+      <tr><td>Balanceamento</td><td>o DNS interno devolve todos os IPs do serviço; não há balanceador de verdade</td><td>proxy que reresolve o DNS (abaixo) ou balanceador externo</td></tr>
+      <tr><td>Estado compartilhado</td><td>volume com escrita por várias réplicas, sessão em memória</td><td>estado fora (banco, Redis), volumes por serviço</td></tr>
+      <tr><td>Réplica doente</td><td><code>unhealthy</code> não é removida da lista do DNS nem reiniciada</td><td>orquestrador com readiness</td></tr>
+      <tr><td>Sem autoscaling</td><td>o número é fixo até você mudá-lo</td><td>orquestrador (módulo 10)</td></tr>
+      <tr><td>Sem rolling update</td><td><code>up -d</code> recria o serviço: há uma janela de indisponibilidade</td><td>blue/green manual ou orquestrador</td></tr>
+    </tbody>
+  </table></div>
+  <p>O Nginx resolve <code>api</code> <strong>uma vez</strong>, ao iniciar. Se a API for recriada ou escalada, o proxy continua mandando para IPs antigos (502). Para o Nginx reresolver via o DNS embutido do Docker (<code>127.0.0.11</code>), use variável no <code>proxy_pass</code>:</p>
+<pre data-file="proxy/nginx.conf (variante para escala)"><code class="text">resolver 127.0.0.11 valid=10s ipv6=off;
+
+server {
+  listen 80;
+  location /api/ {
+    set $api_upstream http://api:3000;
+    rewrite ^/api/(.*)$ /$1 break;       # com variável, o prefixo precisa ser removido à mão
+    proxy_pass $api_upstream;
+  }
+}</code></pre>
+
+  <h3>Limites de recursos: o que o Compose respeita</h3>
+  <p>Sem limite, um container pode consumir toda a memória do host e o <em>OOM killer</em> do kernel escolher a vítima (às vezes o banco). Limites são cgroups do kernel: valem em qualquer Docker, não dependem do Swarm.</p>
+<pre><code class="yaml">services:
+  api:
+    deploy:
+      resources:
+        limits:   { cpus: "1.0", memory: 512M }    # teto rígido
+        reservations: { memory: 256M }              # reserva "macia" (preferência de agendamento)
+    pids_limit: 200                                 # contra fork bomb / vazamento de threads
+  worker:
+    mem_limit: 512m                                 # forma curta, equivalente ao limits.memory
+    cpus: 0.5</code></pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Chave</th><th>No Compose v2 fora do Swarm</th></tr></thead>
+    <tbody>
+      <tr><td><code>deploy.resources.limits</code> (<code>cpus</code>, <code>memory</code>)</td><td><strong>respeitado</strong> (o mesmo que <code>cpus</code> e <code>mem_limit</code>)</td></tr>
+      <tr><td><code>deploy.resources.reservations</code></td><td>memória: reserva "macia" (<code>mem_reservation</code>); não garante nada se o host está sem memória</td></tr>
+      <tr><td><code>deploy.replicas</code></td><td>respeitado no <code>up</code> (equivale ao <code>--scale</code>)</td></tr>
+      <tr><td><code>deploy.placement</code>, <code>update_config</code>, <code>rollback_config</code>, <code>mode</code></td><td><strong>sem efeito</strong>: são do Swarm; use <code>restart:</code> para política de reinício</td></tr>
+      <tr><td><code>pids_limit</code>, <code>ulimits</code>, <code>shm_size</code></td><td>respeitados; úteis (o Postgres pode precisar de <code>shm_size</code> maior)</td></tr>
+    </tbody>
+  </table></div>
+<pre><code class="sh">docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}'
+docker inspect -f '{{.State.OOMKilled}} {{.State.ExitCode}}' agenda-api-1</code></pre>
+<pre><code class="text">NAME              CPU %    MEM USAGE / LIMIT
+agenda-api-1      0.45%    96.2MiB / 512MiB
+agenda-worker-1   0.10%    71.8MiB / 512MiB
+agenda-db-1       0.80%    42.5MiB / 15.6GiB       &lt;- sem limite: mostra a memória do host
+
+true 137                                            &lt;- morto por OOM (137 = 128 + SIGKILL)</code></pre>
+  <ul>
+    <li><strong>Memória estoura = o processo morre</strong> (código 137). <strong>CPU estoura = o processo é estrangulado</strong> (throttling por cota): ninguém morre, mas a latência sobe de forma enganosa, com uso médio de CPU "baixo".</li>
+    <li>Runtimes precisam conhecer o limite: a JVM é <em>container-aware</em>; no Node, ajuste o heap (<code>NODE_OPTIONS=--max-old-space-size</code>, em torno de 70-75% do limite) para não ser morto antes de o coletor agir.</li>
+    <li>O limite do banco merece cuidado: o Postgres usa a memória para <code>shared_buffers</code> e para o cache do sistema; um limite apertado causa OOM em consultas grandes. Dimensione com o DBA.</li>
+  </ul>
+
+  <h3>Logging no Compose</h3>
+  <p>A regra de ouro: o aplicativo escreve em <strong>stdout/stderr</strong>, de preferência em JSON, e o Docker coleta. O driver padrão, <code>json-file</code>, <strong>não faz rotação</strong>: um serviço verboso enche o disco do host.</p>
+<pre><code class="yaml">x-logging: &amp;default-logging
+  driver: json-file
+  options:
+    max-size: "10m"        # rotaciona a cada 10 MB
+    max-file: "3"          # mantém 3 arquivos (30 MB por container)
+
+services:
+  api:
+    logging: *default-logging
+  proxy:
+    logging:
+      driver: local        # alternativa com rotação por padrão, formato interno compacto
+  worker:
+    logging:
+      driver: fluentd      # envia a um coletor remoto
+      options: { fluentd-address: "logs.interno:24224", tag: "agenda.worker" }</code></pre>
+<pre><code class="sh">docker compose logs -f --tail 100 api worker      # últimas 100 linhas e acompanha
+docker compose logs --since 10m -t api            # últimos 10 minutos, com horário
+docker compose logs --no-color &gt; logs.txt         # para anexar a um chamado</code></pre>
+  <ul>
+    <li>Com driver remoto (fluentd, gelf, awslogs, splunk), o <code>docker logs</code> local continua funcionando em Engines recentes (<em>dual logging</em>); em versões antigas, não.</li>
+    <li>Padrão global do host: <code>/etc/docker/daemon.json</code> com <code>"log-driver"</code> e <code>"log-opts"</code>. Vale só para containers <strong>criados depois</strong> da mudança e do restart do daemon.</li>
+    <li>Log não é para segredo nem dado de paciente: registre identificadores, não conteúdo clínico (LGPD).</li>
+  </ul>
+  <div class="note trap"><b>Armadilha comum</b><p>Servidor com disco 100% cheio por causa de <code>/var/lib/docker/containers/*/*-json.log</code> de alguns GB. A correção (<code>max-size</code>/<code>max-file</code>) só vale ao <strong>recriar</strong> o container.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"<code>deploy.resources.limits</code> é respeitado pelo Compose v2 mesmo sem Swarm, equivalente a <code>mem_limit</code> e <code>cpus</code>. Memória acima do limite mata o processo com 137; CPU acima é throttling. <code>--scale</code> serve bem para worker, mas não resolve balanceamento, autoscaling nem rolling update."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Limites e rotação de log são o seguro mais barato contra um serviço derrubar o host inteiro. Exija-os na revisão de qualquer novo serviço, e peça métricas (memória, CPU, reinícios) para dimensionar com dado, não com palpite.</p></div>
+</section>
+
+<section class="chap" id="limites-compose">
+  <div class="chap-head"><span class="num">8</span><span class="lvl l3">Avançado</span></div>
+  <h2>Quando o Compose deixa de ser suficiente</h2>
+  <p>O Compose é excelente para desenvolvimento, CI e produção <strong>de host único</strong> com poucos serviços. Ele não foi desenhado para o resto. Reconhecer o ponto de virada evita dois erros opostos: sofrer com Compose onde se precisa de orquestrador, e adotar Kubernetes onde uma VM com Compose bastava.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Necessidade</th><th>O que o Compose oferece</th><th>O que falta</th></tr></thead>
+    <tbody>
+      <tr><td>Alta disponibilidade</td><td>um host; <code>restart</code> reinicia processo que morre</td><td>se o host cai, tudo cai; nada migra para outro nó</td></tr>
+      <tr><td>Deploy sem indisponibilidade</td><td><code>up -d</code> recria o serviço (janela curta de erro)</td><td>rolling update, canary, rollback automático</td></tr>
+      <tr><td>Auto-cura por saúde</td><td>healthcheck só informa</td><td>reinício/realocação de réplica doente e roteamento só para as prontas</td></tr>
+      <tr><td>Escala</td><td><code>--scale</code> manual, num host</td><td>autoscaling e distribuição por vários hosts</td></tr>
+      <tr><td>Rede entre hosts</td><td>redes <code>bridge</code> de um host</td><td>rede overlay/CNI, service discovery, balanceamento de carga de verdade</td></tr>
+      <tr><td>Segredos e identidade</td><td>arquivo montado do host</td><td>rotação, auditoria, integração com cofre e IAM por carga de trabalho</td></tr>
+      <tr><td>Controle de acesso e políticas</td><td>quem acessa o socket do Docker é root</td><td>RBAC, políticas de admissão, quotas por equipe</td></tr>
+      <tr><td>TLS e ingress</td><td>você mesmo configura o proxy</td><td>emissão/renovação automática, múltiplos domínios, WAF</td></tr>
+      <tr><td>Dados com estado</td><td>volume local</td><td>volumes replicados, backups, failover (serviço gerenciado)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Caminhos de evolução</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Opção</th><th>Bom quando</th><th>Custo</th></tr></thead>
+    <tbody>
+      <tr><td>Compose em uma VM (<code>pull</code> + <code>up -d</code>)</td><td>sistema interno, poucas dezenas de usuários, janela de manutenção aceitável</td><td>você é o orquestrador: backup, patch do host, monitoramento, plano de falha</td></tr>
+      <tr><td>Serviço de containers gerenciado (ECS/Fargate, Cloud Run, Azure Container Apps, App Service)</td><td>quer HA e deploy rolling sem operar cluster</td><td>acoplamento ao provedor; modelo de rede e configuração próprio</td></tr>
+      <tr><td>Kubernetes (EKS, AKS, GKE ou próprio)</td><td>muitos serviços, vários times, requisitos de plataforma (políticas, autoscaling, malha)</td><td>complexidade e custo operacional altos; exige time de plataforma</td></tr>
+      <tr><td>Docker Swarm</td><td>cluster pequeno que já usa Docker, com um arquivo bem parecido com o do Compose</td><td>ecossistema e adoção bem menores; raramente a escolha para sistema novo</td></tr>
+      <tr><td>Nomad</td><td>carga mista (containers e não containers), operação simples</td><td>menos ferramental pronto</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ferramentas ajudam a migrar o que já existe: <code>kompose</code> converte <code>compose.yaml</code> em manifestos Kubernetes, e o Docker Desktop traz o <em>Compose Bridge</em> com a mesma proposta (confira sua disponibilidade e maturidade). O resultado serve de ponto de partida, nunca de entrega: probes, requests/limits, ingress e segredos pedem revisão.</p>
+  <h3>Compose em produção de host único: como fazer direito</h3>
+<pre><code class="sh">ssh app01 'cd /opt/agenda &amp;&amp; \
+  TAG=1.4.2 REGISTRY=ghcr.io/equipe docker compose -f compose.yaml pull &amp;&amp; \
+  TAG=1.4.2 REGISTRY=ghcr.io/equipe docker compose -f compose.yaml up -d --remove-orphans --wait'
+# rollback: o mesmo comando com TAG=1.4.1</code></pre>
+  <ul>
+    <li>O servidor <strong>não constrói</strong>: puxa a imagem já testada pela tag (melhor, pelo digest; módulo 08).</li>
+    <li><code>up -d</code> só recria os serviços cujo YAML ou imagem mudaram.</li>
+    <li>Defina o que o host precisa: backup dos volumes (<code>pgdata</code>) testado com restauração, atualização do SO, monitoramento do Docker e do disco, e quem é chamado quando cai.</li>
+  </ul>
+  <div class="note rule"><b>Regra de bolso</b><p>Migre quando a conta do tempo dos humanos virar: você passa mais horas compensando o que o Compose não faz (deploy fora do horário, restart manual, plano para o host cair) do que custaria adotar uma plataforma gerenciada. Antes de Kubernetes, considere um serviço de containers gerenciado.</p></div>
+  <div class="note iv"><b>Na entrevista</b><p>"Compose é ótimo para dev, CI e produção em host único. Passo para um orquestrador quando preciso de alta disponibilidade entre hosts, rolling update, autoscaling ou políticas de acesso. Mas é decisão de custo: Kubernetes só se compensar o time para operá-lo; muitas vezes um serviço gerenciado resolve."</p></div>
+  <div class="note mgr"><b>Para gestores</b><p>Em saúde, a pergunta é o impacto da indisponibilidade (agenda parada, laudo inacessível) e quem opera o plantão. Defina o <strong>RTO</strong> (quanto tempo pode ficar fora) e o <strong>RPO</strong> (quantos dados pode perder). Um host único com Compose só serve se esses números forem compatíveis com a pior falha de uma máquina.</p></div>
+</section>
+
+<section class="chap" id="exercicios">
+  <div class="chap-head"><span class="num">9</span><span class="lvl l3">Prática</span></div>
+  <h2>Exercícios</h2>
+  <p>Laboratórios graduados. Faça no projeto da agenda (ou num <code>compose.yaml</code> mínimo equivalente), confira cada resposta com <code>docker compose config</code> e abra a resolução só depois de tentar.</p>
+
+  <details class="qa"><summary><span class="qn">E1</span><span><strong>Merge:</strong> dado o base e o override abaixo, escreva o que <code>docker compose config</code> mostra para <code>api</code> e confira.</span></summary><div class="ans">
+<pre><code class="yaml"># compose.yaml
+services:
+  api:
+    image: agenda/api:1.0
+    command: ["node", "dist/server.js"]
+    environment: { LOG_LEVEL: info, TZ: America/Sao_Paulo }
+    ports: ["3000:3000"]
+    volumes: ["./cfg:/app/cfg:ro"]
+
+# compose.override.yaml
+services:
+  api:
+    command: ["npm", "run", "dev"]
+    environment: { LOG_LEVEL: debug }
+    ports: ["9229:9229"]
+    volumes: ["./cfg-dev:/app/cfg:ro"]</code></pre>
+    <p><strong>Resposta.</strong> <code>image</code> permanece <code>agenda/api:1.0</code>. <code>command</code> vira <code>["npm","run","dev"]</code> (lista de comando é substituída). <code>environment</code> fica com <code>LOG_LEVEL=debug</code> e <code>TZ=America/Sao_Paulo</code> (mapa mesclado por chave). <code>ports</code> tem as duas: 3000 e 9229 (concatenadas). <code>volumes</code> tem <strong>uma</strong> entrada só: as duas montam em <code>/app/cfg</code>, e volumes mesclam pelo destino, então vence <code>./cfg-dev</code>. Verifique com <code>docker compose config</code>.</p>
+    <p><strong>Extra.</strong> Faça <code>ports: !override ["3000:3000"]</code> no override e veja a lista deixar de ser concatenada.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E2</span><span><strong>Job de migração:</strong> faça o <code>migrate</code> falhar de propósito (ex.: <code>command: ["sh","-c","echo erro; exit 1"]</code>). Observe o <code>up -d</code>, o estado dos serviços e como se recupera.</span></summary><div class="ans">
+    <p><strong>Resposta.</strong> O <code>up -d</code> falha com <code>dependency failed to start: container agenda-migrate-1 exited (1)</code>. <code>db</code> e <code>redis</code> estão de pé; <code>api</code>, <code>worker</code> e <code>proxy</code> <strong>não foram iniciados</strong> (nem ficam em loop), o que é o comportamento desejado: não se sobe aplicação com schema pela metade. O erro está em <code>docker compose logs migrate</code>.</p>
+<pre><code class="sh">docker compose up -d                    # falha
+docker compose ps -a --format 'table {{.Service}}\t{{.Status}}'
+docker compose logs migrate             # a causa
+# corrija o command/migration e rode de novo:
+docker compose up -d                    # recria o migrate; se sair 0, o resto sobe</code></pre>
+    <p>Reexecutar <code>up -d</code> recria o job (a configuração mudou) e o grafo segue. Se fosse só uma falha transitória sem mudança de configuração, <code>docker compose up -d --force-recreate migrate</code> reexecutaria.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E3</span><span><strong>Secrets:</strong> hoje a senha do banco está em <code>environment: POSTGRES_PASSWORD: ...</code>. Migre para secret e prove, com comandos, que melhorou.</span></summary><div class="ans">
+<pre><code class="sh">mkdir -p secrets &amp;&amp; printf 'dev-senha-fraca' &gt; secrets/db_password.txt
+echo "secrets/" &gt;&gt; .gitignore
+# no compose.yaml: troque POSTGRES_PASSWORD por POSTGRES_PASSWORD_FILE=/run/secrets/db_password,
+# adicione "secrets: [db_password]" ao serviço e o bloco secrets: no topo (file: ./secrets/db_password.txt)
+docker compose up -d --force-recreate db
+
+# provas
+docker inspect -f '{{json .Config.Env}}' agenda-db-1 | grep -c dev-senha-fraca   # 0: fora do ambiente
+docker compose exec db ls -l /run/secrets/db_password                            # existe, somente leitura
+git check-ignore -v secrets/db_password.txt                                      # ignorado pelo git</code></pre>
+    <p><strong>Cuidado:</strong> o Postgres só lê a senha na <em>primeira</em> inicialização do volume. Com um volume <code>pgdata</code> já criado, trocar a variável não altera a senha do usuário. Para o laboratório, rode <code>docker compose down -v</code> antes (apaga os dados de desenvolvimento) ou altere a senha com <code>ALTER USER</code>. O ganho real: a senha saiu do <code>docker inspect</code> e do ambiente do processo; o limite continua sendo o arquivo no host.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E4</span><span><strong>Profiles e escala:</strong> coloque o <code>adminer</code> num profile, suba o <code>worker</code> com 3 réplicas e depois tente escalar a <code>api</code> (que publica a porta 3000 no override). Explique o que aconteceu.</span></summary><div class="ans">
+<pre><code class="sh">docker compose up -d                          # sem adminer
+docker compose --profile debug up -d          # com adminer
+docker compose up -d --scale worker=3
+docker compose ps worker                      # três instâncias
+docker compose up -d --scale api=2            # erro de porta</code></pre>
+    <p><strong>Resposta.</strong> O adminer só aparece com <code>--profile debug</code>. O worker escala sem problema: não publica porta e várias instâncias consomem da mesma fila. A <code>api</code> falha na segunda réplica com <code>port is already allocated</code> porque o override publica <code>3000:3000</code>. Saídas: escalar a API atrás do proxy sem publicar porta (em produção o base já não publica), usar faixa de portas ou, em desenvolvimento, simplesmente não escalar. Para o proxy enxergar as novas réplicas, use a variante com <code>resolver 127.0.0.11</code> da seção 7.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E5</span><span><strong>CI:</strong> escreva o passo de CI que sobe o projeto com <code>compose.ci.yaml</code>, roda o serviço <code>tests</code>, devolve o código de saída correto e limpa tudo mesmo com falha. Simule um teste falhando e comprove a limpeza.</span></summary><div class="ans">
+<pre><code class="sh">export COMPOSE_PROJECT_NAME="agenda-ci-$RANDOM"
+C="docker compose -f compose.yaml -f compose.ci.yaml"
+trap '$C down -v --remove-orphans' EXIT      # limpa em qualquer saída, inclusive erro
+
+$C up -d --build --wait
+$C run --rm tests                            # o código de saída do script é o do npm test
+# fim do script: o trap limpa</code></pre>
+    <p><strong>Prova.</strong> Altere um teste para falhar e rode: o script sai com código diferente de 0. Depois confira <code>docker ps -a --filter "name=agenda-ci"</code>, <code>docker volume ls</code> e <code>docker network ls</code>: nada com o prefixo do projeto deve ter ficado. O <code>trap ... EXIT</code> faz o papel do <code>if: always()</code> de um passo de CI. Alternativa de uma linha: <code>up --abort-on-container-exit --exit-code-from tests</code>, que também propaga o código do serviço escolhido.</p>
+  </div></details>
+
+  <details class="qa"><summary><span class="qn">E6</span><span><strong>Limites:</strong> limite a memória da API a 64 MB, provoque estouro (alocando memória no processo ou rodando <code>docker compose exec api node -e "..."</code>) e leia a evidência. Depois explique como dimensionar de verdade.</span></summary><div class="ans">
+<pre><code class="sh"># mem_limit: 64m no serviço api (ou deploy.resources.limits.memory: 64M)
+docker compose up -d api
+docker compose exec api node -e "const a=[];while(true)a.push(Buffer.alloc(10*1024*1024,1))"
+# o exec morre; para o container principal, provoque o estouro na própria aplicação
+docker inspect -f '{{.State.OOMKilled}} {{.State.ExitCode}}' agenda-api-1    # true 137
+docker stats --no-stream agenda-api-1                                        # uso vs limite
+dmesg | grep -i 'killed process'                                             # no host Linux</code></pre>
+    <p><strong>Resposta.</strong> O container principal morre com <code>OOMKilled=true</code> e código 137, e a política <code>restart</code> o recria (se houver loop de mortes, aparece como <code>Restarting</code>). Dimensionar: meça o pico real em carga representativa (<code>docker stats</code>, métricas), dê folga de 20 a 30% sobre o pico, ajuste o heap da runtime (<code>--max-old-space-size</code> no Node) abaixo do limite e revise quando o consumo crescer. Um limite derivado de palpite é tão perigoso quanto nenhum.</p>
+  </div></details>
+</section>
+
+<section class="chap" id="cenarios">
+  <div class="chap-head"><span class="num">10</span><span class="lvl l3">Prática</span></div>
+  <h2>Cenários práticos de trabalho</h2>
+
+  <div class="note"><b>Cenário 1: "A API sobe, mas reclama que o banco recusou conexão"</b>
+    <p><strong>O que fazer.</strong> Veja se o <code>depends_on</code> do serviço usa <code>condition: service_healthy</code> e se o <code>db</code> tem healthcheck (<code>docker compose ps</code> mostra <code>(healthy)</code>). Se a ordem está certa e o erro acontece só <em>depois</em> de o banco reiniciar, o problema é a aplicação: o pool de conexões não reconecta. Corrija com retry e backoff na conexão, e teste com <code>docker compose restart db</code>. Lembre que a ordem de subida do Compose não existe no Kubernetes: a correção durável é a resiliência da aplicação.</p></div>
+
+  <div class="note"><b>Cenário 2: "Dois pipelines de CI no mesmo runner se atropelam"</b>
+    <p><strong>O que fazer.</strong> Sintoma: <code>port is already allocated</code>, nomes de container em conflito ou testes vendo dados da execução anterior. Causa: mesmo <em>project name</em>, portas fixas e falta de limpeza. Corrija: <code>COMPOSE_PROJECT_NAME</code> único por execução (inclua o ID do run), nenhuma porta fixa no host (<code>ports: !reset []</code> no <code>compose.ci.yaml</code> ou porta por variável), testes acessando o proxy dentro da rede e <code>down -v --remove-orphans</code> garantido (<code>trap</code> ou <code>if: always()</code>). Limpe o runner uma vez com <code>docker system prune</code> (com cuidado em runner compartilhado).</p></div>
+
+  <div class="note"><b>Cenário 3: "O worker em desenvolvimento está rodando o código errado"</b>
+    <p><strong>O que fazer.</strong> Verifique <code>docker compose images</code> e <code>docker compose config</code>: se <code>api</code> (alvo <code>dev</code>) e <code>worker</code> (alvo <code>prod</code>) compartilham o mesmo <code>image: agenda/api:dev</code>, o último build sobrescreve a tag. Dê à API de dev um nome próprio (<code>image: agenda/api-dev</code>), como no override do projeto, reconstrua com <code>docker compose build --no-cache api worker</code> e confirme com <code>docker inspect -f '{{.Image}}' agenda-worker-1</code>. Lição: duas variantes de build nunca devem dividir nome e tag.</p></div>
+
+  <div class="note"><b>Cenário 4: "Achamos a senha do banco no repositório e no log do CI"</b>
+    <p><strong>O que fazer.</strong> Trate como incidente. (1) <strong>Rotacione</strong> a credencial agora: remover do git não desfaz o vazamento. (2) Reescreva o histórico apenas se necessário e tenha em mente que clones e caches já têm o valor. (3) Migre o uso para secret (<code>*_FILE</code>), <code>secrets/</code> e <code>.env</code> no <code>.gitignore</code>, <code>.env.example</code> versionado. (4) Ative varredura de segredos no CI (<code>gitleaks</code> ou o recurso da plataforma) e mascare variáveis nos logs; revise quem roda <code>docker compose config</code> em pipeline. (5) Se o banco guarda dados de pacientes, acione o fluxo de incidente de segurança da empresa e avalie o encarregado de proteção de dados (LGPD).</p></div>
+
+  <div class="note"><b>Cenário 5: "O container da API morre toda tarde com código 137"</b>
+    <p><strong>O que fazer.</strong> Confirme com <code>docker inspect -f '{{.State.OOMKilled}}'</code> e <code>docker stats</code>. Se foi OOM por limite baixo, o consumo cresce com a carga do pico da tarde: meça, aumente o limite com folga e ajuste o heap. Se a memória sobe sem parar até estourar, é vazamento: capture um heap snapshot, compare e corrija; o limite só contém o dano. Enquanto isso, <code>restart: unless-stopped</code> mascara o problema, então alerte em reinícios (métrica de restart count) e escale o worker/API de forma que um reinício não derrube o serviço. Em último caso, discuta migrar para plataforma com autoscaling.</p></div>
+</section>
+
+<section class="chap" id="glossario">
+  <div class="chap-head"><span class="num">11</span><span class="lvl l3">Referência</span></div>
+  <h2>Glossário</h2>
+  <dl class="gloss">
+    <div><dt>Project name</dt><dd>Nome que prefixa redes, volumes e containers (<code>name:</code>, <code>-p</code> ou <code>COMPOSE_PROJECT_NAME</code>). Isola execuções.</dd></div>
+    <div><dt>Override</dt><dd><code>compose.override.yaml</code>: arquivo mesclado automaticamente sobre o base.</dd></div>
+    <div><dt>Merge</dt><dd>Combinação de vários arquivos Compose, por regra de cada tipo de campo.</dd></div>
+    <div><dt>include</dt><dd>Importa outro arquivo Compose, autocontido; conflito de nome é erro.</dd></div>
+    <div><dt>extends</dt><dd>Herda a definição de um serviço de outro arquivo ou do mesmo.</dd></div>
+    <div><dt>Âncora / alias (YAML)</dt><dd><code>&amp;x</code> e <code>*x</code>: reaproveitamento resolvido pelo parser, dentro de um arquivo.</dd></div>
+    <div><dt>Extension field</dt><dd>Chave de topo <code>x-...</code>, ignorada pelo Compose, usada como depósito de blocos.</dd></div>
+    <div><dt>Healthcheck</dt><dd>Comando que o Docker executa no container para classificar como <em>healthy</em> ou <em>unhealthy</em>.</dd></div>
+    <div><dt>Job (one-shot)</dt><dd>Serviço que roda e termina, como o <code>migrate</code>; liberado por <code>service_completed_successfully</code>.</dd></div>
+    <div><dt>Profile</dt><dd>Rótulo que torna um serviço opcional: só sobe se o profile for ativado.</dd></div>
+    <div><dt>Secret</dt><dd>Dado sensível montado como arquivo em <code>/run/secrets</code> só nos serviços que o declaram.</dd></div>
+    <div><dt>Config</dt><dd>Arquivo de configuração não sensível declarado e montado de forma análoga aos secrets.</dd></div>
+    <div><dt>Compose watch</dt><dd>Recurso de desenvolvimento que reage a mudanças de arquivo com <code>sync</code>, <code>rebuild</code>, <code>sync+restart</code> ou <code>sync+exec</code>.</dd></div>
+    <div><dt>OOMKilled</dt><dd>Estado de container morto pelo kernel por estourar o limite de memória (código 137).</dd></div>
+    <div><dt>Competing consumers</dt><dd>Várias instâncias de worker consumindo da mesma fila, cada mensagem tratada por uma.</dd></div>
+  </dl>
+</section>
+
+<section class="chap" id="perguntas">
+  <div class="chap-head"><span class="num">12</span><span class="lvl l3">Entrevista</span></div>
+  <h2>Perguntas de entrevista</h2>
+  <p>Responda em voz alta antes de abrir. A resposta ideal tem uma frase de definição e um exemplo prático.</p>
+  <div class="qa-tools"><button type="button" id="qa-open">Abrir todas</button><button type="button" id="qa-close">Fechar todas</button></div>
+
+  <details class="qa"><summary><span class="qn">01</span><span>Para que serve o <code>compose.override.yaml</code>?</span></summary><div class="ans"><p>É mesclado automaticamente ao <code>compose.yaml</code> quando se roda <code>docker compose up</code> sem <code>-f</code>. Convenção: o base descreve produção; o override acrescenta só o de desenvolvimento (bind mounts, portas de debug, alvo <code>dev</code>). Com <code>-f</code>, ele deixa de ser lido.</p></div></details>
+  <details class="qa"><summary><span class="qn">02</span><span>Como o Compose mescla dois arquivos? O que acontece com <code>ports</code>, <code>environment</code> e <code>command</code>?</span></summary><div class="ans"><p>Por tipo: valores simples e <code>command</code>/<code>entrypoint</code> são substituídos; mapas como <code>environment</code> são mesclados por chave; <code>ports</code> é concatenado; <code>volumes</code> mescla pelo ponto de montagem. As tags <code>!override</code> e <code>!reset</code> mudam isso. Confirmo o resultado com <code>docker compose config</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">03</span><span>Diferença entre <code>include</code>, <code>extends</code> e âncoras YAML.</span></summary><div class="ans"><p>Âncoras são YAML puro, resolvidas no parse e restritas ao arquivo. <code>extends</code> herda a definição de um serviço (de outro arquivo também), sem trazer <code>depends_on</code>. <code>include</code> importa um projeto Compose inteiro, autocontido, e conflito de nome é erro, não merge.</p></div></details>
+  <details class="qa"><summary><span class="qn">04</span><span>Por que <code>depends_on</code> simples não basta? Como garantir que o banco está pronto?</span></summary><div class="ans"><p>Só ordena o <em>início</em> dos containers. Defino um <code>healthcheck</code> no banco (<code>pg_isready</code>) e uso <code>condition: service_healthy</code> no dependente. Mesmo assim a aplicação precisa de retry, porque o banco pode cair depois.</p></div></details>
+  <details class="qa"><summary><span class="qn">05</span><span>Como rodar migrations no Compose sem que cada réplica da API as execute?</span></summary><div class="ans"><p>Um serviço <code>migrate</code> com a mesma imagem e outro <code>command</code>, <code>restart: "no"</code>, e <code>depends_on</code> com <code>service_completed_successfully</code> nos dependentes. Roda uma vez e termina; se falhar, a API nem sobe. A migração deve ser idempotente e com lock.</p></div></details>
+  <details class="qa"><summary><span class="qn">06</span><span>Um container <code>unhealthy</code> é reiniciado pelo Docker?</span></summary><div class="ans"><p>No Docker puro e no Compose, não: o healthcheck só informa o estado e controla o <code>depends_on</code>. <code>restart</code> reage a processo que morre. Reiniciar por saúde exige Swarm, Kubernetes ou uma ferramenta externa.</p></div></details>
+  <details class="qa"><summary><span class="qn">07</span><span>Variável de ambiente ou secret para uma senha? Por quê?</span></summary><div class="ans"><p>Secret. A variável aparece em <code>docker inspect</code>, em <code>/proc/&lt;pid&gt;/environ</code> e é herdada por processos filhos. O secret do Compose é um arquivo em <code>/run/secrets</code>, lido pela aplicação (convenção <code>*_FILE</code>). Em produção o arquivo deve ser provido por um cofre; o Compose não rotaciona nem audita.</p></div></details>
+  <details class="qa"><summary><span class="qn">08</span><span>Qual a diferença entre <code>.env</code>, <code>env_file</code> e <code>environment</code>?</span></summary><div class="ans"><p><code>.env</code> alimenta a <strong>interpolação</strong> do YAML (<code>${TAG}</code>) e não chega ao container por si só. <code>env_file</code> carrega um arquivo de variáveis para dentro do container. <code>environment</code> define variáveis direto no YAML e vence o <code>env_file</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">09</span><span>O que são profiles e quando usá-los?</span></summary><div class="ans"><p>Rótulos que tornam serviços opcionais: sobem só com <code>--profile x</code> ou <code>COMPOSE_PROFILES</code>. Uso para ferramentas auxiliares (adminer, mailhog) e para o job de testes. Não são "ambientes": variações de configuração por ambiente ficam em arquivos de override.</p></div></details>
+  <details class="qa"><summary><span class="qn">10</span><span>Como usar o mesmo arquivo em desenvolvimento, CI e produção?</span></summary><div class="ans"><p>Base = produção; override automático para dev; <code>-f compose.yaml -f compose.ci.yaml</code> para CI, com profile <code>test</code> e <code>COMPOSE_PROJECT_NAME</code> único; produção só com o base e <code>TAG</code> fixa. O CI valida com <code>docker compose config</code> e termina com <code>down -v</code>.</p></div></details>
+  <details class="qa"><summary><span class="qn">11</span><span>Que ações o <code>compose watch</code> oferece e em que versão ficou estável?</span></summary><div class="ans"><p><code>sync</code>, <code>rebuild</code>, <code>sync+restart</code> e <code>sync+exec</code>. Ficou estável (GA) no Compose 2.22, que veio no Docker Desktop 4.24, em outubro de 2023. É para desenvolvimento, alternativa a bind mount sem os problemas de desempenho e permissão no Windows e no macOS.</p></div></details>
+  <details class="qa"><summary><span class="qn">12</span><span>O que o <code>--scale</code> resolve e quais são seus limites?</span></summary><div class="ans"><p>Sobe N instâncias de um serviço, bom para workers. Limites: não funciona com porta fixa no host nem <code>container_name</code>; não há balanceador de verdade (DNS round robin, e o Nginx cacheia a resolução); réplica <code>unhealthy</code> não sai de rotação; sem autoscaling nem rolling update.</p></div></details>
+  <details class="qa"><summary><span class="qn">13</span><span><code>deploy.resources</code> funciona fora do Swarm?</span></summary><div class="ans"><p>No Compose v2, sim: <code>limits</code> (cpus, memory) é aplicado como cgroup, equivalente a <code>cpus</code> e <code>mem_limit</code>. Chaves de orquestração (<code>placement</code>, <code>update_config</code>, <code>rollback_config</code>) não têm efeito. Memória estourada mata com 137; CPU estourada gera throttling.</p></div></details>
+  <details class="qa"><summary><span class="qn">14</span><span>Como evitar que os logs encham o disco do servidor?</span></summary><div class="ans"><p>O <code>json-file</code> padrão não rotaciona. Configuro <code>max-size</code> e <code>max-file</code> no serviço (ou o driver <code>local</code>), ou um padrão em <code>daemon.json</code> (vale só para containers novos). Para centralizar, envio a um coletor (fluentd, gelf, awslogs) e mantenho a aplicação escrevendo em stdout.</p></div></details>
+  <details class="qa"><summary><span class="qn">15</span><span>Desenhe a arquitetura de uma aplicação web com API, worker, banco e fila e explique as redes.</span></summary><div class="ans"><p>Proxy na rede <code>frontend</code> com a única porta publicada; web e API no frontend; API, worker, migrate, banco e Redis na <code>backend</code>. O proxy não alcança o banco. Mesma imagem para API, worker e migrate, com comandos diferentes; migração como job; segredo em secret; healthchecks guiando a subida.</p></div></details>
+  <details class="qa"><summary><span class="qn">16</span><span>Por que a API de desenvolvimento tem <code>image: agenda/api-dev</code> no override?</span></summary><div class="ans"><p>Porque <code>migrate</code>, <code>api</code> e <code>worker</code> usam o mesmo nome e tag. Se a API só trocasse o <code>target</code> para <code>dev</code>, o build sobrescreveria a tag usada pelos outros e o worker rodaria a imagem errada, em silêncio. Nome próprio evita colisão.</p></div></details>
+  <details class="qa"><summary><span class="qn">17</span><span>Quando você tiraria um sistema do Compose? Que critérios usa?</span></summary><div class="ans"><p>Quando preciso de alta disponibilidade entre hosts, deploy sem indisponibilidade, autoscaling, políticas de acesso por equipe ou segredos com rotação e auditoria. Primeiro considero um serviço gerenciado de containers; Kubernetes só se o número de serviços e times justificar o time de plataforma. O critério é RTO/RPO e o custo humano de compensar o que o Compose não faz.</p></div></details>
+  <details class="qa"><summary><span class="qn">18</span><span>Como você, como gestora, avalia se um serviço novo está pronto para produção em Compose?</span></summary><div class="ans"><p>Checklist: imagem versionada e escaneada; ordem de subida com healthcheck e migração como job; segredos fora do git e do ambiente; limites de CPU/memória e rotação de logs; só uma porta exposta; teste de fumaça no pipeline; backup restaurado de verdade; monitoramento e plantão definidos; RTO/RPO compatíveis com o host único.</p></div></details>
+</section>
+
+<!-- Navegação anterior/próximo: gerada pelo script a partir da lista de módulos. -->
+<nav class="pager" id="pager" aria-label="Navegação entre módulos"></nav>
+<footer>Trilha Docker · estudo pessoal</footer>
+</main>
+</div>
+
+<script>
+/* NÃO ALTERAR este script nos módulos. */
+(function(){
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function run(src, re, classify){
+    var out='', last=0, m; re.lastIndex=0;
+    while((m=re.exec(src))){
+      if (m[0]===''){ re.lastIndex++; continue; }
+      out+=esc(src.slice(last,m.index));
+      var cls=classify(m);
+      out+= cls ? '<span class="'+cls+'">'+esc(m[0])+'</span>' : esc(m[0]);
+      last=re.lastIndex;
+    }
+    return out+esc(src.slice(last));
+  }
+  var R = {
+    http:[/(#[^\n]*)|(^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)\b|^HTTP\/[\d.]+|\bHTTP\/[\d.]+\b)|(^[A-Za-z][A-Za-z0-9-]*(?=:))|("(?:[^"\\]|\\.)*")|(\b\d{3}\b)/gm,
+      function(m){return m[1]?'c':m[2]?'k':m[3]?'f':m[4]?'s':m[5]?'d':''}],
+    sh:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^\s*(?:\$\s+)?[a-z][a-z0-9._-]*(?=\s|$))|((?:^|\s)--?[A-Za-z][A-Za-z0-9-]*)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    js:[/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:const|let|var|function|return|if|else|for|while|await|async|new|import|from|export|default|class|try|catch|throw|true|false|null|undefined|typeof)\b)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*(?=\())/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'d':m[5]?'f':''}],
+    json:[/("(?:[^"\\]|\\.)*")(\s*:)?|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/g,
+      function(m){return m[2]?'f':m[1]?'s':m[3]?'k':m[4]?'d':''}],
+    sql:[/(\/\*\+[\s\S]*?\*\/)|(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|FULL|INNER|OUTER|CROSS|LATERAL|APPLY|ON|AND|OR|NOT|IN|EXISTS|IS|NULL|AS|GROUP|BY|HAVING|ORDER|ASC|DESC|NULLS|LIMIT|OFFSET|FETCH|FIRST|LAST|NEXT|ROWS|ROW|ONLY|UNION|ALL|ANY|INTERSECT|EXCEPT|MINUS|DISTINCT|CASE|WHEN|THEN|ELSE|END|WITH|RECURSIVE|OVER|PARTITION|WINDOW|FILTER|WITHIN|INSERT|INTO|VALUES|UPDATE|SET|DELETE|MERGE|USING|MATCHED|RETURNING|CREATE|ALTER|DROP|TRUNCATE|INDEX|TABLE|VIEW|MATERIALIZED|SEQUENCE|CONSTRAINT|CHECK|DEFAULT|CONFLICT|DO|NOTHING|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|TRANSACTION|ISOLATION|LEVEL|READ|COMMITTED|SERIALIZABLE|REPEATABLE|LOCK|FOR|SKIP|LOCKED|NOWAIT|EXPLAIN|PLAN|ANALYZE|BUFFERS|VERBOSE|LIKE|ILIKE|BETWEEN|DATE|TIMESTAMP|INTERVAL|DAY|PRIMARY|KEY|FOREIGN|REFERENCES|INCLUDE|UNIQUE|ROLLUP|CUBE|GROUPING|SETS|PRECEDING|FOLLOWING|CURRENT|UNBOUNDED|RANGE|EXEC|TRUE|FALSE|CONCURRENTLY|REFRESH|CONNECT|PRIOR|START|LEVEL|PIVOT|GRANT|REVOKE|VACUUM|INTEGER|INT|BIGINT|VARCHAR|VARCHAR2|NUMBER|NUMERIC|TEXT|BOOLEAN|CHAR|CLOB|JSONB|DECLARE|LOOP|IF|RETURN|FUNCTION|PROCEDURE|TRIGGER|REPLACE|GENERATED|ALWAYS|IDENTITY)\b)|(\b[A-Za-z_][A-Za-z0-9_$.]*(?=\())/gi,
+      function(m){return m[1]?'v':m[2]?'c':m[3]?'s':m[4]?'d':m[5]?'k':m[6]?'f':''}],
+    dockerfile:[/(#[^\n]*)|("(?:[^"\\]|\\.)*")|(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)|(^[ \t]*(?:FROM|RUN|CMD|ENTRYPOINT|COPY|ADD|WORKDIR|ENV|ARG|EXPOSE|USER|LABEL|HEALTHCHECK|VOLUME|SHELL|STOPSIGNAL|ONBUILD)\b)|(\bAS\b|--[a-z][a-z-]*(?==)?)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'v':m[4]?'k':m[5]?'f':''}],
+    yaml:[/(#[^\n]*)|("(?:[^"\\]|\\.)*"|'[^']*')|(^\s*-?\s*[A-Za-z_$\/{][\w$.\/{}-]*(?=:))|(\b(?:true|false|null)\b)|(-?\b\d+(?:\.\d+)?\b)/gm,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'f':m[4]?'k':m[5]?'d':''}],
+    html:[/(<!--[\s\S]*?-->)|("(?:[^"\\]|\\.)*"|'[^']*')|(<\/?[A-Za-z][A-Za-z0-9-]*|\/?>)|(\b[a-z-]+(?==))/g,
+      function(m){return m[1]?'c':m[2]?'s':m[3]?'k':m[4]?'f':''}]
+  };
+  document.querySelectorAll('pre code').forEach(function(el){
+    var lang=(el.className||'').trim();
+    if (R[lang]) el.innerHTML = run(el.textContent, R[lang][0], R[lang][1]);
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(t,i){
+    var panes=[].slice.call(t.querySelectorAll(':scope > pre'));
+    var row=document.createElement('div'); row.className='tab-row'; row.setAttribute('role','tablist');
+    panes.forEach(function(p,j){
+      var b=document.createElement('button'); b.type='button'; b.id='tab-'+i+'-'+j; b.setAttribute('role','tab');
+      b.textContent=p.dataset.label||('Aba '+(j+1)); b.addEventListener('click',function(){show(j)}); row.appendChild(b);
+    });
+    t.insertBefore(row,t.firstChild);
+    function show(k){ panes.forEach(function(p,j){ p.hidden=j!==k; row.children[j].setAttribute('aria-selected', j===k?'true':'false'); }); }
+    show(0);
+  });
+
+  var qas=document.querySelectorAll('.qa');
+  var qo=document.getElementById('qa-open'), qc=document.getElementById('qa-close');
+  if (qo) qo.addEventListener('click',function(){qas.forEach(function(q){q.open=true})});
+  if (qc) qc.addEventListener('click',function(){qas.forEach(function(q){q.open=false})});
+
+  /* progresso: chave compartilhada por todos os módulos */
+  var KEY='trilha-docker-done';
+  var page=(location.pathname.split('/').pop()||'index.html');
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function put(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+  var done=get();
+  var chaps=[].slice.call(document.querySelectorAll('section.chap'));
+  function render(){
+    var n=0;
+    chaps.forEach(function(s){
+      var id=page+'#'+s.id, on=!!done[id]; if(on) n++;
+      var a=document.querySelector('nav.toc a[href="#'+s.id+'"]'); if(a) a.classList.toggle('done',on);
+      var b=s.querySelector('.mark button'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.textContent=on?'Estudado ✓':'Marcar como estudado'; }
+    });
+    var t=document.getElementById('progtxt'), bar=document.getElementById('progbar');
+    if (t) t.textContent=n+' de '+chaps.length+' seções deste módulo estudadas';
+    if (bar) bar.style.width=(chaps.length?100*n/chaps.length:0)+'%';
+    document.querySelectorAll('#modulos > li > a[href$=".html"]').forEach(function(a){
+      var f=a.getAttribute('href'), tot=0;
+      Object.keys(done).forEach(function(k){ if(k.indexOf(f+'#')===0) tot++; });
+      a.title = tot ? tot+' seções marcadas' : '';
+    });
+  }
+  chaps.forEach(function(s){
+    var w=document.createElement('div'); w.className='mark';
+    var b=document.createElement('button'); b.type='button'; b.id='mark-'+s.id;
+    b.addEventListener('click',function(){ var id=page+'#'+s.id; if(done[id]) delete done[id]; else done[id]=1; put(done); render(); });
+    w.appendChild(b); s.appendChild(w);
+  });
+  render();
+
+  /* anterior / próximo */
+  var mods=[].slice.call(document.querySelectorAll('#modulos > li > a[href$=".html"]'));
+  var cur=mods.findIndex(function(a){return a.getAttribute('aria-current')==='page'});
+  var pager=document.getElementById('pager');
+  if (pager && cur>=0){
+    function link(a,cls,label){ var l=document.createElement('a'); l.href=a.getAttribute('href'); l.className=cls;
+      l.innerHTML='<small>'+label+'</small>'; l.appendChild(document.createTextNode(a.textContent.replace(/^\d+/,'').trim())); return l; }
+    var home=document.createElement('a'); home.href='index.html'; home.innerHTML='<small>Trilha</small>Visão geral';
+    pager.appendChild(cur>0 ? link(mods[cur-1],'prev','Anterior') : home);
+    if (cur<mods.length-1) pager.appendChild(link(mods[cur+1],'next','Próximo'));
+  }
+
+  var det=document.getElementById('tocdetails'), mq=window.matchMedia('(max-width: 900px)');
+  function sync(){ if(mq.matches) det.removeAttribute('open'); else det.setAttribute('open',''); }
+  sync(); if(mq.addEventListener) mq.addEventListener('change',sync);
+  document.querySelectorAll('nav.toc a[href^="#"]').forEach(function(a){ a.addEventListener('click',function(){ if(mq.matches) det.removeAttribute('open'); }); });
+})();
+</script>
+</body>
+</html>
